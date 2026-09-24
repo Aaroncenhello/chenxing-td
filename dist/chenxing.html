@@ -1441,6 +1441,11 @@ const RELICS = [
   { id: "rl_key", name: "裂隙钥匙", color: "#c890ff", desc: "提前出击的星尘奖励翻倍，叠波时额外获得经验" },
   { id: "rl_banner", name: "战旗", color: "#e3b75c", desc: "场上每有 1 名伙伴，全队攻击 +4%" },
   { id: "rl_mirror", name: "镜之盾", color: "#cfe6ff", desc: "角色受到的伤害 −15%" },
+  { id: "rl_rot", name: "腐蚀之心", color: "#a8d848", desc: "中毒、灼烧或被腐蚀的敌人，受到的伤害 +20%" },
+  { id: "rl_stoneheart", name: "磐石之心", color: "#8fb3e0", desc: "全队不再被冰系敌人的寒气拖慢攻速" },
+  { id: "rl_frenzy", name: "血色狂热", color: "#ff6a5a", desc: "连杀数越高全队攻速越快，每 10 连杀 +4%，最多 +40%" },
+  { id: "rl_hawkeye", name: "猎人之眼", color: "#ffd860", desc: "对集火目标的伤害额外 +20%" },
+  { id: "rl_slayer", name: "屠戮嘉奖", color: "#e0676a", desc: "击杀精英和首领额外获得经验" },
 ];
 const RELIC_BY = Object.fromEntries(RELICS.map(r => [r.id, r]));
 const rl = id => !!(S && S.relics && S.relics.includes(id));
@@ -2116,7 +2121,8 @@ function uInterval(u) {
   if (br(u, "gunner", "B")) i *= 0.5;
   if (br(u, "summoner", "B") && golemOf(u)) i *= 0.5;
   if (syn("volley") && u.def.place === "high") i *= 0.8;
-  if (u.chill) i *= 1 + u.chill;
+  if (u.chill && !rl("rl_stoneheart")) i *= 1 + u.chill;
+  if (rl("rl_frenzy")) i /= 1 + Math.min(0.4, Math.floor((S.combo || 0) / 10) * 0.04);
   if (u.hero) { if (sg("sg_sw1")) i /= 1 + 0.15 * sg("sg_sw1"); if (sg("sg_ar1")) i /= 1 + 0.1 * sg("sg_ar1"); if (sg("sg_gu1")) i *= Math.max(0.5, 1 - 0.08 * sg("sg_gu1")); }
   i /= 1 + 0.35 * cu("cu_brittle");
   i /= 1 + 0.4 * cu("cu_haste");
@@ -3132,6 +3138,9 @@ const AFFIX = [
   { id: "swift", name: "疾行", desc: "移速 +35%，不怕减速", color: "#8fe0f0" },
   { id: "bulwark", name: "护壁", desc: "自带护盾，破了还会再生一层", color: "#8ac8ff" },
   { id: "splitting", name: "分裂", desc: "死的时候裂成两只小怪", color: "#58b84a" },
+  { id: "harden", name: "钢化", desc: "受到的物理伤害 −25%", color: "#c8ccd4" },
+  { id: "warp", name: "扭曲", desc: "用法术攻击它会反弹 15% 伤害给攻击者", color: "#c890ff" },
+  { id: "venom", name: "剧毒", desc: "攻击附带中毒，持续掉血", color: "#9ae040" },
 ];
 const AFFIX_BY = Object.fromEntries(AFFIX.map(a => [a.id, a]));
 const hasAfx = (e, id) => !!(e.afx && e.afx.includes(id));
@@ -3276,6 +3285,7 @@ function killEnemy(e, src) {
   if (e === S.focus) S.focusKills = (S.focusKills || 0) + 1;
   addStat(src, "kills", 1);
   gainXp(e.d.reward * RULES.xpKill * (e.elite ? 2 : 1));
+  if (rl("rl_slayer") && (e.elite || isBoss(e))) gainXp(e.d.reward * RULES.xpKill * 0.8);
   gainStar(e); addCombo();
   afxDeath(e);
   relicDrop(e);
@@ -3336,6 +3346,7 @@ function killEnemy(e, src) {
 function hurt(e, amt, type, crit, src) {
   if (e.dead) return 0;
   if (type === "phys" && e.d.physRes) amt *= 1 - e.d.physRes;
+  if (type === "phys" && hasAfx(e, "harden")) amt *= 0.75;
   if (e.brokenT > 0) amt *= BREAK_BONUS;
   if (e.mark > 0) amt *= 1.25;
   if (S.weakWaves > 0) amt *= 1.1;
@@ -3345,7 +3356,8 @@ function hurt(e, amt, type, crit, src) {
   if (syn("frostbite") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1.4;
   if (syn("shockwave") && e.stunT > 0) amt *= 1.3;
   if (e.burn > 0 && syn("inferno")) amt *= 1.1;
-  if (e === S.focus && src && src.def) amt *= FOCUS_BONUS * (cl("lg_focus") ? 1.25 : 1);
+  if (e === S.focus && src && src.def) amt *= FOCUS_BONUS * (cl("lg_focus") ? 1.25 : 1) * (rl("rl_hawkeye") ? 1.2 : 1);
+  if (rl("rl_rot") && (e.burn > 0 || (e.poison && e.poison.t > 0) || corrodeK(e) > 0)) amt *= 1.2;
   const byUnit = src && src.def && type !== "poison";
   if (byUnit) {
     if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1);
@@ -3355,6 +3367,7 @@ function hurt(e, amt, type, crit, src) {
     if (cl("freeze") && !e.d.unstoppable && roll("fight") < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
     if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? 2 : 1), true, src);
     if (hasAfx(e, "thorns") && src.def.place === "ground" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.18, "magic", null);
+    if (hasAfx(e, "warp") && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.15, "magic", null);
     if (tal(src, "t_pierce") && !e.dead) applyCorrode(e, 0.25, 4, src);
   }
   if (e.shield > 0) {
@@ -4237,6 +4250,7 @@ function step(dt) {
         if (e.pend <= 0 && u && alive(u)) {
           hurtUnit(u, calc(eAtk(e), e.d.ranged ? "magic" : "phys", uDef(u), uRes(u)), e.d.ranged ? "magic" : "phys", e);
           if (e.d.venom && alive(u)) u.poison = { dps: eAtk(e) * e.d.venom.k, t: e.d.venom.t, acc: 0 };
+          else if (hasAfx(e, "venom") && alive(u)) u.poison = { dps: eAtk(e) * 0.35, t: 4, acc: 0 };
           u.stop = 0.06; e.stop = 0.06;
         }
         continue;

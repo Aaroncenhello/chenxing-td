@@ -293,6 +293,7 @@ function step(dt) {
         if (e.pend <= 0 && u && alive(u)) {
           hurtUnit(u, calc(eAtk(e), e.d.ranged ? "magic" : "phys", uDef(u), uRes(u)), e.d.ranged ? "magic" : "phys", e);
           if (e.d.venom && alive(u)) u.poison = { dps: eAtk(e) * e.d.venom.k, t: e.d.venom.t, acc: 0 };
+          else if (hasAfx(e, "venom") && alive(u)) u.poison = { dps: eAtk(e) * 0.35, t: 4, acc: 0 };
           u.stop = 0.06; e.stop = 0.06;
         }
         continue;
