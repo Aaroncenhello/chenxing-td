@@ -7,11 +7,13 @@ function settleRun() {
   if (!S || !S.over) return null;
   if (S.settled) return S.settled;
   const win = S.over === "win";
-  const mode = S.vigil ? "vigil" : S.daily ? "daily" : S.endless ? "endless" : S.week ? "week" : "main";
+  const mode = S.exped ? "exped" : S.vigil ? "vigil" : S.daily ? "daily" : S.endless ? "endless" : S.week ? "week" : "main";
   const R = S.settled = { win, mode, reached: win && !S.endless ? ST.waves : Math.max(0, S.wave - 1) };
   recordRun(win);
   R.exp = awardExp(win);
   // 「通关某关 / 任意关卡」类成就和通关剧情只算主线；守望之战的 S.stage 是解锁到的最后一关，每周挑战是指定关卡，都不算真的打通了那一关
+  if (mode === "exped") expSettle(R);
+  checkBounties(R);
   if (win && mode === "main") {
     const full = S.crystal.hp >= S.crystal.maxHp;
     for (const id of stageAchv(S.stage)) unlockAchv(id);
@@ -49,6 +51,45 @@ function settleRun() {
     else editSave(d => { const a = d.diffClear[S.stage] || []; const id = DIFFS[S.diff].id; if (!a.includes(id)) { a.push(id); R.diffFirst = true; } d.diffClear[S.stage] = a; });
   }
   return R;
+}
+
+// ---------- 每日悬赏：按日期固定抽 3 条，每条 +3★，三条都完成再 +3★（哪种模式打的都算）----------
+const BOUNTY_STARS = 3, BOUNTY_ALL = 3;
+const mainWin = R => R.win && R.mode === "main";
+const BOUNTY_TYPES = [
+  { id: "hero", make: r => { const pool = openChars(), D = pool[Math.floor(r() * pool.length)] || UNITS[0]; return { key: "hero_" + D.id, text: `用「${D.name}」当英雄通关任意主线关卡`, ok: R => mainWin(R) && S.heroId === D.id }; } },
+  { id: "elite", make: r => { const n = [6, 8, 10][Math.floor(r() * 3)]; return { key: "elite" + n, text: `一局里击败 ${n} 个精英或首领`, ok: () => (S.eliteKills || 0) >= n }; } },
+  { id: "focus", make: () => ({ key: "focus", text: "一局里集火击杀 3 个敌人（点敌人就能集火）", ok: () => (S.focusKills || 0) >= 3 }) },
+  { id: "combo", make: r => { const n = [30, 40, 50][Math.floor(r() * 3)]; return { key: "combo" + n, text: `一局里连杀达到 ${n}`, ok: () => S.comboBest >= n }; } },
+  { id: "break", make: () => ({ key: "break", text: "一局里打断 2 次首领读条", ok: () => (S.breaks || 0) >= 2 }), need: 3 },
+  { id: "syn", make: () => ({ key: "syn2", text: "一局里同时激活 2 个羁绊", ok: () => (S.bestSyn || 0) >= 2 }) },
+  { id: "noreroll", make: () => ({ key: "noreroll", text: "一次都不重抽，通关任意关卡", ok: R => R.win && !S.rerollsUsed && R.mode !== "endless" }) },
+  { id: "nospell", make: () => ({ key: "nospell", text: "不放陨星术和圣愈之光，通关任意关卡", ok: R => R.win && !S.usedSpell && R.mode !== "endless" }) },
+  { id: "hard", make: () => ({ key: "hard", text: "在困难或噩梦难度通关任意主线关卡", ok: R => mainWin(R) && S.diff >= 1 }), need: 4 },
+  { id: "legend", make: () => ({ key: "legend2", text: "一局里拿到 2 张传说卡", ok: () => S.legends >= 2 }) },
+  { id: "evo", make: () => ({ key: "evo", text: "一局里拿到一张进化卡（技能卡升满级后出现）", ok: () => Object.keys(S.cards).some(id => id.startsWith("ev_")) }), need: 4 },
+  { id: "lv", make: r => { const n = [14, 16][Math.floor(r() * 2)]; return { key: "lv" + n, text: `一局里升到 ${n} 级`, ok: () => S.level >= n }; } },
+  { id: "daily", make: () => ({ key: "daily", text: "通关今天的每日挑战", ok: R => R.win && R.mode === "daily" }) },
+  { id: "exped", make: () => ({ key: "exped", text: "远征里打赢一场精英战或首领战", ok: R => R.win && R.mode === "exped" && S.exped && S.exped.node !== "fight" }), need: 4 },
+];
+// 今天的 3 条悬赏：同一天打开几次都一样（用日期当种子）
+function todayBounties() {
+  const td = todayInfo(), r = seeded(td.seed ^ 0x5bd1e995), cleared = loadSave().stars.filter(x => x > 0).length;
+  const types = BOUNTY_TYPES.filter(t => cleared >= (t.need || 0));
+  const out = [];
+  while (out.length < 3 && types.length) out.push(types.splice(Math.floor(r() * types.length), 1)[0].make(r));
+  return { date: td.date, list: out };
+}
+function checkBounties(R) {
+  const B = todayBounties(), got = [];
+  let bonus = 0;
+  editSave(d => {
+    if (d.bounty.date !== B.date) d.bounty = { date: B.date, done: [] };
+    for (const b of B.list) if (!d.bounty.done.includes(b.key)) { let ok = false; try { ok = b.ok(R); } catch (e) {} if (ok) { d.bounty.done.push(b.key); got.push(b.text); bonus += BOUNTY_STARS; } }
+    if (got.length && B.list.every(b => d.bounty.done.includes(b.key))) bonus += BOUNTY_ALL;
+    d.bonusStars += bonus;
+  });
+  R.bounty = got; R.bountyStars = bonus;
 }
 
 // 通关奖励：每次都给 1★，困难再 +2、噩梦再 +3，深渊每 5 层 +1；深渊新层首通另算

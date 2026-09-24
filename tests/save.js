@@ -16,7 +16,8 @@ const STAGE_ACHV = ['first', 'perfect', 'solo', 'chapter1', 'chapter2', 'chapter
   // 1) 每周挑战通关，不能把以前各周的记录冲掉
   await fresh({ week: { W1: { clear: true, best: 12 }, W2: { clear: false, best: 7 } } });
   await p.reload(); await p.waitForTimeout(400);
-  const w0 = await p.evaluate(() => ({ earned: starBank().earned, key: weekInfo().key, achv: loadSave().achv.length }));
+  // 今天的悬赏先标成已完成，免得结算时顺带完成一条、多出几颗星
+  const w0 = await p.evaluate(() => { const B = todayBounties(); editSave(d => { d.bounty = { date: B.date, done: B.list.map(b => b.key) }; }); return { earned: starBank().earned, key: weekInfo().key, achv: loadSave().achv.length }; });
   await finish(() => { const wi = weekInfo(); __td.newRun(wi.stage, { week: wi, diff: wi.diff }); const S = __td.S; S.pending = 0; S.offer = null; S.over = 'win'; });
   const w1 = await p.evaluate(() => ({ week: loadSave().week, earned: starBank().earned, achv: loadSave().achv, story: loadSave().story.filter(k => k.startsWith('post')), h: document.querySelector('#ovbox h2').textContent }));
   console.log('每周通关:', JSON.stringify({ w0, w1 }));

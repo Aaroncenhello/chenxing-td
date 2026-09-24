@@ -28,9 +28,24 @@ const DISK = [
   { id: "supply", line: "arc", name: "开局补给", max: 2, base: 5, step: 4, desc: lv => `开局直接白送 ${lv} 张随机升级卡`, per: "每级 +1 张" },
   { id: "prep", line: "arc", name: "有备而来", max: 2, base: 5, step: 4, desc: lv => `开局多翻 ${lv} 次牌（自己挑）`, per: "每级 +1 次" },
   { id: "relic", line: "arc", name: "寻宝", max: 4, base: 3, step: 2, desc: lv => `击败精英、首领时掉落遗物的几率 +${10 * lv}%`, per: "每级 +10%" },
+  // 核心天赋：每条线的终点。本线投入够 KEY_NEED 级才能点，整个星盘最多点亮 KEY_MAX 个（重置星盘可以换）
+  { id: "ks_atk", line: "atk", key: true, name: "连锁星芒", max: 1, base: 40, step: 0, desc: () => "暴击时，再对附近另一个敌人造成这一击 50% 的伤害" },
+  { id: "ks_def", line: "def", key: true, name: "不灭之碑", max: 1, base: 40, step: 0, desc: () => "晨星碑第一次被打碎时以 40% 生命复活（每局一次，可以和凤凰羽叠加）" },
+  { id: "ks_eco", line: "eco", key: true, name: "点金", max: 1, base: 40, step: 0, desc: () => "每打完 5 波，额外翻一次牌并获得 30 星尘" },
+  { id: "ks_arc", line: "arc", key: true, name: "星辰共鸣", max: 1, base: 40, step: 0, desc: () => "放出晨星爆发后 10 秒内，全队技力回复 ×2，自动技能冷却加快 50%" },
   { id: "star", line: "all", name: "星辉", max: 9999, base: 6, step: 1, desc: lv => `全队攻击、生命 +${lv}%（没有上限）`, per: "每级攻击、生命 +1%" },
 ];
 const DISK_BY = Object.fromEntries(DISK.map(n => [n.id, n]));
+const KEY_NEED = 12, KEY_MAX = 2;
+const diskLineLv = (disk, line) => DISK.filter(n => n.line === line && !n.key).reduce((a, n) => a + ((disk || {})[n.id] || 0), 0);
+const diskKeys = disk => DISK.filter(n => n.key && (disk || {})[n.id]).length;
+// 能不能再升一级：满级 / 星星不够 / 核心天赋的前置条件
+function diskCanBuy(disk, id, left) {
+  const n = DISK_BY[id], lv = (disk || {})[id] || 0;
+  if (!n || lv >= n.max || left < diskCost(id, lv)) return false;
+  if (n.key && (diskLineLv(disk, n.line) < KEY_NEED || diskKeys(disk) >= KEY_MAX)) return false;
+  return true;
+}
 const diskCost = (id, lv) => { const n = DISK_BY[id]; return n.base + n.step * lv; };
 const diskSpent = disk => Object.entries(disk || {}).reduce((s, [id, lv]) => { if (!DISK_BY[id]) return s; for (let i = 0; i < lv; i++) s += diskCost(id, i); return s; }, 0);
 // 局内读取：本局带进来的星盘等级

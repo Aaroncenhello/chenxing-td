@@ -27,6 +27,8 @@ const COMBO = { window: 2.5, marks: [10, 25, 50, 80, 120, 200], xp: [10, 20, 35,
 
 // 角色等级 1–10：每级生命、攻击 +4%；5 级解锁天赋
 const PROG = { max: 10, perLv: 0.04, talentLv: 5, startLv: 3, reviveLv: 7, spLv: 10 };
+// 觉醒：10 级以后继续拿到的经验攒成觉醒等级（每级要 need 经验，最多 max 级）；每级攻击、生命 +perLv，3 级起脚下有金色光环，5 级技力回复 +20%
+const AWK = { max: 5, need: 600, perLv: 0.03, auraLv: 3, spLv: 5 };
 const expNeed = n => 60 * n;
 
 // ================= 9.0：角色天赋树（Lv3 / Lv6 / Lv9 各三选一，随时可以改） =================
@@ -131,6 +133,7 @@ const ACHV = [
   { id: "chapter3", name: "第三章完结", desc: "通关第 12 关" },
   { id: "nameless", name: "叫出它的名字", desc: "通关第 16 关，击败无名者" },
   { id: "allchars16", name: "十六人", desc: "解锁全部 16 名角色" },
+  { id: "exped", name: "远征归来", desc: "完成一次远征（打赢最后一层的首领）" },
   { id: "relics", name: "遗物收藏家", desc: "图鉴里集齐全部遗物" },
   { id: "cards", name: "博览群牌", desc: "图鉴里集齐全部通用升级卡（不含专属卡、诅咒卡和补充卡）" },
 ];

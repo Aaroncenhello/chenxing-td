@@ -22,7 +22,9 @@ const roll = k => S.rngs[k]();
 // ---------- 卡牌 / 角色等级 ----------
 const cl = id => (S.cards && S.cards[id]) || 0;
 const clv = id => (S.charLv && S.charLv[id]) || 1;
-const clvK = u => 1 + PROG.perLv * (clv(u.def.id) - 1);
+const awk = id => (S && S.charAwk && S.charAwk[id]) || 0;
+const clvK = u => (1 + PROG.perLv * (clv(u.def.id) - 1)) * (u.summon ? 1 : 1 + AWK.perLv * awk(u.def.id));   // 角色等级 × 觉醒
+const awkSp = u => (!u.summon && awk(u.def.id) >= AWK.spLv ? 0.2 : 0);
 const hasTal = (u, id) => !!(u && u.def && u.def.id === id) && clv(id) >= PROG.talentLv;
 // 天赋树：Lv3 / Lv6 / Lv9 各选一个
 const talPick = (id, tier) => (S.charTal && S.charTal[id] && S.charTal[id][tier]) || null;
@@ -230,19 +232,20 @@ let S;
 function newRun(stage, opts) {
   opts = opts || {};
   const seedN = opts.daily ? opts.daily.seed : (opts.seed || (Math.random() * 1e9) | 0);
-  const gen = opts.vigil || opts.genMap ? genStage(stage, seedN, opts) : null;
+  const gen = opts.vigil || opts.genMap ? genStage(stage, seedN, opts) : opts.exped ? { ...STAGES[stage], waves: opts.exped.waves } : null;   // 远征：同一张图，波数缩短
   loadStage(stage, gen);
   const perks = opts.perks || [], daily = opts.daily || null, abyss = Math.max(0, Math.min(ABYSS_MAX, opts.abyss || 0)), week = opts.week || null;
   // 难度 × 深渊层数 × 每周规则 合成一个敌人强度系数
   const d0 = DIFFS[opts.diff || 0], ak = abyssK(abyss);
   const diffK = { ...d0, hp: d0.hp * ak.hp, atk: d0.atk * ak.atk, elite: d0.elite + ak.elite };
+  if (opts.exped) { diffK.hp *= opts.exped.hpK || 1; diffK.atk *= opts.exped.atkK || 1; diffK.elite += opts.exped.elite || 0; }
   if (week && week.rules.includes("giants")) diffK.hp *= 1.7;
   if (week && week.rules.includes("swarm")) diffK.hp *= 0.65;
   if (week && week.rules.includes("elite")) diffK.elite += 0.25;
   const disk = opts.disk || {}, dkk = id => disk[id] || 0;
   const heroDef = UNITS.find(u => u.id === (opts.hero || "knight")) || UNITS[0];
   S = {
-    stage, disk, abyss, week, relics: [], phoenixUsed: false, endless: !!opts.endless, vigil: !!opts.vigil, gen: !!gen, seed: seedN, daily, mod: daily ? daily.mod : null, diff: opts.diff || 0, diffK, perks, charLv: opts.charLv || {}, charTal: opts.charTal || {},
+    stage, disk, abyss, week, relics: [], phoenixUsed: false, endless: !!opts.endless, vigil: !!opts.vigil, gen: !!gen, seed: seedN, daily, mod: daily ? daily.mod : null, diff: opts.diff || 0, diffK, perks, charLv: opts.charLv || {}, charAwk: opts.charAwk || {}, charTal: opts.charTal || {},
     charOpen: (opts.charOpen || UNITS.map(u => u.id)).filter(id => !week || weekAllows(UNITS.find(u => u.id === id) || {}, week.rules)),
     rng: daily ? seeded(daily.seed) : week ? seeded(week.seed) : Math.random,
     rngs: makeRngs(daily ? daily.seed : week ? week.seed : 0),
@@ -258,6 +261,7 @@ function newRun(stage, opts) {
     shop: null, shopDone: 0, shopWave: 0, syn: {}, synN: 0, chest: 0, haz: [], gate: null, legends: 0, curses: {},
     cine: null, cineWave: -1, breaks: 0, ultsFired: 0, log: [], t0: Date.now(), maxHit: 0, bestSyn: 0,
     formIdx: opts.formIdx == null ? 1 : opts.formIdx, drag: null, autoWave: opts.autoWave !== false, earlyCalls: 0,
+    exped: opts.exped ? { node: opts.exped.node, floor: opts.exped.floor } : null, waveScale: opts.exped ? STAGES[stage].waves / opts.exped.waves : 0,
     event: null, eventWave: -1, eventsDone: [], buff: {}, nextWaveK: 1, slowWaves: 0, weakWaves: 0, hazK: 1, hazSlow: false, ultK: 1, forceRare: 0, riftDust: 0,
   };
   if (week && week.rules.includes("nospell")) S.mod = "noSpell";
@@ -267,6 +271,7 @@ function newRun(stage, opts) {
   S.xpNeed = xpNeedOf(1);
   S.crystal.hp = S.crystal.maxHp;
   addUnit(heroDef, true);
+  if (opts.exped && opts.exped.snap) { expRestore(opts.exped.snap, opts.exped.flips); return; }   // 远征第 2 场起：接着上一场的队伍打
   for (let i = 0; i < dk("supply"); i++) { const c = randomCards(1)[0]; if (c) pickCard(c.id, true); }
   if (wk("relics")) for (let i = 0; i < 3; i++) gainRelic(null, true);
   if (wk("cursed")) for (let i = 0; i < 2; i++) { const cp = cursePool(); if (cp.length) pickCard(cp[Math.floor(roll("card") * cp.length)].id, true); }
@@ -475,7 +480,7 @@ function pickCard(id, silent) {
 }
 function rerollOffer() {
   if (!S.offer || S.rerolls <= 0 || S.over) return false;
-  S.rerolls--; S.offer = randomCards(3, S.offerRare || 0);
+  S.rerolls--; S.rerollsUsed = (S.rerollsUsed || 0) + 1; S.offer = randomCards(3, S.offerRare || 0);
   return true;
 }
 function openOffer(minRare, noCharge) {
@@ -517,9 +522,9 @@ function genWaves() {
 function genWave(w, total) {
   const R = S.rng;
   {
-    const out = [], last = !S.endless && w === total;
-    const pool = ST.pool.filter(p => w >= p[2]);
-    let budget = (2.5 + w * 1.8) * ST.budget * (S.endless ? 1 + w * 0.05 : 1) * (S.vigil ? 1 + w * 0.075 : 1) * (wk("giants") ? 0.7 : 1) * (wk("swarm") ? 1.6 : 1);
+    const out = [], last = !S.endless && w === total, wE = S.waveScale ? Math.max(1, Math.round(w * S.waveScale)) : w;   // 远征波数缩短：按原关卡的进度出怪
+    const pool = ST.pool.filter(p => wE >= p[2]);
+    let budget = (2.5 + wE * 1.8) * ST.budget * (S.endless ? 1 + w * 0.05 : 1) * (S.vigil ? 1 + w * 0.075 : 1) * (wk("giants") ? 0.7 : 1) * (wk("swarm") ? 1.6 : 1);
     // 特殊波次：潮汐（数量多）/ 精英（少而强）
     let tag = "";
     if (!last && w >= 4 && !S.vigil && w % 5 === 0) { tag = "tide"; budget *= 1.5; }
@@ -570,6 +575,7 @@ function startWave(append) {
   S.waveHp = S.vigil ? Math.pow(1 + VIGIL.hpStep, S.wave - 1) : 1 + 0.095 * (S.wave - 1) + (S.endless ? 0.004 * (S.wave - 1) ** 2 : 0);
   // 每波结束前的收尾：永恒壁垒回血、守望之战补给、商店
   if (cl("lg_aegis") && S.wave > 1) { S.crystal.hp = Math.min(S.crystal.maxHp, S.crystal.hp + S.crystal.maxHp * 0.08 * cl("lg_aegis")); addFx({ kind: "pillar", x: CRYSTAL.x, y: CRYSTAL.y, color: "#62b4ff", life: 0.8 }); }
+  if (dk("ks_eco") && S.wave > 1 && (S.wave - 1) % 5 === 0) { S.pending++; S.dust += 30; addFx({ kind: "banner", text: "点金 · 多翻一张牌 · 星尘 +30", life: 1.8 }); }
   if (S.vigil && VIGIL.supplyAt.includes(S.wave)) { S.pending++; addFx({ kind: "banner", text: "补给到了 · 多翻一张牌", life: 1.8 }); }
   const isBossW = q.some(x => ENEMIES[x.type] && (isBossType(x.type) || x.elite));
   const tagTxt = wv.tag === "tide" ? " · 潮汐" : wv.tag === "elite" ? " · 精英波" : "";
@@ -615,7 +621,7 @@ function spawnAt(type, x, y, elite, summoned) {
   const d = ENEMIES[type], hpK = S.waveHp * (S.waveK || 1), scale = stageHp() * hpK * S.diffK.hp * (1 + 0.12 * cu("cu_greed")) * (rl("rl_ring") ? 1.08 : 1) * (ab(18) && isBossType(type) ? 1.3 : 1);
   const hp = Math.round(d.hp * scale * (elite ? ELITE.hp : 1));
   const e = {
-    id: S.uid++, type, d, elite: !!elite, summoned: !!summoned, hpK, hp, maxHp: hp, x, y, face: -1,
+    id: S.uid++, type, d, elite: !!elite, summoned: !!summoned, hpK, hp, maxHp: hp, x, y, face: -1, hurtAt: S.t,
     shield: d.shield ? Math.round(d.shield * scale * (elite ? 1.5 : 1)) : 0, revealed: !d.stealth, under: false, bT: d.burrow ? d.burrow.up * (0.4 + roll("spawn") * 0.6) : 0, phase: 0,
     target: null, atkCd: d.interval * 0.5, slowT: 0, slowK: 0.6, freezeT: 0, stunT: 0, poison: null, corrode: null,
     aoeCd: d.aoe ? d.aoe.every * 0.6 : 0, healCd: d.heal ? d.heal.every * 0.5 : 0, summonCd: d.summon ? d.summon.every * 0.5 : 0,

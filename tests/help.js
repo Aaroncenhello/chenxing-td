@@ -28,6 +28,7 @@ async function page(b, vp, mobile) {
   // ---------- 奖励 ----------
   const rw = await p.evaluate(() => {
     const T = __td, out = {};
+    const B = todayBounties(); editSave(d => { d.bounty = { date: B.date, done: B.list.map(b => b.key) }; });   // 悬赏另测，这里别让它加星
     const bonus = () => loadSave().bonusStars;
     const run = (st, opts, over, reached) => { T.newRun(st, opts); const S = T.S; S.pending = 0; S.offer = null; S.wave = reached + 1; S.over = over; const b0 = bonus(); const R = T.settle(); return { got: bonus() - b0, R }; };
     // 普通 / 困难 / 噩梦通关

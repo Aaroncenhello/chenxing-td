@@ -351,7 +351,7 @@ function unitStats(u) {
 }
 function unitCardHtml(u) {
   const D = u.def;
-  return `<div class="uc-h" style="--c:${D.color}"><b>${D.name}</b><span>${D.cls} · ${DMG_NAME[D.dmg] || ""}${u.hero ? " · 英雄" : ""}</span>${u.summon ? "" : `<em>Lv${clv(D.id)}</em>`}<em class="rk">${unitRank(u)}</em></div>
+  return `<div class="uc-h" style="--c:${D.color}"><b>${D.name}</b><span>${D.cls} · ${DMG_NAME[D.dmg] || ""}${u.hero ? " · 英雄" : ""}</span>${u.summon ? "" : `<em>Lv${clv(D.id)}${awk(D.id) ? " · 觉醒" + awk(D.id) : ""}</em>`}<em class="rk">${unitRank(u)}</em></div>
     <div class="uc-s">${unitStats(u).map(([k, v]) => `<span>${k} <b>${v}</b></span>`).join("")}</div>
     ${u.summon ? "" : `<div class="uc-k">技能 · ${D.skill.name}：${D.skill.desc}</div>`}`;
 }

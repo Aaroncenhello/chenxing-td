@@ -19,6 +19,7 @@ const OUT = path.resolve(__dirname, 'out'); fs.mkdirSync(OUT, { recursive: true 
 // 拆成 (档位, 关卡) 小任务，JOBS 个进程并行跑
 const tasks = [];
 for (const p of profiles) for (let st = ST0; st < ST; st++) tasks.push({ p, st, file: path.join(OUT, `bal-${p.name}-${st}.json`) });
+for (const t of tasks) try { fs.unlinkSync(t.file); } catch (e) {}   // 先删掉上次的结果：这次某一格没跑出来就会直接报错，不会悄悄读到旧数据
 let next = 0, done = 0;
 function runOne() {
   if (next >= tasks.length) return Promise.resolve();

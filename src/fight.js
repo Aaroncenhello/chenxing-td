@@ -54,6 +54,8 @@ function addNum(x, y, v, color, big, key, maxHp) {
 function killEnemy(e, src) {
   e.dead = true; S.kills++;
   S.foeKill[e.type] = (S.foeKill[e.type] || 0) + 1;
+  if (e.elite || isBoss(e)) S.eliteKills = (S.eliteKills || 0) + 1;
+  if (e === S.focus) S.focusKills = (S.focusKills || 0) + 1;
   addStat(src, "kills", 1);
   gainXp(e.d.reward * RULES.xpKill * (e.elite ? 2 : 1));
   gainStar(e); addCombo();
@@ -144,10 +146,16 @@ function hurt(e, amt, type, crit, src) {
   }
   const real = Math.min(amt, e.hp);
   if (amt > (S.maxHit || 0)) { S.maxHit = amt; S.maxHitBy = statName(statKey(src)); }
-  e.hp -= amt; e.hitT = 0.12; e.kb = crit ? 1.6 : 1;
+  e.hp -= amt; e.hitT = 0.12; e.kb = crit ? 1.6 : 1; e.hurtAt = S.t;
   if (e.cast) castHit(e, amt);
   addStat(src, "dmg", real);
   addNum(e.x, e.y, amt, type === "true" ? "#fff0a0" : crit ? "#ffe040" : type === "magic" ? "#d4b4ff" : type === "poison" ? "#9cf07a" : "#ffffff", crit, e.id, e.maxHp);
+  // 核心天赋「连锁星芒」：暴击弹一下给附近另一个敌人（弹出去的这一下不再暴击，不会连环）
+  if (crit && src && src.def && dk("ks_atk")) {
+    let o = null, bd = 2.2;
+    for (const x of S.enemies) if (x !== e && hittable(x)) { const d = dist(x, e); if (d < bd) { bd = d; o = x; } }
+    if (o) { addFx({ kind: "bolt", x: e.x, y: e.y, x2: o.x, y2: o.y, life: 0.25, color: "#ffe040" }); hurt(o, amt * 0.5, type, false, src); }
+  }
   if (type !== "poison") burst(e.x, e.y - 0.1, type === "magic" ? "#d4b4ff" : "#ffe7a8", crit ? 8 : 4, 2.2, 0.3, 0.045);
   if (e.type === "boss" && !e.enraged && e.hp > 0 && e.hp <= e.maxHp * 0.5) enrage(e);
   if (e.d.phases && e.hp > 0) while (e.phase < e.d.phases.length && e.hp <= e.maxHp * e.d.phases[e.phase]) phaseShift(e, e.phase++);
@@ -243,6 +251,10 @@ function hurtCrystal(amt, e) {
   if (S.crystal.hp <= 0 && rl("rl_phoenix") && !S.phoenixUsed) {
     S.phoenixUsed = true; S.crystal.hp = S.crystal.maxHp * 0.35;
     addFx({ kind: "banner", text: "凤凰羽 · 晨星碑重生", life: 2 }); addFx({ kind: "pillar", x: CRYSTAL.x, y: CRYSTAL.y, color: "#ff8a3a", life: 1.2 });
+  }
+  if (S.crystal.hp <= 0 && dk("ks_def") && !S.ksDefUsed) {
+    S.ksDefUsed = true; S.crystal.hp = S.crystal.maxHp * 0.4;
+    addFx({ kind: "banner", text: "不灭之碑 · 晨星碑重生", life: 2 }); addFx({ kind: "pillar", x: CRYSTAL.x, y: CRYSTAL.y, color: "#62b4ff", life: 1.2 }); addFx({ kind: "flash", life: 0.3, color: "#8ac8ff" });
   }
   S.crystal.hitT = 0.3; S.hitFlash = 0.5; S.shake = Math.max(S.shake, 0.2);
   addNum(CRYSTAL.x + (Math.random() - 0.5), CRYSTAL.y - 0.2, amt, "#ff6a5a", true);
@@ -541,6 +553,7 @@ function gainStar(e) {
 function castUlt() {
   if (!ultReady()) return false;
   S.star = 0; S.ultPending = 0.45; S.ultKills = S.kills; S.usedUlt = true;
+  if (dk("ks_arc")) S.resoT = 10;
   S.slowmo = Math.max(S.slowmo, 0.9); S.shake = Math.max(S.shake, 0.4);
   const ids = S.units.filter(u => !u.summon).sort((a, b) => b.lv - a.lv).slice(0, 4).map(u => u.def.id);
   addFx({ kind: "cutin", ids, life: 1.5 });
@@ -576,6 +589,7 @@ function buildBlades() {
 const twinCd = () => (cl("lg_twin") ? 0.6 : 1) * Math.max(0.3, 1 - 0.35 * cu("cu_sand")) * (S.buff.cd || 1);
 const twinDmg = () => (cl("lg_twin") ? 1.35 : 1);
 function autoSkills(dt) {
+  if (S.resoT > 0) S.resoT -= dt;
   if (sg("sg_st2")) {
     S.sigStar = (S.sigStar || 4) - dt;
     if (S.sigStar <= 0) { S.sigStar = 14; const h = heroOf(); if (h) { const pool = S.enemies.filter(hittable); for (let k = 0; k < 3 && pool.length; k++) { let best = pool[0], bn = -1; for (const e of pool) { const n = pool.filter(o => dist(o, e) <= 1.6).length; if (n > bn) { bn = n; best = e; } } S.meteors.push({ x: best.x, y: best.y, t: 0.5, dmg: uAtk(h) * 2.2, r: uSplash(h) + 0.8, src: h, color: "#a0b8ff" }); addFx({ kind: "meteor", x: best.x, y: best.y, life: 0.5, color: "#a0b8ff" }); const i2 = pool.indexOf(best); if (i2 >= 0) pool.splice(i2, 1); } } }
@@ -583,7 +597,7 @@ function autoSkills(dt) {
   for (const id of ["sk_meteor", "sk_chain", "sk_nova", "sk_fire", "sk_holy", "lg_time"]) {
     const lv = cl(id); if (!lv) continue;
     if (S.skillCd[id] == null) S.skillCd[id] = SKILL_CD[id](lv) * twinCd() * 0.4;
-    S.skillCd[id] -= dt;
+    S.skillCd[id] -= dt * (S.resoT > 0 ? 1.5 : 1);
     if (S.skillCd[id] <= 0) { S.skillCd[id] = SKILL_CD[id](lv) * twinCd(); autoCast(id, lv); }
   }
   const spike = cl("sk_spike");
