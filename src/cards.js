@@ -15,7 +15,7 @@ const CARDS = [
   { id: "xp", rare: 0, kind: "stat", name: "学者", max: 4, w: 7, desc: lv => `获得的经验 +20%（当前 +${20 * lv}%）` },
   { id: "shield", rare: 1, kind: "stat", name: "碑之守护", max: 4, w: 8, desc: lv => `晨星碑生命上限 +20% 并立即回复 20%（当前 +${20 * lv}%）` },
   { id: "regen", rare: 1, kind: "stat", name: "战地医疗", max: 4, w: 8, desc: lv => `全队每秒回复 1.2% 生命（当前 ${(1.2 * lv).toFixed(1)}%）` },
-  { id: "critdmg", rare: 1, kind: "stat", name: "会心强化", max: 4, w: 7, desc: lv => `暴击伤害倍数 +${15 * lv}%（当前 2 → ${(2 + 0.15 * lv).toFixed(2)} 倍）` },
+  { id: "critdmg", rare: 1, kind: "stat", name: "会心强化", max: 4, w: 7, need: () => cl("crit") > 0 || dk("crit") > 0 || cu("cu_moon") > 0, desc: lv => `暴击伤害倍数 +${15 * lv}%（当前 2 → ${(2 + 0.15 * lv).toFixed(2)} 倍）` },
   { id: "res", rare: 1, kind: "stat", name: "奥术护壁", max: 4, w: 7, desc: lv => `全队法抗额外 +${10 * lv}（不叠加铁甲的法抗）` },
   { id: "loot", rare: 0, kind: "stat", name: "掠夺", max: 4, w: 7, desc: lv => `击杀获得的星尘 +${15 * lv}%` },
 
@@ -40,7 +40,7 @@ const CARDS = [
   { id: "freeze", rare: 1, kind: "special", name: "寒霜之心", max: 3, w: 6, desc: lv => `攻击有 ${6 * lv}% 几率冻结敌人 0.8 秒` },
   { id: "pierce", rare: 1, kind: "special", name: "破甲", max: 3, w: 6, desc: lv => `攻击无视敌人 ${15 * lv}% 的防御` },
   { id: "dodge", rare: 1, kind: "special", name: "闪避步", max: 3, w: 6, desc: lv => `每次受到攻击有 ${7 * lv}% 几率完全闪避` },
-  { id: "cdr", rare: 1, kind: "special", name: "疾风节拍", max: 3, w: 6, desc: lv => `自动技能冷却额外 −${8 * lv}%` },
+  { id: "cdr", rare: 1, kind: "special", name: "疾风节拍", max: 3, w: 6, need: () => CARDS.some(k => k.kind === "skill" && !k.evo && cl(k.id) > 0), desc: lv => `自动技能冷却额外 −${8 * lv}%` },
   { id: "wardmind", rare: 1, kind: "special", name: "心灵屏障", max: 3, w: 6, desc: lv => `受到的法术伤害 −${8 * lv}%` },
   // ---- 传说卡（每局最多见到几张，效果很强）----
   { id: "lg_twin", rare: 2, kind: "skill", name: "双生奥义", max: 1, w: 5, desc: () => "所有自动技能冷却 −40%、威力 +35%" },
@@ -51,7 +51,7 @@ const CARDS = [
   { id: "lg_army", rare: 2, kind: "ally", name: "万军之阵", max: 1, w: 5, desc: () => "伙伴上限 +2，场上所有伙伴立刻升 1 阶" },
   { id: "lg_aegis", rare: 2, kind: "stat", name: "永恒壁垒", max: 2, w: 5, desc: lv => `晨星碑生命上限 +${40 * lv}%，每波结束回复 ${8 * lv}%` },
   { id: "lg_greed", rare: 2, kind: "stat", name: "星尘洪流", max: 1, w: 5, desc: () => "经验和星尘获得翻倍" },
-  { id: "lg_bond", rare: 2, kind: "stat", name: "誓约之环", max: 1, w: 5, desc: () => "全队攻击和生命上限随伙伴数量提升：每有一名伙伴在场 +8%，没有上限" },
+  { id: "lg_bond", rare: 2, kind: "stat", name: "誓约之环", max: 1, w: 5, need: () => S.mod !== "solo", desc: () => "全队攻击和生命上限随伙伴数量提升：每有一名伙伴在场 +8%，没有上限" },
   { id: "lg_ward", rare: 2, kind: "stat", name: "圣域壁垒", max: 1, w: 5, desc: () => "晨星碑受到的伤害 −20%" },
   { id: "lg_focus", rare: 2, kind: "special", name: "焚天之力", max: 1, w: 5, desc: () => "对集火目标的伤害额外 +25%" },
   // ---- 进化卡：自动技能升到满级后才会进牌堆，拿了技能形态大变（按传说卡的样子显示，但不算「传说卡」）----

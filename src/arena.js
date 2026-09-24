@@ -373,6 +373,7 @@ function cardPool(minRare) {
   const out = [];
   for (const c of CARDS) {
     if (c.filler || cl(c.id) >= c.max) continue;
+    if (c.need && !c.need()) continue;   // 有前提的卡（没暴击的会心强化、没技能的疾风节拍）不满足就不进牌堆，免得白占一个选项
     if (minRare && (c.rare || 0) < minRare) continue;
     if (c.id === "lg_army" && S.mod === "solo") continue;
     if (c.evo) { if (cl(c.evo) >= CARD_BY[c.evo].max) out.push({ id: c.id, w: c.w, card: c, rare: 2 }); continue; }   // 进化卡权重固定，不随稀有度打折
