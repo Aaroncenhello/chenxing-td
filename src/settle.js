@@ -28,7 +28,10 @@ function settleRun() {
     editSave(d => { d.vigil = { best: R.best, clear: R.clear, runs: (old.runs || 0) + 1 }; });
     if (R.reached >= 20) unlockAchv("vigil");
   } else if (mode === "daily") {
-    editSave(d => { const r = d.daily[S.daily.date] || { wave: 0, cleared: false }; r.wave = Math.max(r.wave, R.reached); r.cleared = r.cleared || win; d.daily = { [S.daily.date]: r }; });   // 每日只留今天这一条
+    // 今天的奖励按最好的一次算，之前拿过的部分不重复发
+    const worth = win ? DAILY_STARS.win : R.reached >= Math.ceil(ST.waves / 2) ? DAILY_STARS.half : 0;
+    editSave(d => { const r = d.daily[S.daily.date] || { wave: 0, cleared: false, got: 0 }; r.wave = Math.max(r.wave, R.reached); r.cleared = r.cleared || win;
+      R.got = Math.max(0, worth - (r.got || 0)); r.got = Math.max(r.got || 0, worth); d.bonusStars += R.got; d.daily = { [S.daily.date]: r }; });   // 每日只留今天这一条
     if (win) unlockAchv("daily");
   } else if (mode === "endless") {
     const oldStars = endlessStars(loadSave(), S.stage);
@@ -43,15 +46,15 @@ function settleRun() {
   } else if (win) {
     R.reward = runReward();
     if (S.diff === 0) saveStars(S.stage, S.stars);
-    else editSave(d => { const a = d.diffClear[S.stage] || []; const id = DIFFS[S.diff].id; if (!a.includes(id)) a.push(id); d.diffClear[S.stage] = a; });
+    else editSave(d => { const a = d.diffClear[S.stage] || []; const id = DIFFS[S.diff].id; if (!a.includes(id)) { a.push(id); R.diffFirst = true; } d.diffClear[S.stage] = a; });
   }
   return R;
 }
 
-// 通关奖励：每次都给 1★，困难 +1，深渊每 5 层 +1；深渊新层首通另算
+// 通关奖励：每次都给 1★，困难再 +2、噩梦再 +3，深渊每 5 层 +1；深渊新层首通另算
 function runReward() {
   const prev = loadSave().abyss[S.stage] || 0, lay = S.abyss || 0;
-  const bonus = 1 + (S.diff ? 1 : 0) + Math.floor(lay / 5);
+  const bonus = 1 + (DIFF_BONUS[S.diff] || 0) + Math.floor(lay / 5);
   let first = 0; for (let l = prev + 1; l <= lay; l++) first += abyssStars(l);
   editSave(d => { d.bonusStars += bonus; if (lay > prev) d.abyss[S.stage] = lay; });
   return `通关奖励 +${bonus}★` + (first ? ` · 深渊 ${lay} 层首通 +${first}★` : "") + (S.relics.length ? ` · 本局带了 ${S.relics.length} 件遗物` : "");

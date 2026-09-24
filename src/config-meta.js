@@ -7,6 +7,10 @@ const DIFFS = [
 ];
 // 每日挑战：按日期固定关卡和一条规则
 const DAILY = { diff: 0 };
+// 每日挑战奖励：每天只结算一次，通关给 win 颗，没通关但撑过一半波数给 half 颗（取最好的一次，不重复发）
+const DAILY_STARS = { win: 5, half: 2 };
+// 通关奖励里难度的额外星星（普通 / 困难 / 噩梦）
+const DIFF_BONUS = [0, 2, 3];
 const DAILY_MODS = [
   { id: "fast", name: "疾行", desc: "敌人移动速度 +30%" },
   { id: "tough", name: "铜墙铁壁", desc: "所有敌人防御 +150" },
@@ -208,3 +212,16 @@ const SYNERGY = [
     prog: () => [CARDS.filter(c => c.rare === 2 && cl(c.id) > 0).length, 2] },
 ];
 for (const g of SYNERGY) g.on = () => { const [a, b] = g.prog(); return a >= b; };
+// 羁绊说明页用：怎么凑（角色名、卡名都从配置里现取，改了配置这里跟着变）
+const synNames = f => UNITS.filter(f).map(u => u.name).join("、");
+const synCards = (...ids) => ids.map(id => "「" + CARD_BY[id].name + "」").join(" + ");
+const SYN_HOW = {
+  wall: () => `场上同时有 3 名站前排（地面）的角色，英雄也算，召唤物不算。前排角色：${synNames(u => u.place === "ground")}`,
+  arcane: () => `场上同时有 3 名打法术伤害的角色。法术角色：${synNames(u => u.dmg === "magic")}`,
+  volley: () => `场上同时有 3 名站后排（高台）的输出角色，治疗不算。后排输出：${synNames(u => u.place === "high" && u.dmg !== "heal")}`,
+  inferno: () => `同一局拿到技能卡 ${synCards("sk_fire", "sk_meteor")}`,
+  frostbite: () => `同一局拿到 ${synCards("sk_nova", "freeze")}`,
+  bloodlust: () => `同一局拿到 ${synCards("vamp", "boom")}`,
+  scholar: () => `同一局拿到 5 种不同的属性卡（同一张升级多次只算 1 种），例如 ${CARDS.filter(c => c.kind === "stat" && !c.filler && !c.rare).slice(0, 4).map(c => "「" + c.name + "」").join("")}`,
+  legendary: () => "同一局拿到 2 种传说卡（金色边框的卡）",
+};

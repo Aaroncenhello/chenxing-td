@@ -161,17 +161,36 @@ $("shop3").addEventListener("click", ev => {
 });
 $("btn-shopgo").addEventListener("click", () => { closeShop(); $("shopbox").dataset.k = ""; });
 
-// ---------- 羁绊 ----------
+// ---------- 羁绊看板：已经凑齐的 + 正在凑的，点一下看全部羁绊说明 ----------
+function synState() {
+  return SYNERGY.map(g => { let a = 0, b = 1; try { [a, b] = g.prog(); } catch (e) {} return { g, a: Math.min(a, b), b, on: !!(S.syn && S.syn[g.id]) }; });
+}
+function synChips() {
+  const list = synState().filter(x => x.on || x.a > 0).sort((x, y) => (y.on - x.on) || (x.b - x.a) - (y.b - y.a));
+  return list.map(x => `<span class="sc${x.on ? " on" : ""}" style="--c:${x.g.color}" title="${x.g.need}：${x.g.desc}">${x.on ? "✓" : ""}${x.g.name.slice(0, 2)}<u>${x.g.name.slice(2)}</u>${x.on ? "" : `<i>${x.a}/${x.b}</i>`}</span>`).join("")
+    || `<span class="sc none">还没有羁绊</span>`;
+}
 let synKey = "";
 function updateSynBar() {
-  const box = $("syns"), on = SYNERGY.filter(g => S.syn && S.syn[g.id]);
-  const key = on.map(g => g.id).join("|");
+  if (!S) return;
+  const st = synState(), key = st.map(x => x.a + (x.on ? "!" : "")).join(",");
   if (synKey === key) return;
   synKey = key;
-  box.innerHTML = on.length
-    ? on.map(g => `<span class="syn" style="--c:${g.color}" title="${g.desc}">${g.name}</span>`).join("")
-    : `<span class="syn off">羁绊：还没凑齐（凑齐会自动生效）</span>`;
+  const html = `<b class="sch">羁绊<button class="sc help" data-synhelp aria-label="羁绊说明">?</button></b>${synChips()}`;
+  for (const id of ["syns", "pi-syn", "h-syn"]) { const el = $(id); if (el) el.innerHTML = html; }
 }
+function synGuideHtml(live) {
+  const st = live ? synState() : null;
+  return `<div class="codex syng">${SYNERGY.map((g, i) => { const x = st && st[i];
+    return `<div class="cx${x && x.on ? " on" : ""}" style="--c:${g.color}"><div><b style="color:${g.color}">${x && x.on ? "✓ " : ""}${g.name}${x ? `<span class="sp">${x.on ? "已生效" : `${x.a}/${x.b}`}</span>` : ""}</b>
+      <p class="need">条件：${g.need}</p><p class="eff">效果：${g.desc}</p><p>${SYN_HOW[g.id] ? SYN_HOW[g.id]() : ""}</p></div></div>`; }).join("")}</div>`;
+}
+function showSynGuide() {
+  if (!S || S.over || S.offer || S.shop || S.event || S.cine) return;
+  openOverlay(`<h2>羁绊一览</h2><p>羁绊凑齐条件后自动生效，一直持续到条件不满足为止（例如前排倒下）。数字是这局现在的进度。</p>
+    ${synGuideHtml(true)}<div class="btns"><button class="primary" id="btn-synback">返回战斗</button></div>`);
+}
+document.addEventListener("click", ev => { if (ev.target.closest("[data-synhelp], .syns, #pi-syn, #h-syn")) showSynGuide(); });
 // 选中一张卡的庆祝：全屏闪一下对应颜色；传说卡在晨星碑周围再炸一圈金光
 const CELE_COL = { 0: "rgba(255,248,220,.5)", 1: "rgba(98,180,255,.55)", 2: "rgba(255,200,80,.75)", 3: "rgba(224,40,80,.6)" };
 function celebratePick(p) {

@@ -45,7 +45,7 @@ const { check, noErrors, report } = require('./lib');
     await pp.waitForTimeout(400);
     const r = await pp.evaluate(() => {
       const sc = document.getElementById('screen').getBoundingClientRect();
-      const bad = [...document.querySelectorAll('#hud button')].map(b => { const q = b.getBoundingClientRect(); const el = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
+      const bad = [...document.querySelectorAll('#hud button')].filter(b => b.offsetParent).map(b => { const q = b.getBoundingClientRect(); const el = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
         return b.dataset.h + ((q.top >= 0 && q.bottom <= innerHeight && q.left >= 0 && q.right <= innerWidth) ? '' : ':OUT') + (el && (el === b || b.contains(el)) ? '' : ':blocked') + (q.height >= 44 ? '' : ':small'); }).filter(x => x.includes(':'));
       const hl = document.querySelector('.hud-l').getBoundingClientRect();
       return { imm: document.body.classList.contains('imm'), fieldW: Math.round(sc.width), fieldBottom: Math.round(sc.bottom), btnTop: Math.round(hl.top), bad };

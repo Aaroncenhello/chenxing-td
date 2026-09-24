@@ -32,7 +32,7 @@ function loadSave(noBackup) {
     stars: arr("stars").slice(0, STAGES.length).map(x => Math.round(clampN(x, 0, 3))), best: arr("best").slice(0, STAGES.length).map(x => Math.floor(clampN(x, 0))),
     perks: idList(v.perks), seen: idList(v.seen, id => !!ENEMIES[id]), achv: idList(v.achv, id => achvIds.has(id)),
     diffClear: Object.fromEntries(Object.entries(obj("diffClear")).map(([k, a]) => [k, idList(a, id => diffIds.has(id))])),
-    daily: objMap(v.daily, r => ({ wave: Math.floor(clampN(r.wave, 0)), cleared: !!r.cleared })),
+    daily: objMap(v.daily, r => ({ wave: Math.floor(clampN(r.wave, 0)), cleared: !!r.cleared, got: Math.floor(clampN(r.got, 0, DAILY_STARS.win)) })),
     tutorial: !!v.tutorial, chars: objMap(v.chars, c => ({ ...c, exp: Math.floor(clampN(c.exp, 0)) })), story: idList(v.story),
     hero: UNITS.some(u => u.id === v.hero) ? v.hero : "knight",
     vigil: isObj(v.vigil) ? { best: Math.floor(clampN(v.vigil.best, 0)), clear: !!v.vigil.clear, runs: Math.floor(clampN(v.vigil.runs, 0)) } : {},
