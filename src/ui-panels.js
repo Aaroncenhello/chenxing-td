@@ -104,8 +104,9 @@ function updateOffer() {
     const c = cardInfo(p), r = p.rare || 0, R = RARITY[r] || { name: "诅咒", color: CURSE_COLOR };
     const tag = r ? `<span class="rt" style="background:${R.color}">${R.name}</span>` : "";
     const body = c.curse ? `<span>${p.curse.good}<em class="bad">代价：${p.curse.bad}</em></span>` : `<span>${c.desc}</span>`;
+    const h = synHint(p), hint = h ? `<em class="sh${h.done ? " done" : ""}" style="--g:${h.g.color}">${h.done ? "凑齐羁绊 · " + h.g.name : `羁绊 ${h.g.name} ${h.a}/${h.b}`}</em>` : "";
     return `<button class="pcard r${r}${c.sig ? " sig" : ""}" data-pick="${p.id}" style="--c:${c.color}"><span class="key">${i + 1}</span>${tag}<canvas id="lu-${i}" aria-hidden="true"></canvas>
-      <div><small>${KIND_NAME[c.kind] || "诅咒"}</small><b>${c.name}</b>${body}</div></button>`;
+      <div><small>${KIND_NAME[c.kind] || "诅咒"}</small><b>${c.name}</b>${body}${hint}</div></button>`;
   }).join("");
   const rb = $("btn-reroll");
   rb.textContent = S.rerolls > 0 ? `重抽（剩 ${S.rerolls} 次）` : "没有重抽次数了";

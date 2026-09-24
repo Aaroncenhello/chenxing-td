@@ -185,22 +185,24 @@ const RARITY = [
 const RARE_W = lv => [100, 26 + lv * 2.4, 3 + lv * 1.5];
 const REROLLS = 3;
 
-// 羁绊：满足条件就一直生效
+// 羁绊：满足条件就一直生效。prog() 返回 [已有, 需要]，选牌时用它提示「再拿这张就凑齐」
+const synCount = f => S.units.filter(u => !u.dead && !u.summon && f(u)).length;
 const SYNERGY = [
   { id: "wall", name: "钢铁防线", need: "3 名前排伙伴", desc: "全队防御 +35%，晨星碑受到的伤害 −15%", color: "#8fb3e0",
-    on: () => S.units.filter(u => !u.dead && u.def.place === "ground" && !u.summon).length >= 3 },
+    prog: () => [synCount(u => u.def.place === "ground"), 3] },
   { id: "arcane", name: "奥术回响", need: "3 名法术角色", desc: "法术伤害 +25%，技力回复 +25%", color: "#b18ae8",
-    on: () => S.units.filter(u => !u.dead && u.def.dmg === "magic").length >= 3 },
+    prog: () => [S.units.filter(u => !u.dead && u.def.dmg === "magic").length, 3] },
   { id: "volley", name: "齐射阵线", need: "3 名远程伙伴", desc: "远程角色攻速 +25%、射程 +0.4", color: "#6fcf8e",
-    on: () => S.units.filter(u => !u.dead && u.def.place === "high" && u.def.dmg !== "heal").length >= 3 },
+    prog: () => [S.units.filter(u => !u.dead && u.def.place === "high" && u.def.dmg !== "heal").length, 3] },
   { id: "inferno", name: "烈焰环绕", need: "烈焰环 + 陨星雨", desc: "火焰技能伤害 +50%，被烧的敌人防御 −20%", color: "#ff8a3a",
-    on: () => cl("sk_fire") > 0 && cl("sk_meteor") > 0 },
+    prog: () => [(cl("sk_fire") > 0) + (cl("sk_meteor") > 0), 2] },
   { id: "frostbite", name: "极寒领域", need: "冰霜新星 + 寒霜之心", desc: "冻结时间 +50%，对冻结的敌人伤害 +40%", color: "#8fe0f0",
-    on: () => cl("sk_nova") > 0 && cl("freeze") > 0 },
+    prog: () => [(cl("sk_nova") > 0) + (cl("freeze") > 0), 2] },
   { id: "bloodlust", name: "嗜血", need: "吸血 + 殉爆", desc: "吸血翻倍，殉爆范围和伤害 +50%", color: "#e0676a",
-    on: () => cl("vamp") > 0 && cl("boom") > 0 },
+    prog: () => [(cl("vamp") > 0) + (cl("boom") > 0), 2] },
   { id: "scholar", name: "群星学派", need: "5 张属性卡", desc: "全队攻击 +15%、生命 +15%", color: "#ffd860",
-    on: () => CARDS.filter(c => c.kind === "stat" && cl(c.id) > 0).length >= 5 },
+    prog: () => [CARDS.filter(c => c.kind === "stat" && cl(c.id) > 0).length, 5] },
   { id: "legendary", name: "传说之证", need: "2 张传说卡", desc: "全队攻击 +20%，晨星之力充能 +30%", color: "#ffb340",
-    on: () => CARDS.filter(c => c.rare === 2 && cl(c.id) > 0).length >= 2 },
+    prog: () => [CARDS.filter(c => c.rare === 2 && cl(c.id) > 0).length, 2] },
 ];
+for (const g of SYNERGY) g.on = () => { const [a, b] = g.prog(); return a >= b; };

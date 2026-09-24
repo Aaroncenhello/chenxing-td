@@ -83,6 +83,9 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .pcard small{font-family:var(--pix);font-size:8px;color:var(--c)}
 .pcard b{font-size:16px;color:var(--c)}
 .pcard span{font-size:12px;color:var(--muted);line-height:1.6}
+.pcard .sh{display:block;margin-top:4px;font-style:normal;font-size:11px;color:var(--g);line-height:1.4}
+.pcard .sh.done{width:fit-content;font-weight:bold;padding:2px 5px;background:color-mix(in srgb,var(--g) 22%,transparent);box-shadow:0 0 0 1px var(--g);animation:shpulse .9s steps(2) infinite}
+@keyframes shpulse{50%{box-shadow:0 0 0 1px var(--g),0 0 10px var(--g)}}
 .pcard .key{position:absolute;top:6px;right:8px;font-family:var(--pix);font-size:9px;color:#7d86a0}
 .pcard{position:relative}
 @media (max-width:700px){.pcard{flex-direction:row;align-items:center;gap:8px;padding:8px}.pcard canvas{width:36px;height:36px;flex:none}.pcard b{font-size:14px}.pcard span{font-size:11px}.pcard div{min-width:0}}

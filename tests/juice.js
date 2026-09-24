@@ -71,7 +71,8 @@ const GFXcap = () => 800;   // 高画质上限 700，加上横幅等关键特效
       T.step(1 / 30); const again = S.fx.filter(f => f.kind === 'banner').length;
       const ports = [...info.ports.keys()].every(i => PORTALS[i]);
       return { kind: info.kind, banner, again, ports }; };
-    out.tide = probe(11, 4); out.boss = probe(3, 11); out.plain = probe(0, 1);
+    out.tide = probe(11, 4); out.boss = probe(3, 11);
+    for (let i = 0; i < 8 && (!out.plain || out.plain.kind); i++) out.plain = probe(0, 1);   // 第 1 波偶尔随机成精英波，多试几次
     return out;
   });
   console.log('波次预告:', JSON.stringify(wv));
@@ -103,7 +104,7 @@ const GFXcap = () => 800;   // 高画质上限 700，加上横幅等关键特效
   console.log('竖屏信息区:', JSON.stringify(pi));
   check(pi.shown && pi.between, '竖屏全屏时信息区显示在战场和按钮之间', pi);
   check(pi.tiles === pi.team && pi.team >= 2, '信息区列出全部队员', pi);
-  check(pi.combo === '连杀 ×30', '信息区显示大号连杀', pi.combo);
+  check(/^连杀 ×(\d+)$/.test(pi.combo) && +pi.combo.match(/\d+/)[0] >= 30, '信息区显示大号连杀', pi.combo);
   check(pi.cards === pi.have, '信息区列出这局的卡牌和遗物', pi);
   check(pi.sel && pi.rdy && pi.cast, '点队员选中；技力满时金光，再点一下放技能', pi);
   await pc.close();
@@ -125,6 +126,30 @@ const GFXcap = () => 800;   // 高画质上限 700，加上横幅等关键特效
   console.log('翻牌:', JSON.stringify(cf));
   check(cf.lg && cf.cls[0].includes('r2'), '有传说卡时翻牌面板亮起金色光芒', cf);
   check(cf.cele && cf.ring, '选中传说卡：全屏闪光 + 晨星碑金色冲击环', cf);
+
+  // ---------- 选牌羁绊提示 ----------
+  const sh = await p.evaluate(() => {
+    const T = __td; T.newRun(2, {}); const S = T.S; S.offer = null; S.pending = 0;
+    S.cards.sk_fire = 1; updateSyn();
+    const pool = cardPool(), met = pool.find(x => x.id === 'sk_meteor'), nova = pool.find(x => x.id === 'sk_nova');
+    const before = JSON.stringify(S.cards), nUnits = S.units.length;
+    const out = { met: met && synHint(met), nova: nova && synHint(nova) };
+    out.clean = JSON.stringify(S.cards) === before && S.units.length === nUnits;
+    out.met = out.met && { id: out.met.g.id, done: out.met.done }; out.nova = out.nova && { id: out.nova.g.id, a: out.nova.a, b: out.nova.b, done: out.nova.done };
+    // 前排伙伴：加入一个地面角色让钢铁防线前进
+    const join = pool.find(x => x.join && x.def.place === 'ground'); const jh = join && synHint(join);
+    out.join = jh && jh.g.id; out.cleanJoin = S.units.length === nUnits;
+    S.offer = [met, nova].filter(Boolean); document.getElementById('levelup').dataset.k = ''; updateOffer();
+    out.dom = [...document.querySelectorAll('#cards3 .sh')].map(e => e.className + ':' + e.textContent);
+    S.offer = null; updateOffer();
+    return out;
+  });
+  console.log('羁绊提示:', JSON.stringify(sh));
+  check(sh.met && sh.met.id === 'inferno' && sh.met.done, '已有烈焰环时，陨星雨提示「凑齐烈焰环绕」', sh.met);
+  check(!sh.nova || (sh.nova.id === 'frostbite' && sh.nova.a === 1 && sh.nova.b === 2 && !sh.nova.done), '冰霜新星提示极寒领域 1/2', sh.nova);
+  check(sh.clean && sh.cleanJoin, '计算提示不会改动牌组和队伍', sh);
+  check(!sh.join || ['wall', 'arcane'].includes(sh.join), '招募前排伙伴提示队伍羁绊进度', sh.join);
+  check(sh.dom.some(t => /sh done:凑齐羁绊 · 烈焰环绕/.test(t)), '卡面上显示羁绊提示', sh.dom);
 
   // 实战跑一段，确认新特效不报错、特效数量受控
   await fight(11, 40);

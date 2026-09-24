@@ -48,6 +48,23 @@ function updateSyn() {
   if (n >= 4) S.events.push({ type: "achv", id: "synergy" });
   S.bestSyn = Math.max(S.bestSyn || 0, n);
 }
+// 选牌提示：假装拿了这张牌，看哪个还没生效的羁绊会前进一步。返回 {g, a, b, done} 或 null
+function synHint(p) {
+  if (!p || p.curse || (!p.card && !p.join)) return null;
+  const before = SYNERGY.map(g => g.prog()), fake = p.join ? { def: p.def, dead: false } : null;
+  let after;
+  if (fake) S.units.push(fake); else S.cards[p.id] = cl(p.id) + 1;
+  try { after = SYNERGY.map(g => g.prog()); }
+  finally { if (fake) S.units.splice(S.units.indexOf(fake), 1); else if (--S.cards[p.id] <= 0) delete S.cards[p.id]; }
+  let best = null;
+  SYNERGY.forEach((g, i) => {
+    const [a0, b] = before[i], a = after[i][0];
+    if (a0 >= b || a <= a0) return;
+    const h = { g, a: Math.min(a, b), b, done: a >= b };
+    if (!best || h.done > best.done || (h.done === best.done && b - a < best.b - best.a)) best = h;
+  });
+  return best;
+}
 const BOSS_TYPES = ["boss", "sovereign", "devourer", "nameless", "stormlord"];
 const isBossType = t => BOSS_TYPES.includes(t);
 const isBoss = e => isBossType(e.type);
