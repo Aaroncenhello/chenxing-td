@@ -1,4 +1,8 @@
 <title>晨星守望</title>
+<meta charset="utf-8">
+<!-- 手机适配：没有这行时手机会按 980px 宽的电脑网页排版再整体缩小，竖屏什么都特别小；viewport-fit=cover 让画面铺进刘海和圆角区域 -->
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10131c">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&family=Noto+Serif+SC:wght@700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -346,6 +350,7 @@ body.imm .stage{position:fixed;inset:0;z-index:30;border:0;box-shadow:none;backg
 body.imm .toasts{z-index:40;right:auto;left:50%;transform:translateX(-50%);bottom:6px;max-width:min(340px,60vw)}
 body.imm .toast{padding:5px 8px;font-size:11px;opacity:.94} body.imm .toast canvas{width:28px;height:28px}
 body.imm .toasts .toast:not(:last-child){display:none}
+body.imm.panel .toasts{display:none}
 .hud{position:absolute;inset:0;z-index:7;pointer-events:none;font-size:12px}
 .hud button{pointer-events:auto;min-width:54px;min-height:40px;padding:4px 6px;font-size:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;background:rgba(36,43,62,.86)}
 .hud button.primary{background:rgba(227,183,92,.95)}
@@ -365,6 +370,23 @@ body.imm .levelup,body.imm .shopbox{overflow:auto;justify-content:flex-start;pad
 body.imm .overlay{position:absolute;z-index:20;background:rgba(8,10,16,.96);place-items:start center;padding:10px 70px}
 @media (max-height:520px){body.imm .ovbox h2{font-size:20px} body.imm .ovbox{gap:8px}}
 body.imm .dlg{--boxh:44px}
+/* 手机竖屏沉浸：顶上一行状态，战场占满宽度，按钮全排在战场下面的大按钮区（一屏看全，不用滚动）
+   .hud 变成 display:contents，让顶栏和两组按钮直接排进 .stage 的竖向布局里；战场大小在 resize() 里按剩下的高度算 */
+@media (orientation:portrait){
+  body.imm .stage{flex-direction:column;justify-content:flex-start;align-items:stretch;gap:8px}
+  body.imm .screen{align-self:center}
+  body.imm .hud{display:contents}
+  body.imm .hud-top{position:relative;top:auto;left:auto;transform:none;order:-1;align-self:center;margin-top:6px;flex-wrap:wrap;justify-content:center;white-space:normal;gap:2px 12px;max-width:calc(100% - 16px);padding:4px 12px 7px}
+  body.imm .hud-top b{font-size:11px}
+  body.imm .hud-l,body.imm .hud-r{position:static;transform:none;display:grid;gap:6px;padding:0 10px}
+  body.imm .hud-l{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:auto}
+  body.imm .hud-r{grid-template-columns:repeat(4,minmax(0,1fr));padding-bottom:10px}
+  body.imm #h-call{grid-column:span 2}
+  body.imm .hud button{min-width:0;min-height:50px;font-size:15px}
+  body.imm .hud button small{font-size:11px}
+  body.imm .toasts{bottom:auto;top:var(--toast-top,50%);max-width:calc(100vw - 24px)}
+  body.imm .overlay{padding:12px 10px}
+}
 </style>
 
 <div class="app">
@@ -3852,10 +3874,21 @@ const OUT = "#1c1424";
 function resize() {
   const stage = document.querySelector(".stage");
   let w = (stage && stage.clientWidth) || 960, k = w / PW;
-  // 沉浸全屏：在整个窗口里等比缩放，左右留出按钮的位置
-  if (document.body.classList.contains("imm")) { const vw = window.innerWidth, vh = window.innerHeight; k = Math.min(vw / PW, vh / PHt); }
+  // 沉浸全屏：在整个窗口里等比缩放。横屏左右留出按钮的位置；竖屏宽度撑满，高度给顶栏和下面的按钮区留位置（布局见 CSS 的 orientation:portrait）
+  const imm = document.body.classList.contains("imm"), port = imm && window.matchMedia("(orientation: portrait)").matches;
+  if (imm) {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    if (port) {
+      const cs = getComputedStyle(stage), hOf = sel => (document.querySelector(sel) || {}).offsetHeight || 0;
+      const padH = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight), padV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      const room = vh - padV - hOf(".hud-top") - hOf(".hud-l") - hOf(".hud-r") - 3 * 8 - 16;
+      k = Math.min((vw - padH) / PW, Math.max(0.2, room / PHt));
+    } else k = Math.min(vw / PW, vh / PHt);
+  }
   const scr = document.getElementById("screen");
   scr.style.width = Math.floor(PW * k) + "px"; scr.style.height = Math.floor(PHt * k) + "px";
+  // 竖屏时提示（新敌人、遗物……）放在战场正下方，不挡战场也不挡按钮
+  if (port) document.body.style.setProperty("--toast-top", Math.round(scr.getBoundingClientRect().bottom + 6) + "px");
   DPR = Math.min(window.devicePixelRatio || 1, 2);
   tx.width = Math.round(PW * k * DPR); tx.height = Math.round(PHt * k * DPR);
   if (S && mapFor !== mapKey()) { drawMap(); mapFor = mapKey(); }
@@ -5913,8 +5946,9 @@ function setImm(on) {
   hudKey = ""; resize();
 }
 const isImm = () => document.body.classList.contains("imm");
-const phoneLandscape = () => window.matchMedia("(max-height: 520px) and (orientation: landscape)").matches;
-function maybeImm() { if (!immOff && phoneLandscape() && !isImm()) setImm(true); }
+// 手机：横屏看高度、竖屏看宽度；开局自动进沉浸全屏（竖屏是战场在上、按钮在下的专用布局）
+const isPhone = () => window.matchMedia("(max-height: 520px) and (orientation: landscape), (max-width: 520px) and (orientation: portrait)").matches;
+function maybeImm() { if (!immOff && isPhone() && !isImm()) setImm(true); }
 $("btn-full").addEventListener("click", () => setImm(!isImm()));
 $("hud").addEventListener("click", ev => {
   const b = ev.target.closest("[data-h]"); if (!b || !S) return;
@@ -5933,6 +5967,8 @@ $("hud").addEventListener("click", ev => {
 let hudKey = "";
 function updateHud() {
   if (!isImm() || !S) return;
+  // 全屏时翻牌、商店、菜单、剧情都铺满整屏，提示（新敌人、遗物……）先藏起来，免得压在上面
+  document.body.classList.toggle("panel", !!(menuOpen || dlg || S.offer || S.shop || S.event));
   const m = Math.ceil(S.spells.meteor || 0), hl = Math.ceil(S.spells.heal || 0), st = Math.floor(S.star / ULT.max * 100);
   const waiting = S.wave < totalWaves() && !S.spawnQueue.length;
   const nx = waiting ? (S.autoWave ? Math.ceil(Math.max(0, S.nextWaveIn)) + "s" : "手动") : S.spawnQueue.length ? "出怪 " + S.spawnQueue.length : "剩 " + S.enemies.length;
@@ -5948,7 +5984,7 @@ function updateHud() {
   setText("h-auto", S.autoWave ? "自动·开" : "自动·关"); setText("h-speed", S.speed + "×"); setText("h-pause", S.paused ? "继续" : "暂停");
   setText("h-form", formOf().name);
 }
-window.addEventListener("orientationchange", () => setTimeout(() => { if (phoneLandscape()) maybeImm(); resize(); }, 250));
+window.addEventListener("orientationchange", () => setTimeout(() => { maybeImm(); resize(); }, 250));
 document.addEventListener("keydown", ev => {
   const k = ev.key.toLowerCase();
   if (dlg) { if (k === " " || k === "enter") { ev.preventDefault(); dlgNext(); } else if (k === "escape") dlgSkip(); return; }

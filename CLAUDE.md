@@ -23,7 +23,7 @@ npm install            # 只装 playwright（首次还要 npx playwright install
 npm run check          # 构建 + 语法检查 + 顶层重名检查
 npm test               # 构建 + 语法检查 + 全部功能测试（tests/run-all.js，任何一项失败都会以非零状态退出）
 node tests/run-all.js meta rewards   # 只跑指定的几个测试
-npm run test:mobile    # 手机横屏 844×390 截图 + 检查每个浮动按钮都能点到
+npm run test:mobile    # 手机横屏 844×390 + 竖屏（390×844 / 375×667 / 390×600）截图，检查每个按钮都在屏幕内、能点到
 npm run sim            # 平衡模拟，见下
 ```
 测试约定：每个测试文件用 `tests/lib.js` 的 `check(条件, 说明, 细节)` 断言、`noErrors(errs)` 检查页面报错、最后 `report(名字)` 汇总；新测试要加进 `tests/run-all.js` 的列表。截图用相对路径，会存在 `tests/out/`（已被 git 忽略）。Playwright 版本锁定为 1.56.1，和 `npx playwright install chromium` 装的浏览器对应。推送到 GitHub 后 `.github/workflows/test.yml` 会自动跑一遍，并检查 `dist/chenxing.html` 是否已重新构建。
@@ -79,7 +79,8 @@ npm run sim            # 平衡模拟，见下
   - **版本**：存档带 `ver`（当前 `SAVE_VER = 12`）。改存档结构时 `SAVE_VER` +1，并在 `SAVE_MIGRATE` 末尾加一步升级函数；旧存档读入时按顺序补跑，升级前自动备份。
   - **备份**：`chenxing-td-v2-backup` 只存一份（导入前、升级前各自动存一次），存档页有「恢复这份备份」按钮，恢复是互换的，可以再换回来。更新版本的存档拒绝导入。
 - **星星账本**：`starBank()` = 关卡星级 + 困难/噩梦首通 + 无尽每 10 波 + 成就 + 深渊每层首通 + 每周首通 + `bonusStars`（每次通关给）− 星盘花费 `diskSpent`。
-- **沉浸全屏**：`body.imm` 类，战场 fixed 铺满窗口，`resize()` 按窗口等比缩放；手机横屏（高 ≤ 520px）开局自动进入。浏览器原生全屏只是顺带尝试，嵌在 iframe 里通常不给。
+- **沉浸全屏**：`body.imm` 类，战场 fixed 铺满窗口，`resize()` 按窗口等比缩放；手机（横屏高 ≤ 520px、竖屏宽 ≤ 520px）开局自动进入。横屏按钮浮在战场两边；**竖屏**（CSS `orientation:portrait`）是顶栏 + 撑满宽度的战场 + 下面的大按钮区，`.hud` 变成 `display:contents` 排进竖向布局，一屏看全不滚动。全屏时有翻牌/商店/菜单/剧情打开，`body.panel` 会把提示藏起来。浏览器原生全屏只是顺带尝试：嵌在 iframe 里通常不给，iPhone 上网页根本没有全屏接口，所以 Claude 页面的顶栏去不掉。
+- **viewport**：`head.html` 里的 `<meta name="viewport">` 不能删——没有它手机会按 980px 宽的电脑网页排版再整体缩小。
 
 ## 踩过的坑
 - 所有源码在同一个全局作用域：**顶层重名会让整页白屏**，每次改完跑 `node tests/syntax.js`。
