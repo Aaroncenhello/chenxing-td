@@ -80,6 +80,29 @@ async function page(b, vp, mobile) {
     noErrors(m.errs);
   }
 
+  // ---------- 队员等级和属性 ----------
+  const P = await page(b, { width: 390, height: 844 }, true);
+  await P.evaluate(() => { closeOverlay(); __td.newRun(6, { charLv: { knight: 8 } }); const S = __td.S; S.pending = 0; S.offer = null; S.selUnit = null; });
+  await P.waitForTimeout(500);
+  const pu = await P.evaluate(() => {
+    const S = __td.S, hero = S.units.find(u => u.hero), out = {};
+    out.tile = document.querySelector(`#pi-team [data-pu="${hero.id}"] .lv`).textContent;
+    out.card = document.getElementById('pi-sel').textContent;
+    return out;
+  });
+  const L = await page(b, { width: 844, height: 390 }, true);
+  await L.evaluate(() => { closeOverlay(); __td.newRun(6, {}); const S = __td.S; S.pending = 0; S.offer = null; S.selUnit = null; });
+  await L.waitForTimeout(400);
+  const lu = await L.evaluate(() => ({ hidden: document.getElementById('h-unit').offsetHeight === 0 }));
+  await L.evaluate(() => { __td.S.selUnit = __td.S.units[0]; }); await L.waitForTimeout(400);
+  Object.assign(lu, await L.evaluate(() => { const c = document.getElementById('h-unit').getBoundingClientRect(), t = document.querySelector('.hud-top').getBoundingClientRect();
+    return { shown: c.height > 0, text: document.getElementById('h-unit').textContent, clearTop: c.right <= t.left + 1 || c.top >= t.bottom - 1 }; }));
+  console.log('队员属性:', JSON.stringify({ pu, lu }));
+  check(pu.tile === 'Lv8 · 1阶', '竖屏队员格显示角色等级和阶数', pu.tile);
+  check(/Lv8/.test(pu.card) && /攻击 \d+/.test(pu.card) && /生命 \d+\/\d+/.test(pu.card) && /防御/.test(pu.card) && /攻速/.test(pu.card) && /技能/.test(pu.card), '竖屏属性栏默认显示英雄的等级和主要属性', pu.card);
+  check(lu.hidden && lu.shown && /攻击/.test(lu.text) && lu.clearTop, '横屏选中队员才弹属性卡，不挡顶栏', lu);
+  noErrors(P.errs); noErrors(L.errs);
+
   noErrors(p.errs);
   report('help');
   await b.close();

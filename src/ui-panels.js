@@ -26,8 +26,8 @@ function renderInfo() {
     return;
   }
   const D = u.def, bIdx = u.branch ? (u.branch === "A" ? 0 : 1) : -1;
-  const head = `<h3><canvas class="ipt" id="i-pt" aria-hidden="true"></canvas><span>${D.name} <small>${D.cls}${u.hero ? " · 本局英雄" : u.summon ? " · 召唤物" : ""}</small></span>${u.summon ? "" : `<span class="lvtag">${u.lv >= 4 ? D.branches[bIdx].name : u.lv + " 阶"}</span>`}</h3>`;
-  const stats = `<div class="row"><span>${D.dmg === "heal" ? "治疗" : "攻击"} ${R0(uAtk(u))}</span><span>防御 ${R0(uDef(u))}</span><span>范围 ${uRange(u).toFixed(1)}</span>${D.place === "ground" ? `<span>拦截 ${uBlock(u)}</span>` : ""}</div>`;
+  const head = `<h3><canvas class="ipt" id="i-pt" aria-hidden="true"></canvas><span>${D.name} <small>${D.cls}${u.hero ? " · 本局英雄" : u.summon ? " · 召唤物" : ""}</small></span>${u.summon ? "" : `<span class="lvtag">Lv${clv(D.id)} · ${u.lv >= 4 ? D.branches[bIdx].name : u.lv + " 阶"}</span>`}</h3>`;
+  const stats = `<div class="row"><span>${D.dmg === "heal" ? "治疗" : "攻击"} ${R0(uAtk(u))}</span><span>防御 ${R0(uDef(u))}</span><span>攻速 ${(1 / uInterval(u)).toFixed(2)}/秒</span><span>范围 ${uRange(u).toFixed(1)}</span>${D.place === "ground" ? `<span>拦截 ${uBlock(u)}</span>` : ""}</div>`;
   if (u.summon) {
     infoEl.innerHTML = head + `<div class="row"><span>生命</span><span id="i-hp"></span></div><div class="meter"><i id="i-hpbar" style="background:var(--ok)"></i></div>
       <div class="row"><span>剩余时间</span><span id="i-life"></span></div><div class="meter"><i id="i-lifebar" style="background:#b8845a"></i></div>` + stats +
@@ -337,7 +337,31 @@ function updateHud() {
   setText("h-form", formOf().name);
 }
 // ---------- 竖屏信息区 ----------
-let piTeamKey = "", piNextKey = "", piCardKey = "", piCombo = 0;
+let piTeamKey = "", piNextKey = "", piCardKey = "", piCombo = 0, uselT = 0;
+// 队员的阶数和主要属性：竖屏信息区、横屏属性卡共用
+const DMG_NAME = { phys: "物理", magic: "法术", heal: "治疗" };
+const unitRank = u => u.summon ? "召唤物" : u.lv >= 4 ? "转职 · " + u.def.branches[u.branch === "A" ? 0 : 1].name : u.lv + " 阶";
+function unitStats(u) {
+  const D = u.def, out = [[D.dmg === "heal" ? "治疗" : "攻击", R0(uAtk(u))], ["生命", u.down > 0 ? "倒下" : `${Math.ceil(u.hp)}/${u.maxHp}`], ["防御", R0(uDef(u))],
+    ["攻速", (1 / uInterval(u)).toFixed(2) + "/秒"], ["范围", uRange(u).toFixed(1)]];
+  if (D.place === "ground") out.push(["拦截", uBlock(u)]);
+  return out;
+}
+function unitCardHtml(u) {
+  const D = u.def;
+  return `<div class="uc-h" style="--c:${D.color}"><b>${D.name}</b><span>${D.cls} · ${DMG_NAME[D.dmg] || ""}${u.hero ? " · 英雄" : ""}</span>${u.summon ? "" : `<em>Lv${clv(D.id)}</em>`}<em class="rk">${unitRank(u)}</em></div>
+    <div class="uc-s">${unitStats(u).map(([k, v]) => `<span>${k} <b>${v}</b></span>`).join("")}</div>
+    ${u.summon ? "" : `<div class="uc-k">技能 · ${D.skill.name}：${D.skill.desc}</div>`}`;
+}
+// 选中的队员（没选就看英雄）：竖屏写在信息区里，横屏全屏在战场左上角弹一张小卡；每 0.25 秒刷新一次
+function updateUnitCards(now) {
+  if (!S || now - uselT < 250) return; uselT = now;
+  const sel = S.selUnit && !S.selUnit.dead ? S.selUnit : null;
+  const pe = $("pi-sel");
+  if (pe && $("pinfo").offsetHeight) { const u = sel || S.units.find(x => x.hero); pe.innerHTML = u ? unitCardHtml(u) : ""; }
+  const he = $("h-unit");
+  if (he) { he.hidden = !sel; if (sel) he.innerHTML = unitCardHtml(sel); }
+}
 function updatePInfo() {
   const box = $("pinfo");
   if (!S || !box.offsetHeight) return;   // 只在竖屏全屏时可见
@@ -357,15 +381,15 @@ function updatePInfo() {
   const team = S.units.filter(u => !u.summon), key = team.map(u => u.id + u.def.id + ":" + u.lv + (u.branch || "")).join(",");
   if (key !== piTeamKey) {
     piTeamKey = key;
-    $("pi-team").innerHTML = team.map(u => `<button class="pu${u.hero ? " hero" : ""}" data-pu="${u.id}" style="--c:${u.def.color}"><canvas id="pu-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b><i class="hp"><s></s></i><i class="sp"><s></s></i></button>`).join("");
+    $("pi-team").innerHTML = team.map(u => `<button class="pu${u.hero ? " hero" : ""}" data-pu="${u.id}" style="--c:${u.def.color}"><canvas id="pu-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b><small class="lv">Lv${clv(u.def.id)} · ${u.lv >= 4 ? "转职" : u.lv + "阶"}</small><i class="hp"><s></s></i><i class="sp"><s></s></i></button>`).join("");
     for (const u of team) drawPortrait(u.def, $("pu-" + u.id), u.lv, u.branch);
   }
   for (const u of team) {
     const el = $("pi-team").querySelector(`[data-pu="${u.id}"]`); if (!el) continue;
     const rdy = u.skillT <= 0 && u.sp >= u.def.sp && u.down <= 0;
     el.classList.toggle("down", u.down > 0); el.classList.toggle("sel", S.selUnit === u); el.classList.toggle("rdy", rdy);
-    el.children[2].firstChild.style.width = (u.down > 0 ? 0 : u.hp / u.maxHp * 100).toFixed(0) + "%";
-    el.children[3].firstChild.style.width = (u.skillT > 0 ? u.skillT / (u.def.skill.dur || 1) * 100 : u.sp / u.def.sp * 100).toFixed(0) + "%";
+    el.querySelector(".hp s").style.width = (u.down > 0 ? 0 : u.hp / u.maxHp * 100).toFixed(0) + "%";
+    el.querySelector(".sp s").style.width = (u.skillT > 0 ? u.skillT / (u.def.skill.dur || 1) * 100 : u.sp / u.def.sp * 100).toFixed(0) + "%";
   }
   // 下一波预告
   const nk = waiting && info ? S.wave + ":" + info.kind : "";
