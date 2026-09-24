@@ -53,7 +53,7 @@ async function page(b, vp, mobile) {
     S.cards.sk_fire = 1; S.cards.sk_meteor = 1; S.cards.vamp = 1; updateSyn(); updateSynBar();
     const chips = [...document.querySelectorAll('#syns .sc:not(.help)')].map(e => e.className + ':' + e.textContent);
     document.querySelector('#syns [data-synhelp]').click();
-    const out = { chips, open: !document.getElementById('overlay').hidden, n: document.querySelectorAll('.codex.syng .cx').length, paused: menuOpen,
+    const out = { chips, open: !document.getElementById('overlay').hidden, n: document.querySelectorAll('.codex.syng .cx').length, paused: menuOpen, total: SYNERGY.length,
       inferno: [...document.querySelectorAll('.codex.syng .cx')].find(e => /烈焰环绕/.test(e.textContent)).textContent };
     document.getElementById('btn-synback').click(); out.back = document.getElementById('overlay').hidden && !menuOpen;
     showCodex('syn'); out.codex = document.querySelectorAll('.codex.syng .cx').length; out.tab = document.querySelector('.tab.on').textContent;
@@ -61,9 +61,9 @@ async function page(b, vp, mobile) {
   });
   console.log('羁绊:', JSON.stringify(sy));
   check(sy.chips[0].includes('on') && /烈焰环绕/.test(sy.chips[0]) && sy.chips.some(c => /嗜血1\/2/.test(c)), '看板先列已凑齐的，再列正在凑的和进度', sy.chips);
-  check(sy.open && sy.paused && sy.n === 8 && /已生效/.test(sy.inferno) && /陨星雨/.test(sy.inferno), '点看板打开羁绊一览（暂停、带进度和凑法）', sy);
+  check(sy.open && sy.paused && sy.n === sy.total && /已生效/.test(sy.inferno) && /陨星雨/.test(sy.inferno), '点看板打开羁绊一览（暂停、带进度和凑法）', sy);
   check(sy.back, '「返回战斗」回到战斗', sy.back);
-  check(sy.codex === 8 && /羁绊/.test(sy.tab), '图鉴里有羁绊说明页', sy);
+  check(sy.codex === sy.total && /羁绊/.test(sy.tab), '图鉴里有羁绊说明页', sy);
 
   // 手机竖屏：信息区里有看板；横屏：看板在左边黑边里，不压战场
   for (const [name, vp] of [['竖屏', { width: 390, height: 844 }], ['横屏', { width: 844, height: 390 }]]) {

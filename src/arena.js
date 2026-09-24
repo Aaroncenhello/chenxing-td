@@ -153,7 +153,7 @@ function uDef(u) {
   if (u.hero && sg("sg_me1")) d *= 1 + 0.2 * sg("sg_me1");
   return d;
 }
-const uRes = u => u.def.res + 8 * cl("armor") + 10 * cl("res");
+const uRes = u => u.def.res + 8 * cl("armor") + 10 * cl("res") + (syn("wardguard") ? 10 : 0);
 function uInterval(u) {
   let i = u.def.interval / (skillOn(u, "archer") ? 2 : skillOn(u, "gunner") ? 3 : 1);
   if (br(u, "sword", "A")) i *= 0.7;
@@ -192,7 +192,7 @@ const slowAura = e => (toCrystal(e) <= 3.5 ? 1 - Math.min(0.5, 0.12 * cl("slow")
 const chillOf = e => 1;
 const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e);
 const corrodeK = e => (e.corrode && e.corrode.t > 0 ? e.corrode.k : 0);
-const eDef = e => (e.d.def + (S.mod === "tough" ? 150 : 0)) * (ab(19) ? 1.2 : 1) * (1 - corrodeK(e)) * (1 - 0.15 * cl("pierce")) * (syn("inferno") && e.burn > 0 ? 0.8 : 1);
+const eDef = e => (e.d.def + (S.mod === "tough" ? 150 : 0)) * (ab(19) ? 1.2 : 1) * (1 - corrodeK(e)) * (1 - 0.15 * cl("pierce")) * (syn("inferno") && e.burn > 0 ? 0.8 : 1) * (syn("corrosive") && corrodeK(e) > 0 ? 0.85 : 1);
 const corrodeOf = u => (br(u, "alchemist", "A") ? 0.55 : u.lv >= 3 ? 0.4 : 0.25) + (u.hero ? 0.1 * sg("sg_al1") : 0);
 const maxAllies = () => RULES.maxAllies + 2 * cl("lg_army");
 const reviveT = () => cl("lg_phoenix") ? 3 : RULES.revive * (1 - 0.06 * dk("rally")) * (1 - 0.25 * cl("revive")) * (ab(15) ? 1.5 : 1);
