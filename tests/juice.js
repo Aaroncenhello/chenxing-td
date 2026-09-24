@@ -63,6 +63,24 @@ const GFXcap = () => 800;   // 高画质上限 700，加上横幅等关键特效
   check(h.shatter.length === 1 && h.shatter[0] >= 6, '敌人死亡碎成像素块', h.shatter);
   check(h.hitStop > 0 && h.ring, '击杀精英有顿帧和白色冲击环', h);
   check(h.lowCorpse, '低画质不碎裂，用原来的倒地', h.lowCorpse);
+  // ---------- 出怪预告 + 大波预警 ----------
+  const wv = await p.evaluate(() => {
+    const T = __td, out = {};
+    const probe = (st, w) => { T.newRun(st, {}); const S = T.S; S.pending = 0; S.offer = null; S.wave = w; S.shopWave = 99; S.eventWave = 99; S.spawnQueue = []; S.enemies = []; S.nextWaveIn = 3.02; S.fx = [];
+      const info = nextWaveInfo(); T.step(1 / 30); const banner = S.fx.filter(f => f.kind === 'banner').map(f => f.text);
+      T.step(1 / 30); const again = S.fx.filter(f => f.kind === 'banner').length;
+      const ports = [...info.ports.keys()].every(i => PORTALS[i]);
+      return { kind: info.kind, banner, again, ports }; };
+    out.tide = probe(11, 4); out.boss = probe(3, 11); out.plain = probe(0, 1);
+    return out;
+  });
+  console.log('波次预告:', JSON.stringify(wv));
+  check(wv.tide.kind === 'tide' && /潮汐来袭/.test(wv.tide.banner.join()), '潮汐波前 3 秒弹出「潮汐来袭」', wv.tide);
+  check(wv.boss.kind === 'boss' && /首领将至/.test(wv.boss.banner.join()), '首领波前 3 秒弹出「首领将至」', wv.boss);
+  check(wv.plain.kind === '' && wv.plain.banner.length === 0, '普通波不弹预警', wv.plain);
+  check(wv.tide.again === 1 && wv.boss.again === 1, '预警每波只弹一次', { t: wv.tide.again, b: wv.boss.again });
+  check(wv.tide.ports && wv.boss.ports, '预告标出的传送门都存在', wv);
+
   // 实战跑一段，确认新特效不报错、特效数量受控
   await fight(11, 40);
   const fxN = await p.evaluate(() => __td.S.fx.length);

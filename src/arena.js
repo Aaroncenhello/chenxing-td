@@ -575,6 +575,17 @@ function toggleAutoWave() {
   if (S.autoWave && !S.spawnQueue.length) S.nextWaveIn = Math.min(S.nextWaveIn, RULES.waveGap);
   return S.autoWave;
 }
+// 下一波的「性质」：boss（有首领）/ elite（有精英）/ tide（潮汐）/ 普通，以及每个传送门要出什么
+function nextWaveInfo() {
+  const w = S.genWaves[S.wave]; if (!w) return null;
+  const ports = new Map(); let boss = false, elite = false;
+  for (const [type, n, , portal, el] of w) {
+    const i = portal % Math.max(1, PORTALS.length), m = ports.get(i) || new Map();
+    m.set(type, (m.get(type) || 0) + n); ports.set(i, m);
+    if (isBossType(type)) boss = true; if (el) elite = true;
+  }
+  return { ports, kind: boss ? "boss" : w.tag === "tide" ? "tide" : elite || w.tag === "elite" ? "elite" : "" };
+}
 function nextWaveSummary() {
   const w = S.genWaves[S.wave]; if (!w) return [];
   const m = new Map();
