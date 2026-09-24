@@ -1,5 +1,5 @@
 
-// ================= 选关、流程、结算、主循环 =================
+// ================= 选关、星盘、图鉴、成就、存档页、进关流程、结算页 =================
 const THUMB = {
   forest: { g: "#3f7f45", p: "#b38a5a", b: "#245a30", w: "#2f6ea8" },
   snow: { g: "#e4ecf4", p: "#a89a88", b: "#6a9488", w: "#2f6ea8" },
@@ -33,21 +33,6 @@ function todayInfo() {
   return { date: ds, seed: h, stage: h % n, mod: DAILY_MODS[(h >>> 5) % DAILY_MODS.length].id };
 }
 
-// ---------- 存档导出 / 导入 ----------
-const SAVE_TAG = "CX9";
-function exportSave() {
-  try { return SAVE_TAG + "-" + btoa(unescape(encodeURIComponent(JSON.stringify(loadSave())))); }
-  catch (e) { return ""; }
-}
-function importSave(code) {
-  const txt = String(code || "").trim().replace(/\s+/g, "");
-  const body = txt.startsWith(SAVE_TAG + "-") ? txt.slice(SAVE_TAG.length + 1) : txt;
-  let d;
-  try { d = JSON.parse(decodeURIComponent(escape(atob(body)))); } catch (e) { return "这串代码看不懂，请确认完整复制了。"; }
-  if (!d || typeof d !== "object" || !Array.isArray(d.stars)) return "这不是《晨星守望》的存档代码。";
-  writeSave(d);
-  return null;
-}
 // 存档文件：在 claude.ai 上要走 downloads 能力，直接打开 html 时退回普通下载
 let dlCap = null, dlTried = false;
 async function saveFile() {
@@ -473,34 +458,3 @@ function showResult() {
   }
   drawExpPortraits(); drawReport();
 }
-
-// ---------- 主循环 ----------
-let last = performance.now(), acc = 0;
-function frame(now) {
-  const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  if (S.slowCd > 0) S.slowCd -= dt;
-  let k = 1; if (S.slowmo > 0) { S.slowmo -= dt; k = 0.3; }
-  if (!menuOpen && !dlg && !S.paused && !S.over && !S.offer && !S.shop && !S.event) {
-    acc += dt * S.speed * k;
-    let n = 0;
-    while (acc >= TICK && n < 16) { step(TICK); acc -= TICK; n++; }
-  }
-  if (!S.offer && !S.shop && !S.cine && !S.event && S.pending > 0 && !S.over && !dlg && !menuOpen) { const mr = S.forceRare || 0; S.forceRare = 0; openOffer(mr, true); }
-  handleEvents();
-  render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updateTut(dt); updateDlg(dt); animRoster(now);
-  if (!dlg) checkOver();
-  requestAnimationFrame(frame);
-}
-
-newRun(0, { perks: loadSave().perks, charLv: charLevels(), charTal: loadSave().tal, hero: loadSave().hero, charOpen: openChars().map(u => u.id) });
-buildSpells();
-resize();
-window.addEventListener("resize", resize);
-showLevels();
-window.__td = {
-  get S() { return S; }, step, newRun: (i, o) => startRun(i, o || {}), beginStage, castUlt, castSpell, useSkill, pickCard, openOffer, randomCards, cardInfo,
-  UNITS, STAGES, CARDS, awardExp, levelOf, buyShop, closeShop, rerollOffer, SYNERGY, VIGIL, EVENTS, takeEvent, openEvent,
-  FORMS, AFFIX, cycleForm, setSlot, clearSlot, arrange, formOf, callWaveEarly, toggleAutoWave, cardPool,
-};
-requestAnimationFrame(frame);
-</script>

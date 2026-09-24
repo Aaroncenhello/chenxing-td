@@ -5383,12 +5383,7 @@ function render(now) {
   drawOverlay();
 }
 
-// ================= 界面：存档、顶栏、队伍、卡牌栏 =================
-const $ = id => document.getElementById(id);
-const teamEl = $("team"), cardbarEl = $("cardbar"), infoEl = $("info"), spellsEl = $("spells");
-function setText(id, v) { const el = $(id); if (!el) return; const s = String(v); if (el.textContent !== s) el.textContent = s; }
-let menuOpen = false;
-
+// ================= 存档：读写、版本升级、导出导入、星星账本、角色等级 =================
 // ---------- 存档 ----------
 const SAVE_KEY = "chenxing-td-v2";
 function loadSave() {
@@ -5428,6 +5423,28 @@ const charExp = (d, id) => Math.max((d.chars[id] && d.chars[id].exp) || 0, joinE
 function charLevels(d) { d = d || loadSave(); const o = {}; for (const u of UNITS) o[u.id] = levelOf(charExp(d, u.id)).lv; return o; }
 const charOpen = u => unlocked(u.joinAt || 0);
 const openChars = () => UNITS.filter(charOpen);
+
+// ---------- 存档导出 / 导入 ----------
+const SAVE_TAG = "CX9";
+function exportSave() {
+  try { return SAVE_TAG + "-" + btoa(unescape(encodeURIComponent(JSON.stringify(loadSave())))); }
+  catch (e) { return ""; }
+}
+function importSave(code) {
+  const txt = String(code || "").trim().replace(/\s+/g, "");
+  const body = txt.startsWith(SAVE_TAG + "-") ? txt.slice(SAVE_TAG.length + 1) : txt;
+  let d;
+  try { d = JSON.parse(decodeURIComponent(escape(atob(body)))); } catch (e) { return "这串代码看不懂，请确认完整复制了。"; }
+  if (!d || typeof d !== "object" || !Array.isArray(d.stars)) return "这不是《晨星守望》的存档代码。";
+  writeSave(d);
+  return null;
+}
+
+// ================= 界面：顶栏、队伍、卡牌栏、提示、法术按钮 =================
+const $ = id => document.getElementById(id);
+const teamEl = $("team"), cardbarEl = $("cardbar"), infoEl = $("info"), spellsEl = $("spells");
+function setText(id, v) { const el = $(id); if (!el) return; const s = String(v); if (el.textContent !== s) el.textContent = s; }
+let menuOpen = false;
 
 // ---------- 提示 ----------
 function toast(html, draw) {
@@ -6132,7 +6149,7 @@ function expHtml(gains) {
 }
 function drawExpPortraits() { for (const c of $("ovbox").querySelectorAll("canvas[data-ept]")) drawPortrait(UNITS.find(u => u.id === c.dataset.ept), c, 1); }
 
-// ================= 选关、流程、结算、主循环 =================
+// ================= 选关、星盘、图鉴、成就、存档页、进关流程、结算页 =================
 const THUMB = {
   forest: { g: "#3f7f45", p: "#b38a5a", b: "#245a30", w: "#2f6ea8" },
   snow: { g: "#e4ecf4", p: "#a89a88", b: "#6a9488", w: "#2f6ea8" },
@@ -6166,21 +6183,6 @@ function todayInfo() {
   return { date: ds, seed: h, stage: h % n, mod: DAILY_MODS[(h >>> 5) % DAILY_MODS.length].id };
 }
 
-// ---------- 存档导出 / 导入 ----------
-const SAVE_TAG = "CX9";
-function exportSave() {
-  try { return SAVE_TAG + "-" + btoa(unescape(encodeURIComponent(JSON.stringify(loadSave())))); }
-  catch (e) { return ""; }
-}
-function importSave(code) {
-  const txt = String(code || "").trim().replace(/\s+/g, "");
-  const body = txt.startsWith(SAVE_TAG + "-") ? txt.slice(SAVE_TAG.length + 1) : txt;
-  let d;
-  try { d = JSON.parse(decodeURIComponent(escape(atob(body)))); } catch (e) { return "这串代码看不懂，请确认完整复制了。"; }
-  if (!d || typeof d !== "object" || !Array.isArray(d.stars)) return "这不是《晨星守望》的存档代码。";
-  writeSave(d);
-  return null;
-}
 // 存档文件：在 claude.ai 上要走 downloads 能力，直接打开 html 时退回普通下载
 let dlCap = null, dlTried = false;
 async function saveFile() {
@@ -6607,6 +6609,7 @@ function showResult() {
   drawExpPortraits(); drawReport();
 }
 
+// ================= 主循环、开机、测试接口 =================
 // ---------- 主循环 ----------
 let last = performance.now(), acc = 0;
 function frame(now) {

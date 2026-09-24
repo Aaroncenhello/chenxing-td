@@ -35,15 +35,15 @@ npm run sim            # 平衡模拟，见下
 机器人不会调站位、选牌粗糙，**真人胜率明显高于模拟**。11.0 的参考结果：CLV4 无星盘约 25%；CLV8 + 少量星盘约 37%（第一章大多能过，三四章很难）；满级 + 400★ 星盘时第 9–13 关大多能赢，14–16 关很难。
 
 **拼接顺序（build.sh 里固定，改顺序可能出错）：**
-`head.html config.js config2.js cards.js meta.js relic.js sig.js story.js arena.js haz.js boss.js event.js affix.js fight.js step.js px-core.js px-hero.js px-foe.js px-fx.js ui-a.js ui-b.js ui-d.js ui-c.js`
-`head.html` 里是 CSS 和整个页面的 HTML 结构，最后以 `<script>` 开头；`ui-c.js` 结尾是 `</script>`。
+`head.html config.js config-meta.js cards.js meta.js relic.js sig.js story.js arena.js haz.js boss.js event.js affix.js fight.js step.js px-core.js px-hero.js px-foe.js px-fx.js save.js ui-bar.js ui-panels.js ui-roster.js ui-menu.js main.js`
+`head.html` 里是 CSS 和整个页面的 HTML 结构，最后以 `<script>` 开头；`main.js` 结尾是 `</script>`。
 
 ## 各文件负责什么
 | 文件 | 内容 |
 |---|---|
 | head.html | 全部 CSS、页面结构（顶栏、战场、翻牌/商店/事件面板、HUD、底部面板、说明文字） |
 | config.js | `RULES`、16 个关卡 `STAGES`（地图字符画、敌人池、首领、机关）、16 名角色 `UNITS`、敌人 `ENEMIES`、`ELITE`、`SPELLS` |
-| config2.js | 难度 `DIFFS`、每日规则、商店 `SHOP`、稀有度 `RARE_W`、成就、天赋树、阵型 `FORMS`、角色传记等 |
+| config-meta.js | 难度 `DIFFS`、每日规则、商店 `SHOP`、稀有度 `RARE_W`、成就、天赋树、阵型 `FORMS`、角色传记等 |
 | cards.js | 升级卡 `CARDS`（含传说卡、`fl_*` 无限补充卡）、自动技能数值、卡牌像素图标 |
 | meta.js | **11.0** 天赋星盘 `DISK`/`dk()`、深渊层数 `ABYSS`/`ab()`/`abyssK()`、每周挑战 `WEEK_RULES`/`weekInfo()`/`wk()` |
 | relic.js | **11.0** 遗物 `RELICS`/`rl()`、掉落 `relicDrop`、每帧效果 `relicStep`、图标 |
@@ -57,10 +57,12 @@ npm run sim            # 平衡模拟，见下
 | fight.js | 伤害结算 `hurt/hurtUnit/hurtCrystal`、`killEnemy`、弹道、主动法术、晨星爆发 |
 | step.js | **整个模拟的一步** `step(dt)`（固定 30Hz）：波次推进、商店/事件触发、单位 AI、敌人 AI |
 | px-*.js | 像素渲染：地图、英雄、敌人、特效、HUD 上的文字（640×360 原生分辨率，`T=40` 每格，16×9 格） |
-| ui-a.js | 存档 `loadSave/writeSave/editSave`、星星账本 `starBank`、顶栏、卡牌栏、法术按钮 |
-| ui-b.js | 角色信息面板、翻牌面板、商店、事件面板、场地拖动站位、快捷键、**沉浸全屏 `setImm` 和手机 HUD** |
-| ui-d.js | 剧情播放、选英雄、角色养成页、天赋树、结算经验、战绩入档 |
-| ui-c.js | 选关页、星盘页、深渊/每周 UI、图鉴、成就、存档导入导出、结算页、主循环 `frame()`、`window.__td` 测试接口 |
+| save.js | 存档 `loadSave/writeSave/editSave`、导出导入 `exportSave/importSave`、星星账本 `starBank`、角色等级 `levelOf/charLevels` |
+| ui-bar.js | 顶栏、队伍栏、卡牌栏、提示 `toast`、成就解锁 `unlockAchv`、法术按钮 |
+| ui-panels.js | 角色信息面板、翻牌面板、商店、事件面板、场地拖动站位、快捷键、**沉浸全屏 `setImm` 和手机 HUD** |
+| ui-roster.js | 剧情播放、选英雄、角色养成页、天赋树、结算经验、战绩入档 |
+| ui-menu.js | 选关页、星盘页、深渊/每周 UI、图鉴、成就、存档页、进关流程 `beginStage/startRun`、新手引导、结算页 |
+| main.js | 主循环 `frame()`、开机、`window.__td` 测试接口 |
 
 ## 关键机制速查
 - **固定步长**：`step(dt)` 是全部游戏逻辑，`frame()` 只负责按 30Hz 调它并渲染。测试直接调 `__td.step(1/30)`。
