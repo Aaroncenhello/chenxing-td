@@ -44,7 +44,7 @@ function loadSave(noBackup) {
     abyss: Object.fromEntries(Object.entries(numMap(v.abyss, 0, ABYSS_MAX)).map(([k, n]) => [k, Math.floor(n)])),
     week: objMap(v.week, r => ({ clear: !!r.clear, best: Math.floor(clampN(r.best, 0)) })),
     gfx: Number.isInteger(v.gfx) && v.gfx >= -1 && v.gfx <= 2 ? v.gfx : -1,   // 画质：-1 自动，0 低 1 中 2 高
-    relicSeen: idList(v.relicSeen, id => !!RELIC_BY[id]), bonusStars: Math.floor(clampN(v.bonusStars, 0)), refunded: Math.floor(clampN(v.refunded, 0)),
+    relicSeen: idList(v.relicSeen, id => !!RELIC_BY[id]), cardSeen: idList(v.cardSeen, id => !!ANY_CARD(id)), bonusStars: Math.floor(clampN(v.bonusStars, 0)), refunded: Math.floor(clampN(v.refunded, 0)),
     ver: Number.isInteger(v.ver) ? v.ver : legacyVer(v),
   };
   if (d.ver < SAVE_VER) {

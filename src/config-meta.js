@@ -127,6 +127,8 @@ const ACHV = [
   { id: "chapter3", name: "第三章完结", desc: "通关第 12 关" },
   { id: "nameless", name: "叫出它的名字", desc: "通关第 16 关，击败无名者" },
   { id: "allchars16", name: "十六人", desc: "解锁全部 16 名角色" },
+  { id: "relics", name: "遗物收藏家", desc: "图鉴里集齐全部遗物" },
+  { id: "cards", name: "博览群牌", desc: "图鉴里集齐全部通用升级卡（不含专属卡、诅咒卡和补充卡）" },
 ];
 
 const ENEMY_DESC = {

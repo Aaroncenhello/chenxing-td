@@ -63,6 +63,8 @@ function recordRun(win) {
     for (const k in S.foeKill) d.foeKill[k] = (d.foeKill[k] || 0) + S.foeKill[k];
     for (const id of S.afxSeen || []) if (!d.afxSeen.includes(id)) d.afxSeen.push(id);
     for (const id of S.eventsDone || []) if (!d.evSeen.includes(id)) d.evSeen.push(id);
+    for (const id of Object.keys(S.cards).concat(Object.keys(S.curses || {}))) if (!d.cardSeen.includes(id) && ANY_CARD(id)) d.cardSeen.push(id);
+    for (const id of S.relics || []) if (!d.relicSeen.includes(id)) d.relicSeen.push(id);
     const joined = new Set(S.picks.filter(p => p.startsWith("ally_")).map(p => p.slice(6)).concat([S.heroId]));
     for (const D of UNITS) {
       const s = S.stats[D.id];
@@ -74,7 +76,12 @@ function recordRun(win) {
       if (s) { u.dmg = (u.dmg || 0) + Math.round(s.dmg); u.heal = (u.heal || 0) + Math.round(s.heal); u.kills = (u.kills || 0) + s.kills; u.taken = (u.taken || 0) + Math.round(s.taken); }
     }
   });
+  // 收集类成就：图鉴集齐（哪种模式打的都算）
+  const d = loadSave();
+  if (RELICS.every(r => d.relicSeen.includes(r.id))) unlockAchv("relics");
+  if (CODEX_CARDS().every(c => d.cardSeen.includes(c.id))) unlockAchv("cards");
 }
+const CODEX_CARDS = () => CARDS.filter(c => !c.filler);
 
 // ---------- 结算经验 ----------
 function awardExp(win) {

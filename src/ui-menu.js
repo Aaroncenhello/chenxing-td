@@ -148,10 +148,28 @@ function showCodex(tab) {
   if (tab) codexTab = tab;
   const save = loadSave(), kills = save.foeKill, nFoe = Object.keys(ENEMIES).length;
   const total = Object.values(kills).reduce((a, b) => a + b, 0);
-  const tabs = [["foe", `敌人 ${save.seen.length}/${nFoe}`], ["afx", `词缀 ${save.afxSeen.length}/${AFFIX.length}`], ["ev", `事件 ${save.evSeen.length}/${EVENTS.length}`]];
+  const allCards = CODEX_CARDS().concat(SIG, CURSES), nCard = allCards.filter(c => save.cardSeen.includes(c.id)).length;
+  const tabs = [["foe", `敌人 ${save.seen.length}/${nFoe}`], ["card", `卡牌 ${nCard}/${allCards.length}`], ["relic", `遗物 ${save.relicSeen.length}/${RELICS.length}`], ["afx", `词缀 ${save.afxSeen.length}/${AFFIX.length}`], ["ev", `事件 ${save.evSeen.length}/${EVENTS.length}`]];
   const head = `<div class="tabs">${tabs.map(([k, n]) => `<button class="tab${codexTab === k ? " on" : ""}" data-codex="${k}">${n}</button>`).join("")}</div>`;
   let body = "";
-  if (codexTab === "afx") {
+  const cardCx = (c, kind) => { const on = save.cardSeen.includes(c.id), R = RARITY[c.rare || 0];
+    const col = kind === "curse" ? CURSE_COLOR : c.rare ? R.color : "";
+    return `<div class="cx${on ? "" : " unk"}"><canvas data-cxc="${on ? kind + ":" + c.id : ""}" aria-hidden="true"></canvas><div>
+      <b${col && on ? ` style="color:${col}"` : ""}>${on ? c.name : "？？？"}</b>
+      <p>${!on ? "还没拿过" : kind === "curse" ? `${c.good}<br><span style="color:#ff8aa0">代价：${c.bad}</span>` : c.desc(1).replace(/（当前[^）]*）/, "")}</p>
+      ${on && kind !== "curse" ? `<p class="kn">${kind === "sig" ? "专属 · " + UNITS.find(u => u.id === c.hero).name : KIND_NAME[c.kind]} · ${R.name}${c.max > 1 ? ` · 最多 ${c.max} 级` : ""}</p>` : ""}</div></div>`; };
+  if (codexTab === "card") {
+    const has = l => l.filter(c => save.cardSeen.includes(c.id)).length;
+    body = `<p>这局拿过的卡在结算时记到这里。集齐全部通用卡有成就。</p>
+      <h3>通用卡 ${has(CODEX_CARDS())}/${CODEX_CARDS().length}</h3><div class="codex sm">${CODEX_CARDS().map(c => cardCx(c, "card")).join("")}</div>
+      <h3>英雄专属卡 ${has(SIG)}/${SIG.length}</h3><div class="codex sm">${SIG.map(c => cardCx(c, "sig")).join("")}</div>
+      <h3>诅咒卡 ${has(CURSES)}/${CURSES.length}</h3><div class="codex sm">${CURSES.map(c => cardCx(c, "curse")).join("")}</div>`;
+  } else if (codexTab === "relic") {
+    body = `<p>击败精英和首领有机会掉落遗物，每局最多带 ${RELIC_MAX} 件。见过的遗物会记在这里，集齐有成就。</p>
+      <div class="codex sm">${RELICS.map(r => { const on = save.relicSeen.includes(r.id);
+        return `<div class="cx${on ? "" : " unk"}"><canvas data-cxc="${on ? "relic:" + r.id : ""}" aria-hidden="true"></canvas><div><b${on ? ` style="color:${r.color}"` : ""}>${on ? r.name : "？？？"}</b>
+          <p>${on ? r.desc : "还没遇到"}</p></div></div>`; }).join("")}</div>`;
+  } else if (codexTab === "afx") {
     body = `<p>精英和首领会随机带 1–2 条词缀，头顶的小圆点就是它们。遇到过的会记在这里。</p>
       <div class="codex">${AFFIX.map(a => { const on = save.afxSeen.includes(a.id);
         return `<div class="cx${on ? "" : " unk"}"><div><b><i class="dot" style="background:${on ? a.color : "#39405a"}"></i>${on ? a.name : "？？？"}</b>
@@ -174,6 +192,11 @@ function showCodex(tab) {
   openOverlay(`<h2>图鉴</h2>${head}${body}
     <div class="btns"><button id="btn-menu">返回选关</button></div>`);
   for (const c of $("ovbox").querySelectorAll("canvas[data-foe]")) { if (c.dataset.foe) drawFoeIcon(c, c.dataset.foe); else { c.width = 52; c.height = 52; } }
+  for (const c of $("ovbox").querySelectorAll("canvas[data-cxc]")) {
+    const [k, id] = c.dataset.cxc.split(":");
+    if (k === "card") drawCardIcon(c, id, 48); else if (k === "curse") drawCurseIcon(c, id, 48); else if (k === "relic") drawRelicIcon(c, id, 48);
+    else if (k === "sig") drawPortrait(UNITS.find(u => u.id === SIG_BY[id].hero), c, 3); else { c.width = 48; c.height = 48; }
+  }
 }
 function showAchv() {
   const save = loadSave();

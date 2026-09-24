@@ -166,6 +166,31 @@ const GFXcap = () => 800;   // 高画质上限 700，加上横幅等关键特效
   check(r1.sticky === 'sticky' && r1.stars === 2, '结算按钮固定在底部；星星逐个亮起', r1);
   check(r1.cleared, '打开别的页面时不带结算动画', r1.cleared);
 
+  // ---------- 图鉴：卡牌和遗物 ----------
+  const cx = await p.evaluate(() => {
+    editSave(d => { d.cardSeen = []; d.relicSeen = []; d.achv = d.achv.filter(a => a !== 'relics' && a !== 'cards'); });
+    const T = __td; T.newRun(0, {}); const S = T.S; S.pending = 0; S.offer = null;
+    S.cards = { atk: 2, sk_meteor: 1 }; S.curses = { cu_blood: 1 }; S.relics = ['rl_shard'];
+    recordRun(false);
+    const d = loadSave(), out = { cards: d.cardSeen.slice().sort(), relics: d.relicSeen.slice() };
+    showCodex('card'); out.tab = document.querySelector('.tab.on').textContent;
+    out.known = [...document.querySelectorAll('.cx:not(.unk) b')].map(b => b.textContent);
+    out.icons = document.querySelectorAll('canvas[data-cxc^="card:"]').length;
+    showCodex('relic'); out.rknown = [...document.querySelectorAll('.cx:not(.unk) b')].map(b => b.textContent);
+    // 集齐：两条收集成就
+    S.cards = Object.fromEntries(CODEX_CARDS().map(c => [c.id, 1])); S.curses = {}; S.relics = RELICS.map(r => r.id);
+    recordRun(false); const a = loadSave().achv; out.achv = [a.includes('cards'), a.includes('relics')];
+    // 白名单：导出再读回来，字段还在；乱写的 id 会被丢掉
+    editSave(d => { d.cardSeen.push('nope'); }); out.clean = !loadSave().cardSeen.includes('nope') && loadSave().cardSeen.length >= CODEX_CARDS().length;
+    showLevels(); return out;
+  });
+  console.log('图鉴:', JSON.stringify(cx));
+  check(cx.cards.join() === 'atk,cu_blood,sk_meteor' && cx.relics.join() === 'rl_shard', '结算时记下这局拿过的卡、诅咒和遗物', cx);
+  check(/^卡牌 3\//.test(cx.tab) && cx.known.includes('锋利') && cx.icons === 2, '图鉴卡牌页显示拿过的卡和图标', cx);
+  check(cx.rknown.length === 1, '图鉴遗物页显示见过的遗物', cx.rknown);
+  check(cx.achv[0] && cx.achv[1], '集齐通用卡 / 遗物解锁成就', cx.achv);
+  check(cx.clean, '存档白名单保留 cardSeen、过滤无效 id', cx.clean);
+
   // 实战跑一段，确认新特效不报错、特效数量受控
   await fight(11, 40);
   const fxN = await p.evaluate(() => __td.S.fx.length);

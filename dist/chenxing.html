@@ -218,6 +218,8 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .cx canvas{width:52px;height:52px;flex:none;image-rendering:pixelated;background:#243040;box-shadow:0 0 0 2px #0a0c12}
 .cx b{font-size:13px} .cx p{margin:2px 0 0;font-size:11px;color:var(--muted);line-height:1.5}
 .cx.unk{opacity:.5}
+.codex.sm .cx canvas{width:40px;height:40px}
+@media (max-width:520px){.codex.sm{grid-template-columns:1fr 1fr;gap:6px}.codex.sm .cx{gap:6px;padding:6px}.codex.sm .cx canvas{width:32px;height:32px}}
 .cx .mech{color:#ffd860} .cx .kn{color:#8ac8ff} .cx .kn b{font-size:12px;color:#cfe6ff}
 .cx .dot{display:inline-block;width:8px;height:8px;margin-right:5px;vertical-align:1px;box-shadow:0 0 0 2px #0a0c12}
 .cx .opt{margin:3px 0 0;color:var(--muted)} .cx .opt b{color:var(--text);font-size:11px}
@@ -970,6 +972,8 @@ const ACHV = [
   { id: "chapter3", name: "第三章完结", desc: "通关第 12 关" },
   { id: "nameless", name: "叫出它的名字", desc: "通关第 16 关，击败无名者" },
   { id: "allchars16", name: "十六人", desc: "解锁全部 16 名角色" },
+  { id: "relics", name: "遗物收藏家", desc: "图鉴里集齐全部遗物" },
+  { id: "cards", name: "博览群牌", desc: "图鉴里集齐全部通用升级卡（不含专属卡、诅咒卡和补充卡）" },
 ];
 
 const ENEMY_DESC = {
@@ -5676,7 +5680,7 @@ function loadSave(noBackup) {
     abyss: Object.fromEntries(Object.entries(numMap(v.abyss, 0, ABYSS_MAX)).map(([k, n]) => [k, Math.floor(n)])),
     week: objMap(v.week, r => ({ clear: !!r.clear, best: Math.floor(clampN(r.best, 0)) })),
     gfx: Number.isInteger(v.gfx) && v.gfx >= -1 && v.gfx <= 2 ? v.gfx : -1,   // 画质：-1 自动，0 低 1 中 2 高
-    relicSeen: idList(v.relicSeen, id => !!RELIC_BY[id]), bonusStars: Math.floor(clampN(v.bonusStars, 0)), refunded: Math.floor(clampN(v.refunded, 0)),
+    relicSeen: idList(v.relicSeen, id => !!RELIC_BY[id]), cardSeen: idList(v.cardSeen, id => !!ANY_CARD(id)), bonusStars: Math.floor(clampN(v.bonusStars, 0)), refunded: Math.floor(clampN(v.refunded, 0)),
     ver: Number.isInteger(v.ver) ? v.ver : legacyVer(v),
   };
   if (d.ver < SAVE_VER) {
@@ -6630,10 +6634,28 @@ function showCodex(tab) {
   if (tab) codexTab = tab;
   const save = loadSave(), kills = save.foeKill, nFoe = Object.keys(ENEMIES).length;
   const total = Object.values(kills).reduce((a, b) => a + b, 0);
-  const tabs = [["foe", `敌人 ${save.seen.length}/${nFoe}`], ["afx", `词缀 ${save.afxSeen.length}/${AFFIX.length}`], ["ev", `事件 ${save.evSeen.length}/${EVENTS.length}`]];
+  const allCards = CODEX_CARDS().concat(SIG, CURSES), nCard = allCards.filter(c => save.cardSeen.includes(c.id)).length;
+  const tabs = [["foe", `敌人 ${save.seen.length}/${nFoe}`], ["card", `卡牌 ${nCard}/${allCards.length}`], ["relic", `遗物 ${save.relicSeen.length}/${RELICS.length}`], ["afx", `词缀 ${save.afxSeen.length}/${AFFIX.length}`], ["ev", `事件 ${save.evSeen.length}/${EVENTS.length}`]];
   const head = `<div class="tabs">${tabs.map(([k, n]) => `<button class="tab${codexTab === k ? " on" : ""}" data-codex="${k}">${n}</button>`).join("")}</div>`;
   let body = "";
-  if (codexTab === "afx") {
+  const cardCx = (c, kind) => { const on = save.cardSeen.includes(c.id), R = RARITY[c.rare || 0];
+    const col = kind === "curse" ? CURSE_COLOR : c.rare ? R.color : "";
+    return `<div class="cx${on ? "" : " unk"}"><canvas data-cxc="${on ? kind + ":" + c.id : ""}" aria-hidden="true"></canvas><div>
+      <b${col && on ? ` style="color:${col}"` : ""}>${on ? c.name : "？？？"}</b>
+      <p>${!on ? "还没拿过" : kind === "curse" ? `${c.good}<br><span style="color:#ff8aa0">代价：${c.bad}</span>` : c.desc(1).replace(/（当前[^）]*）/, "")}</p>
+      ${on && kind !== "curse" ? `<p class="kn">${kind === "sig" ? "专属 · " + UNITS.find(u => u.id === c.hero).name : KIND_NAME[c.kind]} · ${R.name}${c.max > 1 ? ` · 最多 ${c.max} 级` : ""}</p>` : ""}</div></div>`; };
+  if (codexTab === "card") {
+    const has = l => l.filter(c => save.cardSeen.includes(c.id)).length;
+    body = `<p>这局拿过的卡在结算时记到这里。集齐全部通用卡有成就。</p>
+      <h3>通用卡 ${has(CODEX_CARDS())}/${CODEX_CARDS().length}</h3><div class="codex sm">${CODEX_CARDS().map(c => cardCx(c, "card")).join("")}</div>
+      <h3>英雄专属卡 ${has(SIG)}/${SIG.length}</h3><div class="codex sm">${SIG.map(c => cardCx(c, "sig")).join("")}</div>
+      <h3>诅咒卡 ${has(CURSES)}/${CURSES.length}</h3><div class="codex sm">${CURSES.map(c => cardCx(c, "curse")).join("")}</div>`;
+  } else if (codexTab === "relic") {
+    body = `<p>击败精英和首领有机会掉落遗物，每局最多带 ${RELIC_MAX} 件。见过的遗物会记在这里，集齐有成就。</p>
+      <div class="codex sm">${RELICS.map(r => { const on = save.relicSeen.includes(r.id);
+        return `<div class="cx${on ? "" : " unk"}"><canvas data-cxc="${on ? "relic:" + r.id : ""}" aria-hidden="true"></canvas><div><b${on ? ` style="color:${r.color}"` : ""}>${on ? r.name : "？？？"}</b>
+          <p>${on ? r.desc : "还没遇到"}</p></div></div>`; }).join("")}</div>`;
+  } else if (codexTab === "afx") {
     body = `<p>精英和首领会随机带 1–2 条词缀，头顶的小圆点就是它们。遇到过的会记在这里。</p>
       <div class="codex">${AFFIX.map(a => { const on = save.afxSeen.includes(a.id);
         return `<div class="cx${on ? "" : " unk"}"><div><b><i class="dot" style="background:${on ? a.color : "#39405a"}"></i>${on ? a.name : "？？？"}</b>
@@ -6656,6 +6678,11 @@ function showCodex(tab) {
   openOverlay(`<h2>图鉴</h2>${head}${body}
     <div class="btns"><button id="btn-menu">返回选关</button></div>`);
   for (const c of $("ovbox").querySelectorAll("canvas[data-foe]")) { if (c.dataset.foe) drawFoeIcon(c, c.dataset.foe); else { c.width = 52; c.height = 52; } }
+  for (const c of $("ovbox").querySelectorAll("canvas[data-cxc]")) {
+    const [k, id] = c.dataset.cxc.split(":");
+    if (k === "card") drawCardIcon(c, id, 48); else if (k === "curse") drawCurseIcon(c, id, 48); else if (k === "relic") drawRelicIcon(c, id, 48);
+    else if (k === "sig") drawPortrait(UNITS.find(u => u.id === SIG_BY[id].hero), c, 3); else { c.width = 48; c.height = 48; }
+  }
 }
 function showAchv() {
   const save = loadSave();
@@ -6981,6 +7008,8 @@ function recordRun(win) {
     for (const k in S.foeKill) d.foeKill[k] = (d.foeKill[k] || 0) + S.foeKill[k];
     for (const id of S.afxSeen || []) if (!d.afxSeen.includes(id)) d.afxSeen.push(id);
     for (const id of S.eventsDone || []) if (!d.evSeen.includes(id)) d.evSeen.push(id);
+    for (const id of Object.keys(S.cards).concat(Object.keys(S.curses || {}))) if (!d.cardSeen.includes(id) && ANY_CARD(id)) d.cardSeen.push(id);
+    for (const id of S.relics || []) if (!d.relicSeen.includes(id)) d.relicSeen.push(id);
     const joined = new Set(S.picks.filter(p => p.startsWith("ally_")).map(p => p.slice(6)).concat([S.heroId]));
     for (const D of UNITS) {
       const s = S.stats[D.id];
@@ -6992,7 +7021,12 @@ function recordRun(win) {
       if (s) { u.dmg = (u.dmg || 0) + Math.round(s.dmg); u.heal = (u.heal || 0) + Math.round(s.heal); u.kills = (u.kills || 0) + s.kills; u.taken = (u.taken || 0) + Math.round(s.taken); }
     }
   });
+  // 收集类成就：图鉴集齐（哪种模式打的都算）
+  const d = loadSave();
+  if (RELICS.every(r => d.relicSeen.includes(r.id))) unlockAchv("relics");
+  if (CODEX_CARDS().every(c => d.cardSeen.includes(c.id))) unlockAchv("cards");
 }
+const CODEX_CARDS = () => CARDS.filter(c => !c.filler);
 
 // ---------- 结算经验 ----------
 function awardExp(win) {
