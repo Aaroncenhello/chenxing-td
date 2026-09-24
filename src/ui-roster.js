@@ -181,47 +181,6 @@ function animRoster(now) {
   g.drawImage(big, 8, 22, 80, 66, 0, 0, 240, 198);
 }
 
-// ---------- 结算：战绩入档（图鉴和角色页要用）----------
-function recordRun(win) {
-  editSave(d => {
-    for (const k in S.foeKill) d.foeKill[k] = (d.foeKill[k] || 0) + S.foeKill[k];
-    for (const id of S.afxSeen || []) if (!d.afxSeen.includes(id)) d.afxSeen.push(id);
-    for (const id of S.eventsDone || []) if (!d.evSeen.includes(id)) d.evSeen.push(id);
-    const joined = new Set(S.picks.filter(p => p.startsWith("ally_")).map(p => p.slice(6)).concat([S.heroId]));
-    for (const D of UNITS) {
-      const s = S.stats[D.id];
-      if (!joined.has(D.id) && !s) continue;
-      const u = d.use[D.id] || (d.use[D.id] = { runs: 0, win: 0, hero: 0, dmg: 0, heal: 0, kills: 0, taken: 0 });
-      u.runs = (u.runs || 0) + 1;
-      if (win) u.win = (u.win || 0) + 1;
-      if (D.id === S.heroId) u.hero = (u.hero || 0) + 1;
-      if (s) { u.dmg = (u.dmg || 0) + Math.round(s.dmg); u.heal = (u.heal || 0) + Math.round(s.heal); u.kills = (u.kills || 0) + s.kills; u.taken = (u.taken || 0) + Math.round(s.taken); }
-    }
-  });
-}
-
-// ---------- 结算经验 ----------
-function awardExp(win) {
-  const d = loadSave(), gains = [];
-  const joined = new Set(S.picks.filter(p => p.startsWith("ally_")).map(p => p.slice(6)).concat([S.heroId]));
-  const score = D => { const s = S.stats[D.id]; return s ? s.dmg + s.heal + s.taken * 0.5 : 0; };
-  const list = openChars();
-  const total = list.reduce((n, D) => n + score(D), 0) || 1;
-  const waves = Math.min(30, S.endless ? Math.max(0, S.wave - 1) : win ? ST.waves : Math.max(0, S.wave - 1));
-  const mult = (win ? 1.5 : 1) * (1 + 0.15 * dk("mentor")) * [1, 1.25, 1.5][S.diff || 0];
-  for (const D of list) {
-    const played = joined.has(D.id);
-    const gain = Math.round(((played ? 30 : 8) + (played ? score(D) / total * 120 : 0) + waves * (played ? 3 : 1)) * mult);
-    const c = d.chars[D.id] || (d.chars[D.id] = { exp: 0 });
-    c.exp = Math.max(c.exp || 0, joinExp(D));
-    const before = levelOf(c.exp).lv;
-    c.exp += gain;
-    gains.push({ D, gain, before, after: levelOf(c.exp), exp: c.exp, played });
-  }
-  writeSave(d);
-  if (gains.some(g => g.after.lv >= PROG.max)) unlockAchv("lv10");
-  return gains.sort((a, b) => (b.played ? 1 : 0) - (a.played ? 1 : 0) || b.gain - a.gain);
-}
 function expHtml(gains) {
   if (!gains || !gains.length) return "";
   return `<div class="expt">${gains.map(g => { const { pct } = expBar(g.exp), up = g.after.lv > g.before;

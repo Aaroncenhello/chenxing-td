@@ -35,7 +35,7 @@ npm run sim            # 平衡模拟，见下
 机器人不会调站位、选牌粗糙，**真人胜率明显高于模拟**。11.0 的参考结果：CLV4 无星盘约 25%；CLV8 + 少量星盘约 37%（第一章大多能过，三四章很难）；满级 + 400★ 星盘时第 9–13 关大多能赢，14–16 关很难。
 
 **拼接顺序（build.sh 里固定，改顺序可能出错）：**
-`head.html config.js config-meta.js cards.js meta.js relic.js sig.js story.js arena.js haz.js boss.js event.js affix.js fight.js step.js px-core.js px-hero.js px-foe.js px-fx.js save.js ui-bar.js ui-panels.js ui-roster.js ui-menu.js main.js`
+`head.html config.js config-meta.js cards.js meta.js relic.js sig.js story.js arena.js haz.js boss.js event.js affix.js fight.js step.js px-core.js px-hero.js px-foe.js px-fx.js save.js ui-bar.js ui-panels.js ui-roster.js ui-menu.js settle.js main.js`
 `head.html` 里是 CSS 和整个页面的 HTML 结构，最后以 `<script>` 开头；`main.js` 结尾是 `</script>`。
 
 ## 各文件负责什么
@@ -61,7 +61,8 @@ npm run sim            # 平衡模拟，见下
 | ui-bar.js | 顶栏、队伍栏、卡牌栏、提示 `toast`、成就解锁 `unlockAchv`、法术按钮 |
 | ui-panels.js | 角色信息面板、翻牌面板、商店、事件面板、场地拖动站位、快捷键、**沉浸全屏 `setImm` 和手机 HUD** |
 | ui-roster.js | 剧情播放、选英雄、角色养成页、天赋树、结算经验、战绩入档 |
-| ui-menu.js | 选关页、星盘页、深渊/每周 UI、图鉴、成就、存档页、进关流程 `beginStage/startRun`、新手引导、结算页 |
+| ui-menu.js | 选关页、星盘页、深渊/每周 UI、图鉴、成就、存档页、进关流程 `beginStage/startRun`、新手引导、结算页 `checkOver/showResult(R)`（只画界面） |
+| settle.js | **结算** `settleRun()`：一局结束时写存档（战绩 `recordRun`、经验 `awardExp`、成就、星级、通关奖励 `runReward`、守望/每日/无尽/每周记录），返回结果对象给结算页 |
 | main.js | 主循环 `frame()`、开机、`window.__td` 测试接口 |
 
 ## 关键机制速查
@@ -70,7 +71,7 @@ npm run sim            # 平衡模拟，见下
 - **敌人强度**：`spawnAt` 里 `hp = d.hp × stageHp() × S.waveHp × S.diffK.hp × …`。`S.diffK` = 难度 × 深渊 × 每周规则，在 `newRun` 里合成。
 - **经验曲线**：`xpNeedOf(lv) = (12 + 4lv + 0.25lv²)`（深渊 11 层起 ×1.15）。这是控制「一局翻几次牌」的主旋钮。
 - **随机数**：影响对局的随机一律用 `roll("用途")`（arena.js 里的 `RNG_KEYS`：card/ev/relic/afx/spawn/fight/shop），波次生成用 `S.rng`。每日/每周挑战时它们都带种子，同样的操作打两次结果完全一样（`tests/seeded.js` 会检查）；**只有纯画面效果**（粒子、飘字、抖屏、走路动画）才直接用 `Math.random`。新加随机逻辑时别直接写 `Math.random()`。
-- **结算**：主线成就和关卡通关剧情只在主线关卡发/播（守望之战、每周、每日、无尽都不算）；每周记录按周累积在 `save.week[key]` 里，每周首通各算 5★。
+- **结算**：`settleRun()`（settle.js）把一局的存档结算一次做完，同一局重复调用返回同一个结果；`checkOver` 先结算、再播通关剧情、再出结算页，所以剧情中途关页面也不丢奖励。主线成就和关卡通关剧情只在主线关卡发/播（守望之战、每周、每日、无尽都不算）；「通关某关」的成就配在 `STAGES[i].clearAchv` 里。每周记录按周累积在 `save.week[key]` 里，每周首通各算 5★。
 - **牌池**：`cardPool()`；牌快抽空时自动补进 `fl_*` 补充卡（可无限叠加）。
 - **无尽模式**：`startWave` 里按需 `genWave()`，不会出现空波。
 - **商店/事件**会「欠着」：叠波跳过了第 4/5 波也会在之后补开。
@@ -83,7 +84,7 @@ npm run sim            # 平衡模拟，见下
 ## 踩过的坑
 - 所有源码在同一个全局作用域：**顶层重名会让整页白屏**，每次改完跑 `node tests/syntax.js`。
 - 用 sed 批量改名时曾把 `next.res` 改成了 `nexeRes(t)`，只在特定专属卡触发时才崩。批量替换后要全局 grep 检查奇怪的标识符。
-- 无头测试里如果只调 `step()`，结算（`checkOver` → 发星星、记战绩）不会执行，因为它在 `frame()` 里；需要等浏览器跑几帧。
+- 无头测试里如果只调 `step()`，结算不会自动执行（`checkOver` 在 `frame()` 里）；要么设好 `S.over` 后直接调 `__td.settle()`，要么等浏览器跑几帧（结算页也会出来）。
 - 翻牌面板开着时，场地拖动和 HUD 按钮都会被挡住，这是故意的。
 
 ## 版本脉络

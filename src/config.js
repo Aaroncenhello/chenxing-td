@@ -14,8 +14,9 @@ const RULES = {
 };
 const CRYSTAL = { x: 8, y: 4, r: 0.85 };
 
+// clearAchv：主线通关这一关时解锁的成就（跟着关卡走，调整关卡顺序时不用改结算代码）
 const STAGES = [
-  { name: "翠林小径", theme: "forest", chapter: 0, brief: "森林里的第一座晨星碑。敌人从三个传送门涌来。", hp: 1.3, crystalHp: 1000, waves: 10, budget: 1.05,
+  { name: "翠林小径", clearAchv: ["first"], theme: "forest", chapter: 0, brief: "森林里的第一座晨星碑。敌人从三个传送门涌来。", hp: 1.3, crystalHp: 1000, waves: 10, budget: 1.05,
     pool: [["slime", 1, 1], ["goblin", 1.1, 1], ["wolf", 1.2, 2], ["garg", 2, 4], ["orc", 3, 5], ["bigslime", 3, 6]],
     boss: [["orc", 2, true], ["wolf", 10, false]],
     map: ["########S#######", "#..............#", "#...##....##...#", "#..............#", "S.......B......S", "#..............#", "#...##....##...#", "#..............#", "################"] },
@@ -27,7 +28,7 @@ const STAGES = [
     pool: [["goblin", 1, 1], ["wolf", 1.2, 1], ["bomber", 2.2, 2], ["garg", 2, 3], ["orc", 3, 4], ["shaman", 3, 4], ["dmage", 2.2, 5], ["shield", 3, 6], ["stalker", 2, 7], ["bigslime", 3, 8]],
     boss: [["boss", 1, false], ["orc", 4, false]],
     map: ["##S##########S##", "#..............#", "#....#....#....#", "#..#........#..#", "S.......B......S", "#..#........#..#", "#....#....#....#", "#..............#", "##S##########S##"] },
-  { name: "幽影墓园", theme: "grave", chapter: 0, brief: "亡灵的墓园。幽灵不怕物理攻击，死灵法师会不停召唤骷髅。", hp: 1.72, crystalHp: 1300, waves: 12, budget: 1.2,
+  { name: "幽影墓园", clearAchv: ["chapter1"], theme: "grave", chapter: 0, brief: "亡灵的墓园。幽灵不怕物理攻击，死灵法师会不停召唤骷髅。", hp: 1.72, crystalHp: 1300, waves: 12, budget: 1.2,
     pool: [["skeleton", 0.9, 1], ["ghost", 2, 2], ["wolf", 1.2, 1], ["garg", 2, 3], ["necro", 3.5, 4], ["orc", 3, 5], ["shaman", 3, 5], ["bomber", 2.2, 6], ["shield", 3, 7], ["dmage", 2.2, 8]],
     boss: [["boss", 1, false], ["necro", 3, false]],
     map: ["###S########S###", "#..............#", "#..##......##..#", "#..............#", "S.......B......S", "#..............#", "#..##......##..#", "#..............#", "###S########S###"] },
@@ -43,7 +44,7 @@ const STAGES = [
     pool: [["imp", 1, 1], ["goblin", 1, 1], ["golem", 5, 4], ["skeleton", 0.9, 1], ["garg", 2, 3], ["sandworm", 2.5, 4], ["shaman", 3, 4], ["orc", 3, 5], ["wyvern", 3.5, 6], ["necro", 3.5, 7], ["harpy", 1.1, 8], ["shield", 3, 9]],
     boss: [["golem", 3, true], ["imp", 14, false]],
     map: ["#S###S####S###S#", "#..............#", "#...#......#...#", "#..............#", "#.......B......#", "#..............#", "#...#......#...#", "#..............#", "#S###S####S###S#"] },
-  { name: "深渊之门", theme: "abyss", chapter: 1, brief: "最终决战。深渊君主亲自降临。", hp: 2.15, crystalHp: 1800, waves: 15, budget: 1.38,
+  { name: "深渊之门", clearAchv: ["chapter2", "final"], theme: "abyss", chapter: 1, brief: "最终决战。深渊君主亲自降临。", hp: 2.15, crystalHp: 1800, waves: 15, budget: 1.38,
     pool: [["imp", 1, 1], ["skeleton", 0.9, 1], ["ghost", 2, 2], ["harpy", 1.1, 2], ["scorpion", 2, 3], ["sandworm", 2.5, 4], ["orc", 3, 4], ["golem", 5, 6], ["wyvern", 3.5, 6], ["necro", 3.5, 6], ["shield", 3, 7], ["dmage", 2.2, 8], ["shaman", 3, 8], ["stalker", 2, 9], ["bigslime", 3, 10]],
     boss: [["sovereign", 1, false], ["imp", 12, false], ["golem", 2, false]],
     midBoss: [["boss", 1, false]],
@@ -69,7 +70,7 @@ const STAGES = [
     haz: [["gate", 0, 0, { period: 14, open: 7 }],
           ["spikes", 8, 4, { r: 2.9, every: 2.2, dmg: 320, color: "#e05a5a" }]],
     map: ["S###SS####SS###S", "#..............#", "#.#..#....#..#.#", "#..............#", "S.......B......S", "#..............#", "#.#..#....#..#.#", "#..............#", "S###SS####SS###S"] },
-  { name: "星界深渊", theme: "star", chapter: 2, brief: "世界尽头的星海。星界吞噬者在这里等着吞下整座晨星碑。", hp: 2.75, crystalHp: 2600, waves: 18, budget: 1.6,
+  { name: "星界深渊", clearAchv: ["devourer", "chapter3"], theme: "star", chapter: 2, brief: "世界尽头的星海。星界吞噬者在这里等着吞下整座晨星碑。", hp: 2.75, crystalHp: 2600, waves: 18, budget: 1.6,
     pool: [["voidling", 1.2, 1], ["icewraith", 2.4, 2], ["starguard", 6, 7], ["ghost", 2, 2], ["mechspider", 1.6, 3], ["golem", 5, 9], ["wyvern", 4, 6], ["warmech", 9, 11], ["frostgiant", 7.5, 9], ["necro", 3.5, 6], ["bloodwolf", 4, 9], ["sovereign", 22, 15]],
     boss: [["devourer", 1, false], ["voidling", 14, false], ["starguard", 2, false]],
     midBoss: [["sovereign", 1, false]],
@@ -97,7 +98,7 @@ const STAGES = [
     haz: [["beam", 8, 4, { n: 3, speed: 0.62, len: 5.6, dps: 300, color: "#a0d8ff" }],
           ["vent", 4, 6, { every: 5.5, r: 1.5, dmg: 900, color: "#a0d8ff", kind: "ice" }], ["vent", 11, 2, { every: 5.5, r: 1.5, dmg: 900, color: "#a0d8ff", kind: "ice" }]],
     map: ["#S###S##S###S##S", "#..~........~..#", "#..............#", "#.~..#....#..~.#", "S.......B......S", "#.~..#....#..~.#", "#..............#", "#..~........~..#", "S##S###S##S###S#"] },
-  { name: "晨星之源", theme: "dawn", chapter: 3, brief: "第一座晨星碑被铸出来的地方。无名者站在光里，等着把名字一个个抹掉。", hp: 2.6, crystalHp: 3800, waves: 20, budget: 1.62,
+  { name: "晨星之源", clearAchv: ["nameless"], theme: "dawn", chapter: 3, brief: "第一座晨星碑被铸出来的地方。无名者站在光里，等着把名字一个个抹掉。", hp: 2.6, crystalHp: 3800, waves: 20, budget: 1.62,
     pool: [["emberling", 1.1, 1], ["ashwalker", 2.2, 1], ["stormhound", 1.9, 3], ["voidknight", 4, 3], ["nullmage", 3.2, 3], ["monolith", 5.5, 5], ["ghost", 2.2, 2], ["wyvern", 4, 6], ["frostgiant", 7.5, 8], ["warmech", 9, 10], ["starguard", 6, 7], ["devourer", 26, 14], ["stormlord", 20, 16]],
     boss: [["nameless", 1, false], ["voidknight", 6, false], ["monolith", 3, false]],
     midBoss: [["devourer", 1, false]],

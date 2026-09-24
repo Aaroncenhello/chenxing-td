@@ -51,6 +51,28 @@ const STAGE_ACHV = ['first', 'perfect', 'solo', 'chapter1', 'chapter2', 'chapter
   console.log('主线通关:', JSON.stringify(m));
   check(m.story.includes('post3'), '主线通关会播通关剧情', m.story);
 
+  // 3b) 结算可以不经过界面直接调（__td.settle），同一局只结算一次；主线通关在通关剧情播之前就把星星写好了
+  await fresh({});
+  await p.reload(); await p.waitForTimeout(400);
+  const st = await p.evaluate(() => {
+    const T = __td; T.newRun(7, {}); const S = T.S; S.pending = 0; S.offer = null;
+    const b0 = starBank().earned;
+    S.stars = 3; S.over = 'win';
+    const R1 = T.settle(), b1 = starBank().earned, R2 = T.settle(), b2 = starBank().earned;
+    return { mode: R1.mode, story: !!R1.story, same: R1 === R2, stars: loadSave().stars[7], achv: loadSave().achv, b0, b1, b2, reward: R1.reward };
+  });
+  console.log('直接结算:', JSON.stringify(st));
+  check(st.mode === 'main' && st.stars === 3 && /通关奖励/.test(st.reward), '直接调结算：星级和通关奖励写进存档', st);
+  check(st.story, '第 8 关首通带通关剧情（剧情在结算之后播，关掉页面也不丢奖励）', st.story);
+  check(st.achv.includes('chapter2') && st.achv.includes('final'), '通关第 8 关解锁「第二章完结」「封印深渊」（配在关卡数据的 clearAchv 里）', st.achv);
+  check(st.same && st.b2 === st.b1 && st.b1 > st.b0, '同一局重复结算不会重复发星星', st);
+  // 配置自检：每个 clearAchv 都是真实存在的成就，主线通关类成就都挂在某一关上
+  const cfg = await p.evaluate(() => {
+    const ids = new Set(ACHV.map(a => a.id)), used = STAGES.flatMap(s => s.clearAchv || []);
+    return { unknown: used.filter(id => !ids.has(id)), missing: ['first', 'chapter1', 'chapter2', 'chapter3', 'final', 'devourer', 'nameless'].filter(id => !used.includes(id)) };
+  });
+  check(!cfg.unknown.length && !cfg.missing.length, '关卡 clearAchv 配置和成就表对得上', cfg);
+
   // 4) 存档导出 → 清空 → 导入，每周记录完整保留
   const io = await p.evaluate(() => {
     editSave(d => { d.week = { W1: { clear: true, best: 12 }, W9: { clear: true, best: 12 } }; });
