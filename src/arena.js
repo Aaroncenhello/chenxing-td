@@ -153,7 +153,7 @@ function uDef(u) {
   if (u.hero && sg("sg_me1")) d *= 1 + 0.2 * sg("sg_me1");
   return d;
 }
-const uRes = u => u.def.res + 8 * cl("armor");
+const uRes = u => u.def.res + 8 * cl("armor") + 10 * cl("res");
 function uInterval(u) {
   let i = u.def.interval / (skillOn(u, "archer") ? 2 : skillOn(u, "gunner") ? 3 : 1);
   if (br(u, "sword", "A")) i *= 0.7;
