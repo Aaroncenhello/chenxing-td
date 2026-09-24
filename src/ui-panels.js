@@ -97,6 +97,7 @@ function updateOffer() {
   const key = S.offer.map(p => p.id).join("|") + "#" + S.rerolls;
   if (box.dataset.k === key) return;
   box.dataset.k = key; box.hidden = false;
+  box.classList.toggle("lg", S.offer.some(p => (p.rare || 0) === 2));   // 有传说卡：背景亮起金色光芒
   const title = S.offerRare ? "稀有货架！选一张" : S.level <= 1 && !S.kills ? "开局翻牌！选一张" : `升到 Lv ${S.level}！选一张卡`;
   setText("lu-title", title + (S.pending > 1 ? `（还有 ${S.pending - 1} 次）` : ""));
   $("cards3").innerHTML = S.offer.map((p, i) => {
@@ -170,9 +171,21 @@ function updateSynBar() {
     ? on.map(g => `<span class="syn" style="--c:${g.color}" title="${g.desc}">${g.name}</span>`).join("")
     : `<span class="syn off">羁绊：还没凑齐（凑齐会自动生效）</span>`;
 }
+// 选中一张卡的庆祝：全屏闪一下对应颜色；传说卡在晨星碑周围再炸一圈金光
+const CELE_COL = { 0: "rgba(255,248,220,.5)", 1: "rgba(98,180,255,.55)", 2: "rgba(255,200,80,.75)", 3: "rgba(224,40,80,.6)" };
+function celebratePick(p) {
+  const r = p.curse ? 3 : p.rare || 0, el = $("cele");
+  el.style.background = `radial-gradient(circle at 50% 50%, ${CELE_COL[r]}, transparent 75%)`;
+  el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
+  if (r === 2 && !p.curse) {
+    addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#ffd860", life: 0.7, r0: 0.3, r1: 3.2, fill: true });
+    burst(CRYSTAL.x, CRYSTAL.y, "#ffe38a", 40, 4, 0.9, 0.09); S.shake = Math.max(S.shake, 0.3);
+  }
+}
 function takeCard(id) {
   if (!S.offer) return;
   const p = S.offer.find(x => x.id === id); if (!p) return;
+  celebratePick(p);
   pickCard(id);
   $("levelup").hidden = true; $("levelup").dataset.k = "";
   openOffer();

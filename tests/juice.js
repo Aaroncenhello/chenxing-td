@@ -110,6 +110,22 @@ const GFXcap = () => 800;   // 高画质上限 700，加上横幅等关键特效
   const deskHidden = await p.evaluate(() => document.getElementById('pinfo').offsetHeight === 0);
   check(deskHidden, '电脑 / 横屏不显示竖屏信息区', deskHidden);
 
+  // ---------- 翻牌仪式感 ----------
+  const cf = await p.evaluate(() => {
+    const T = __td; T.newRun(2, {}); const S = T.S; S.offer = null; S.pending = 1; T.openOffer(); updateOffer();
+    const out = { plainLg: document.getElementById('levelup').classList.contains('lg') };
+    S.offer[0].rare = 2; document.getElementById('levelup').dataset.k = ''; updateOffer();
+    out.lg = document.getElementById('levelup').classList.contains('lg');
+    out.cls = [...document.querySelectorAll('#cards3 .pcard')].map(b => b.className);
+    S.fx = []; takeCard(S.offer[0].id);
+    out.cele = document.getElementById('cele').classList.contains('go');
+    out.ring = S.fx.some(f => f.kind === 'ring' && f.color === '#ffd860');
+    return out;
+  });
+  console.log('翻牌:', JSON.stringify(cf));
+  check(cf.lg && cf.cls[0].includes('r2'), '有传说卡时翻牌面板亮起金色光芒', cf);
+  check(cf.cele && cf.ring, '选中传说卡：全屏闪光 + 晨星碑金色冲击环', cf);
+
   // 实战跑一段，确认新特效不报错、特效数量受控
   await fight(11, 40);
   const fxN = await p.evaluate(() => __td.S.fx.length);
