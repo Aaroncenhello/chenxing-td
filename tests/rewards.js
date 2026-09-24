@@ -1,5 +1,6 @@
 const GAME = 'file://' + require('path').resolve(__dirname, '../dist/chenxing.html');
 const { chromium } = require('playwright');
+const { check, noErrors, report } = require('./lib');
 (async () => {
   const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1280, height: 900 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
@@ -11,10 +12,15 @@ const { chromium } = require('playwright');
   await p.waitForTimeout(700);
   const r = await p.evaluate(() => ({ save: { abyss: loadSave().abyss, bonus: loadSave().bonusStars }, earned: starBank().earned, txt: document.getElementById('ovbox').innerText.match(/通关奖励[^\n]*/)?.[0], open: abyssOpen() }));
   console.log(b0, JSON.stringify(r));
+  check(r.save.abyss[2] === 3 && r.save.bonus >= 1, '深渊通关记录层数并给通关奖励', r.save);
+  check(r.earned > b0 && /深渊 3 层首通/.test(r.txt || ''), '深渊首通加星星并在结算页显示', { b0, earned: r.earned, txt: r.txt });
   await p.evaluate(() => { const wi = weekInfo(); __td.newRun(wi.stage, { week: wi, diff: 1 }); __td.S.pending = 0; __td.S.offer = null; __td.S.over = 'win'; });
   await p.waitForTimeout(700);
-  console.log(await p.evaluate(() => ({ week: loadSave().week, earned: starBank().earned, h: document.querySelector('#ovbox h2').textContent })));
+  const w = await p.evaluate(() => ({ key: weekInfo().key, week: loadSave().week, earned: starBank().earned, h: document.querySelector('#ovbox h2').textContent }));
+  console.log(w);
+  check(w.week[w.key] && w.week[w.key].clear && w.earned > r.earned && w.h === '每周挑战完成', '每周挑战通关记录并加星星', w);
   await p.screenshot({ path: 'w12.png' });
-  console.log('ERR', errs);
+  noErrors(errs);
+  report('rewards');
   await b.close();
 })();

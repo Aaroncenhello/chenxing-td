@@ -1,5 +1,6 @@
 const GAME = 'file://' + require('path').resolve(__dirname, '../dist/chenxing.html');
 const { chromium } = require('playwright');
+const { check, noErrors, report } = require('./lib');
 (async () => {
   const b = await chromium.launch();
   const p = await (await b.newContext({viewport:{width:1100,height:820}})).newPage();
@@ -50,6 +51,12 @@ const { chromium } = require('playwright');
     return o;
   });
   console.log(JSON.stringify(out, null, 1));
-  console.log('ERRORS', errs.slice(0,10));
+  check(out.bad.length === 0, '菜单、英雄、关卡、卡牌、商店全部不报错', out.bad.slice(0, 8));
+  check(out.vigilWave >= 1, '守望之战能开波', out.vigilWave);
+  check(out.endlessWave >= 1, '无尽模式能开波', out.endlessWave);
+  check(out.cardFail === 0 && out.cards > 0, '所有卡都能拿', out);
+  check(out.dustLeft < 99999, '商店能买东西', out.dustLeft);
+  noErrors(errs);
+  report('smoke-full');
   await b.close();
 })();

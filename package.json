@@ -6,11 +6,11 @@
   "scripts": {
     "build": "bash build.sh",
     "check": "bash build.sh && node tests/syntax.js",
-    "test": "bash build.sh && node tests/syntax.js && cd tests/out && node ../smoke-full.js && node ../events.js && node ../affix.js && node ../boss.js && node ../formation.js && node ../codex.js && node ../waves-endless.js && node ../meta.js && node ../rewards.js && node ../soak-heroes.js",
-    "test:mobile": "cd tests/out && node ../mobile-landscape.js",
-    "sim": "cd tests/out && node ../sim.js"
+    "test": "bash build.sh && node tests/syntax.js && node tests/run-all.js",
+    "test:mobile": "mkdir -p tests/out && cd tests/out && node ../mobile-landscape.js",
+    "sim": "mkdir -p tests/out && cd tests/out && node ../sim.js"
   },
   "devDependencies": {
-    "playwright": "^1.47.0"
+    "playwright": "1.56.1"
   }
 }

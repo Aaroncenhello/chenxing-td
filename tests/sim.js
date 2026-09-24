@@ -1,5 +1,5 @@
 const GAME = 'file://' + require('path').resolve(__dirname, '../dist/chenxing.html');
-// headless balance sim for 7.0
+// 无头平衡模拟：机器人自动选牌、买商店、放法术，按关统计胜率
 const { chromium } = require('playwright');
 const SP = process.env.SP;
 const STAGES_N = +(process.env.ST || 8);
@@ -66,7 +66,7 @@ const ABY = +(process.env.ABY || 0);
           T.step(1 / 30);
           guard++;
         }
-        res.push({ st, hero, breaks: S.breaks||0, ults: S.ultsFired||0, win: S.over === 'win', dust: S.dust, syn: Object.keys(S.syn||{}).length, chest: S.chest, stars: S.stars || 0, lv: S.level, wave: S.wave, waves: S.waves ? S.waves.length : 0,
+        res.push({ st, hero, breaks: S.breaks||0, ults: S.ultsFired||0, win: S.over === 'win', dust: S.dust, syn: Object.keys(S.syn||{}).length, chest: S.chest, stars: S.stars || 0, lv: S.level, wave: S.wave, waves: S.genWaves.length,
           crystal: Math.round(S.crystal.hp / S.crystal.maxHp * 100), kills: S.kills, sec: Math.round(guard / 30),
           units: S.units.filter(u => !u.summon).length, picks: picks.length });
       }

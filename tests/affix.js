@@ -1,5 +1,6 @@
 const GAME = 'file://' + require('path').resolve(__dirname, '../dist/chenxing.html');
 const { chromium } = require('playwright');
+const { check, noErrors, report } = require('./lib');
 (async () => {
   const b = await chromium.launch();
   const p = await (await b.newContext({viewport:{width:1100,height:820}})).newPage();
@@ -33,6 +34,10 @@ const { chromium } = require('playwright');
     return out;
   });
   console.log(JSON.stringify(o, null, 1));
-  console.log('ERRORS', errs.slice(0,8));
+  check(o.bad.length === 0, '每条词缀挂上后都不出 NaN', o.bad);
+  check(Object.keys(o.rolled).length === o.affix, '300 只精英里每条词缀都至少出现过一次', o.rolled);
+  check(Array.isArray(o.bossAfx) && o.bossAfx.length >= 2, '首领至少带 2 条词缀', o.bossAfx);
+  noErrors(errs);
+  report('affix');
   await b.close();
 })();

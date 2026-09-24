@@ -1,5 +1,6 @@
 const GAME = 'file://' + require('path').resolve(__dirname, '../dist/chenxing.html');
 const { chromium } = require('playwright');
+const { check, noErrors, report } = require('./lib');
 (async () => {
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 900, height: 700 } });
@@ -35,6 +36,9 @@ const { chromium } = require('playwright');
     return res;
   });
   console.log(out.map(r => `${r.hero}@L${r.st+1}:${r.over === 'win' ? '★' : '×w'+r.wave}(sig${r.sig})`).join(' '));
-  console.log('ERRORS:', errs.length ? errs.slice(0, 8) : 'none');
+  check(out.length === 16, '16 个英雄都跑过一局', out.length);
+  check(out.some(r => r.sig > 0), '专属卡会出现', out.map(r => r.sig));
+  noErrors(errs);
+  report('soak-heroes');
   await b.close();
 })();

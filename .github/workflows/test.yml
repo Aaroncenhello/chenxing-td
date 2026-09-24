@@ -1,0 +1,32 @@
+# 每次推送和 PR：构建 → 语法检查 → 全部功能测试 → 手机横屏测试
+name: 测试
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: 构建 + 语法检查 + 功能测试
+        run: npm test
+      - name: 手机横屏
+        run: npm run test:mobile
+      - name: dist/chenxing.html 要和 src/ 构建结果一致
+        run: git diff --exit-code -- dist/chenxing.html || (echo "::error::dist/chenxing.html 没有重新构建，请运行 bash build.sh 后一起提交" && exit 1)
+      - name: 上传测试截图
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: tests/out/*.png
+          if-no-files-found: ignore

@@ -1,5 +1,6 @@
 const GAME = 'file://' + require('path').resolve(__dirname, '../dist/chenxing.html');
 const { chromium } = require('playwright');
+const { check, noErrors, report } = require('./lib');
 (async () => {
   const b = await chromium.launch();
   const p = await (await b.newContext({viewport:{width:1100,height:820}})).newPage();
@@ -33,10 +34,15 @@ const { chromium } = require('playwright');
       if (S.offer) { const o2=S.offer.slice().sort((a,b)=>((b.rare||0)+(b.kind==='unit'?3:0))-((a.rare||0)+(a.kind==='unit'?3:0))); T.pickCard(o2[0].id); continue; }
       T.step(1/30);
     }
-    out.seen = seen; out.wave = S.wave; out.over = S.over;
+    out.seen = seen; out.wave = S.wave; out.over = S.over; out.eventWave = S.eventWave;
     return out;
   });
   console.log(JSON.stringify(o, null, 1));
-  console.log('ERRORS', errs.slice(0,8));
+  check(o.bad.length === 0, '每个事件的每个选项都能正常执行', o.bad.slice(0, 8));
+  // 抽到的事件可用选项不足 2 个时会跳过（设计如此），所以看第 5 波的事件有没有被处理
+  check(o.wave <= 5 || o.eventWave >= 5, '打过第 5 波后会处理事件', o);
+  check(o.seen.every(x => +x.split(':')[0] >= 5), '事件不会在第 5 波之前出现', o.seen);
+  noErrors(errs);
+  report('events');
   await b.close();
 })();

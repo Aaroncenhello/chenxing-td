@@ -21,10 +21,14 @@ tests/          Playwright 无头测试 + 平衡模拟（在 tests/out/ 目录�
 ```bash
 npm install            # 只装 playwright（首次还要 npx playwright install chromium）
 npm run check          # 构建 + 语法检查 + 顶层重名检查
-npm test               # 构建 + 全部功能测试
+npm test               # 构建 + 语法检查 + 全部功能测试（tests/run-all.js，任何一项失败都会以非零状态退出）
+node tests/run-all.js meta rewards   # 只跑指定的几个测试
 npm run test:mobile    # 手机横屏 844×390 截图 + 检查每个浮动按钮都能点到
 npm run sim            # 平衡模拟，见下
 ```
+测试约定：每个测试文件用 `tests/lib.js` 的 `check(条件, 说明, 细节)` 断言、`noErrors(errs)` 检查页面报错、最后 `report(名字)` 汇总；新测试要加进 `tests/run-all.js` 的列表。截图用相对路径，会存在 `tests/out/`（已被 git 忽略）。Playwright 版本锁定为 1.56.1，和 `npx playwright install chromium` 装的浏览器对应。推送到 GitHub 后 `.github/workflows/test.yml` 会自动跑一遍，并检查 `dist/chenxing.html` 是否已重新构建。
+写断言时注意：战斗有随机性，别断言「一定会出现某件事」（例如事件选项不足 2 个时会被跳过、只有骑士时打不到飞行怪），要断言机制本身。
+
 平衡模拟 `tests/sim.js` 用环境变量控制：
 `ST0`=起始关（0 开始）`ST`=结束关（不含）`RUNS`=每关局数 `CLV`=角色等级 `DIFF`=0/1/2 `ABY`=深渊层数 `DISK='{"atk":5,...}'`=天赋星盘等级 `HERO`=指定英雄。
 例：`cd tests/out && ST=16 RUNS=3 CLV=8 DISK='{"atk":5,"hp":4,"walls":4}' node ../sim.js`

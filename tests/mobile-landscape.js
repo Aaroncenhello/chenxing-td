@@ -1,5 +1,6 @@
 const GAME = 'file://' + require('path').resolve(__dirname, '../dist/chenxing.html');
 const { chromium } = require('playwright');
+const { check, noErrors, report } = require('./lib');
 (async () => {
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
@@ -20,9 +21,13 @@ const { chromium } = require('playwright');
   // 每个 HUD 按钮都要在屏幕里、能点到
   const vis = await p.evaluate(() => [...document.querySelectorAll('#hud button')].map(b => { const r = b.getBoundingClientRect(); const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return b.dataset.h + ':' + (r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth ? 'in' : 'OUT') + (el && (el === b || b.contains(el)) ? '' : '!blocked'); }));
   console.log('imm', imm, vis.join(' '));
+  check(imm, '手机横屏开局自动进入沉浸全屏');
+  check(vis.length > 0 && vis.every(v => v.endsWith(':in')), '每个 HUD 按钮都在屏幕内且没被挡住', vis.filter(v => !v.endsWith(':in')));
   // 点一下 HUD 的速度和出击
   await p.tap('#h-speed'); await p.tap('#h-call');
-  console.log(await p.evaluate(() => [__td.S.speed, __td.S.wave]));
+  const tapped = await p.evaluate(() => [__td.S.speed, __td.S.wave]);
+  console.log(tapped);
+  check(tapped[0] > 1, '点 HUD 倍速按钮生效', tapped);
   // 菜单
   await p.tap('[data-h="menu"]'); await p.waitForTimeout(300);
   await p.screenshot({ path: 'L-levels.png' });
@@ -30,6 +35,7 @@ const { chromium } = require('playwright');
   await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(400);
   await p.evaluate(() => closeOverlay()); await p.waitForTimeout(300);
   await p.screenshot({ path: 'P-imm.png' });
-  console.log('ERR', errs.slice(0, 4));
+  noErrors(errs);
+  report('mobile-landscape');
   await b.close();
 })();
