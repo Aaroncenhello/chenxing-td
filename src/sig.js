@@ -63,6 +63,7 @@ const CURSES = [
   { id: "cu_sand", name: "破碎时沙", good: "自动技能冷却 −35%", bad: "每波多刷 3 只敌人", max: 2, w: 8 },
   { id: "cu_moon", name: "血色月光", good: "全队暴击率 +25%", bad: "每次暴击自己损失 1% 生命", max: 2, w: 8 },
   { id: "cu_pact", name: "献祭契约", good: "立刻获得 2 张稀有卡和 120 星尘", bad: "随机一名伙伴永久离场", max: 1, w: 6 },
+  { id: "cu_haste", name: "疾风诅咒", good: "全队攻击速度 +40%", bad: "全队防御 −30%", max: 2, w: 8 },
 ];
 const CURSE_BY = Object.fromEntries(CURSES.map(c => [c.id, c]));
 const CURSE_COLOR = "#e0486a";
@@ -90,6 +91,7 @@ function drawCurseIcon(cvs, id, size) {
     case "cu_sand": px(4, 2, 8, 2, "#c8b090"); px(4, 12, 8, 2, "#c8b090"); px(6, 4, 4, 4, "#e0486a"); px(7, 8, 2, 4, "#e0486a"); break;
     case "cu_moon": dsc(8, 8, 6, "#e0486a"); dsc(11, 6, 5, "#1a0c14"); break;
     case "cu_pact": px(3, 5, 10, 8, "#3a1020"); px(4, 6, 8, 6, "#e0486a"); px(7, 2, 2, 4, "#a01838"); px(5, 8, 2, 2, "#1a0c14"); px(9, 8, 2, 2, "#1a0c14"); break;
+    case "cu_haste": for (let i = 0; i < 3; i++) px(2 + i, 3 + i * 4, 10 - i * 2, 2, "#e0486a"); px(12, 2, 2, 12, "#a01838"); break;
     default: px(4, 4, 8, 8, "#a01838");
   }
 }

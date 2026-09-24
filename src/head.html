@@ -91,7 +91,8 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .levelup h3{margin:0;font-family:var(--serif);font-size:clamp(17px,2.6vw,26px);color:var(--gold);text-shadow:2px 2px 0 #000;letter-spacing:.1em}
 .levelup .tip{margin:0;font-size:12px;color:var(--muted)}
 .cards3{display:grid;grid-template-columns:repeat(3,minmax(0,240px));gap:10px;width:100%;max-width:760px}
-@media (max-width:700px){.cards3{grid-template-columns:1fr;gap:6px;max-width:100%}}
+.cards3.n4{grid-template-columns:repeat(2,minmax(0,240px));max-width:510px}
+@media (max-width:700px){.cards3{grid-template-columns:1fr;gap:6px;max-width:100%}.cards3.n4{grid-template-columns:1fr}}
 .pcard{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px;border-top:4px solid var(--c);background:var(--panel);animation:flipin .34s cubic-bezier(.2,.8,.3,1.15) backwards}
 .pcard:nth-child(2){animation-delay:.06s}.pcard:nth-child(3){animation-delay:.12s}
 @keyframes pin{from{transform:translateY(16px) scale(.9);opacity:0}}
@@ -552,7 +553,7 @@ body.imm .hud-syn{max-height:44%}
     <div class="levelup" id="levelup" hidden>
       <h3 id="lu-title">升级！选一张卡</h3>
       <div class="cards3" id="cards3"></div>
-      <div class="lubar"><button id="btn-reroll">重抽（剩 3 次）</button><span class="tip">按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 选卡，<kbd>R</kbd> 重抽</span></div>
+      <div class="lubar"><button id="btn-reroll">重抽（剩 3 次）</button><span class="tip" id="lu-tip">按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 选卡，<kbd>R</kbd> 重抽</span></div>
     </div>
     <div class="shopbox eventbox" id="eventbox" hidden>
       <h3 id="ev-title">事件</h3>
