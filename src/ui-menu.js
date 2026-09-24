@@ -72,7 +72,7 @@ function showSaveBox(msg) {
 let diffSel = 0, chapSel = null, abyssSel = 0;
 const abyssTop = d => Math.max(0, ...Object.values((d || loadSave()).abyss));
 const abyssOpen = d => Math.min(ABYSS_MAX, abyssTop(d) + 1);
-function openOverlay(html) { rosterAnim = null; $("ovbox").innerHTML = html; $("overlay").hidden = false; $("overlay").scrollTop = 0; menuOpen = true; if (S) { S.selUnit = null; S.spellMode = null; } }
+function openOverlay(html) { rosterAnim = null; $("ovbox").classList.remove("res"); $("ovbox").innerHTML = html; $("overlay").hidden = false; $("overlay").scrollTop = 0; menuOpen = true; if (S) { S.selUnit = null; S.spellMode = null; } }
 function closeOverlay() { $("overlay").hidden = true; menuOpen = false; rosterAnim = null; }
 const chapterOf = i => CHAPTERS.reduce((k, c, j) => (i >= c.from ? j : k), 0);
 function showLevels() {
@@ -417,5 +417,20 @@ function showResult(R) {
     openOverlay(`<h2>晨星碑碎了</h2><p>坚持到第 ${S.wave} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。换个英雄、或者优先翻伙伴和范围技能，再试一次吧。</p>
       ${tail}<div class="btns"><button class="primary" id="btn-retry">再试一次</button><button id="btn-menu">选关</button></div>`);
   }
-  drawExpPortraits(); drawReport();
+  drawExpPortraits(); drawReport(); animResult();
+}
+// 结算页入场：标题砸下、星星逐个落下、战报格子依次弹出且数字从 0 滚上去、MVP 聚光、经验条充满
+function animResult() {
+  const box = $("ovbox"); box.classList.remove("res"); void box.offsetWidth; box.classList.add("res");
+  box.querySelectorAll(".rep").forEach((el, i) => { el.style.animationDelay = (0.35 + i * 0.05) + "s"; });
+  const nums = [...box.querySelectorAll(".rep b")].map(b => ({ b, t: b.firstChild })).filter(o => o.t && o.t.nodeType === 3 && /^\d+( .*)?$/.test(o.t.nodeValue));
+  nums.forEach(o => { const m = o.t.nodeValue.match(/^(\d+)(.*)$/); o.v = +m[1]; o.u = m[2]; o.t.nodeValue = "0" + o.u; });
+  const t0 = performance.now(), dur = 900, delay = 350;
+  const tick = now => {
+    if (!box.classList.contains("res")) return;
+    const k = Math.max(0, Math.min(1, (now - t0 - delay) / dur)), e = 1 - Math.pow(1 - k, 3);
+    for (const o of nums) o.t.nodeValue = Math.round(o.v * e) + o.u;
+    if (k < 1) requestAnimationFrame(tick);
+  };
+  if (nums.length) requestAnimationFrame(tick);
 }

@@ -80,7 +80,7 @@ function starBank() {
   return { earned: total, spent, left: total - spent, perks: d.perks, disk: d.disk };
 }
 const unlocked = i => i === 0 || (loadSave().stars[i - 1] || 0) > 0;
-const starHtml = n => `<span class="stars">${[0, 1, 2].map(i => i < n ? "★" : '<span class="off">★</span>').join("")}</span>`;
+const starHtml = n => `<span class="stars">${[0, 1, 2].map(i => i < n ? '<span class="on">★</span>' : '<span class="off">★</span>').join("")}</span>`;
 
 // ---------- 角色等级 ----------
 function levelOf(exp) { let lv = 1, e = exp || 0; while (lv < PROG.max && e >= expNeed(lv)) { e -= expNeed(lv); lv++; } return { lv, into: e, need: lv < PROG.max ? expNeed(lv) : 0 }; }

@@ -151,6 +151,21 @@ const GFXcap = () => 800;   // 高画质上限 700，加上横幅等关键特效
   check(!sh.join || ['wall', 'arcane'].includes(sh.join), '招募前排伙伴提示队伍羁绊进度', sh.join);
   check(sh.dom.some(t => /sh done:凑齐羁绊 · 烈焰环绕/.test(t)), '卡面上显示羁绊提示', sh.dom);
 
+  // ---------- 结算页动画 ----------
+  await p.evaluate(() => { __td.newRun(0, {}); const S = __td.S; S.pending = 0; S.offer = null; S.kills = 57; S.picks = ['a', 'b', 'c']; S.over = 'lose'; });
+  await p.waitForTimeout(250);
+  const r0 = await p.evaluate(() => { const v = t => [...document.querySelectorAll('.rep')].find(e => e.querySelector('span').textContent === t).querySelector('b').textContent;
+    return { res: document.getElementById('ovbox').classList.contains('res'), kills: v('击败'), picks: v('翻牌') }; });
+  await p.waitForTimeout(1800);
+  const r1 = await p.evaluate(() => { const v = t => [...document.querySelectorAll('.rep')].find(e => e.querySelector('span').textContent === t).querySelector('b').textContent;
+    const out = { kills: v('击败'), picks: v('翻牌'), sticky: getComputedStyle(document.querySelector('.ovbox .btns')).position, stars: (starHtml(2).match(/class="on"/g) || []).length };
+    showLevels(); out.cleared = !document.getElementById('ovbox').classList.contains('res'); return out; });
+  console.log('结算动画:', JSON.stringify({ r0, r1 }));
+  check(r0.res && +r0.kills < 57, '结算页数字从 0 滚上去', r0);
+  check(r1.kills === '57' && r1.picks === '3 张', '滚完停在准确数值（带单位的也对）', r1);
+  check(r1.sticky === 'sticky' && r1.stars === 2, '结算按钮固定在底部；星星逐个亮起', r1);
+  check(r1.cleared, '打开别的页面时不带结算动画', r1.cleared);
+
   // 实战跑一段，确认新特效不报错、特效数量受控
   await fight(11, 40);
   const fxN = await p.evaluate(() => __td.S.fx.length);
