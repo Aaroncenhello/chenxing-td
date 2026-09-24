@@ -441,7 +441,7 @@ function render(now) {
   const t = now / 1000;
   if (mapFor !== mapKey()) { drawMap(); mapFor = mapKey(); }
   ctx.imageSmoothingEnabled = false;
-  const amp = S.shake > 0 ? Math.min(6, 2 + S.shake * 10) : 0;
+  const amp = S.shake > 0 ? Math.min(6, 2 + S.shake * 10) * GFX.shake : 0;
   const ox = amp ? R0((Math.random() - 0.5) * amp) : 0, oy = amp ? R0((Math.random() - 0.5) * amp) : 0;
   ctx.setTransform(1, 0, 0, 1, 0, 0); rect(ctx, 0, 0, PW, PHt, TH().bg);
   ctx.setTransform(1, 0, 0, 1, ox, oy);

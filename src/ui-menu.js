@@ -88,7 +88,7 @@ function showLevels() {
     <div class="diffs">${DIFFS.map((d, i) => `<button data-diff="${i}" class="${i === diffSel ? "on" : ""}">${d.name}</button>`).join("")}</div>
     <p>${DIFFS[diffSel].desc}${diffSel ? "。要先在普通难度通关，通关后额外 +1★。" : "。"}</p>
     ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
-    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
+    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
     <div class="daily"><div><b>每日挑战 · ${td.date}</b><p>场地：${STAGES[td.stage].name} · 规则：${mod.name}（${mod.desc}）</p>
       <p>${rec ? (rec.cleared ? "今天已经通关 ✓" : `今天最好成绩：第 ${rec.wave} 波`) : "今天还没挑战"}</p></div><button class="primary" id="btn-daily">开始挑战</button></div>
     ${weekHtml(save)}
@@ -191,6 +191,7 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-week") { const wi = weekInfo(); beginStage(wi.stage, { week: wi, diff: wi.diff }); }
   else if (b.dataset.chap != null) { chapSel = +b.dataset.chap; showLevels(); }
   else if (b.id === "btn-save") showSaveBox();
+  else if (b.id === "btn-gfx") { const next = gfxSel >= 2 ? -1 : gfxSel + 1; editSave(d => { d.gfx = next; }); applyGfx(next); showLevels(); }
   else if (b.id === "btn-svcopy") {
     const ta = $("sv-out"); ta.select(); ta.setSelectionRange(0, 99999);
     let ok = false;

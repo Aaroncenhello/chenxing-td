@@ -522,7 +522,7 @@ function drawAmbient(now) {
       if ((t * 2 | 0) % 3 === 0) { dot(ctx, x - 4, cy - 11, "#ffffff"); dot(ctx, x + 7, cy - 16, "#ffffff"); }
     }
   }
-  for (const f of AMB) {
+  if (GFX.amb) for (const f of AMB) {
     if (theme === "snow") { const y = (f.y + t * 18 * f.s) % PHt, x = f.x + Math.sin(t + f.p) * 6; dot(ctx, x, y, "#ffffff"); if (f.s > 0.6) dot(ctx, x + 1, y, "#e0ecff"); }
     else if (theme === "grave") {
       const x = (f.x + t * 8 * f.s) % (PW + 60) - 30, y = f.y + Math.sin(t * 0.7 + f.p) * 6;

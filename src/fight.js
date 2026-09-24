@@ -1,8 +1,19 @@
 
 // ================= 战斗：伤害、出手、技能、每一步 =================
-function addFx(f) { f.t = 0; S.fx.push(f); }
+// 画质档位：粒子数量倍率 k、同屏特效上限 cap、抖屏强度 shake、背景飘落物 amb。-1 = 自动（手机用中，电脑用高）
+const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true }];
+let GFX = GFX_LV[2], gfxSel = -1;
+function applyGfx(sel) {
+  gfxSel = sel == null ? -1 : sel;
+  const auto = typeof isPhone === "function" && isPhone() ? 1 : 2;
+  GFX = GFX_LV[gfxSel >= 0 ? gfxSel : auto];
+}
+// 特效满了就先丢掉装饰性的（粒子、伤害数字），横幅、演出、环这类关键反馈照常加
+const fxCheap = f => f.kind === "parts" || (f.kind === "text" && !f.big);
+function addFx(f) { f.t = 0; if (S.fx.length >= GFX.cap && fxCheap(f)) return; S.fx.push(f); }
 function burst(x, y, color, n, spd, life, size) {
   const parts = [];
+  n = Math.max(1, Math.round(n * GFX.k));
   for (let i = 0; i < n; i++) {
     const a = Math.random() * Math.PI * 2, v = spd * (0.4 + Math.random() * 0.8);
     parts.push({ vx: Math.cos(a) * v, vy: Math.sin(a) * v - spd * 0.5, s: size * (0.5 + Math.random()) });
