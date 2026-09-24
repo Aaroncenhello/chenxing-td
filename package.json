@@ -1,0 +1,16 @@
+{
+  "name": "chenxing-td",
+  "version": "11.0.0",
+  "private": true,
+  "description": "晨星守望 · 像素风塔防 Roguelite（单文件网页）",
+  "scripts": {
+    "build": "bash build.sh",
+    "check": "bash build.sh && node tests/syntax.js",
+    "test": "bash build.sh && node tests/syntax.js && cd tests/out && node ../smoke-full.js && node ../events.js && node ../affix.js && node ../boss.js && node ../formation.js && node ../codex.js && node ../waves-endless.js && node ../meta.js && node ../rewards.js && node ../soak-heroes.js",
+    "test:mobile": "cd tests/out && node ../mobile-landscape.js",
+    "sim": "cd tests/out && node ../sim.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.47.0"
+  }
+}

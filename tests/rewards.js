@@ -1,0 +1,20 @@
+const GAME = 'file://' + require('path').resolve(__dirname, '../dist/chenxing.html');
+const { chromium } = require('playwright');
+(async () => {
+  const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1280, height: 900 } });
+  const errs = []; p.on('pageerror', e => errs.push(e.message));
+  await p.goto(GAME);
+  await p.evaluate(() => localStorage.setItem('chenxing-td-v2', JSON.stringify({ stars: new Array(16).fill(3), tutorial: true, story: [...Array(16).keys()].map(i => 'pre' + i).concat([...Array(16).keys()].map(i => 'post' + i)) })));
+  await p.reload(); await p.waitForTimeout(400);
+  const b0 = await p.evaluate(() => starBank().earned);
+  await p.evaluate(() => { __td.newRun(2, { abyss: 3 }); __td.S.pending = 0; __td.S.offer = null; __td.S.over = 'win'; });
+  await p.waitForTimeout(700);
+  const r = await p.evaluate(() => ({ save: { abyss: loadSave().abyss, bonus: loadSave().bonusStars }, earned: starBank().earned, txt: document.getElementById('ovbox').innerText.match(/通关奖励[^\n]*/)?.[0], open: abyssOpen() }));
+  console.log(b0, JSON.stringify(r));
+  await p.evaluate(() => { const wi = weekInfo(); __td.newRun(wi.stage, { week: wi, diff: 1 }); __td.S.pending = 0; __td.S.offer = null; __td.S.over = 'win'; });
+  await p.waitForTimeout(700);
+  console.log(await p.evaluate(() => ({ week: loadSave().week, earned: starBank().earned, h: document.querySelector('#ovbox h2').textContent })));
+  await p.screenshot({ path: 'w12.png' });
+  console.log('ERR', errs);
+  await b.close();
+})();
