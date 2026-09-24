@@ -403,14 +403,13 @@ function randomCards(n, minRare) {
   let pool = cardPool(minRare);
   if (!pool.length && minRare) pool = cardPool();
   const out = [];
-  // 前两次翻牌保证至少有一张伙伴卡
-  // 补短板：没有前排先给前排，打不到飞行先给能打飞行的，队伍太少先给伙伴
+  // 补短板：没有前排先给前排，打不到飞行先给能打飞行的，6 级以内伙伴不到 3 名时每次翻牌至少有一张伙伴卡
   const solo = S.mod === "solo";
   const hasFront = S.units.some(u => !u.dead && u.def.place === "ground");
   const airN = S.units.filter(u => !u.dead && u.def.air).length;
   const stageAir = !S.endless && ST.pool.concat(ST.boss || []).some(p => ENEMIES[p[0]] && ENEMIES[p[0]].flying);
   const needAir = airN < 2 && (stageAir || S.enemies.some(e => e.d.flying));
-  const want = minRare || solo ? null : !hasFront ? (p => p.join && p.def.place === "ground") : needAir ? (p => p.join && p.def.air) : (S.allies < 2 && S.level <= 6 ? (p => p.join) : null);
+  const want = minRare || solo ? null : !hasFront ? (p => p.join && p.def.place === "ground") : needAir ? (p => p.join && p.def.air) : (S.allies < 3 && S.level <= 6 ? (p => p.join) : null);
   for (let i = 0; i < n && pool.length; i++) {
     let list = pool;
     if (i === 0 && want) { const a = pool.filter(want); if (a.length) list = a; }
