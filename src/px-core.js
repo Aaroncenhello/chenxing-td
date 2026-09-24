@@ -27,7 +27,8 @@ function resize() {
   const scr = document.getElementById("screen");
   scr.style.width = Math.floor(PW * k) + "px"; scr.style.height = Math.floor(PHt * k) + "px";
   // 竖屏时提示（新敌人、遗物……）放在战场正下方，不挡战场也不挡按钮
-  if (port) document.body.style.setProperty("--toast-top", Math.round(scr.getBoundingClientRect().bottom + 6) + "px");
+  // 竖屏时提示（新敌人、遗物……）弹在按钮区正上方，盖住的是信息区最下面的卡牌行，不挡战场和按钮
+  if (port) { const hl = document.querySelector(".hud-l"); document.body.style.setProperty("--toast-bottom", Math.round(window.innerHeight - (hl ? hl.getBoundingClientRect().top : window.innerHeight * 0.6) + 6) + "px"); }
   DPR = Math.min(window.devicePixelRatio || 1, 2);
   tx.width = Math.round(PW * k * DPR); tx.height = Math.round(PHt * k * DPR);
   if (S && mapFor !== mapKey()) { drawMap(); mapFor = mapKey(); }
@@ -522,7 +523,7 @@ function drawAmbient(now) {
       if ((t * 2 | 0) % 3 === 0) { dot(ctx, x - 4, cy - 11, "#ffffff"); dot(ctx, x + 7, cy - 16, "#ffffff"); }
     }
   }
-  for (const f of AMB) {
+  if (GFX.amb) for (const f of AMB) {
     if (theme === "snow") { const y = (f.y + t * 18 * f.s) % PHt, x = f.x + Math.sin(t + f.p) * 6; dot(ctx, x, y, "#ffffff"); if (f.s > 0.6) dot(ctx, x + 1, y, "#e0ecff"); }
     else if (theme === "grave") {
       const x = (f.x + t * 8 * f.s) % (PW + 60) - 30, y = f.y + Math.sin(t * 0.7 + f.p) * 6;

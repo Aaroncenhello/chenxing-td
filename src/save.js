@@ -43,7 +43,8 @@ function loadSave(noBackup) {
     disk: Object.fromEntries(Object.entries(numMap(v.disk, 0)).filter(([k]) => k in diskMax).map(([k, n]) => [k, Math.min(diskMax[k], Math.floor(n))])),
     abyss: Object.fromEntries(Object.entries(numMap(v.abyss, 0, ABYSS_MAX)).map(([k, n]) => [k, Math.floor(n)])),
     week: objMap(v.week, r => ({ clear: !!r.clear, best: Math.floor(clampN(r.best, 0)) })),
-    relicSeen: idList(v.relicSeen, id => !!RELIC_BY[id]), bonusStars: Math.floor(clampN(v.bonusStars, 0)), refunded: Math.floor(clampN(v.refunded, 0)),
+    gfx: Number.isInteger(v.gfx) && v.gfx >= -1 && v.gfx <= 2 ? v.gfx : -1,   // 画质：-1 自动，0 低 1 中 2 高
+    relicSeen: idList(v.relicSeen, id => !!RELIC_BY[id]), cardSeen: idList(v.cardSeen, id => !!ANY_CARD(id)), bonusStars: Math.floor(clampN(v.bonusStars, 0)), refunded: Math.floor(clampN(v.refunded, 0)),
     ver: Number.isInteger(v.ver) ? v.ver : legacyVer(v),
   };
   if (d.ver < SAVE_VER) {
@@ -79,7 +80,7 @@ function starBank() {
   return { earned: total, spent, left: total - spent, perks: d.perks, disk: d.disk };
 }
 const unlocked = i => i === 0 || (loadSave().stars[i - 1] || 0) > 0;
-const starHtml = n => `<span class="stars">${[0, 1, 2].map(i => i < n ? "★" : '<span class="off">★</span>').join("")}</span>`;
+const starHtml = n => `<span class="stars">${[0, 1, 2].map(i => i < n ? '<span class="on">★</span>' : '<span class="off">★</span>').join("")}</span>`;
 
 // ---------- 角色等级 ----------
 function levelOf(exp) { let lv = 1, e = exp || 0; while (lv < PROG.max && e >= expNeed(lv)) { e -= expNeed(lv); lv++; } return { lv, into: e, need: lv < PROG.max ? expNeed(lv) : 0 }; }

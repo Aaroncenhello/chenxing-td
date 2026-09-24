@@ -72,7 +72,7 @@ function showSaveBox(msg) {
 let diffSel = 0, chapSel = null, abyssSel = 0;
 const abyssTop = d => Math.max(0, ...Object.values((d || loadSave()).abyss));
 const abyssOpen = d => Math.min(ABYSS_MAX, abyssTop(d) + 1);
-function openOverlay(html) { rosterAnim = null; $("ovbox").innerHTML = html; $("overlay").hidden = false; $("overlay").scrollTop = 0; menuOpen = true; if (S) { S.selUnit = null; S.spellMode = null; } }
+function openOverlay(html) { rosterAnim = null; $("ovbox").classList.remove("res"); $("ovbox").innerHTML = html; $("overlay").hidden = false; $("overlay").scrollTop = 0; menuOpen = true; if (S) { S.selUnit = null; S.spellMode = null; } }
 function closeOverlay() { $("overlay").hidden = true; menuOpen = false; rosterAnim = null; }
 const chapterOf = i => CHAPTERS.reduce((k, c, j) => (i >= c.from ? j : k), 0);
 function showLevels() {
@@ -88,7 +88,7 @@ function showLevels() {
     <div class="diffs">${DIFFS.map((d, i) => `<button data-diff="${i}" class="${i === diffSel ? "on" : ""}">${d.name}</button>`).join("")}</div>
     <p>${DIFFS[diffSel].desc}${diffSel ? "。要先在普通难度通关，通关后额外 +1★。" : "。"}</p>
     ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
-    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
+    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
     <div class="daily"><div><b>每日挑战 · ${td.date}</b><p>场地：${STAGES[td.stage].name} · 规则：${mod.name}（${mod.desc}）</p>
       <p>${rec ? (rec.cleared ? "今天已经通关 ✓" : `今天最好成绩：第 ${rec.wave} 波`) : "今天还没挑战"}</p></div><button class="primary" id="btn-daily">开始挑战</button></div>
     ${weekHtml(save)}
@@ -148,10 +148,28 @@ function showCodex(tab) {
   if (tab) codexTab = tab;
   const save = loadSave(), kills = save.foeKill, nFoe = Object.keys(ENEMIES).length;
   const total = Object.values(kills).reduce((a, b) => a + b, 0);
-  const tabs = [["foe", `敌人 ${save.seen.length}/${nFoe}`], ["afx", `词缀 ${save.afxSeen.length}/${AFFIX.length}`], ["ev", `事件 ${save.evSeen.length}/${EVENTS.length}`]];
+  const allCards = CODEX_CARDS().concat(SIG, CURSES), nCard = allCards.filter(c => save.cardSeen.includes(c.id)).length;
+  const tabs = [["foe", `敌人 ${save.seen.length}/${nFoe}`], ["card", `卡牌 ${nCard}/${allCards.length}`], ["relic", `遗物 ${save.relicSeen.length}/${RELICS.length}`], ["afx", `词缀 ${save.afxSeen.length}/${AFFIX.length}`], ["ev", `事件 ${save.evSeen.length}/${EVENTS.length}`]];
   const head = `<div class="tabs">${tabs.map(([k, n]) => `<button class="tab${codexTab === k ? " on" : ""}" data-codex="${k}">${n}</button>`).join("")}</div>`;
   let body = "";
-  if (codexTab === "afx") {
+  const cardCx = (c, kind) => { const on = save.cardSeen.includes(c.id), R = RARITY[c.rare || 0];
+    const col = kind === "curse" ? CURSE_COLOR : c.rare ? R.color : "";
+    return `<div class="cx${on ? "" : " unk"}"><canvas data-cxc="${on ? kind + ":" + c.id : ""}" aria-hidden="true"></canvas><div>
+      <b${col && on ? ` style="color:${col}"` : ""}>${on ? c.name : "？？？"}</b>
+      <p>${!on ? "还没拿过" : kind === "curse" ? `${c.good}<br><span style="color:#ff8aa0">代价：${c.bad}</span>` : c.desc(1).replace(/（当前[^）]*）/, "")}</p>
+      ${on && kind !== "curse" ? `<p class="kn">${kind === "sig" ? "专属 · " + UNITS.find(u => u.id === c.hero).name : KIND_NAME[c.kind]} · ${R.name}${c.max > 1 ? ` · 最多 ${c.max} 级` : ""}</p>` : ""}</div></div>`; };
+  if (codexTab === "card") {
+    const has = l => l.filter(c => save.cardSeen.includes(c.id)).length;
+    body = `<p>这局拿过的卡在结算时记到这里。集齐全部通用卡有成就。</p>
+      <h3>通用卡 ${has(CODEX_CARDS())}/${CODEX_CARDS().length}</h3><div class="codex sm">${CODEX_CARDS().map(c => cardCx(c, "card")).join("")}</div>
+      <h3>英雄专属卡 ${has(SIG)}/${SIG.length}</h3><div class="codex sm">${SIG.map(c => cardCx(c, "sig")).join("")}</div>
+      <h3>诅咒卡 ${has(CURSES)}/${CURSES.length}</h3><div class="codex sm">${CURSES.map(c => cardCx(c, "curse")).join("")}</div>`;
+  } else if (codexTab === "relic") {
+    body = `<p>击败精英和首领有机会掉落遗物，每局最多带 ${RELIC_MAX} 件。见过的遗物会记在这里，集齐有成就。</p>
+      <div class="codex sm">${RELICS.map(r => { const on = save.relicSeen.includes(r.id);
+        return `<div class="cx${on ? "" : " unk"}"><canvas data-cxc="${on ? "relic:" + r.id : ""}" aria-hidden="true"></canvas><div><b${on ? ` style="color:${r.color}"` : ""}>${on ? r.name : "？？？"}</b>
+          <p>${on ? r.desc : "还没遇到"}</p></div></div>`; }).join("")}</div>`;
+  } else if (codexTab === "afx") {
     body = `<p>精英和首领会随机带 1–2 条词缀，头顶的小圆点就是它们。遇到过的会记在这里。</p>
       <div class="codex">${AFFIX.map(a => { const on = save.afxSeen.includes(a.id);
         return `<div class="cx${on ? "" : " unk"}"><div><b><i class="dot" style="background:${on ? a.color : "#39405a"}"></i>${on ? a.name : "？？？"}</b>
@@ -174,6 +192,11 @@ function showCodex(tab) {
   openOverlay(`<h2>图鉴</h2>${head}${body}
     <div class="btns"><button id="btn-menu">返回选关</button></div>`);
   for (const c of $("ovbox").querySelectorAll("canvas[data-foe]")) { if (c.dataset.foe) drawFoeIcon(c, c.dataset.foe); else { c.width = 52; c.height = 52; } }
+  for (const c of $("ovbox").querySelectorAll("canvas[data-cxc]")) {
+    const [k, id] = c.dataset.cxc.split(":");
+    if (k === "card") drawCardIcon(c, id, 48); else if (k === "curse") drawCurseIcon(c, id, 48); else if (k === "relic") drawRelicIcon(c, id, 48);
+    else if (k === "sig") drawPortrait(UNITS.find(u => u.id === SIG_BY[id].hero), c, 3); else { c.width = 48; c.height = 48; }
+  }
 }
 function showAchv() {
   const save = loadSave();
@@ -191,6 +214,7 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-week") { const wi = weekInfo(); beginStage(wi.stage, { week: wi, diff: wi.diff }); }
   else if (b.dataset.chap != null) { chapSel = +b.dataset.chap; showLevels(); }
   else if (b.id === "btn-save") showSaveBox();
+  else if (b.id === "btn-gfx") { const next = gfxSel >= 2 ? -1 : gfxSel + 1; editSave(d => { d.gfx = next; }); applyGfx(next); showLevels(); }
   else if (b.id === "btn-svcopy") {
     const ta = $("sv-out"); ta.select(); ta.setSelectionRange(0, 99999);
     let ok = false;
@@ -416,5 +440,20 @@ function showResult(R) {
     openOverlay(`<h2>晨星碑碎了</h2><p>坚持到第 ${S.wave} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。换个英雄、或者优先翻伙伴和范围技能，再试一次吧。</p>
       ${tail}<div class="btns"><button class="primary" id="btn-retry">再试一次</button><button id="btn-menu">选关</button></div>`);
   }
-  drawExpPortraits(); drawReport();
+  drawExpPortraits(); drawReport(); animResult();
+}
+// 结算页入场：标题砸下、星星逐个落下、战报格子依次弹出且数字从 0 滚上去、MVP 聚光、经验条充满
+function animResult() {
+  const box = $("ovbox"); box.classList.remove("res"); void box.offsetWidth; box.classList.add("res");
+  box.querySelectorAll(".rep").forEach((el, i) => { el.style.animationDelay = (0.35 + i * 0.05) + "s"; });
+  const nums = [...box.querySelectorAll(".rep b")].map(b => ({ b, t: b.firstChild })).filter(o => o.t && o.t.nodeType === 3 && /^\d+( .*)?$/.test(o.t.nodeValue));
+  nums.forEach(o => { const m = o.t.nodeValue.match(/^(\d+)(.*)$/); o.v = +m[1]; o.u = m[2]; o.t.nodeValue = "0" + o.u; });
+  const t0 = performance.now(), dur = 900, delay = 350;
+  const tick = now => {
+    if (!box.classList.contains("res")) return;
+    const k = Math.max(0, Math.min(1, (now - t0 - delay) / dur)), e = 1 - Math.pow(1 - k, 3);
+    for (const o of nums) o.t.nodeValue = Math.round(o.v * e) + o.u;
+    if (k < 1) requestAnimationFrame(tick);
+  };
+  if (nums.length) requestAnimationFrame(tick);
 }

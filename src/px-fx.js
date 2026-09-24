@@ -168,7 +168,8 @@ function drawFx(f, now) {
   if (f.kind === "text") {
     if (/^\+?\d+$/.test(f.text)) {
       const [x, y] = tpx(f.x, f.y), pop = f.t < 0.08 ? -4 : 0;
-      if (k < 0.85 || (t * 20 | 0) % 2) pixNum(ctx, f.text, x, y - 10 - R0(k * 18) + pop, f.color, f.crit ? 3 : 2);
+      const sz = f.sz || (f.crit ? 3 : 2), pop2 = sz === 4 && f.t < 0.12 ? -6 : pop;   // 最大号刚出现时往上弹一下
+      if (k < 0.85 || (t * 20 | 0) % 2) pixNum(ctx, f.text, x, y - 10 - R0(k * 18) + pop2, sz === 4 ? "#ffe040" : f.color, sz);
     } else overlayTexts.push(f);
     return;
   }
@@ -235,6 +236,15 @@ function drawFx(f, now) {
     const sy = k < 0.3 ? 1 : 1 - (k - 0.3) / 0.7 * 0.8, lift = F.fly ? R0(22 * (1 - Math.min(1, k * 2))) : 0;
     ctx.globalAlpha = k < 0.5 ? 1 : 1 - (k - 0.5) * 2;
     ctx.drawImage(big, 0, 0, 120, 120, fx - FOE_FOOT[0], fy - lift - R0(FOE_FOOT[1] * sy), 120, R0(120 * sy));
+    ctx.globalAlpha = 1;
+  } else if (f.kind === "shatter") {
+    const [fx, fy] = foeFeet(f), img = renderFoe(f.type, { step: 0, ph: "", flash: k < 0.15, face: f.face, elite: f.elite, t: 0 });
+    const ox = fx - FOE_FOOT[0], oy = fy - FOE_FOOT[1] - (f.fly ? 22 : 0), tt = f.t;
+    ctx.globalAlpha = k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45;
+    for (const b of f.blocks) {
+      const x = R0(ox + b.sx + b.vx * tt), y = R0(oy + b.sy + b.vy * tt + 260 * tt * tt), s = b.spin && k > 0.3 ? 6 : 8;
+      ctx.drawImage(img, b.sx, b.sy, 8, 8, x, y, s, s);
+    }
     ctx.globalAlpha = 1;
   } else if (f.kind === "ucorpse") {
     const [fx, fy] = unitFeet(f), flash = k < 0.35 && (f.t * 24 | 0) % 2 === 0;
@@ -400,7 +410,8 @@ function drawOverlay() {
       txt(`${c.u.name} · 打断进度 ${Math.round(bk * 100)}%（${c.u.tip}）`, tx.width / 2, cy + ch + 9 * s * tk, 8 * s * tk, "#ffe38a");
     }
   }
-  if (S.combo >= 3 && S.comboT > 0) {
+  drawWaveLabels(s, txt, tk);
+  if (S.combo >= 3 && S.comboT > 0 && !$("pinfo").offsetHeight) {   // 竖屏信息区有大号连杀，战场里就不重复画
     const tier = S.combo >= 50 ? "#ff6a5a" : S.combo >= 20 ? "#ffb040" : S.combo >= 10 ? "#ffd860" : "#ffffff";
     tctx.textAlign = "left"; txt(`连杀 ×${S.combo}`, 12 * s, 16 * s * tk, (10 + Math.min(6, S.combo / 8)) * s * tk, tier);
     tctx.fillStyle = "rgba(10,8,20,.7)"; tctx.fillRect(12 * s, 25 * s, 56 * s, 3 * s); tctx.fillStyle = tier; tctx.fillRect(12 * s, 25 * s, 56 * s * Math.max(0, S.comboT / COMBO.window), 3 * s);
@@ -435,13 +446,73 @@ function drawCutin(f, k, s, txt) {
   tctx.restore();
 }
 
+// ---------- 出怪方向预告 + 大波预警 ----------
+const WAVE_COL = { boss: "#ff4a4a", elite: "#ff6a5a", tide: "#ffb040", "": "#ff8ac0" };
+const wavePreviewOn = () => !S.over && !S.cine && !S.spawnQueue.length && S.wave < totalWaves() && S.genWaves[S.wave];
+function drawWavePreview(t) {
+  if (!wavePreviewOn()) return;
+  const info = nextWaveInfo(); if (!info) return;
+  const col = WAVE_COL[info.kind], soon = S.autoWave !== false && S.nextWaveIn <= 3, pulse = 0.5 + Math.sin(t * (soon ? 12 : 5)) * 0.5;
+  for (const [pi] of info.ports) {
+    const p = PORTALS[pi]; if (!p) continue;
+    const [x, y] = tpx(p.x, p.y), dx = CRYSTAL.x - p.x, dy = CRYSTAL.y - p.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
+    // 传送门外圈脉动
+    ctx.globalAlpha = 0.35 + pulse * 0.45; ring(ctx, x, y + 6, 15 + pulse * 3, 10 + pulse * 2, col); ctx.globalAlpha = 1;
+    // 往晨星碑方向走的三道箭头
+    for (let i = 0; i < 3; i++) {
+      const k = ((t * 1.6 + i / 3) % 1), cx = x + ux * (14 + k * 34), cy = y + 6 + uy * (14 + k * 34) * 0.8;
+      ctx.globalAlpha = (1 - k) * 0.9;
+      const nx = -uy, ny = ux;
+      line(ctx, cx - ux * 5 + nx * 5, cy - uy * 5 + ny * 5, cx, cy, col, 2); line(ctx, cx - ux * 5 - nx * 5, cy - uy * 5 - ny * 5, cx, cy, col, 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+  // 最后 3 秒：潮汐 / 首领 / 精英波，屏幕边缘泛红脉动
+  if (soon && info.kind) {
+    const a = (0.12 + pulse * 0.18) * (info.kind === "tide" ? 0.8 : 1), w = 10;
+    ctx.fillStyle = info.kind === "tide" ? `rgba(255,160,40,${a.toFixed(3)})` : `rgba(255,50,50,${a.toFixed(3)})`;
+    ctx.fillRect(0, 0, PW, w); ctx.fillRect(0, PHt - w, PW, w); ctx.fillRect(0, 0, w, PHt); ctx.fillRect(PW - w, 0, w, PHt);
+  }
+}
+// 传送门旁边的怪物小图标 + 数量（画在高清文字层上，手机上也看得清）
+function drawWaveLabels(s, txt, tk) {
+  if (!wavePreviewOn()) return;
+  const info = nextWaveInfo(); if (!info) return;
+  const col = WAVE_COL[info.kind], sz = Math.round(20 * s * tk);
+  tctx.imageSmoothingEnabled = false;
+  for (const [pi, m] of info.ports) {
+    const p = PORTALS[pi]; if (!p) continue;
+    const dx = CRYSTAL.x - p.x, dy = CRYSTAL.y - p.y, d = Math.hypot(dx, dy) || 1;
+    const [px, py] = tpx(p.x + dx / d * 1.05, p.y + dy / d * 0.95), list = [...m].sort((a, b) => b[1] - a[1]).slice(0, 2);
+    list.forEach(([type, n], i) => {
+      const F = foeOf(type), big = renderFoe(type, { face: 1, t: 0 }), sq = Math.max(F.h * 2 + 8, F.frames[0][0].length * 2 + 4, 36);
+      const x = px * s + (i - (list.length - 1) / 2) * sz * 1.5, y = py * s;
+      tctx.fillStyle = "rgba(10,8,20,.7)"; tctx.fillRect(x - sz * 0.62, y - sz * 0.62, sz * 1.24, sz * 1.24);
+      tctx.fillStyle = col; tctx.fillRect(x - sz * 0.62, y + sz * 0.52, sz * 1.24, Math.max(1, s));
+      tctx.drawImage(big, 60 - sq / 2, 115 - sq, sq, sq, x - sz / 2, y - sz / 2 - sz * 0.08, sz, sz);
+      txt("×" + n, x + sz * 0.42, y + sz * 0.5, 8 * s * tk, "#ffffff");
+    });
+  }
+}
+// 连杀边框光：10 连起屏幕四边发光，25 / 50 / 80 连颜色逐级变热、光带变宽
+function drawComboGlow(t) {
+  if (S.combo < 10 || S.comboT <= 0 || S.over) return;
+  const tier = S.combo >= 80 ? 3 : S.combo >= 50 ? 2 : S.combo >= 25 ? 1 : 0;
+  const rgb = ["255,216,96", "255,176,64", "255,106,90", "255,58,138"][tier], w = 4 + tier * 3;
+  const a = (0.18 + tier * 0.07) * (0.7 + Math.sin(t * (6 + tier * 3)) * 0.3) * Math.min(1, S.comboT / 0.8);
+  for (let i = 0; i < w; i++) {
+    ctx.fillStyle = `rgba(${rgb},${(a * (1 - i / w)).toFixed(3)})`;
+    ctx.fillRect(i, i, PW - i * 2, 1); ctx.fillRect(i, PHt - 1 - i, PW - i * 2, 1); ctx.fillRect(i, i, 1, PHt - i * 2); ctx.fillRect(PW - 1 - i, i, 1, PHt - i * 2);
+  }
+}
+
 // ---------- 每帧绘制 ----------
 function render(now) {
   now = now || performance.now();
   const t = now / 1000;
   if (mapFor !== mapKey()) { drawMap(); mapFor = mapKey(); }
   ctx.imageSmoothingEnabled = false;
-  const amp = S.shake > 0 ? Math.min(6, 2 + S.shake * 10) : 0;
+  const amp = S.shake > 0 ? Math.min(6, 2 + S.shake * 10) * GFX.shake : 0;
   const ox = amp ? R0((Math.random() - 0.5) * amp) : 0, oy = amp ? R0((Math.random() - 0.5) * amp) : 0;
   ctx.setTransform(1, 0, 0, 1, 0, 0); rect(ctx, 0, 0, PW, PHt, TH().bg);
   ctx.setTransform(1, 0, 0, 1, ox, oy);
@@ -461,22 +532,24 @@ function render(now) {
     ctx.globalAlpha = 0.5; ring(ctx, x, y + 12, R, R * 0.8, u.def.color, (t * 8 | 0) % 2); ctx.globalAlpha = 1;
   }
   drawStations(t);
+  drawWavePreview(t);
   drawCrystalHp();
   const list = [...S.units.filter(u => !u.dead).map(u => ({ y: unitFeet(u)[1], u })), ...S.enemies.filter(e => !e.d.flying).map(e => ({ y: foeFeet(e)[1], e }))];
   list.sort((a, b) => a.y - b.y);
   for (const it of list) it.u ? drawUnit(it.u, now) : drawEnemy(it.e, now);
-  for (const f of S.fx) if (f.kind === "corpse" || f.kind === "ucorpse") drawFx(f, now);
+  for (const f of S.fx) if (f.kind === "corpse" || f.kind === "ucorpse" || f.kind === "shatter") drawFx(f, now);
   for (const e of S.enemies) if (e.d.flying) drawEnemy(e, now);
   drawBlades(t);
   drawHazAir(t);
   for (const s of S.shots) drawShot(s);
-  for (const f of S.fx) if (f.kind !== "corpse" && f.kind !== "ucorpse") drawFx(f, now);
+  for (const f of S.fx) if (f.kind !== "corpse" && f.kind !== "ucorpse" && f.kind !== "shatter") drawFx(f, now);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (S.hitFlash > 0) { ctx.fillStyle = `rgba(255,40,40,${(S.hitFlash * 0.5).toFixed(3)})`; ctx.fillRect(0, 0, PW, 6); ctx.fillRect(0, PHt - 6, PW, 6); ctx.fillRect(0, 0, 6, PHt); ctx.fillRect(PW - 6, 0, 6, PHt); }
   if (S.slowmo > 0) { ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fillRect(0, 0, PW, PHt); }
-  for (const f of S.fx) if (f.kind === "flash") { ctx.fillStyle = `rgba(255,248,210,${(0.75 * (1 - f.t / f.life)).toFixed(3)})`; ctx.fillRect(0, 0, PW, PHt); }
+  for (const f of S.fx) if (f.kind === "flash") { ctx.globalAlpha = 0.75 * (1 - f.t / f.life); ctx.fillStyle = f.color || "#fff8d2"; ctx.fillRect(0, 0, PW, PHt); ctx.globalAlpha = 1; }   // 以前忽略 color，诅咒的红闪也是米白
   if (S.star >= ULT.max && !S.over) { const a = 0.25 + Math.sin(t * 5) * 0.15; ctx.fillStyle = `rgba(255,224,128,${a.toFixed(3)})`; ctx.fillRect(0, 0, PW, 3); ctx.fillRect(0, PHt - 3, PW, 3); }
   if ((S.paused || S.offer) && !S.over) { ctx.fillStyle = "rgba(8,10,16,.45)"; ctx.fillRect(0, 0, PW, PHt); }
+  drawComboGlow(t);
   drawCine();
   drawOverlay();
 }

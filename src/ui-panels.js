@@ -97,14 +97,16 @@ function updateOffer() {
   const key = S.offer.map(p => p.id).join("|") + "#" + S.rerolls;
   if (box.dataset.k === key) return;
   box.dataset.k = key; box.hidden = false;
+  box.classList.toggle("lg", S.offer.some(p => (p.rare || 0) === 2));   // 有传说卡：背景亮起金色光芒
   const title = S.offerRare ? "稀有货架！选一张" : S.level <= 1 && !S.kills ? "开局翻牌！选一张" : `升到 Lv ${S.level}！选一张卡`;
   setText("lu-title", title + (S.pending > 1 ? `（还有 ${S.pending - 1} 次）` : ""));
   $("cards3").innerHTML = S.offer.map((p, i) => {
     const c = cardInfo(p), r = p.rare || 0, R = RARITY[r] || { name: "诅咒", color: CURSE_COLOR };
     const tag = r ? `<span class="rt" style="background:${R.color}">${R.name}</span>` : "";
     const body = c.curse ? `<span>${p.curse.good}<em class="bad">代价：${p.curse.bad}</em></span>` : `<span>${c.desc}</span>`;
+    const h = synHint(p), hint = h ? `<em class="sh${h.done ? " done" : ""}" style="--g:${h.g.color}">${h.done ? "凑齐羁绊 · " + h.g.name : `羁绊 ${h.g.name} ${h.a}/${h.b}`}</em>` : "";
     return `<button class="pcard r${r}${c.sig ? " sig" : ""}" data-pick="${p.id}" style="--c:${c.color}"><span class="key">${i + 1}</span>${tag}<canvas id="lu-${i}" aria-hidden="true"></canvas>
-      <div><small>${KIND_NAME[c.kind] || "诅咒"}</small><b>${c.name}</b>${body}</div></button>`;
+      <div><small>${KIND_NAME[c.kind] || "诅咒"}</small><b>${c.name}</b>${body}${hint}</div></button>`;
   }).join("");
   const rb = $("btn-reroll");
   rb.textContent = S.rerolls > 0 ? `重抽（剩 ${S.rerolls} 次）` : "没有重抽次数了";
@@ -170,9 +172,21 @@ function updateSynBar() {
     ? on.map(g => `<span class="syn" style="--c:${g.color}" title="${g.desc}">${g.name}</span>`).join("")
     : `<span class="syn off">羁绊：还没凑齐（凑齐会自动生效）</span>`;
 }
+// 选中一张卡的庆祝：全屏闪一下对应颜色；传说卡在晨星碑周围再炸一圈金光
+const CELE_COL = { 0: "rgba(255,248,220,.5)", 1: "rgba(98,180,255,.55)", 2: "rgba(255,200,80,.75)", 3: "rgba(224,40,80,.6)" };
+function celebratePick(p) {
+  const r = p.curse ? 3 : p.rare || 0, el = $("cele");
+  el.style.background = `radial-gradient(circle at 50% 50%, ${CELE_COL[r]}, transparent 75%)`;
+  el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
+  if (r === 2 && !p.curse) {
+    addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#ffd860", life: 0.7, r0: 0.3, r1: 3.2, fill: true });
+    burst(CRYSTAL.x, CRYSTAL.y, "#ffe38a", 40, 4, 0.9, 0.09); S.shake = Math.max(S.shake, 0.3);
+  }
+}
 function takeCard(id) {
   if (!S.offer) return;
   const p = S.offer.find(x => x.id === id); if (!p) return;
+  celebratePick(p);
   pickCard(id);
   $("levelup").hidden = true; $("levelup").dataset.k = "";
   openOffer();
@@ -303,6 +317,60 @@ function updateHud() {
   setText("h-auto", S.autoWave ? "自动·开" : "自动·关"); setText("h-speed", S.speed + "×"); setText("h-pause", S.paused ? "继续" : "暂停");
   setText("h-form", formOf().name);
 }
+// ---------- 竖屏信息区 ----------
+let piTeamKey = "", piNextKey = "", piCardKey = "", piCombo = 0;
+function updatePInfo() {
+  const box = $("pinfo");
+  if (!S || !box.offsetHeight) return;   // 只在竖屏全屏时可见
+  // 状态行：这一波的进度 + 大号连杀
+  const waiting = S.wave < totalWaves() && !S.spawnQueue.length, info = waiting ? nextWaveInfo() : null;
+  const tag = info && { boss: "首领！", tide: "潮汐！", elite: "精英！" }[info.kind];
+  const wtxt = S.over ? "" : waiting ? `下一波 ${S.autoWave !== false ? Math.ceil(Math.max(0, S.nextWaveIn)) + " 秒" : "等你出击"}${tag ? ` · <span class="warn">${tag}</span>` : ""}`
+    : S.spawnQueue.length ? `第 ${S.wave} 波 · 还有 ${S.spawnQueue.length} 只要出场` : `第 ${S.wave} 波 · 场上 ${S.enemies.length}`;
+  const we = $("pi-wave"); if (we.dataset.k !== wtxt) { we.dataset.k = wtxt; we.innerHTML = wtxt; }
+  const ce = $("pi-combo"), c = S.comboT > 0 && S.combo >= 3 ? S.combo : 0;
+  if (c !== piCombo) {
+    piCombo = c; ce.textContent = c ? "连杀 ×" + c : "";
+    ce.className = c >= 80 ? "t3" : c >= 50 ? "t2" : c >= 25 ? "t1" : "";
+    if (c) { ce.classList.add("pop"); setTimeout(() => ce.classList.remove("pop"), 90); }
+  }
+  // 队伍：结构变了才重建，血条和技力条每帧更新
+  const team = S.units.filter(u => !u.summon), key = team.map(u => u.id + u.def.id + ":" + u.lv + (u.branch || "")).join(",");
+  if (key !== piTeamKey) {
+    piTeamKey = key;
+    $("pi-team").innerHTML = team.map(u => `<button class="pu${u.hero ? " hero" : ""}" data-pu="${u.id}" style="--c:${u.def.color}"><canvas id="pu-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b><i class="hp"><s></s></i><i class="sp"><s></s></i></button>`).join("");
+    for (const u of team) drawPortrait(u.def, $("pu-" + u.id), u.lv, u.branch);
+  }
+  for (const u of team) {
+    const el = $("pi-team").querySelector(`[data-pu="${u.id}"]`); if (!el) continue;
+    const rdy = u.skillT <= 0 && u.sp >= u.def.sp && u.down <= 0;
+    el.classList.toggle("down", u.down > 0); el.classList.toggle("sel", S.selUnit === u); el.classList.toggle("rdy", rdy);
+    el.children[2].firstChild.style.width = (u.down > 0 ? 0 : u.hp / u.maxHp * 100).toFixed(0) + "%";
+    el.children[3].firstChild.style.width = (u.skillT > 0 ? u.skillT / (u.def.skill.dur || 1) * 100 : u.sp / u.def.sp * 100).toFixed(0) + "%";
+  }
+  // 下一波预告
+  const nk = waiting && info ? S.wave + ":" + info.kind : "";
+  if (nk !== piNextKey) {
+    piNextKey = nk;
+    $("pi-next").innerHTML = nk ? `<span>第 ${S.wave + 1} 波：</span>` + nextWaveSummary().map(x => `<span class="chip${x.elite ? " elite" : ""}">${x.elite ? "精英" : ""}${ENEMIES[x.type].name} ×${x.n}</span>`).join("") : "";
+  }
+  // 卡牌和遗物
+  const ck = Object.entries(S.cards).map(([k, v]) => k + v).join(",") + "|" + Object.keys(S.curses || {}).join(",") + "|" + (S.relics || []).join(",");
+  if (ck !== piCardKey) {
+    piCardKey = ck;
+    const ids = Object.keys(S.cards).concat(Object.keys(S.curses || {}));
+    $("pi-cards").innerHTML = (S.relics || []).map(id => `<span class="rl" title="${RELIC_BY[id].name}"><canvas id="pc-${id}"></canvas></span>`).join("") + ids.map(id => `<span title="${(ANY_CARD(id) || {}).name || id}"><canvas id="pc-${id}"></canvas></span>`).join("");
+    for (const id of S.relics || []) drawRelicIcon($("pc-" + id), id, 24);
+    for (const id of ids) cardIconTo($("pc-" + id), id);
+  }
+}
+// 点队伍里的角色：选中（战场上显示攻击范围）；已选中且技力满时再点一下释放技能
+$("pi-team").addEventListener("click", ev => {
+  const b = ev.target.closest("[data-pu]"); if (!b || !S) return;
+  const u = S.units.find(x => x.id === +b.dataset.pu); if (!u) return;
+  if (S.selUnit === u && u.sp >= u.def.sp && u.skillT <= 0) useSkill(u);
+  else { S.selUnit = u; S.selSpell = null; S.spellMode = null; }
+});
 window.addEventListener("orientationchange", () => setTimeout(() => { maybeImm(); resize(); }, 250));
 document.addEventListener("keydown", ev => {
   const k = ev.key.toLowerCase();
