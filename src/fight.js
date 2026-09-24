@@ -20,8 +20,35 @@ function burst(x, y, color, n, spd, life, size) {
   }
   addFx({ kind: "parts", x, y, color, parts, life });
 }
+// 像素碎裂：把敌人的像素图切成 8×8 的小块，每块带一个往外飞的速度，drawFx 里按重力画出来
+function shatterFx(e) {
+  const F = foeOf(e.type), w = F.frames[0][0].length, h = F.frames[0].length + (F.legs ? 2 : 0), bs = 8, blocks = [];
+  const x0 = (30 - Math.floor(w / 2)) * 2, y0 = (56 - h) * 2, cx = x0 + w, cy = y0 + h;
+  for (let sy = y0; sy < 112; sy += bs) for (let sx = x0; sx < x0 + w * 2; sx += bs) {
+    const dx = sx + bs / 2 - cx, dy = sy + bs / 2 - cy, d = Math.hypot(dx, dy) || 1;
+    blocks.push({ sx, sy, vx: dx / d * (40 + Math.random() * 70), vy: dy / d * 40 - 50 - Math.random() * 70, spin: Math.random() < 0.5 });
+  }
+  return { kind: "shatter", type: e.type, elite: e.elite, face: e.face, x: e.x, y: e.y, fly: !!F.fly, blocks: blocks.slice(0, 64), life: 0.7 };
+}
 const faceTo = (o, tx) => { if (tx < o.x - 0.05) o.face = -1; else if (tx > o.x + 0.05) o.face = 1; };
-function addNum(x, y, v, color, big) { addFx({ kind: "text", x: x + (Math.random() - 0.5) * 0.3, y: y - 0.35, text: String(Math.round(v)), color, life: 0.8, crit: !!big }); }
+// 伤害数字：key = 挨打的对象，短时间内同一对象、同一颜色的数字合并成一个往上滚，不刷屏；
+// frac = 这一下（合并后的总数）占对象最大生命的比例，决定字号：≥30% 最大号并带一点抖屏，暴击或 ≥10% 中号
+const numSize = (frac, crit) => (frac >= 0.3 ? 4 : crit || frac >= 0.1 ? 3 : 2);
+function addNum(x, y, v, color, big, key, maxHp) {
+  if (key != null) {
+    for (let i = S.fx.length - 1, n = 0; i >= 0 && n < 60; i--, n++) {
+      const f = S.fx[i];
+      if (f.kind !== "text" || f.key !== key || f.color !== color || f.t > 0.35) continue;
+      f.val += v; f.text = String(Math.round(f.val)); f.t = Math.min(f.t, 0.06);
+      const sz = Math.max(f.sz, numSize(maxHp ? f.val / maxHp : 0, big)); if (sz === 4 && f.sz < 4) S.shake = Math.max(S.shake, 0.12);
+      f.sz = sz; f.crit = f.crit || !!big;
+      return;
+    }
+  }
+  const sz = numSize(maxHp ? v / maxHp : 0, big);
+  if (sz === 4) S.shake = Math.max(S.shake, 0.12);
+  addFx({ kind: "text", x: x + (Math.random() - 0.5) * 0.3, y: y - 0.35, text: String(Math.round(v)), val: v, color, life: sz >= 3 ? 0.95 : 0.8, crit: !!big, sz, key, big: sz === 4 });
+}
 
 // ---------- 伤害 ----------
 function killEnemy(e, src) {
@@ -59,7 +86,10 @@ function killEnemy(e, src) {
   if (src && hasTal(src, "sword") && src.skillT <= 0) src.sp = Math.min(src.def.sp, src.sp + 4);
   if (src && tal(src, "t_spark") && !src.dead && src.down <= 0) { heal(src, src.maxHp * 0.03, true, src); if (src.skillT <= 0) src.sp = Math.min(src.def.sp, src.sp + 2); }
   burst(e.x, e.y, e.d.color, 16, 2.6, 0.6, 0.08);
-  addFx({ kind: "corpse", type: e.type, elite: e.elite, x: e.x, y: e.y, face: e.face, life: 0.6 });
+  // 普通/精英：身体碎成像素块飞散（低画质和首领仍用原来的倒地）
+  if (GFX.k >= 0.6 && !isBoss(e)) addFx(shatterFx(e)); else addFx({ kind: "corpse", type: e.type, elite: e.elite, x: e.x, y: e.y, face: e.face, life: 0.6 });
+  // 顿帧：精英、首领被打死时画面停一下，配一圈白色冲击环
+  if (e.elite || isBoss(e)) { S.hitStop = Math.max(S.hitStop || 0, isBoss(e) ? 0.16 : 0.07); addFx({ kind: "ring", x: e.x, y: e.y, color: "#ffffff", life: 0.35, r0: 0.2, r1: isBoss(e) ? 2.6 : 1.5 }); }
   if ((e.elite || isBoss(e)) && S.slowCd <= 0) { S.slowmo = Math.max(S.slowmo, isBoss(e) ? 0.9 : 0.22); S.slowCd = 1.2; }
   if (isBoss(e)) { S.shake = 0.6; if (S.boss === e) S.boss = null; if (e.type === "boss") S.events.push({ type: "achv", id: "boss" }); }
   if (e.d.split) for (let i = 0; i < e.d.split; i++) { const s = spawnNear("slime", e, false, true); s.stop = 0.2; s.hitT = 0.1; }
@@ -107,8 +137,8 @@ function hurt(e, amt, type, crit, src) {
   }
   if (e.shield > 0) {
     const m = type === "magic" ? 1.5 : 1, eff = amt * m;
-    if (eff <= e.shield) { e.shield -= eff; addNum(e.x, e.y, eff, "#8ac8ff", crit); e.hitT = 0.1; addStat(src, "dmg", eff); return eff; }
-    const left = (eff - e.shield) / m; addNum(e.x, e.y - 0.15, e.shield, "#8ac8ff"); addStat(src, "dmg", e.shield);
+    if (eff <= e.shield) { e.shield -= eff; addNum(e.x, e.y, eff, "#8ac8ff", crit, e.id, e.maxHp); e.hitT = 0.1; addStat(src, "dmg", eff); return eff; }
+    const left = (eff - e.shield) / m; addNum(e.x, e.y - 0.15, e.shield, "#8ac8ff", false, e.id, e.maxHp); addStat(src, "dmg", e.shield);
     burst(e.x, e.y - 0.2, "#8ac8ff", 14, 2.4, 0.5, 0.06); e.shield = 0; amt = left;
   }
   const real = Math.min(amt, e.hp);
@@ -116,7 +146,7 @@ function hurt(e, amt, type, crit, src) {
   e.hp -= amt; e.hitT = 0.12; e.kb = crit ? 1.6 : 1;
   if (e.cast) castHit(e, amt);
   addStat(src, "dmg", real);
-  addNum(e.x, e.y, amt, type === "true" ? "#fff0a0" : crit ? "#ffe040" : type === "magic" ? "#d4b4ff" : type === "poison" ? "#9cf07a" : "#ffffff", crit);
+  addNum(e.x, e.y, amt, type === "true" ? "#fff0a0" : crit ? "#ffe040" : type === "magic" ? "#d4b4ff" : type === "poison" ? "#9cf07a" : "#ffffff", crit, e.id, e.maxHp);
   if (type !== "poison") burst(e.x, e.y - 0.1, type === "magic" ? "#d4b4ff" : "#ffe7a8", crit ? 8 : 4, 2.2, 0.3, 0.045);
   if (e.type === "boss" && !e.enraged && e.hp > 0 && e.hp <= e.maxHp * 0.5) enrage(e);
   if (e.d.phases && e.hp > 0) while (e.phase < e.d.phases.length && e.hp <= e.maxHp * e.d.phases[e.phase]) phaseShift(e, e.phase++);
@@ -155,7 +185,7 @@ function hurtUnit(u, amt, type, from) {
   if (from && from.d && hasAfx(from, "vampiric") && !from.dead) from.hp = Math.min(from.maxHp, from.hp + amt * 0.4);
   u.hp -= amt; u.hitT = type === "poison" ? Math.max(u.hitT, 0.06) : 0.14; if (type !== "poison") u.kb = 1;
   addStat(u, "taken", amt);
-  addNum(u.x, u.y, amt, type === "magic" ? "#d4b4ff" : type === "poison" ? "#9cf07a" : "#ff9a8f");
+  addNum(u.x, u.y, amt, type === "magic" ? "#d4b4ff" : type === "poison" ? "#9cf07a" : "#ff9a8f", false, "u" + u.id, u.maxHp);
   if (type !== "poison") burst(u.x, u.y - 0.1, "#ff9a8f", 3, 2, 0.3, 0.04);
   if (cl("thorn") && from && !from.dead && type !== "poison") hurt(from, amt * 0.25 * cl("thorn"), "magic", false, { key: "thorn" });
   if (tal(u, "t_thorn") && from && !from.dead && type === "phys") hurt(from, amt * 0.2, "magic", false, { key: "thorn" });
@@ -169,7 +199,7 @@ function heal(u, amt, quiet, src) {
   const got = Math.min(amt, u.maxHp - u.hp);
   u.hp += got;
   if (src) addStat(src, "heal", got);
-  if (got > 0 && !quiet) addNum(u.x, u.y, got, "#7ee89c");
+  if (got > 0 && !quiet) addNum(u.x, u.y, got, "#7ee89c", false, "h" + u.id);
 }
 function hurtCrystal(amt, e) {
   if (S.over) return;

@@ -168,7 +168,8 @@ function drawFx(f, now) {
   if (f.kind === "text") {
     if (/^\+?\d+$/.test(f.text)) {
       const [x, y] = tpx(f.x, f.y), pop = f.t < 0.08 ? -4 : 0;
-      if (k < 0.85 || (t * 20 | 0) % 2) pixNum(ctx, f.text, x, y - 10 - R0(k * 18) + pop, f.color, f.crit ? 3 : 2);
+      const sz = f.sz || (f.crit ? 3 : 2), pop2 = sz === 4 && f.t < 0.12 ? -6 : pop;   // 最大号刚出现时往上弹一下
+      if (k < 0.85 || (t * 20 | 0) % 2) pixNum(ctx, f.text, x, y - 10 - R0(k * 18) + pop2, sz === 4 ? "#ffe040" : f.color, sz);
     } else overlayTexts.push(f);
     return;
   }
@@ -235,6 +236,15 @@ function drawFx(f, now) {
     const sy = k < 0.3 ? 1 : 1 - (k - 0.3) / 0.7 * 0.8, lift = F.fly ? R0(22 * (1 - Math.min(1, k * 2))) : 0;
     ctx.globalAlpha = k < 0.5 ? 1 : 1 - (k - 0.5) * 2;
     ctx.drawImage(big, 0, 0, 120, 120, fx - FOE_FOOT[0], fy - lift - R0(FOE_FOOT[1] * sy), 120, R0(120 * sy));
+    ctx.globalAlpha = 1;
+  } else if (f.kind === "shatter") {
+    const [fx, fy] = foeFeet(f), img = renderFoe(f.type, { step: 0, ph: "", flash: k < 0.15, face: f.face, elite: f.elite, t: 0 });
+    const ox = fx - FOE_FOOT[0], oy = fy - FOE_FOOT[1] - (f.fly ? 22 : 0), tt = f.t;
+    ctx.globalAlpha = k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45;
+    for (const b of f.blocks) {
+      const x = R0(ox + b.sx + b.vx * tt), y = R0(oy + b.sy + b.vy * tt + 260 * tt * tt), s = b.spin && k > 0.3 ? 6 : 8;
+      ctx.drawImage(img, b.sx, b.sy, 8, 8, x, y, s, s);
+    }
     ctx.globalAlpha = 1;
   } else if (f.kind === "ucorpse") {
     const [fx, fy] = unitFeet(f), flash = k < 0.35 && (f.t * 24 | 0) % 2 === 0;
@@ -465,12 +475,12 @@ function render(now) {
   const list = [...S.units.filter(u => !u.dead).map(u => ({ y: unitFeet(u)[1], u })), ...S.enemies.filter(e => !e.d.flying).map(e => ({ y: foeFeet(e)[1], e }))];
   list.sort((a, b) => a.y - b.y);
   for (const it of list) it.u ? drawUnit(it.u, now) : drawEnemy(it.e, now);
-  for (const f of S.fx) if (f.kind === "corpse" || f.kind === "ucorpse") drawFx(f, now);
+  for (const f of S.fx) if (f.kind === "corpse" || f.kind === "ucorpse" || f.kind === "shatter") drawFx(f, now);
   for (const e of S.enemies) if (e.d.flying) drawEnemy(e, now);
   drawBlades(t);
   drawHazAir(t);
   for (const s of S.shots) drawShot(s);
-  for (const f of S.fx) if (f.kind !== "corpse" && f.kind !== "ucorpse") drawFx(f, now);
+  for (const f of S.fx) if (f.kind !== "corpse" && f.kind !== "ucorpse" && f.kind !== "shatter") drawFx(f, now);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (S.hitFlash > 0) { ctx.fillStyle = `rgba(255,40,40,${(S.hitFlash * 0.5).toFixed(3)})`; ctx.fillRect(0, 0, PW, 6); ctx.fillRect(0, PHt - 6, PW, 6); ctx.fillRect(0, 0, 6, PHt); ctx.fillRect(PW - 6, 0, 6, PHt); }
   if (S.slowmo > 0) { ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fillRect(0, 0, PW, PHt); }

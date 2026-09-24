@@ -6,6 +6,7 @@ function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   if (S.slowCd > 0) S.slowCd -= dt;
   let k = 1; if (S.slowmo > 0) { S.slowmo -= dt; k = 0.3; }
+  if (S.hitStop > 0) { S.hitStop -= dt; k = 0; }   // 顿帧：精英/首领被打死的一瞬间画面停住
   if (!menuOpen && !dlg && !S.paused && !S.over && !S.offer && !S.shop && !S.event) {
     acc += dt * S.speed * k;
     let n = 0;
