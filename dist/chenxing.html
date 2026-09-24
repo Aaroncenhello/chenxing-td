@@ -3206,13 +3206,25 @@ function drawAfxPips(e, fx, top) {
 }
 
 // ================= 战斗：伤害、出手、技能、每一步 =================
-// 画质档位：粒子数量倍率 k、同屏特效上限 cap、抖屏强度 shake、背景飘落物 amb。-1 = 自动（手机用中，电脑用高）
+// 画质档位：粒子数量倍率 k、同屏特效上限 cap、抖屏强度 shake、背景飘落物 amb。-1 = 自动（手机用中，电脑用高，再按实际帧率动态调）
 const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true }];
-let GFX = GFX_LV[2], gfxSel = -1;
+let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
   gfxSel = sel == null ? -1 : sel;
-  const auto = typeof isPhone === "function" && isPhone() ? 1 : 2;
-  GFX = GFX_LV[gfxSel >= 0 ? gfxSel : auto];
+  if (gfxSel >= 0) { GFX = GFX_LV[gfxSel]; return; }
+  if (autoIdx == null) autoIdx = typeof isPhone === "function" && isPhone() ? 1 : 2;
+  GFX = GFX_LV[autoIdx];
+}
+// 自动档位不是选完就定死：帧率持续偏低就自动降一档，回稳一阵子再谨慎升回去，别的画质选项不受影响
+let fpsEma = null, gfxAdaptCd = 2;
+function adaptGfx(dt) {
+  if (gfxSel >= 0 || !dt) return;
+  const fps = 1 / Math.max(dt, 1e-3);
+  fpsEma = fpsEma == null ? fps : fpsEma * 0.9 + fps * 0.1;
+  gfxAdaptCd -= dt;
+  if (gfxAdaptCd > 0) return;
+  if (fpsEma < 42 && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
+  else if (fpsEma > 56 && autoIdx < GFX_LV.length - 1) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
 }
 // 特效满了就先丢掉装饰性的（粒子、伤害数字），横幅、演出、环这类关键反馈照常加
 const fxCheap = f => f.kind === "parts" || (f.kind === "text" && !f.big);
@@ -3376,7 +3388,7 @@ function bossFanfare(e, kind) {
   addFx({ kind: "letterbox", life: death ? 2.4 : 1.5 });
   addFx({ kind: "flash", life: death ? 0.5 : 0.35, color: death ? "#ffffff" : col });
   addFx({ kind: "ring", x: e.x, y: e.y, color: col, life: 0.9, r0: 0.4, r1: death ? 9 : 6 });
-  S.shake = Math.max(S.shake, death ? 0.9 : 0.6);
+  S.shake = Math.max(S.shake, death ? 0.9 : 0.6); S.zoomK = Math.max(S.zoomK || 0, death ? 0.05 : 0.03);
   if (!death) return;
   // 连环爆炸 → 光柱 → 金色碎片雨 → 击破横幅
   for (let i = 0; i < 8; i++) {
@@ -3765,7 +3777,7 @@ function castUlt() {
   if (!ultReady()) return false;
   S.star = 0; S.ultPending = 0.45; S.ultKills = S.kills; S.usedUlt = true;
   if (dk("ks_arc")) S.resoT = 10;
-  S.slowmo = Math.max(S.slowmo, 0.9); S.shake = Math.max(S.shake, 0.4);
+  S.slowmo = Math.max(S.slowmo, 0.9); S.shake = Math.max(S.shake, 0.4); S.zoomK = Math.max(S.zoomK || 0, 0.035);
   const ids = S.units.filter(u => !u.summon).sort((a, b) => b.lv - a.lv).slice(0, 4).map(u => u.def.id);
   addFx({ kind: "cutin", ids, life: 1.5 });
   for (const u of S.units) addFx({ kind: "pillar", x: u.x, y: u.y, color: "#fff0a0", life: 0.8 });
@@ -4114,6 +4126,9 @@ function step(dt) {
   // 敌人
   separate();
   afxAuras();
+  // 拦截目标占用量：先按当前状态建一份表，选目标时查表而不是每只敌人都扫一遍全场（大波刷怪时否则是 O(敌人数²)）
+  const loadOf = new Map();
+  for (const o of S.enemies) if (!o.dead && o.target) loadOf.set(o.target, (loadOf.get(o.target) || 0) + (o.d.weight || 1));
   for (const e of S.enemies) {
     if (e.dead) continue;
     if (e.d.unstoppable) { e.freezeT = 0; e.stunT = 0; e.slowT = 0; }
@@ -4184,19 +4199,20 @@ function step(dt) {
       }
     }
     // 选目标：拦截半径内的角色
-    if (e.target && (e.target.dead || e.target.down > 0 || dist(e, e.target) > uTaunt(e.target) + 0.9)) e.target = null;
+    if (e.target && (e.target.dead || e.target.down > 0 || dist(e, e.target) > uTaunt(e.target) + 0.9)) {
+      loadOf.set(e.target, (loadOf.get(e.target) || 0) - (e.d.weight || 1)); e.target = null;
+    }
     if (!e.target && !e.d.flying && !e.under) {
       let best = null, bd = 99;
       for (const u of S.units) {
         if (!alive(u) || !uTaunt(u)) continue;
         const d = dist(e, u);
         if (d > uTaunt(u) + 0.15 || d >= bd) continue;
-        let load = 0;
-        for (const o of S.enemies) if (o.target === u && !o.dead) load += o.d.weight || 1;
+        const load = loadOf.get(u) || 0;
         if (load + (e.d.weight || 1) > uBlock(u)) continue;
         best = u; bd = d;
       }
-      if (best) e.target = best;
+      if (best) { loadOf.set(best, (loadOf.get(best) || 0) + (e.d.weight || 1)); e.target = best; }
     }
     const atCrystal = !e.under && toCrystal(e) <= CRYSTAL.r + 0.5;
     // 炸弹鬼
@@ -4273,6 +4289,7 @@ function step(dt) {
   for (const f of S.fx) f.t += dt;
   S.fx = S.fx.filter(f => f.t < f.life);
   S.shake = Math.max(0, S.shake - dt);
+  S.zoomK = (S.zoomK || 0) * Math.exp(-dt * 12);
 
   if (S.crystal.hp <= 0) S.over = "lose";
   else if (!S.endless && S.wave >= ST.waves && !S.spawnQueue.length && !S.enemies.length) {
@@ -5962,6 +5979,7 @@ function drawComboGlow(t) {
 }
 
 // ---------- 每帧绘制 ----------
+const renderSortBuf = [];
 function render(now) {
   now = now || performance.now();
   const t = now / 1000;
@@ -5969,8 +5987,9 @@ function render(now) {
   ctx.imageSmoothingEnabled = false;
   const amp = S.shake > 0 ? Math.min(6, 2 + S.shake * 10) * GFX.shake : 0;
   const ox = amp ? R0((Math.random() - 0.5) * amp) : 0, oy = amp ? R0((Math.random() - 0.5) * amp) : 0;
+  const zoom = 1 + (S.zoomK || 0);   // 大招 / 击破首领：短促地往里顿一下镜头，加重打击感
   ctx.setTransform(1, 0, 0, 1, 0, 0); rect(ctx, 0, 0, PW, PHt, TH().bg);
-  ctx.setTransform(1, 0, 0, 1, ox, oy);
+  ctx.setTransform(zoom, 0, 0, zoom, PW / 2 * (1 - zoom) + ox, PHt / 2 * (1 - zoom) + oy);
   ctx.drawImage(mapCv, 0, 0);
   drawAmbient(now);
   drawHazGround(t);
@@ -5994,9 +6013,12 @@ function render(now) {
   drawStations(t);
   drawWavePreview(t);
   drawCrystalHp();
-  const list = [...S.units.filter(u => !u.dead).map(u => ({ y: unitFeet(u)[1], u })), ...S.enemies.filter(e => !e.d.flying).map(e => ({ y: foeFeet(e)[1], e }))];
-  list.sort((a, b) => a.y - b.y);
-  for (const it of list) it.u ? drawUnit(it.u, now) : drawEnemy(it.e, now);
+  // 复用同一个数组装「按脚下 y 排序画」的列表，别每帧都 filter+map+spread 出一堆临时数组
+  renderSortBuf.length = 0;
+  for (const u of S.units) if (!u.dead) renderSortBuf.push({ y: unitFeet(u)[1], u, e: null });
+  for (const e of S.enemies) if (!e.d.flying) renderSortBuf.push({ y: foeFeet(e)[1], u: null, e });
+  renderSortBuf.sort((a, b) => a.y - b.y);
+  for (const it of renderSortBuf) it.u ? drawUnit(it.u, now) : drawEnemy(it.e, now);
   for (const f of S.fx) if (f.kind === "corpse" || f.kind === "ucorpse" || f.kind === "shatter") drawFx(f, now);
   for (const e of S.enemies) if (e.d.flying) drawEnemy(e, now);
   drawBlades(t);
@@ -7719,6 +7741,7 @@ function expCardHtml(save) {
 let last = performance.now(), acc = 0;
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  adaptGfx(dt);
   if (S.slowCd > 0) S.slowCd -= dt;
   let k = 1; if (S.slowmo > 0) { S.slowmo -= dt; k = 0.3; }
   if (S.hitStop > 0) { S.hitStop -= dt; k = 0; }   // 顿帧：精英/首领被打死的一瞬间画面停住

@@ -1,12 +1,24 @@
 
 // ================= 战斗：伤害、出手、技能、每一步 =================
-// 画质档位：粒子数量倍率 k、同屏特效上限 cap、抖屏强度 shake、背景飘落物 amb。-1 = 自动（手机用中，电脑用高）
+// 画质档位：粒子数量倍率 k、同屏特效上限 cap、抖屏强度 shake、背景飘落物 amb。-1 = 自动（手机用中，电脑用高，再按实际帧率动态调）
 const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true }];
-let GFX = GFX_LV[2], gfxSel = -1;
+let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
   gfxSel = sel == null ? -1 : sel;
-  const auto = typeof isPhone === "function" && isPhone() ? 1 : 2;
-  GFX = GFX_LV[gfxSel >= 0 ? gfxSel : auto];
+  if (gfxSel >= 0) { GFX = GFX_LV[gfxSel]; return; }
+  if (autoIdx == null) autoIdx = typeof isPhone === "function" && isPhone() ? 1 : 2;
+  GFX = GFX_LV[autoIdx];
+}
+// 自动档位不是选完就定死：帧率持续偏低就自动降一档，回稳一阵子再谨慎升回去，别的画质选项不受影响
+let fpsEma = null, gfxAdaptCd = 2;
+function adaptGfx(dt) {
+  if (gfxSel >= 0 || !dt) return;
+  const fps = 1 / Math.max(dt, 1e-3);
+  fpsEma = fpsEma == null ? fps : fpsEma * 0.9 + fps * 0.1;
+  gfxAdaptCd -= dt;
+  if (gfxAdaptCd > 0) return;
+  if (fpsEma < 42 && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
+  else if (fpsEma > 56 && autoIdx < GFX_LV.length - 1) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
 }
 // 特效满了就先丢掉装饰性的（粒子、伤害数字），横幅、演出、环这类关键反馈照常加
 const fxCheap = f => f.kind === "parts" || (f.kind === "text" && !f.big);
@@ -170,7 +182,7 @@ function bossFanfare(e, kind) {
   addFx({ kind: "letterbox", life: death ? 2.4 : 1.5 });
   addFx({ kind: "flash", life: death ? 0.5 : 0.35, color: death ? "#ffffff" : col });
   addFx({ kind: "ring", x: e.x, y: e.y, color: col, life: 0.9, r0: 0.4, r1: death ? 9 : 6 });
-  S.shake = Math.max(S.shake, death ? 0.9 : 0.6);
+  S.shake = Math.max(S.shake, death ? 0.9 : 0.6); S.zoomK = Math.max(S.zoomK || 0, death ? 0.05 : 0.03);
   if (!death) return;
   // 连环爆炸 → 光柱 → 金色碎片雨 → 击破横幅
   for (let i = 0; i < 8; i++) {
@@ -559,7 +571,7 @@ function castUlt() {
   if (!ultReady()) return false;
   S.star = 0; S.ultPending = 0.45; S.ultKills = S.kills; S.usedUlt = true;
   if (dk("ks_arc")) S.resoT = 10;
-  S.slowmo = Math.max(S.slowmo, 0.9); S.shake = Math.max(S.shake, 0.4);
+  S.slowmo = Math.max(S.slowmo, 0.9); S.shake = Math.max(S.shake, 0.4); S.zoomK = Math.max(S.zoomK || 0, 0.035);
   const ids = S.units.filter(u => !u.summon).sort((a, b) => b.lv - a.lv).slice(0, 4).map(u => u.def.id);
   addFx({ kind: "cutin", ids, life: 1.5 });
   for (const u of S.units) addFx({ kind: "pillar", x: u.x, y: u.y, color: "#fff0a0", life: 0.8 });

@@ -182,6 +182,9 @@ function step(dt) {
   // 敌人
   separate();
   afxAuras();
+  // 拦截目标占用量：先按当前状态建一份表，选目标时查表而不是每只敌人都扫一遍全场（大波刷怪时否则是 O(敌人数²)）
+  const loadOf = new Map();
+  for (const o of S.enemies) if (!o.dead && o.target) loadOf.set(o.target, (loadOf.get(o.target) || 0) + (o.d.weight || 1));
   for (const e of S.enemies) {
     if (e.dead) continue;
     if (e.d.unstoppable) { e.freezeT = 0; e.stunT = 0; e.slowT = 0; }
@@ -252,19 +255,20 @@ function step(dt) {
       }
     }
     // 选目标：拦截半径内的角色
-    if (e.target && (e.target.dead || e.target.down > 0 || dist(e, e.target) > uTaunt(e.target) + 0.9)) e.target = null;
+    if (e.target && (e.target.dead || e.target.down > 0 || dist(e, e.target) > uTaunt(e.target) + 0.9)) {
+      loadOf.set(e.target, (loadOf.get(e.target) || 0) - (e.d.weight || 1)); e.target = null;
+    }
     if (!e.target && !e.d.flying && !e.under) {
       let best = null, bd = 99;
       for (const u of S.units) {
         if (!alive(u) || !uTaunt(u)) continue;
         const d = dist(e, u);
         if (d > uTaunt(u) + 0.15 || d >= bd) continue;
-        let load = 0;
-        for (const o of S.enemies) if (o.target === u && !o.dead) load += o.d.weight || 1;
+        const load = loadOf.get(u) || 0;
         if (load + (e.d.weight || 1) > uBlock(u)) continue;
         best = u; bd = d;
       }
-      if (best) e.target = best;
+      if (best) { loadOf.set(best, (loadOf.get(best) || 0) + (e.d.weight || 1)); e.target = best; }
     }
     const atCrystal = !e.under && toCrystal(e) <= CRYSTAL.r + 0.5;
     // 炸弹鬼
@@ -341,6 +345,7 @@ function step(dt) {
   for (const f of S.fx) f.t += dt;
   S.fx = S.fx.filter(f => f.t < f.life);
   S.shake = Math.max(0, S.shake - dt);
+  S.zoomK = (S.zoomK || 0) * Math.exp(-dt * 12);
 
   if (S.crystal.hp <= 0) S.over = "lose";
   else if (!S.endless && S.wave >= ST.waves && !S.spawnQueue.length && !S.enemies.length) {
