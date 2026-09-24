@@ -411,7 +411,7 @@ function drawOverlay() {
     }
   }
   drawWaveLabels(s, txt, tk);
-  if (S.combo >= 3 && S.comboT > 0) {
+  if (S.combo >= 3 && S.comboT > 0 && !$("pinfo").offsetHeight) {   // 竖屏信息区有大号连杀，战场里就不重复画
     const tier = S.combo >= 50 ? "#ff6a5a" : S.combo >= 20 ? "#ffb040" : S.combo >= 10 ? "#ffd860" : "#ffffff";
     tctx.textAlign = "left"; txt(`连杀 ×${S.combo}`, 12 * s, 16 * s * tk, (10 + Math.min(6, S.combo / 8)) * s * tk, tier);
     tctx.fillStyle = "rgba(10,8,20,.7)"; tctx.fillRect(12 * s, 25 * s, 56 * s, 3 * s); tctx.fillStyle = tier; tctx.fillRect(12 * s, 25 * s, 56 * s * Math.max(0, S.comboT / COMBO.window), 3 * s);

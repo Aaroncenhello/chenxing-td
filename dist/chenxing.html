@@ -371,6 +371,30 @@ body.imm .levelup,body.imm .shopbox{overflow:auto;justify-content:flex-start;pad
 body.imm .overlay{position:absolute;z-index:20;background:rgba(8,10,16,.96);place-items:start center;padding:10px 70px}
 @media (max-height:520px){body.imm .ovbox h2{font-size:20px} body.imm .ovbox{gap:8px}}
 body.imm .dlg{--boxh:44px}
+/* 竖屏信息区（默认隐藏，竖屏全屏时显示）：状态行 + 大号连杀、队伍（点选 / 技能就绪再点释放）、下一波预告、卡牌遗物 */
+.pinfo{display:none;flex:1 1 auto;min-height:0;overflow:hidden;flex-direction:column;gap:7px;padding:0 10px;font-size:12px}
+.pi-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.pi-status{justify-content:space-between;color:var(--muted);font-size:13px;min-height:24px}
+.pi-status b{font-family:var(--pix);font-size:16px;font-weight:400;color:#ffd860;text-shadow:2px 2px 0 #000;transition:transform .1s}
+.pi-status b.t1{color:#ffb040;font-size:18px}.pi-status b.t2{color:#ff6a5a;font-size:20px}.pi-status b.t3{color:#ff3a8a;font-size:22px}
+.pi-status b.pop{transform:scale(1.25)}
+.pi-status .warn{color:#ff8a7a;font-weight:700}
+.pi-team{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.pu{position:relative;display:grid;grid-template-columns:30px 1fr;column-gap:5px;align-items:center;padding:4px 5px;min-height:44px;text-align:left;overflow:hidden}
+.pu canvas{grid-row:1/4;width:30px;height:30px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12;background:var(--c)}
+.pu b{font-size:11px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pu i{display:block;height:4px;background:#0c0f15;box-shadow:0 0 0 1px #0a0c12}
+.pu i s{display:block;height:100%;text-decoration:none}
+.pu .hp s{background:var(--ok)} .pu .sp s{background:var(--sp)}
+.pu.sel{outline:2px solid #fff;outline-offset:-2px}
+.pu.down{opacity:.45}
+.pu.rdy{box-shadow:var(--bevel),0 0 0 2px #ffd860;animation:ultglow .6s steps(2) infinite}
+.pu.rdy .sp s{background:#ffd860}
+.pu.hero{border-color:#6a5010}
+.pi-next .chip{font-size:11px;padding:1px 6px}
+.pi-cards{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;overflow:hidden}
+.pi-cards canvas{width:24px;height:24px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12}
+.pi-cards .rl canvas{box-shadow:0 0 0 2px #e3b75c}
 /* 手机竖屏沉浸：顶上一行状态，战场占满宽度，按钮全排在战场下面的大按钮区（一屏看全，不用滚动）
    .hud 变成 display:contents，让顶栏和两组按钮直接排进 .stage 的竖向布局里；战场大小在 resize() 里按剩下的高度算 */
 @media (orientation:portrait){
@@ -385,7 +409,8 @@ body.imm .dlg{--boxh:44px}
   body.imm #h-call{grid-column:span 2}
   body.imm .hud button{min-width:0;min-height:50px;font-size:15px}
   body.imm .hud button small{font-size:11px}
-  body.imm .toasts{bottom:auto;top:var(--toast-top,50%);max-width:calc(100vw - 24px)}
+  body.imm .toasts{top:auto;bottom:var(--toast-bottom,40%);max-width:calc(100vw - 24px)}
+  body.imm .pinfo{display:flex}
   body.imm .overlay{padding:12px 10px}
 }
 </style>
@@ -417,6 +442,8 @@ body.imm .dlg{--boxh:44px}
 
   <div class="stage">
     <div class="screen" id="screen"><canvas id="cv" aria-label="战场"></canvas><canvas id="tx" aria-hidden="true"></canvas></div>
+    <!-- 竖屏信息区：战场和按钮之间（只在手机竖屏全屏时显示，内容由 updatePInfo 画） -->
+    <div class="pinfo" id="pinfo"><div class="pi-row pi-status"><span id="pi-wave"></span><b id="pi-combo"></b></div><div class="pi-team" id="pi-team"></div><div class="pi-row pi-next" id="pi-next"></div><div class="pi-cards" id="pi-cards"></div></div>
     <div class="dlg" id="dlg" hidden>
       <canvas class="bust L" id="bust-L" aria-hidden="true"></canvas><canvas class="bust R" id="bust-R" aria-hidden="true"></canvas>
       <div class="dlgbox" id="dlgbox"><b id="dlg-name"></b><p id="dlg-text" aria-live="polite"></p><span class="dlgmore">▼</span></div>
@@ -3948,7 +3975,8 @@ function resize() {
   const scr = document.getElementById("screen");
   scr.style.width = Math.floor(PW * k) + "px"; scr.style.height = Math.floor(PHt * k) + "px";
   // 竖屏时提示（新敌人、遗物……）放在战场正下方，不挡战场也不挡按钮
-  if (port) document.body.style.setProperty("--toast-top", Math.round(scr.getBoundingClientRect().bottom + 6) + "px");
+  // 竖屏时提示（新敌人、遗物……）弹在按钮区正上方，盖住的是信息区最下面的卡牌行，不挡战场和按钮
+  if (port) { const hl = document.querySelector(".hud-l"); document.body.style.setProperty("--toast-bottom", Math.round(window.innerHeight - (hl ? hl.getBoundingClientRect().top : window.innerHeight * 0.6) + 6) + "px"); }
   DPR = Math.min(window.devicePixelRatio || 1, 2);
   tx.width = Math.round(PW * k * DPR); tx.height = Math.round(PHt * k * DPR);
   if (S && mapFor !== mapKey()) { drawMap(); mapFor = mapKey(); }
@@ -5407,7 +5435,7 @@ function drawOverlay() {
     }
   }
   drawWaveLabels(s, txt, tk);
-  if (S.combo >= 3 && S.comboT > 0) {
+  if (S.combo >= 3 && S.comboT > 0 && !$("pinfo").offsetHeight) {   // 竖屏信息区有大号连杀，战场里就不重复画
     const tier = S.combo >= 50 ? "#ff6a5a" : S.combo >= 20 ? "#ffb040" : S.combo >= 10 ? "#ffd860" : "#ffffff";
     tctx.textAlign = "left"; txt(`连杀 ×${S.combo}`, 12 * s, 16 * s * tk, (10 + Math.min(6, S.combo / 8)) * s * tk, tier);
     tctx.fillStyle = "rgba(10,8,20,.7)"; tctx.fillRect(12 * s, 25 * s, 56 * s, 3 * s); tctx.fillStyle = tier; tctx.fillRect(12 * s, 25 * s, 56 * s * Math.max(0, S.comboT / COMBO.window), 3 * s);
@@ -6118,6 +6146,60 @@ function updateHud() {
   setText("h-auto", S.autoWave ? "自动·开" : "自动·关"); setText("h-speed", S.speed + "×"); setText("h-pause", S.paused ? "继续" : "暂停");
   setText("h-form", formOf().name);
 }
+// ---------- 竖屏信息区 ----------
+let piTeamKey = "", piNextKey = "", piCardKey = "", piCombo = 0;
+function updatePInfo() {
+  const box = $("pinfo");
+  if (!S || !box.offsetHeight) return;   // 只在竖屏全屏时可见
+  // 状态行：这一波的进度 + 大号连杀
+  const waiting = S.wave < totalWaves() && !S.spawnQueue.length, info = waiting ? nextWaveInfo() : null;
+  const tag = info && { boss: "首领！", tide: "潮汐！", elite: "精英！" }[info.kind];
+  const wtxt = S.over ? "" : waiting ? `下一波 ${S.autoWave !== false ? Math.ceil(Math.max(0, S.nextWaveIn)) + " 秒" : "等你出击"}${tag ? ` · <span class="warn">${tag}</span>` : ""}`
+    : S.spawnQueue.length ? `第 ${S.wave} 波 · 还有 ${S.spawnQueue.length} 只要出场` : `第 ${S.wave} 波 · 场上 ${S.enemies.length}`;
+  const we = $("pi-wave"); if (we.dataset.k !== wtxt) { we.dataset.k = wtxt; we.innerHTML = wtxt; }
+  const ce = $("pi-combo"), c = S.comboT > 0 && S.combo >= 3 ? S.combo : 0;
+  if (c !== piCombo) {
+    piCombo = c; ce.textContent = c ? "连杀 ×" + c : "";
+    ce.className = c >= 80 ? "t3" : c >= 50 ? "t2" : c >= 25 ? "t1" : "";
+    if (c) { ce.classList.add("pop"); setTimeout(() => ce.classList.remove("pop"), 90); }
+  }
+  // 队伍：结构变了才重建，血条和技力条每帧更新
+  const team = S.units.filter(u => !u.summon), key = team.map(u => u.id + u.def.id + ":" + u.lv + (u.branch || "")).join(",");
+  if (key !== piTeamKey) {
+    piTeamKey = key;
+    $("pi-team").innerHTML = team.map(u => `<button class="pu${u.hero ? " hero" : ""}" data-pu="${u.id}" style="--c:${u.def.color}"><canvas id="pu-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b><i class="hp"><s></s></i><i class="sp"><s></s></i></button>`).join("");
+    for (const u of team) drawPortrait(u.def, $("pu-" + u.id), u.lv, u.branch);
+  }
+  for (const u of team) {
+    const el = $("pi-team").querySelector(`[data-pu="${u.id}"]`); if (!el) continue;
+    const rdy = u.skillT <= 0 && u.sp >= u.def.sp && u.down <= 0;
+    el.classList.toggle("down", u.down > 0); el.classList.toggle("sel", S.selUnit === u); el.classList.toggle("rdy", rdy);
+    el.children[2].firstChild.style.width = (u.down > 0 ? 0 : u.hp / u.maxHp * 100).toFixed(0) + "%";
+    el.children[3].firstChild.style.width = (u.skillT > 0 ? u.skillT / (u.def.skill.dur || 1) * 100 : u.sp / u.def.sp * 100).toFixed(0) + "%";
+  }
+  // 下一波预告
+  const nk = waiting && info ? S.wave + ":" + info.kind : "";
+  if (nk !== piNextKey) {
+    piNextKey = nk;
+    $("pi-next").innerHTML = nk ? `<span>第 ${S.wave + 1} 波：</span>` + nextWaveSummary().map(x => `<span class="chip${x.elite ? " elite" : ""}">${x.elite ? "精英" : ""}${ENEMIES[x.type].name} ×${x.n}</span>`).join("") : "";
+  }
+  // 卡牌和遗物
+  const ck = Object.entries(S.cards).map(([k, v]) => k + v).join(",") + "|" + Object.keys(S.curses || {}).join(",") + "|" + (S.relics || []).join(",");
+  if (ck !== piCardKey) {
+    piCardKey = ck;
+    const ids = Object.keys(S.cards).concat(Object.keys(S.curses || {}));
+    $("pi-cards").innerHTML = (S.relics || []).map(id => `<span class="rl" title="${RELIC_BY[id].name}"><canvas id="pc-${id}"></canvas></span>`).join("") + ids.map(id => `<span title="${(ANY_CARD(id) || {}).name || id}"><canvas id="pc-${id}"></canvas></span>`).join("");
+    for (const id of S.relics || []) drawRelicIcon($("pc-" + id), id, 24);
+    for (const id of ids) cardIconTo($("pc-" + id), id);
+  }
+}
+// 点队伍里的角色：选中（战场上显示攻击范围）；已选中且技力满时再点一下释放技能
+$("pi-team").addEventListener("click", ev => {
+  const b = ev.target.closest("[data-pu]"); if (!b || !S) return;
+  const u = S.units.find(x => x.id === +b.dataset.pu); if (!u) return;
+  if (S.selUnit === u && u.sp >= u.def.sp && u.skillT <= 0) useSkill(u);
+  else { S.selUnit = u; S.selSpell = null; S.spellMode = null; }
+});
 window.addEventListener("orientationchange", () => setTimeout(() => { maybeImm(); resize(); }, 250));
 document.addEventListener("keydown", ev => {
   const k = ev.key.toLowerCase();
@@ -6868,7 +6950,7 @@ function frame(now) {
   }
   if (!S.offer && !S.shop && !S.cine && !S.event && S.pending > 0 && !S.over && !dlg && !menuOpen) { const mr = S.forceRare || 0; S.forceRare = 0; openOffer(mr, true); }
   handleEvents();
-  render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updateTut(dt); updateDlg(dt); animRoster(now);
+  render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateTut(dt); updateDlg(dt); animRoster(now);
   if (!dlg) checkOver();
   requestAnimationFrame(frame);
 }

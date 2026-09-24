@@ -81,6 +81,35 @@ const GFXcap = () => 800;   // 高画质上限 700，加上横幅等关键特效
   check(wv.tide.again === 1 && wv.boss.again === 1, '预警每波只弹一次', { t: wv.tide.again, b: wv.boss.again });
   check(wv.tide.ports && wv.boss.ports, '预告标出的传送门都存在', wv);
 
+  // ---------- 竖屏信息区 ----------
+  const pc = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  const pp = await pc.newPage(); pp.on('pageerror', e => errs.push('竖屏 ' + e.message));
+  await pp.goto(GAME); await pp.waitForTimeout(300);
+  await pp.evaluate(() => localStorage.setItem('chenxing-td-v2', JSON.stringify({ stars: new Array(16).fill(3), tutorial: true, ver: 12, story: [...Array(16).keys()].map(i => 'pre' + i) })));
+  await pp.reload(); await pp.waitForTimeout(400);
+  await pp.evaluate(() => { __td.newRun(6, {}); const T = __td, S = T.S;
+    for (let i = 0; i < 30 * 40 && !S.over; i++) { if (S.pending > 0 && !S.offer) T.openOffer(); if (S.offer) { T.pickCard((S.offer.find(c => c.join) || S.offer[0]).id); } if (S.shop) T.closeShop(); if (S.event) T.takeEvent(0); S.crystal.hp = S.crystal.maxHp; T.step(1 / 30); }
+    S.pending = 0; S.offer = null; S.combo = 30; S.comboT = 3; });
+  await pp.waitForTimeout(300);
+  const pi = await pp.evaluate(() => {
+    const S = __td.S, team = S.units.filter(u => !u.summon), box = document.getElementById('pinfo').getBoundingClientRect(), field = document.getElementById('screen').getBoundingClientRect(), btn = document.querySelector('.hud-l').getBoundingClientRect();
+    const out = { shown: box.height > 0, between: box.top >= field.bottom - 1 && box.bottom <= btn.top + 1, tiles: document.querySelectorAll('#pi-team .pu').length, team: team.length, combo: document.getElementById('pi-combo').textContent, cards: document.querySelectorAll('#pi-cards canvas').length, have: Object.keys(S.cards).length + S.relics.length + Object.keys(S.curses).length };
+    // 点一下选中；技力满时再点一下放技能
+    const u = team[0], tile = () => document.querySelector(`#pi-team [data-pu="${u.id}"]`);
+    u.skillT = 0; u.sp = 0; tile().click(); out.sel = S.selUnit === u;
+    u.sp = u.def.sp; updatePInfo(); out.rdy = tile().classList.contains('rdy'); tile().click(); out.cast = u.sp === 0 || u.skillT > 0;
+    return out;
+  });
+  console.log('竖屏信息区:', JSON.stringify(pi));
+  check(pi.shown && pi.between, '竖屏全屏时信息区显示在战场和按钮之间', pi);
+  check(pi.tiles === pi.team && pi.team >= 2, '信息区列出全部队员', pi);
+  check(pi.combo === '连杀 ×30', '信息区显示大号连杀', pi.combo);
+  check(pi.cards === pi.have, '信息区列出这局的卡牌和遗物', pi);
+  check(pi.sel && pi.rdy && pi.cast, '点队员选中；技力满时金光，再点一下放技能', pi);
+  await pc.close();
+  const deskHidden = await p.evaluate(() => document.getElementById('pinfo').offsetHeight === 0);
+  check(deskHidden, '电脑 / 横屏不显示竖屏信息区', deskHidden);
+
   // 实战跑一段，确认新特效不报错、特效数量受控
   await fight(11, 40);
   const fxN = await p.evaluate(() => __td.S.fx.length);

@@ -371,6 +371,30 @@ body.imm .levelup,body.imm .shopbox{overflow:auto;justify-content:flex-start;pad
 body.imm .overlay{position:absolute;z-index:20;background:rgba(8,10,16,.96);place-items:start center;padding:10px 70px}
 @media (max-height:520px){body.imm .ovbox h2{font-size:20px} body.imm .ovbox{gap:8px}}
 body.imm .dlg{--boxh:44px}
+/* 竖屏信息区（默认隐藏，竖屏全屏时显示）：状态行 + 大号连杀、队伍（点选 / 技能就绪再点释放）、下一波预告、卡牌遗物 */
+.pinfo{display:none;flex:1 1 auto;min-height:0;overflow:hidden;flex-direction:column;gap:7px;padding:0 10px;font-size:12px}
+.pi-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.pi-status{justify-content:space-between;color:var(--muted);font-size:13px;min-height:24px}
+.pi-status b{font-family:var(--pix);font-size:16px;font-weight:400;color:#ffd860;text-shadow:2px 2px 0 #000;transition:transform .1s}
+.pi-status b.t1{color:#ffb040;font-size:18px}.pi-status b.t2{color:#ff6a5a;font-size:20px}.pi-status b.t3{color:#ff3a8a;font-size:22px}
+.pi-status b.pop{transform:scale(1.25)}
+.pi-status .warn{color:#ff8a7a;font-weight:700}
+.pi-team{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.pu{position:relative;display:grid;grid-template-columns:30px 1fr;column-gap:5px;align-items:center;padding:4px 5px;min-height:44px;text-align:left;overflow:hidden}
+.pu canvas{grid-row:1/4;width:30px;height:30px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12;background:var(--c)}
+.pu b{font-size:11px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pu i{display:block;height:4px;background:#0c0f15;box-shadow:0 0 0 1px #0a0c12}
+.pu i s{display:block;height:100%;text-decoration:none}
+.pu .hp s{background:var(--ok)} .pu .sp s{background:var(--sp)}
+.pu.sel{outline:2px solid #fff;outline-offset:-2px}
+.pu.down{opacity:.45}
+.pu.rdy{box-shadow:var(--bevel),0 0 0 2px #ffd860;animation:ultglow .6s steps(2) infinite}
+.pu.rdy .sp s{background:#ffd860}
+.pu.hero{border-color:#6a5010}
+.pi-next .chip{font-size:11px;padding:1px 6px}
+.pi-cards{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;overflow:hidden}
+.pi-cards canvas{width:24px;height:24px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12}
+.pi-cards .rl canvas{box-shadow:0 0 0 2px #e3b75c}
 /* 手机竖屏沉浸：顶上一行状态，战场占满宽度，按钮全排在战场下面的大按钮区（一屏看全，不用滚动）
    .hud 变成 display:contents，让顶栏和两组按钮直接排进 .stage 的竖向布局里；战场大小在 resize() 里按剩下的高度算 */
 @media (orientation:portrait){
@@ -385,7 +409,8 @@ body.imm .dlg{--boxh:44px}
   body.imm #h-call{grid-column:span 2}
   body.imm .hud button{min-width:0;min-height:50px;font-size:15px}
   body.imm .hud button small{font-size:11px}
-  body.imm .toasts{bottom:auto;top:var(--toast-top,50%);max-width:calc(100vw - 24px)}
+  body.imm .toasts{top:auto;bottom:var(--toast-bottom,40%);max-width:calc(100vw - 24px)}
+  body.imm .pinfo{display:flex}
   body.imm .overlay{padding:12px 10px}
 }
 </style>
@@ -417,6 +442,8 @@ body.imm .dlg{--boxh:44px}
 
   <div class="stage">
     <div class="screen" id="screen"><canvas id="cv" aria-label="战场"></canvas><canvas id="tx" aria-hidden="true"></canvas></div>
+    <!-- 竖屏信息区：战场和按钮之间（只在手机竖屏全屏时显示，内容由 updatePInfo 画） -->
+    <div class="pinfo" id="pinfo"><div class="pi-row pi-status"><span id="pi-wave"></span><b id="pi-combo"></b></div><div class="pi-team" id="pi-team"></div><div class="pi-row pi-next" id="pi-next"></div><div class="pi-cards" id="pi-cards"></div></div>
     <div class="dlg" id="dlg" hidden>
       <canvas class="bust L" id="bust-L" aria-hidden="true"></canvas><canvas class="bust R" id="bust-R" aria-hidden="true"></canvas>
       <div class="dlgbox" id="dlgbox"><b id="dlg-name"></b><p id="dlg-text" aria-live="polite"></p><span class="dlgmore">▼</span></div>
