@@ -42,6 +42,18 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .chip{background:var(--panel);border:2px solid #0a0c12;padding:2px 8px;color:var(--text)}
 .chip.elite{color:#ffd860;border-color:#6a5010}
 /* 经验条 */
+/* 晨星碑血条：电脑在经验条上面，全屏时在顶栏第一行；掉血时白色残影慢慢缩回、闪红，低于 30% 变红闪烁 */
+.cbar{position:relative;height:18px;background:#0c0f15;box-shadow:0 0 0 2px #0a0c12,var(--bevel);overflow:hidden;margin-bottom:6px}
+.cbar i{position:absolute;inset:0 auto 0 0;width:100%}
+.cbar .tr{background:rgba(255,236,190,.55);transition:width .5s ease-in .35s}
+.cbar .fl{background:linear-gradient(180deg,#8fd0ff,#3a8ee0)}
+.cbar.mid .fl{background:linear-gradient(180deg,#ffe08a,#e0a030)}
+.cbar.low .fl{background:linear-gradient(180deg,#ff8a7a,#d0402f)} .cbar.low{animation:cbarlow .7s steps(2) infinite}
+.cbar.hit{box-shadow:0 0 0 2px #ff4a3a,0 0 12px rgba(255,74,58,.8)}
+.cbar span{position:relative;display:block;line-height:18px;padding:0 10px;font-size:11px;color:#fff;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
+.cbar em{font-style:normal;opacity:.85} .cbar b{font-family:var(--pix);font-size:10px;font-weight:400}
+@keyframes cbarlow{50%{box-shadow:0 0 0 2px #ff4a3a,0 0 14px rgba(255,60,40,.9)}}
+.hud-top .cbar{display:none}
 .xpwrap{position:relative;height:18px;background:#0c0f15;box-shadow:0 0 0 2px #0a0c12,var(--bevel);overflow:hidden}
 .xpwrap i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#2a6a4a,#6fcf8e);transition:width .18s}
 .xpwrap span{position:relative;display:block;line-height:18px;padding:0 10px;font-size:11px;color:#fff;text-shadow:1px 1px 0 #000}
@@ -408,6 +420,10 @@ body.imm.panel .toasts{display:none}
 .hud-top{position:absolute;top:calc(4px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:rgba(10,12,18,.72);padding:3px 10px 5px;box-shadow:0 0 0 2px #0a0c12;white-space:nowrap}
 .hud-top b{font-family:var(--pix);font-size:10px;font-weight:400;color:var(--text)}
 .hud-top .hc b{color:#62b4ff} .hud-top .hl b{color:var(--gold)} .hud-top .hd b{color:#ffd860}
+body.imm .hud-top{flex-wrap:wrap;justify-content:center;row-gap:3px}
+body.imm .hud-top .cbar{display:block;flex:0 0 100%;height:14px;margin:2px 0 0} body.imm .hud-top .cbar span{line-height:14px;font-size:10px}
+body.imm .hud-top .hc{display:none}
+body.imm .cbar.desk{display:none}
 .h-xp{position:absolute;left:0;right:0;bottom:0;height:3px;background:#0c0f15}
 .h-xp i{display:block;height:100%;background:#6fcf8e;width:0}
 .hud-l,.hud-r{position:absolute;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
@@ -443,7 +459,7 @@ body.imm .dlg{--boxh:44px}
 .ucard .uc-k{color:#98a1b3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pi-sel{background:var(--panel);box-shadow:0 0 0 2px #0a0c12;padding:5px 8px}
 .hud-unit{display:none}
-body.imm .hud-unit:not([hidden]){display:block;position:absolute;top:calc(8px + env(safe-area-inset-top,0));left:calc((100vw - var(--fw,100vw)) / 2 + 6px);width:min(172px,30vw);font-size:10px;background:rgba(16,19,28,.9);box-shadow:0 0 0 2px #0a0c12;padding:5px 7px;z-index:4;pointer-events:none}
+body.imm .hud-unit:not([hidden]){display:block;position:absolute;top:calc(8px + env(safe-area-inset-top,0));left:calc((100vw - var(--fw,100vw)) / 2 + 6px);box-sizing:border-box;width:clamp(130px,calc(var(--fw,100vw) / 2 - 174px),170px);font-size:10px;background:rgba(16,19,28,.9);box-shadow:0 0 0 2px #0a0c12;padding:5px 7px;z-index:4;pointer-events:none}
 body.imm .hud-unit .uc-k{white-space:normal;font-size:10px}
 .pu.down{opacity:.45}
 .pu.rdy{box-shadow:var(--bevel),0 0 0 2px #ffd860;animation:ultglow .6s steps(2) infinite}
@@ -501,6 +517,7 @@ body.imm .hud-syn{max-height:44%}
       <button id="btn-full" title="战场铺满整个屏幕（手机横屏推荐）">全屏</button>
     </div>
   </header>
+  <div class="cbar desk" aria-label="晨星碑生命"><i class="tr"></i><i class="fl"></i><span><em>晨星碑</em> <b class="cv"></b></span></div>
   <div class="xpwrap"><i id="xp-fill" style="width:0%"></i><span id="xp-txt">Lv 1 · 0/12</span></div>
   <div class="wavebar" id="wavebar"></div>
   <div class="tut" id="tut" hidden></div>
@@ -533,7 +550,7 @@ body.imm .hud-syn{max-height:44%}
       <div class="lubar"><span class="dust" id="shop-dust">星尘 0</span><button class="primary" id="btn-shopgo">继续下一波</button></div>
     </div>
     <div class="hud" id="hud" hidden>
-      <div class="hud-top"><span class="hc">碑 <b id="h-hp"></b></span><span>波 <b id="h-wave"></b></span><span class="hl">Lv <b id="h-lv"></b></span><span class="hd">尘 <b id="h-dust"></b></span><span id="h-next"></span><span class="h-xp"><i id="h-xpf"></i></span></div>
+      <div class="hud-top"><div class="cbar" aria-label="晨星碑生命"><i class="tr"></i><i class="fl"></i><span><em>晨星碑</em> <b class="cv"></b></span></div><span class="hc">碑 <b id="h-hp"></b></span><span>波 <b id="h-wave"></b></span><span class="hl">Lv <b id="h-lv"></b></span><span class="hd">尘 <b id="h-dust"></b></span><span id="h-next"></span><span class="h-xp"><i id="h-xpf"></i></span></div>
       <div class="hud-syn" id="h-syn"></div>
       <div class="hud-unit ucard" id="h-unit" hidden></div>
       <div class="hud-l">
@@ -6311,6 +6328,16 @@ function updateUnitCards(now) {
   const he = $("h-unit");
   if (he) { he.hidden = !sel; if (sel) he.innerHTML = unitCardHtml(sel); }
 }
+// 晨星碑血条（电脑顶部 + 全屏顶栏各一条）
+function updateCrystalBars() {
+  if (!S) return;
+  const c = S.crystal, f = Math.max(0, c.hp / c.maxHp), w = (f * 100).toFixed(1) + "%", txt = `${Math.ceil(Math.max(0, c.hp))} / ${c.maxHp}`;
+  for (const el of document.querySelectorAll(".cbar")) {
+    el.querySelector(".fl").style.width = w; el.querySelector(".tr").style.width = w;
+    const v = el.querySelector(".cv"); if (v.textContent !== txt) v.textContent = txt;
+    el.classList.toggle("low", f < 0.3); el.classList.toggle("mid", f >= 0.3 && f < 0.6); el.classList.toggle("hit", (c.hitT || 0) > 0);
+  }
+}
 function updatePInfo() {
   const box = $("pinfo");
   if (!S || !box.offsetHeight) return;   // 只在竖屏全屏时可见
@@ -7167,7 +7194,7 @@ function frame(now) {
   }
   if (!S.offer && !S.shop && !S.cine && !S.event && S.pending > 0 && !S.over && !dlg && !menuOpen) { const mr = S.forceRare || 0; S.forceRare = 0; openOffer(mr, true); }
   handleEvents();
-  render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateUnitCards(now); updateTut(dt); updateDlg(dt); animRoster(now);
+  render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateUnitCards(now); updateCrystalBars(); updateTut(dt); updateDlg(dt); animRoster(now);
   if (!dlg) checkOver();
   requestAnimationFrame(frame);
 }

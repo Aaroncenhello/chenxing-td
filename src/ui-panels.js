@@ -362,6 +362,16 @@ function updateUnitCards(now) {
   const he = $("h-unit");
   if (he) { he.hidden = !sel; if (sel) he.innerHTML = unitCardHtml(sel); }
 }
+// 晨星碑血条（电脑顶部 + 全屏顶栏各一条）
+function updateCrystalBars() {
+  if (!S) return;
+  const c = S.crystal, f = Math.max(0, c.hp / c.maxHp), w = (f * 100).toFixed(1) + "%", txt = `${Math.ceil(Math.max(0, c.hp))} / ${c.maxHp}`;
+  for (const el of document.querySelectorAll(".cbar")) {
+    el.querySelector(".fl").style.width = w; el.querySelector(".tr").style.width = w;
+    const v = el.querySelector(".cv"); if (v.textContent !== txt) v.textContent = txt;
+    el.classList.toggle("low", f < 0.3); el.classList.toggle("mid", f >= 0.3 && f < 0.6); el.classList.toggle("hit", (c.hitT || 0) > 0);
+  }
+}
 function updatePInfo() {
   const box = $("pinfo");
   if (!S || !box.offsetHeight) return;   // 只在竖屏全屏时可见

@@ -101,6 +101,17 @@ async function page(b, vp, mobile) {
   check(pu.tile === 'Lv8 · 1阶', '竖屏队员格显示角色等级和阶数', pu.tile);
   check(/Lv8/.test(pu.card) && /攻击 \d+/.test(pu.card) && /生命 \d+\/\d+/.test(pu.card) && /防御/.test(pu.card) && /攻速/.test(pu.card) && /技能/.test(pu.card), '竖屏属性栏默认显示英雄的等级和主要属性', pu.card);
   check(lu.hidden && lu.shown && /攻击/.test(lu.text) && lu.clearTop, '横屏选中队员才弹属性卡，不挡顶栏', lu);
+  // ---------- 晨星碑血条 ----------
+  for (const [name, m] of [['竖屏', P], ['横屏', L], ['电脑', p]]) {
+    await m.evaluate(() => { closeOverlay(); if (!__td.S || __td.S.over) __td.newRun(6, {}); const S = __td.S; S.pending = 0; S.offer = null; S.crystal.hp = S.crystal.maxHp * 0.2; S.crystal.hitT = 5; });
+    await m.waitForTimeout(300);
+    const cb = await m.evaluate(() => { const el = [...document.querySelectorAll('.cbar')].find(e => e.offsetHeight > 0); if (!el) return null;
+      const r = el.getBoundingClientRect(), f = document.getElementById('screen').getBoundingClientRect(), S = __td.S;
+      return { n: [...document.querySelectorAll('.cbar')].filter(e => e.offsetHeight > 0).length, w: parseFloat(el.querySelector('.fl').style.width), low: el.classList.contains('low'), hit: el.classList.contains('hit'),
+        text: el.textContent, above: r.bottom <= f.top + 1 || !!el.closest('.hud-top'), want: Math.ceil(S.crystal.hp) + ' / ' + S.crystal.maxHp }; });
+    console.log('碑血条', name, JSON.stringify(cb));
+    check(cb && cb.n === 1 && Math.abs(cb.w - 20) < 0.5 && cb.low && cb.hit && cb.text.includes(cb.want) && cb.above, `${name}：战场上方有一条醒目的晨星碑血条（数值、低血变红、挨打闪）`, cb);
+  }
   noErrors(P.errs); noErrors(L.errs);
 
   noErrors(p.errs);
