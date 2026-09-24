@@ -88,6 +88,7 @@ function uMaxHp(u) {
   if (u.hero && cl("lg_avatar")) h *= 1.6;
   h *= Math.max(0.2, 1 - 0.3 * cu("cu_frenzy"));
   if (syn("scholar")) h *= 1.15;
+  if (cl("lg_bond")) h *= 1 + 0.08 * S.allies;
   return Math.round(h);
 }
 const br = (u, id, b) => u.def.id === id && u.branch === b;
@@ -134,6 +135,7 @@ function uAtk(u) {
   a *= 1 + marshalBanner(u);
   if (rallyOn()) a *= 1.3;
   a *= 1 + 0.45 * cu("cu_blood") + 0.6 * cu("cu_frenzy");
+  if (cl("lg_bond")) a *= 1 + 0.08 * S.allies;
   if (syn("scholar")) a *= 1.15;
   if (syn("legendary")) a *= 1.2;
   if (syn("arcane") && u.def.dmg === "magic") a *= 1.25;
@@ -146,11 +148,12 @@ function uDef(u) {
   if (hasTal(u, "knight") && u.hp < u.maxHp * 0.4) d *= 1.8;
   if (tal(u, "t_def")) d *= 1.3;
   d *= (S.buff.def || 1) * (1 + 0.05 * dk("armor"));
+  d *= Math.max(0.2, 1 - 0.3 * cu("cu_haste"));
   if (syn("wall")) d *= 1.35;
   if (u.hero && sg("sg_me1")) d *= 1 + 0.2 * sg("sg_me1");
   return d;
 }
-const uRes = u => u.def.res + 8 * cl("armor");
+const uRes = u => u.def.res + 8 * cl("armor") + 10 * cl("res");
 function uInterval(u) {
   let i = u.def.interval / (skillOn(u, "archer") ? 2 : skillOn(u, "gunner") ? 3 : 1);
   if (br(u, "sword", "A")) i *= 0.7;
@@ -160,6 +163,7 @@ function uInterval(u) {
   if (u.chill) i *= 1 + u.chill;
   if (u.hero) { if (sg("sg_sw1")) i /= 1 + 0.15 * sg("sg_sw1"); if (sg("sg_ar1")) i /= 1 + 0.1 * sg("sg_ar1"); if (sg("sg_gu1")) i *= Math.max(0.5, 1 - 0.08 * sg("sg_gu1")); }
   i /= 1 + 0.35 * cu("cu_brittle");
+  i /= 1 + 0.4 * cu("cu_haste");
   if (hasTal(u, "mech") && u.hp < u.maxHp * 0.5) i *= 0.67;
   if (tal(u, "t_spd")) i *= 0.9;
   i /= S.buff.aspd || 1;
@@ -415,10 +419,10 @@ function randomCards(n, minRare) {
     // 同一个角色的两张转职卡只留一张
     if (pick.branch) for (let j = pool.length - 1; j >= 0; j--) if (pool[j].def === pick.def) pool.splice(j, 1);
   }
-  // 恶魔交易：有几率把最后一张换成诅咒卡
+  // 恶魔交易：有几率额外加一张诅咒卡，作为独立的第 4 个选项（原本 3 张普通卡不变）
   if (!minRare && S.level >= 5 && out.length === 3 && roll("card") < curseChance()) {
     const cp = cursePool();
-    if (cp.length) out[2] = cp[Math.floor(roll("card") * cp.length)];
+    if (cp.length) out.push(cp[Math.floor(roll("card") * cp.length)]);
   }
   return out;
 }

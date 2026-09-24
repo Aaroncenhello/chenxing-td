@@ -64,7 +64,7 @@ function killEnemy(e, src) {
   if (rl("rl_fang") && src && src.def && !src.dead && src.down <= 0) heal(src, src.maxHp * 0.08, true, src);
   if (S.riftDust > 0 && e.elite) { const g = Math.round(S.riftDust / 4); S.dust += g; S.riftDust -= g; addFx({ kind: "text", x: e.x, y: e.y - 0.8, text: "+" + g + " 星尘", color: "#ffd860", life: 1.1, big: true }); }
   // 星尘
-  const dust = Math.round((isBoss(e) ? SHOP.dustBoss : e.elite ? SHOP.dustElite : SHOP.dustPerKill * Math.max(1, Math.round(e.d.reward * 0.7))) * (cl("lg_greed") ? 2 : 1) * (cu("cu_greed") ? 2 : 1) * (rl("rl_compass") ? 1.35 : 1) * (wk("poor") ? 0.5 : 1));
+  const dust = Math.round((isBoss(e) ? SHOP.dustBoss : e.elite ? SHOP.dustElite : SHOP.dustPerKill * Math.max(1, Math.round(e.d.reward * 0.7))) * (cl("lg_greed") ? 2 : 1) * (1 + 0.15 * cl("loot")) * (cu("cu_greed") ? 2 : 1) * (rl("rl_compass") ? 1.35 : 1) * (wk("poor") ? 0.5 : 1));
   if (!e.summoned) { S.dust += dust; if (dust >= 4) addFx({ kind: "text", x: e.x + 0.2, y: e.y - 0.5, text: "+" + dust + " 星尘", color: "#ffd860", life: 1 }); }
   // 宝箱怪：额外翻一次牌
   if (e.type === "treasure") {
@@ -126,12 +126,12 @@ function hurt(e, amt, type, crit, src) {
   if (src && src.hero && sg("sg_ch1") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1 + 0.18 * sg("sg_ch1");
   if (syn("frostbite") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1.4;
   if (e.burn > 0 && syn("inferno")) amt *= 1.1;
-  if (e === S.focus && src && src.def) amt *= FOCUS_BONUS;
+  if (e === S.focus && src && src.def) amt *= FOCUS_BONUS * (cl("lg_focus") ? 1.25 : 1);
   const byUnit = src && src.def && type !== "poison";
   if (byUnit) {
     if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1);
     if (rl("rl_berserk") && !crit) { src.hitN = (src.hitN || 0) + 1; if (src.hitN % 8 === 0) { amt *= 3; crit = true; } }
-    if ((cl("crit") || cu("cu_moon") || dk("crit")) && !crit && roll("fight") < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon")) { amt *= 2; crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
+    if ((cl("crit") || cu("cu_moon") || dk("crit")) && !crit && roll("fight") < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon")) { amt *= 2 + 0.15 * cl("critdmg"); crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
     if (src.hero && sg("sg_as2") && !isBoss(e) && e.hp <= e.maxHp * 0.25 && e.hp > 0) { amt = e.hp + e.shield + 1; addFx({ kind: "text", x: e.x, y: e.y - 0.6, text: "处决", color: "#4fc0b0", life: 0.9, big: true }); }
     if (cl("freeze") && !e.d.unstoppable && roll("fight") < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
     if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? 2 : 1), true, src);
@@ -214,6 +214,7 @@ function phaseShift(e, idx) {
 }
 function hurtUnit(u, amt, type, from) {
   if (u.dead || u.down > 0) return;
+  if (cl("dodge") && type !== "poison" && roll("fight") < 0.07 * cl("dodge")) { addFx({ kind: "text", x: u.x, y: u.y - 0.6, text: "闪避", color: "#a8d848", life: 0.7 }); return; }
   if (u.def.id === "knight" && u.lv >= 3) amt *= 0.85;
   if (u.hero && sg("sg_kn1")) amt *= Math.max(0.4, 1 - 0.12 * sg("sg_kn1"));
   if (u.blessT > 0) amt *= 0.75;
@@ -223,6 +224,7 @@ function hurtUnit(u, amt, type, from) {
   if (sg("sg_ma1")) amt *= Math.max(0.5, 1 - 0.08 * sg("sg_ma1"));
   amt *= 1 + 0.2 * cu("cu_blood");
   if (type === "magic" && hasTal(u, "lancer")) amt *= 0.6;
+  if (type === "magic" && cl("wardmind")) amt *= Math.max(0.3, 1 - 0.08 * cl("wardmind"));
   if (from && from.d && hasAfx(from, "vampiric") && !from.dead) from.hp = Math.min(from.maxHp, from.hp + amt * 0.4);
   u.hp -= amt; u.hitT = type === "poison" ? Math.max(u.hitT, 0.06) : 0.14; if (type !== "poison") u.kb = 1;
   addStat(u, "taken", amt);
@@ -245,6 +247,7 @@ function heal(u, amt, quiet, src) {
 function hurtCrystal(amt, e) {
   if (S.over) return;
   if (syn("wall")) amt *= 0.85;
+  if (cl("lg_ward")) amt *= 0.8;
   if (ab(20)) amt *= 1.3;
   if (rl("rl_crown") && e && !e.dead && e.hp !== undefined) hurt(e, amt * 6, "true", false, { key: "rl_crown" });
   S.crystal.hp = Math.max(0, S.crystal.hp - amt);
@@ -586,7 +589,7 @@ function buildBlades() {
   const n = 1 + cl("sk_blade") + (evo("sk_blade") ? 2 : 0);
   S.blades = Array.from({ length: n }, (_, i) => ({ a: (i / n) * 6.283 }));
 }
-const twinCd = () => (cl("lg_twin") ? 0.6 : 1) * Math.max(0.3, 1 - 0.35 * cu("cu_sand")) * (S.buff.cd || 1);
+const twinCd = () => (cl("lg_twin") ? 0.6 : 1) * Math.max(0.3, 1 - 0.35 * cu("cu_sand")) * (S.buff.cd || 1) * Math.max(0.5, 1 - 0.08 * cl("cdr"));
 const twinDmg = () => (cl("lg_twin") ? 1.35 : 1);
 function autoSkills(dt) {
   if (S.resoT > 0) S.resoT -= dt;
@@ -594,7 +597,7 @@ function autoSkills(dt) {
     S.sigStar = (S.sigStar || 4) - dt;
     if (S.sigStar <= 0) { S.sigStar = 14; const h = heroOf(); if (h) { const pool = S.enemies.filter(hittable); for (let k = 0; k < 3 && pool.length; k++) { let best = pool[0], bn = -1; for (const e of pool) { const n = pool.filter(o => dist(o, e) <= 1.6).length; if (n > bn) { bn = n; best = e; } } S.meteors.push({ x: best.x, y: best.y, t: 0.5, dmg: uAtk(h) * 2.2, r: uSplash(h) + 0.8, src: h, color: "#a0b8ff" }); addFx({ kind: "meteor", x: best.x, y: best.y, life: 0.5, color: "#a0b8ff" }); const i2 = pool.indexOf(best); if (i2 >= 0) pool.splice(i2, 1); } } }
   }
-  for (const id of ["sk_meteor", "sk_chain", "sk_nova", "sk_fire", "sk_holy", "lg_time"]) {
+  for (const id of ["sk_meteor", "sk_chain", "sk_nova", "sk_fire", "sk_holy", "sk_spear", "sk_toxic", "sk_gale", "lg_time"]) {
     const lv = cl(id); if (!lv) continue;
     if (S.skillCd[id] == null) S.skillCd[id] = SKILL_CD[id](lv) * twinCd() * 0.4;
     S.skillCd[id] -= dt * (S.resoT > 0 ? 1.5 : 1);
@@ -692,6 +695,30 @@ function autoCast(id, lv) {
     for (const e of S.enemies) if (hittable(e) && toCrystal(e) <= R) {
       const undead = ["skeleton", "ghost", "necro", "imp"].includes(e.type);
       if (undead || ev) hurt(e, calc(dmg * (undead ? (ev ? 3 : 1.5) : 1), "magic", eDef(e), eRes(e)), "magic", false, { key: "sk_holy" });
+    }
+  } else if (id === "sk_spear") {
+    const t = S.enemies.filter(hittable).sort((a, b) => toCrystal(a) - toCrystal(b))[0];
+    if (!t) { S.skillCd[id] = 0.6; return; }
+    const dmg = SKILL_DMG.sk_spear * lv * P;
+    addFx({ kind: "bolt", x: CRYSTAL.x, y: CRYSTAL.y, x2: t.x, y2: t.y, life: 0.3, color: "#ffe860" });
+    hurt(t, calc(dmg, "phys", eDef(t), eRes(t)), "phys", false, { key: "sk_spear" });
+    if (!t.d.unstoppable) t.stunT = Math.max(t.stunT || 0, 0.8 + lv * 0.15);
+    burst(t.x, t.y, "#ffe860", 10, 2.6, 0.5, 0.06);
+  } else if (id === "sk_toxic") {
+    const R = 3.4, dps = SKILL_DMG.sk_toxic * lv * P * 0.25;
+    addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#a8d848", life: 0.7, r0: 0.4, r1: R, fill: true });
+    for (const e of S.enemies) if (hittable(e) && toCrystal(e) <= R) {
+      burnEnemy(e, dps, 3.5, { key: "sk_toxic" });
+      applyCorrode(e, 0.12 + 0.02 * lv, 3.5, { key: "sk_toxic" });
+    }
+  } else if (id === "sk_gale") {
+    const pool = S.enemies.filter(hittable);
+    if (!pool.length) { S.skillCd[id] = 0.6; return; }
+    const n = Math.min(pool.length, 2 + Math.floor(lv / 2)), dmg = SKILL_DMG.sk_gale * lv * P, picked = [], left = pool.slice();
+    for (let i = 0; i < n; i++) { const idx = Math.floor(roll("fight") * left.length); picked.push(left[idx]); left.splice(idx, 1); }
+    for (const t of picked) {
+      addFx({ kind: "bolt", x: CRYSTAL.x, y: CRYSTAL.y, x2: t.x, y2: t.y, life: 0.25, color: "#c8f0a0" });
+      hurt(t, calc(dmg, "phys", eDef(t), eRes(t)), "phys", false, { key: "sk_gale" });
     }
   }
 }

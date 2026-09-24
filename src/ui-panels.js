@@ -98,6 +98,8 @@ function updateOffer() {
   if (box.dataset.k === key) return;
   box.dataset.k = key; box.hidden = false;
   box.classList.toggle("lg", S.offer.some(p => (p.rare || 0) === 2));   // 有传说卡：背景亮起金色光芒
+  $("cards3").classList.toggle("n4", S.offer.length > 3);   // 混入诅咒卡时变成 2x2 的 4 选 1
+  $("lu-tip").innerHTML = S.offer.length > 3 ? "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> 选卡，<kbd>R</kbd> 重抽" : "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 选卡，<kbd>R</kbd> 重抽";
   const title = S.offerRare ? "稀有货架！选一张" : S.level <= 1 && !S.kills ? "开局翻牌！选一张" : `升到 Lv ${S.level}！选一张卡`;
   setText("lu-title", title + (S.pending > 1 ? `（还有 ${S.pending - 1} 次）` : ""));
   $("cards3").innerHTML = S.offer.map((p, i) => {
@@ -438,7 +440,7 @@ document.addEventListener("keydown", ev => {
   if (S && S.event) { if (/^[1-3]$/.test(k) && S.event.opts[+k - 1]) { ev.preventDefault(); if (takeEvent(+k - 1)) $("eventbox").dataset.k = ""; } return; }
   if (S && S.shop) { if (k === "enter" || k === " ") { ev.preventDefault(); closeShop(); $("shopbox").dataset.k = ""; } return; }
   if (S && S.offer) {
-    if (/^[1-3]$/.test(k) && S.offer[+k - 1]) { ev.preventDefault(); takeCard(S.offer[+k - 1].id); }
+    if (/^[1-4]$/.test(k) && S.offer[+k - 1]) { ev.preventDefault(); takeCard(S.offer[+k - 1].id); }
     else if (k === "r" && rerollOffer()) $("levelup").dataset.k = "";
     return;
   }
