@@ -1,7 +1,8 @@
 
 // ================= 升级卡牌 =================
 // kind: stat 属性 / skill 自动技能 / special 特殊 / ally 伙伴
-const KIND_NAME = { stat: "属性", skill: "技能", special: "特殊", ally: "伙伴", curse: "诅咒" };
+const KIND_NAME = { stat: "属性", skill: "技能", special: "特殊", ally: "伙伴", curse: "诅咒", evo: "进化" };
+const evo = id => cl("ev_" + id.slice(3));   // evo("sk_meteor")：这张技能卡进化了没有
 const KIND_COLOR = { stat: "#6ab4ff", skill: "#b18ae8", special: "#a8d848", ally: "#e3b75c", curse: "#e0486a" };
 const CARDS = [
   { id: "atk", rare: 0, kind: "stat", name: "锋利", max: 6, w: 10, desc: lv => `全队攻击 +12%（当前 +${12 * lv}%）` },
@@ -41,6 +42,14 @@ const CARDS = [
   { id: "lg_army", rare: 2, kind: "ally", name: "万军之阵", max: 1, w: 5, desc: () => "伙伴上限 +2，场上所有伙伴立刻升 1 阶" },
   { id: "lg_aegis", rare: 2, kind: "stat", name: "永恒壁垒", max: 2, w: 5, desc: lv => `晨星碑生命上限 +${40 * lv}%，每波结束回复 ${8 * lv}%` },
   { id: "lg_greed", rare: 2, kind: "stat", name: "星尘洪流", max: 1, w: 5, desc: () => "经验和星尘获得翻倍" },
+  // ---- 进化卡：自动技能升到满级后才会进牌堆，拿了技能形态大变（按传说卡的样子显示，但不算「传说卡」）----
+  { id: "ev_meteor", evo: "sk_meteor", rare: 2, kind: "evo", name: "天罚陨星", max: 1, w: 8, desc: () => "陨星雨进化：每次同时砸下 3 颗陨星（落在不同的敌群），爆炸范围 +30%，被砸中的敌人会灼烧 3 秒" },
+  { id: "ev_chain", evo: "sk_chain", rare: 2, kind: "evo", name: "雷霆风暴", max: 1, w: 8, desc: () => "闪电链进化：跳跃次数翻倍、伤害不再衰减，被击中的敌人麻痹 0.4 秒" },
+  { id: "ev_nova", evo: "sk_nova", rare: 2, kind: "evo", name: "绝对零度", max: 1, w: 8, desc: () => "冰霜新星进化：范围扩大到 5 格，冻结 2 秒，伤害 +30%" },
+  { id: "ev_blade", evo: "sk_blade", rare: 2, kind: "evo", name: "剑刃风暴", max: 1, w: 8, desc: () => "飞刃进化：多 2 把飞刃，轨道忽远忽近扫过更大范围，伤害 +30%，出手更快" },
+  { id: "ev_fire", evo: "sk_fire", rare: 2, kind: "evo", name: "炼狱火环", max: 1, w: 8, desc: () => "烈焰环进化：范围扩大到 5 格，灼烧伤害 +60%、持续 5 秒" },
+  { id: "ev_spike", evo: "sk_spike", rare: 2, kind: "evo", name: "荆棘王座", max: 1, w: 8, desc: () => "地刺阵进化：地刺范围扩大一圈，伤害 +40%，被刺中的敌人减速 40%" },
+  { id: "ev_holy", evo: "sk_holy", rare: 2, kind: "evo", name: "神圣审判", max: 1, w: 8, desc: () => "圣光进化：回血量 +30%，对范围内所有敌人造成伤害（亡灵受到双倍）" },
   // ---- 补充卡：牌堆快抽空时才出现，可以无限叠加 ----
   { id: "fl_atk", rare: 0, kind: "stat", name: "淬炼", max: 999, w: 10, filler: true, desc: lv => `全队攻击 +6%、生命 +6%（可以无限叠加，当前 +${6 * lv}%）` },
   { id: "fl_crystal", rare: 0, kind: "stat", name: "碑石修补", max: 999, w: 6, filler: true, desc: () => "晨星碑立即回复 20% 生命" },
@@ -60,6 +69,12 @@ function drawCardIcon(cvs, id, size) {
   const px = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x * k, y * k, w * k, h * k); };
   const dsc = (cx, cy, r, c) => { g.fillStyle = c; for (let y = -r; y <= r; y++) { const hw = Math.floor(Math.sqrt(r * r - y * y + r * 0.6)); g.fillRect((cx - hw) * k, (cy + y) * k, (hw * 2 + 1) * k, k); } };
   g.fillStyle = "#12141f"; g.fillRect(0, 0, S2, S2);
+  if (id.startsWith("ev_")) {   // 进化卡：原技能图标 + 金框 + 右上角的星
+    drawCardIcon(cvs, "sk_" + id.slice(3), S2);
+    g.fillStyle = "#ffd860"; g.fillRect(0, 0, S2, k); g.fillRect(0, S2 - k, S2, k); g.fillRect(0, 0, k, S2); g.fillRect(S2 - k, 0, k, S2);
+    px(12, 1, 3, 1, "#fff6c0"); px(13, 0, 1, 3, "#fff6c0"); px(11, 3, 2, 1, "#ffd860");
+    return;
+  }
   switch (id) {
     case "atk": px(3, 11, 2, 3, "#8a5a30"); px(4, 4, 3, 8, "#dfe6f2"); px(4, 4, 1, 8, "#ffffff"); px(3, 10, 5, 1, "#f0c040"); px(9, 5, 4, 2, "#e0676a"); px(10, 7, 3, 2, "#e0676a"); break;
     case "aspd": for (let i = 0; i < 3; i++) px(3 + i, 4 + i * 3, 9 - i * 2, 2, "#8fe0f0"); px(11, 2, 2, 12, "#ffffff"); break;

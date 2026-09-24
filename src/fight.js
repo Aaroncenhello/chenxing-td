@@ -91,7 +91,7 @@ function killEnemy(e, src) {
   // 顿帧：精英、首领被打死时画面停一下，配一圈白色冲击环
   if (e.elite || isBoss(e)) { S.hitStop = Math.max(S.hitStop || 0, isBoss(e) ? 0.16 : 0.07); addFx({ kind: "ring", x: e.x, y: e.y, color: "#ffffff", life: 0.35, r0: 0.2, r1: isBoss(e) ? 2.6 : 1.5 }); }
   if ((e.elite || isBoss(e)) && S.slowCd <= 0) { S.slowmo = Math.max(S.slowmo, isBoss(e) ? 0.9 : 0.22); S.slowCd = 1.2; }
-  if (isBoss(e)) { S.shake = 0.6; if (S.boss === e) S.boss = null; if (e.type === "boss") S.events.push({ type: "achv", id: "boss" }); }
+  if (isBoss(e)) { S.shake = 0.6; bossFanfare(e, "death"); if (S.boss === e) S.boss = null; if (e.type === "boss") S.events.push({ type: "achv", id: "boss" }); }
   if (e.d.split) for (let i = 0; i < e.d.split; i++) { const s = spawnNear("slime", e, false, true); s.stop = 0.2; s.hitT = 0.1; }
   // 殉爆
   if (cl("boom") && roll("fight") < 0.18 * cl("boom") * (syn("bloodlust") ? 1.5 : 1)) {
@@ -124,6 +124,7 @@ function hurt(e, amt, type, crit, src) {
   if (src && src.hero && sg("sg_ch1") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1 + 0.18 * sg("sg_ch1");
   if (syn("frostbite") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1.4;
   if (e.burn > 0 && syn("inferno")) amt *= 1.1;
+  if (e === S.focus && src && src.def) amt *= FOCUS_BONUS;
   const byUnit = src && src.def && type !== "poison";
   if (byUnit) {
     if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1);
@@ -153,8 +154,40 @@ function hurt(e, amt, type, crit, src) {
   if (e.hp <= 0) { if (crit && S.slowCd <= 0) { S.slowmo = Math.max(S.slowmo, 0.12); S.slowCd = 1.2; } killEnemy(e, src); }
   return amt;
 }
+// ---------- 首领大场面：换形态 / 被击破时的演出（纯画面，不改数值）----------
+function queueFx(t, f) { (S.fxq || (S.fxq = [])).push({ t, f }); }
+function bossFanfare(e, kind) {
+  const death = kind === "death", col = death ? "#ffe38a" : e.enraged ? "#ff4a3a" : "#b070ff";
+  addFx({ kind: "letterbox", life: death ? 2.4 : 1.5 });
+  addFx({ kind: "flash", life: death ? 0.5 : 0.35, color: death ? "#ffffff" : col });
+  addFx({ kind: "ring", x: e.x, y: e.y, color: col, life: 0.9, r0: 0.4, r1: death ? 9 : 6 });
+  S.shake = Math.max(S.shake, death ? 0.9 : 0.6);
+  if (!death) return;
+  // 连环爆炸 → 光柱 → 金色碎片雨 → 击破横幅
+  for (let i = 0; i < 8; i++) {
+    const a = i * 2.4, r = 0.3 + (i % 3) * 0.45;
+    queueFx(0.1 + i * 0.12, { kind: "boom", x: e.x + Math.cos(a) * r, y: e.y + Math.sin(a) * r * 0.7, r: 0.9 + (i % 3) * 0.4, color: i % 2 ? "#ffb040" : "#ff5a3a", life: 0.55, burst: 14 });
+  }
+  queueFx(1.05, { kind: "pillar", x: e.x, y: e.y, color: "#ffe38a", life: 1.2, burst: 60, flash: "#fff6d0" });
+  queueFx(1.1, { kind: "ring", x: e.x, y: e.y, color: "#ffffff", life: 0.8, r0: 0.3, r1: 11 });
+  queueFx(1.2, { kind: "banner", text: `首领击破 · ${e.d.name}`, life: 2.4 });
+}
+// 排队中的特效到点放出来（step 里调用；带 burst 的顺便炸一把粒子）
+function fxQueueStep(dt) {
+  if (!S.fxq || !S.fxq.length) return;
+  for (const q of S.fxq) {
+    q.t -= dt; if (q.t > 0) continue;
+    q.done = true; const f = q.f;
+    if (f.burst) burst(f.x, f.y, f.color, f.burst, 3.6, 0.9, 0.09);
+    if (f.flash) addFx({ kind: "flash", life: 0.3, color: f.flash });
+    if (f.kind === "boom") S.shake = Math.max(S.shake, 0.35);
+    addFx(f);
+  }
+  S.fxq = S.fxq.filter(q => !q.done);
+}
 function enrage(e) {
   e.enraged = true; S.slowmo = 0.5; S.shake = 0.5;
+  bossFanfare(e, "phase");
   addFx({ kind: "banner", text: `${e.d.name} · 狂暴`, life: 2, danger: true });
   addFx({ kind: "boom", x: e.x, y: e.y, r: 1.6, color: "#ff3a2a", life: 0.7 });
   burst(e.x, e.y, "#ff5a3a", 30, 3.4, 0.8, 0.09);
@@ -163,8 +196,8 @@ function enrage(e) {
 function phaseShift(e, idx) {
   const last = idx === e.d.phases.length - 1;
   e.shield = e.maxShield = Math.round(e.maxHp * 0.08);
-  S.slowmo = 0.6; S.shake = 0.5;
-  addFx({ kind: "banner", text: `${e.d.name} · ${last ? "最终形态" : "第二形态"}`, life: 2.2, danger: true });
+  S.slowmo = 0.6; S.shake = 0.5; bossFanfare(e, "phase");
+  addFx({ kind: "banner", text: `${e.d.name} · ${last ? "最终形态" : idx === 0 ? "第二形态" : "第 " + (idx + 2) + " 形态"}`, life: 2.2, danger: true });
   addFx({ kind: "boom", x: e.x, y: e.y, r: 2, color: "#b070ff", life: 0.8 });
   burst(e.x, e.y, "#c890ff", 36, 3.6, 0.9, 0.09);
   for (let i = 0; i < 4; i++) spawnNear("imp", e, false, true).hitT = 0.2;
@@ -280,6 +313,21 @@ function landShot(s) {
 
 // ---------- 角色出手 ----------
 const WINDUP = { melee: 0.13, ranged: 0.17, enemy: 0.16 };
+// ---------- 集火：点一个敌人，全队够得着就优先打它，它受到的伤害 +15% ----------
+const FOCUS_BONUS = 1.15;
+function focusFoe() { const e = S.focus; if (!e) return null; if (e.dead || !S.enemies.includes(e)) { S.focus = null; return null; } return e; }
+function setFocus(e) {
+  if (!e || S.focus === e) { S.focus = null; return false; }
+  S.focus = e;
+  addFx({ kind: "ring", x: e.x, y: e.y, color: "#ff4a4a", life: 0.35, r0: 1.2, r1: 0.3 });
+  if (!S.focusTip) { S.focusTip = 1; S.events.push({ type: "tip", title: "集火", text: `全队够得着就优先打「${e.d.name}」，它受到的伤害 +15%。再点它一下取消。` }); }
+  return true;
+}
+function enemyAt(p, rad) {
+  let best = null, bd = rad;
+  for (const e of S.enemies) { if (!hittable(e)) continue; const d = Math.hypot(e.x - p.x, e.y - (e.d.flying ? 0.3 : 0) - p.y); if (d < bd) { bd = d; best = e; } }
+  return best;
+}
 function pickTargets(u) {
   const D = u.def, R = uRange(u);
   if (D.dmg === "heal") {
@@ -287,10 +335,12 @@ function pickTargets(u) {
     return hurtAllies.slice(0, (br(u, "priest", "A") ? 3 : u.lv >= 3 ? 2 : 1) + (u.hero ? sg("sg_pr1") : 0));
   }
   const pool = S.enemies.filter(e => hittable(e) && e.revealed && (D.air || D.place === "ground" || !e.d.flying) && dist(u, e) <= R);
+  // 集火：玩家点过的敌人只要够得着就先打它
+  const fo = focusFoe(), first = (a, b) => (b === fo) - (a === fo);
   // 飞行敌人贴到晨星碑上啃的时候会降下来，近战也能打到
-  if (D.place === "ground") { const g = pool.filter(e => canMelee(e)); if (!g.length) return []; g.sort((a, b) => toCrystal(a) - toCrystal(b)); return g.slice(0, 1); }
-  if (br(u, "archer", "B")) return pool.sort((a, b) => b.hp - a.hp).slice(0, 1);
-  pool.sort((a, b) => toCrystal(a) - toCrystal(b));
+  if (D.place === "ground") { const g = pool.filter(e => canMelee(e)); if (!g.length) return []; g.sort((a, b) => first(a, b) || toCrystal(a) - toCrystal(b)); return g.slice(0, 1); }
+  if (br(u, "archer", "B")) return pool.sort((a, b) => first(a, b) || b.hp - a.hp).slice(0, 1);
+  pool.sort((a, b) => first(a, b) || toCrystal(a) - toCrystal(b));
   return pool.slice(0, (D.id === "archer" ? (br(u, "archer", "A") ? 4 : u.lv >= 3 ? 2 : 1) : 1) + (u.hero ? sg("sg_ar1") : 0));
 }
 function strike(u, targets) {
@@ -439,9 +489,14 @@ function useSkill(u) {
     }
   }
   addFx({ kind: "ring", x: u.x, y: u.y, color: D.color, life: 0.6, r0: 0.3, r1: R });
-  addFx({ kind: "text", x: u.x, y: u.y - 0.8, text: D.skill.name, color: D.color, life: 1.1, big: true });
+  addFx({ kind: "ring", x: u.x, y: u.y, color: "#ffffff", life: 0.4, r0: 0.2, r1: R * 0.6 });
+  addFx({ kind: "pillar", x: u.x, y: u.y, color: D.color, life: 0.7 });
   addFx({ kind: "cast", x: u.x, y: u.y, color: D.color, life: 0.9 });
-  burst(u.x, u.y, D.color, 18, 2.4, 0.8, 0.07);
+  burst(u.x, u.y, D.color, 24, 2.8, 0.8, 0.07);
+  // 技能特写：屏幕一侧斜着滑进一条带头像和技能名的横幅（同一时间只留最新的一条）
+  S.fx = S.fx.filter(f => f.kind !== "skillcut");
+  addFx({ kind: "skillcut", id: D.id, lv: u.lv, branch: u.branch, name: D.name, skill: D.skill.name, color: D.color, hero: !!u.hero, life: 1.1 });
+  if (u.hero) addFx({ kind: "flash", life: 0.18, color: D.color });
 }
 function autoWant(u) {
   const D = u.def, R = uRange(u), big = e => e.elite || isBoss(e);
@@ -515,7 +570,7 @@ function addCombo() {
 
 // ---------- 卡牌自动技能 ----------
 function buildBlades() {
-  const n = 1 + cl("sk_blade");
+  const n = 1 + cl("sk_blade") + (evo("sk_blade") ? 2 : 0);
   S.blades = Array.from({ length: n }, (_, i) => ({ a: (i / n) * 6.283 }));
 }
 const twinCd = () => (cl("lg_twin") ? 0.6 : 1) * Math.max(0.3, 1 - 0.35 * cu("cu_sand")) * (S.buff.cd || 1);
@@ -536,9 +591,9 @@ function autoSkills(dt) {
     S.spikeCd = (S.spikeCd || 0) - dt;
     if (S.spikeCd <= 0) {
       S.spikeCd = 0.5;
-      const dmg = SKILL_DMG.sk_spike * spike * powerK() * twinDmg();
+      const ev = evo("sk_spike"), dmg = SKILL_DMG.sk_spike * spike * powerK() * twinDmg() * (ev ? 1.4 : 1), far = ev ? 1.9 : 0.9;
       let any = false;
-      for (const e of S.enemies) if (!e.dead && !e.d.flying) { const d = toCrystal(e); if (d >= RULES.ringFront - 0.5 && d <= RULES.ringFront + 0.9) { any = true; hurt(e, calc(dmg, "phys", eDef(e) * 0.5, eRes(e)), "phys", false, { key: "sk_spike" }); if (e.under) S.events.push({ type: "achv", id: "trapworm" }); } }
+      for (const e of S.enemies) if (!e.dead && !e.d.flying) { const d = toCrystal(e); if (d >= RULES.ringFront - 0.5 && d <= RULES.ringFront + far) { any = true; hurt(e, calc(dmg, "phys", eDef(e) * 0.5, eRes(e)), "phys", false, { key: "sk_spike" }); if (ev && !e.d.unstoppable) { e.slowT = Math.max(e.slowT, 0.8); e.slowK = Math.min(e.slowK || 1, 0.6); } if (e.under) S.events.push({ type: "achv", id: "trapworm" }); } }
       if (any) S.spikeFire = 0.25;
     }
     S.spikeFire = Math.max(0, (S.spikeFire || 0) - dt);
@@ -546,17 +601,19 @@ function autoSkills(dt) {
   const bl = cl("sk_blade");
   if (bl) {
     if (!S.blades.length) buildBlades();
-    const dmg = SKILL_DMG.sk_blade * bl * powerK() * twinDmg();
-    for (const b of S.blades) {
-      b.a += dt * 1.9;
-      const x = CRYSTAL.x + Math.cos(b.a) * 2.0, y = CRYSTAL.y + Math.sin(b.a) * 2.0;
+    const ev = evo("sk_blade"), dmg = SKILL_DMG.sk_blade * bl * powerK() * twinDmg() * (ev ? 1.3 : 1);
+    S.bladeT = (S.bladeT || 0) + dt;
+    S.blades.forEach((b, i) => {
+      b.a += dt * (ev ? 2.4 : 1.9);
+      const rad = ev ? 2.3 + Math.sin(S.bladeT * 1.3 + i * 1.7) * 0.9 : 2.0;   // 进化后轨道忽远忽近
+      const x = CRYSTAL.x + Math.cos(b.a) * rad, y = CRYSTAL.y + Math.sin(b.a) * rad;
       b.x = x; b.y = y;
-      for (const e of S.enemies) if (hittable(e) && e.hitCd <= 0 && distTo(e, x, y) <= 0.55) {
-        e.hitCd = 0.5;
+      for (const e of S.enemies) if (hittable(e) && e.hitCd <= 0 && distTo(e, x, y) <= (ev ? 0.65 : 0.55)) {
+        e.hitCd = ev ? 0.3 : 0.5;
         hurt(e, calc(dmg, "phys", eDef(e), eRes(e)), "phys", false, { key: "sk_blade" });
-        addFx({ kind: "slash", x: e.x, y: e.y, color: "#dfe6f2", face: 1, life: 0.2 });
+        addFx({ kind: "slash", x: e.x, y: e.y, color: ev ? "#ffe080" : "#dfe6f2", face: 1, life: 0.2 });
       }
-    }
+    });
   }
 }
 function autoCast(id, lv) {
@@ -575,41 +632,52 @@ function autoCast(id, lv) {
   if (id === "sk_meteor") {
     const pool = S.enemies.filter(hittable);
     if (!pool.length) { S.skillCd[id] = 0.6; return; }
-    let best = pool[0], bestN = -1;
-    for (const e of pool) { const n = pool.filter(o => dist(o, e) <= 1.5).length + (isBoss(e) ? 3 : e.elite ? 1 : 0); if (n > bestN) { bestN = n; best = e; } }
-    S.meteors.push({ x: best.x, y: best.y, t: 0.55, dmg: SKILL_DMG.sk_meteor * lv * P, r: 1.5 });
-    addFx({ kind: "meteor", x: best.x, y: best.y, life: 0.55 });
+    const ev = evo("sk_meteor"), dmg = SKILL_DMG.sk_meteor * lv * P;
+    for (let k = 0; k < (ev ? 3 : 1) && pool.length; k++) {   // 进化：3 颗，各砸一处敌群
+      let best = pool[0], bestN = -1;
+      for (const e of pool) { const n = pool.filter(o => dist(o, e) <= 1.5).length + (isBoss(e) ? 3 : e.elite ? 1 : 0); if (n > bestN) { bestN = n; best = e; } }
+      S.meteors.push({ x: best.x, y: best.y, t: 0.55 + k * 0.18, dmg, r: ev ? 1.95 : 1.5, burn: ev ? dmg * 0.08 : 0, color: ev ? "#ff5a2a" : null });
+      addFx({ kind: "meteor", x: best.x, y: best.y, life: 0.55 + k * 0.18, color: ev ? "#ff5a2a" : undefined });
+      for (let i = pool.length - 1; i >= 0; i--) if (dist(pool[i], best) <= 1.8) pool.splice(i, 1);
+    }
   } else if (id === "sk_chain") {
     const start = S.enemies.filter(hittable).sort((a, b) => toCrystal(a) - toCrystal(b))[0];
     if (!start) { S.skillCd[id] = 0.6; return; }
+    const ev = evo("sk_chain");
     let cur = start, dmg = SKILL_DMG.sk_chain * lv * P; const hit = new Set();
-    for (let j = 0; j < 2 + lv && cur; j++) {
+    for (let j = 0; j < (2 + lv) * (ev ? 2 : 1) && cur; j++) {
       hit.add(cur);
       hurt(cur, calc(dmg, "magic", eDef(cur), eRes(cur)), "magic", false, { key: "sk_chain" });
-      const next = S.enemies.filter(e => hittable(e) && !hit.has(e) && dist(e, cur) <= 2.4).sort((a, b) => dist(a, cur) - dist(b, cur))[0];
-      if (next) addFx({ kind: "bolt", x: cur.x, y: cur.y, x2: next.x, y2: next.y, life: 0.3 });
-      cur = next; dmg *= 0.88;
+      if (ev && !cur.d.unstoppable) cur.stunT = Math.max(cur.stunT || 0, 0.4);
+      const next = S.enemies.filter(e => hittable(e) && !hit.has(e) && dist(e, cur) <= (ev ? 3 : 2.4)).sort((a, b) => dist(a, cur) - dist(b, cur))[0];
+      if (next) addFx({ kind: "bolt", x: cur.x, y: cur.y, x2: next.x, y2: next.y, life: ev ? 0.4 : 0.3, color: ev ? "#ffe860" : undefined });
+      cur = next; if (!ev) dmg *= 0.88;
     }
   } else if (id === "sk_nova") {
-    const R = 3.2, dmg = SKILL_DMG.sk_nova * lv * P;
-    addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#8fe0f0", life: 0.6, r0: 0.4, r1: R, fill: true });
+    const ev = evo("sk_nova"), R = ev ? 5 : 3.2, dmg = SKILL_DMG.sk_nova * lv * P * (ev ? 1.3 : 1);
+    addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#8fe0f0", life: ev ? 0.9 : 0.6, r0: 0.4, r1: R, fill: true });
+    if (ev) { addFx({ kind: "flash", life: 0.3, color: "#dff8ff" }); burst(CRYSTAL.x, CRYSTAL.y, "#dff8ff", 40, 5, 0.9, 0.06); }
     for (const e of S.enemies) if (hittable(e) && toCrystal(e) <= R) {
       hurt(e, calc(dmg, "magic", eDef(e), eRes(e)), "magic", false, { key: "sk_nova" });
-      if (!e.d.unstoppable) { e.freezeT = Math.max(e.freezeT, 1); e.slowT = Math.max(e.slowT, 2); e.slowK = 0.5; }
+      if (!e.d.unstoppable) { e.freezeT = Math.max(e.freezeT, ev ? 2 : 1); e.slowT = Math.max(e.slowT, ev ? 4 : 2); e.slowK = 0.5; }
     }
   } else if (id === "sk_fire") {
-    const R = 3.4, dmg = SKILL_DMG.sk_fire * lv * P;
-    addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#ff8a3a", life: 0.6, r0: 0.4, r1: R, fill: true });
-    burst(CRYSTAL.x, CRYSTAL.y, "#ffb040", 26, 3, 0.7, 0.08);
+    const ev = evo("sk_fire"), R = ev ? 5 : 3.4, dmg = SKILL_DMG.sk_fire * lv * P;
+    addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: ev ? "#ff4a1a" : "#ff8a3a", life: ev ? 0.8 : 0.6, r0: 0.4, r1: R, fill: true });
+    burst(CRYSTAL.x, CRYSTAL.y, "#ffb040", ev ? 50 : 26, ev ? 5 : 3, 0.7, 0.08);
     for (const e of S.enemies) if (hittable(e) && toCrystal(e) <= R) {
       hurt(e, calc(dmg, "magic", eDef(e), eRes(e)), "magic", false, { key: "sk_fire" });
-      burnEnemy(e, dmg * 0.25, 3.5, { key: "sk_fire" });
+      burnEnemy(e, dmg * (ev ? 0.4 : 0.25), ev ? 5 : 3.5, { key: "sk_fire" });
     }
   } else if (id === "sk_holy") {
     const R = 4, dmg = SKILL_DMG.sk_holy * lv * P;
     addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#ffe080", life: 0.7, r0: 0.3, r1: R, fill: true });
-    for (const u of S.units) heal(u, u.maxHp * (0.12 + 0.04 * lv), false, { key: "sk_holy" });
-    for (const e of S.enemies) if (hittable(e) && toCrystal(e) <= R && ["skeleton", "ghost", "necro", "imp"].includes(e.type))
-      hurt(e, calc(dmg * 1.5, "magic", eDef(e), eRes(e)), "magic", false, { key: "sk_holy" });
+    const ev = evo("sk_holy");
+    for (const u of S.units) heal(u, u.maxHp * (0.12 + 0.04 * lv) * (ev ? 1.3 : 1), false, { key: "sk_holy" });
+    if (ev) for (let i = 0; i < 6; i++) addFx({ kind: "pillar", x: CRYSTAL.x + Math.cos(i * 1.047) * 2.4, y: CRYSTAL.y + Math.sin(i * 1.047) * 2.4, color: "#ffe080", life: 0.7 });
+    for (const e of S.enemies) if (hittable(e) && toCrystal(e) <= R) {
+      const undead = ["skeleton", "ghost", "necro", "imp"].includes(e.type);
+      if (undead || ev) hurt(e, calc(dmg * (undead ? (ev ? 3 : 1.5) : 1), "magic", eDef(e), eRes(e)), "magic", false, { key: "sk_holy" });
+    }
   }
 }

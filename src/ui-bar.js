@@ -32,6 +32,7 @@ function handleEvents() {
     if (ev.type === "achv") unlockAchv(ev.id);
     else if (ev.type === "relic") { const R = RELIC_BY[ev.id]; editSave(d => { if (!d.relicSeen.includes(ev.id)) d.relicSeen.push(ev.id); }); toast(`<b>遗物 · ${R.name}</b>${R.desc}（${S.relics.length}/${RELIC_MAX}）`, c => drawRelicIcon(c, ev.id, 44)); }
     else if (ev.type === "syn") toast(`<b>羁绊 · ${ev.name}</b>${ev.desc}`);
+    else if (ev.type === "tip") toast(`<b>${ev.title}</b>${ev.text}`);
     else if (ev.type === "first") storyOn(ev.enemy);
     else if (ev.type === "seen") {
       let isNew = false; editSave(d => { if (!d.seen.includes(ev.enemy)) { d.seen.push(ev.enemy); isNew = true; } });
