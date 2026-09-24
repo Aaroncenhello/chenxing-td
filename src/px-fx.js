@@ -173,8 +173,8 @@ function drawFx(f, now) {
     } else overlayTexts.push(f);
     return;
   }
-  if (f.kind === "banner" || f.kind === "cutin" || f.kind === "combo") { overlayTexts.push(f); return; }
-  if (f.kind === "flash") return;
+  if (f.kind === "banner" || f.kind === "cutin" || f.kind === "combo" || f.kind === "skillcut") { overlayTexts.push(f); return; }
+  if (f.kind === "flash" || f.kind === "letterbox") return;
   if (f.kind === "ring") {
     const r = (f.r0 + (f.r1 - f.r0) * (1 - (1 - k) ** 3)) * T, [x, y] = tpx(f.x, f.y);
     if (f.fill) { ctx.globalAlpha = 0.18 * (1 - k); disc(ctx, x, y + 8, r, f.color); ctx.globalAlpha = 1; }
@@ -222,7 +222,7 @@ function drawFx(f, now) {
     let px_ = x1, py_ = y1 - 6; const n = 6;
     for (let i = 1; i <= n; i++) {
       const nx = x1 + (x2 - x1) * i / n + (i < n ? (Math.random() - 0.5) * 8 : 0), ny = y1 - 6 + (y2 - y1) * i / n + (i < n ? (Math.random() - 0.5) * 8 : 0);
-      line(ctx, px_, py_, nx, ny, "#b8e0ff", 2); line(ctx, px_, py_, nx, ny, "#ffffff"); px_ = nx; py_ = ny;
+      line(ctx, px_, py_, nx, ny, f.color || "#b8e0ff", f.color ? 3 : 2); line(ctx, px_, py_, nx, ny, "#ffffff"); px_ = nx; py_ = ny;
     }
   } else if (f.kind === "meteor") {
     const [x, y] = tpx(f.x, f.y), sx = x + 120 * (1 - k), sy = y - 200 * (1 - k);
@@ -263,25 +263,38 @@ function drawPool(p, t) {
 }
 function drawSpikes(t) {
   const lv = cl("sk_spike"); if (!lv) return;
-  const R = RULES.ringFront + 0.2, n = 28, fire = (S.spikeFire || 0) > 0;
+  const fire = (S.spikeFire || 0) > 0, ev = evo("sk_spike");
+  for (const [R, n] of ev ? [[RULES.ringFront + 0.2, 28], [RULES.ringFront + 1.2, 36]] : [[RULES.ringFront + 0.2, 28]])   // 进化：外面再多一圈
   for (let i = 0; i < n; i++) {
     const a = i / n * 6.283 + Math.sin(t * 0.3) * 0.05, x = CRYSTAL.x + Math.cos(a) * R, y = CRYSTAL.y + Math.sin(a) * R;
     if (solid(x, y)) continue;
-    const [px_, py_] = tpx(x, y), h = fire ? 8 : 4;
-    rect(ctx, px_ - 1, py_ + 10 - h, 2, h, fire ? "#e8ecf4" : "#9aa0ac");
-    dot(ctx, px_ - 1, py_ + 9 - h, "#ffffff");
+    const [px_, py_] = tpx(x, y), h = fire ? (ev ? 10 : 8) : 4;
+    rect(ctx, px_ - 1, py_ + 10 - h, 2, h, fire ? "#e8ecf4" : ev ? "#b0a07a" : "#9aa0ac");
+    dot(ctx, px_ - 1, py_ + 9 - h, ev ? "#ffe080" : "#ffffff");
   }
+}
+// 集火标记：红色准星四角 + 头顶小箭头，一直跟着目标
+function drawFocus(t) {
+  const e = focusFoe(); if (!e) return;
+  const [x, y0] = tpx(e.x, e.y), y = y0 + (e.d.flying ? -4 : 4), r = 11 + Math.sin(t * 8) * 1.5, c = "#ff4a4a", L = 5;
+  for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    const cx = x + sx * r, cy = y + sy * r;
+    line(ctx, cx, cy, cx - sx * L, cy, c, 2); line(ctx, cx, cy, cx, cy - sy * L, c, 2);
+  }
+  const ay = y - r - 10 + Math.sin(t * 6) * 2;
+  rect(ctx, x - 3, ay, 7, 2, c); rect(ctx, x - 2, ay + 2, 5, 2, c); rect(ctx, x - 1, ay + 4, 3, 2, c);
 }
 function drawBlades(t) {
   if (!cl("sk_blade")) return;
+  const ev = evo("sk_blade");
   for (const b of S.blades) {
     if (b.x == null) continue;
     const [x, y] = tpx(b.x, b.y), a = t * 16;
     for (let i = 0; i < 4; i++) {
       const ang = a + i * 1.57, ex = x + Math.cos(ang) * 9, ey = y + 8 + Math.sin(ang) * 9;
-      line(ctx, x, y + 8, ex, ey, i % 2 ? "#dfe6f2" : "#ffffff", 2);
+      line(ctx, x, y + 8, ex, ey, i % 2 ? (ev ? "#ffe080" : "#dfe6f2") : "#ffffff", 2);
     }
-    disc(ctx, x, y + 8, 3, "#c8d0e0"); dot(ctx, x, y + 8, "#ffffff");
+    disc(ctx, x, y + 8, 3, ev ? "#ffd860" : "#c8d0e0"); dot(ctx, x, y + 8, "#ffffff");
   }
 }
 
@@ -374,6 +387,7 @@ function drawOverlay() {
   for (const f of overlayTexts) {
     const k = f.t / f.life;
     if (f.kind === "cutin") { drawCutin(f, k, s, txt); continue; }
+    if (f.kind === "skillcut") { drawSkillCut(f, k, s, txt); continue; }
     if (f.kind === "combo") {
       const a = k < 0.15 ? k / 0.15 : k > 0.7 ? (1 - k) / 0.3 : 1, sc = 1 + Math.max(0, 0.3 - k) * 1.5;
       tctx.globalAlpha = a; txt(`连杀 ${f.n}！经验 +${f.dp}`, tx.width / 2, (72 - k * 16) * s, 17 * s * sc * tk, "#ffd860"); tctx.globalAlpha = 1;
@@ -393,11 +407,19 @@ function drawOverlay() {
     }
   }
   if (S.boss && !S.boss.dead) {
-    const b = S.boss, w = tx.width * 0.5, x = (tx.width - w) / 2, y = 10 * s, h = 7 * s;
-    tctx.fillStyle = "rgba(10,6,10,.85)"; tctx.fillRect(x - 2 * s, y - 2 * s, w + 4 * s, h + 4 * s);
-    tctx.fillStyle = "#3a1014"; tctx.fillRect(x, y, w, h);
-    tctx.fillStyle = b.enraged ? "#ff3a2a" : "#d83838"; tctx.fillRect(x, y, w * Math.max(0, b.hp / b.maxHp), h);
-    tctx.fillStyle = "rgba(255,255,255,.3)"; tctx.fillRect(x, y, w * Math.max(0, b.hp / b.maxHp), h * 0.3);
+    // 横屏全屏时顶栏浮在战场上面，血条要挪到顶栏下方
+    let top = 10 * s;
+    const ht = document.body.classList.contains("imm") && document.querySelector(".hud-top");
+    if (ht) { const r = ht.getBoundingClientRect(), c = tx.getBoundingClientRect(); if (r.bottom > c.top && r.top < c.top + c.height * 0.3) top = Math.max(top, (r.bottom - c.top) * (tx.height / c.height) + 6 * s); }
+    const b = S.boss, w = tx.width * 0.62, x = (tx.width - w) / 2, y = top, h = 10 * s, f = Math.max(0, b.hp / b.maxHp);
+    b.trail = b.trail == null || b.trail < f ? f : Math.max(f, b.trail - 0.004);   // 掉血残影：白色部分慢慢缩回
+    const shk = b.hitT > 0 ? (Math.random() - 0.5) * 2 * s : 0;
+    tctx.fillStyle = b.enraged && Math.sin(performance.now() / 120) > 0 ? "#ff3a2a" : "rgba(10,6,10,.9)"; tctx.fillRect(x - 2 * s + shk, y - 2 * s, w + 4 * s, h + 4 * s);
+    tctx.fillStyle = "#3a1014"; tctx.fillRect(x + shk, y, w, h);
+    tctx.fillStyle = "#f4e8d0"; tctx.fillRect(x + shk, y, w * b.trail, h);
+    tctx.fillStyle = b.enraged ? "#ff3a2a" : "#d83838"; tctx.fillRect(x + shk, y, w * f, h);
+    tctx.fillStyle = "rgba(255,255,255,.3)"; tctx.fillRect(x + shk, y, w * f, h * 0.3);
+    txt(Math.ceil(f * 100) + "%", x + w - 14 * s, y + h * 0.5 + 3 * s * tk, 7 * s * tk, "#ffffff");
     tctx.fillStyle = "#ffe38a"; for (const kk of b.d.phases || [0.5]) tctx.fillRect(x + w * kk - s / 2, y, s, h);
     if (b.shield > 0) { tctx.fillStyle = "#8ac8ff"; tctx.fillRect(x, y + h - 2 * s, w * Math.min(1, b.shield / (b.maxShield || 1)), 2 * s); }
     txt(b.d.name + (b.afx && b.afx.length ? "（" + afxNames(b) + "）" : "") + (b.enraged ? " · 狂暴" : "") + (b.brokenT > 0 ? " · 破防" : ""), tx.width / 2, y + h + 9 * s * tk, 8 * s * tk, b.brokenT > 0 ? "#ffe38a" : b.enraged ? "#ff8a7a" : "#ffe38a");
@@ -422,6 +444,26 @@ function drawOverlay() {
   overlayTexts.length = 0;
 }
 // 晨星爆发：斜着的横幅 + 角色立绘依次滑入
+// 角色技能特写：从左边斜着滑进来的一条（头像 + 名字 + 技能名），停一下再滑出去
+function drawSkillCut(f, k, s, txt) {
+  const W = tx.width, H = tx.height, bh = H * 0.2, cy = H * 0.3, bw = W * 0.56, sk = 10 * s;
+  const inK = Math.min(1, k * 7), outK = k > 0.75 ? (k - 0.75) / 0.25 : 0, x0 = -bw * (1 - inK) * (1 - inK) - bw * outK * outK * 1.2;
+  tctx.save(); tctx.globalAlpha = 1 - outK * 0.6;
+  tctx.fillStyle = "rgba(10,12,22,.88)";
+  tctx.beginPath(); tctx.moveTo(x0, cy - bh / 2); tctx.lineTo(x0 + bw + sk, cy - bh / 2); tctx.lineTo(x0 + bw - sk, cy + bh / 2); tctx.lineTo(x0, cy + bh / 2); tctx.closePath(); tctx.fill();
+  tctx.fillStyle = f.color;
+  tctx.fillRect(x0, cy - bh / 2, bw + sk, 2.5 * s); tctx.fillRect(x0, cy + bh / 2 - 2.5 * s, bw - sk, 2.5 * s);
+  tctx.globalAlpha *= 0.5; for (let i = 0; i < 6; i++) { const y = cy - bh / 2 + (i + 0.5) / 6 * bh, len = (30 + (i * 37) % 50) * s, x = x0 + ((f.t * 700 * s + i * 97 * s) % (bw + len)) - len; tctx.fillRect(x, y, len, 1.2 * s); }
+  tctx.globalAlpha = 1 - outK * 0.6;
+  tctx.imageSmoothingEnabled = false;
+  const D = UNITS.find(u => u.id === f.id), size = bh * 1.25;
+  if (D) tctx.drawImage(renderHero(D, { phase: "idle", face: 1, lv: f.lv, branch: f.branch }), HOX * 2 - 32, 22, 64, 64, x0 + 6 * s, cy - size * 0.62, size, size);
+  tctx.textAlign = "left";
+  txt(f.skill, x0 + size + 10 * s, cy + bh * 0.08, Math.min(18 * s, bh * 0.42), f.color);
+  txt(f.name + (f.hero ? " · 英雄" : ""), x0 + size + 10 * s, cy - bh * 0.3, Math.min(9 * s, bh * 0.22), "#e8e0c8");
+  tctx.textAlign = "center";
+  tctx.restore();
+}
 function drawCutin(f, k, s, txt) {
   const W = tx.width, H = tx.height, cy = H * 0.48, bh = H * 0.36, sk = 26 * s;
   const a = Math.min(1, k * 7, k > 0.78 ? (1 - k) / 0.22 : 1);
@@ -495,6 +537,21 @@ function drawWaveLabels(s, txt, tk) {
   }
 }
 // 连杀边框光：10 连起屏幕四边发光，25 / 50 / 80 连颜色逐级变热、光带变宽
+// 首领狂暴时画面四周一圈暗红在呼吸；换形态 / 击破时上下黑边滑进来（电影感）
+function drawBossMood(t) {
+  const b = S.boss;
+  if (b && !b.dead && b.enraged && !S.over) {
+    const a = 0.16 + Math.sin(t * 4) * 0.08, w = 10;
+    for (let i = 0; i < w; i++) {
+      ctx.fillStyle = `rgba(200,20,20,${(a * (1 - i / w)).toFixed(3)})`;
+      ctx.fillRect(i, i, PW - i * 2, 1); ctx.fillRect(i, PHt - 1 - i, PW - i * 2, 1); ctx.fillRect(i, i, 1, PHt - i * 2); ctx.fillRect(PW - 1 - i, i, 1, PHt - i * 2);
+    }
+  }
+  for (const f of S.fx) if (f.kind === "letterbox") {
+    const k = f.t / f.life, h = 34 * Math.min(1, k * 6, (1 - k) * 5);
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, PW, h); ctx.fillRect(0, PHt - h, PW, h);
+  }
+}
 function drawComboGlow(t) {
   if (S.combo < 10 || S.comboT <= 0 || S.over) return;
   const tier = S.combo >= 80 ? 3 : S.combo >= 50 ? 2 : S.combo >= 25 ? 1 : 0;
@@ -540,6 +597,7 @@ function render(now) {
   for (const f of S.fx) if (f.kind === "corpse" || f.kind === "ucorpse" || f.kind === "shatter") drawFx(f, now);
   for (const e of S.enemies) if (e.d.flying) drawEnemy(e, now);
   drawBlades(t);
+  drawFocus(t);
   drawHazAir(t);
   for (const s of S.shots) drawShot(s);
   for (const f of S.fx) if (f.kind !== "corpse" && f.kind !== "ucorpse" && f.kind !== "shatter") drawFx(f, now);
@@ -550,6 +608,7 @@ function render(now) {
   if (S.star >= ULT.max && !S.over) { const a = 0.25 + Math.sin(t * 5) * 0.15; ctx.fillStyle = `rgba(255,224,128,${a.toFixed(3)})`; ctx.fillRect(0, 0, PW, 3); ctx.fillRect(0, PHt - 3, PW, 3); }
   if ((S.paused || S.offer) && !S.over) { ctx.fillStyle = "rgba(8,10,16,.45)"; ctx.fillRect(0, 0, PW, PHt); }
   drawComboGlow(t);
+  drawBossMood(t);
   drawCine();
   drawOverlay();
 }

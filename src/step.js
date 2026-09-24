@@ -85,6 +85,7 @@ function step(dt) {
       const src = m.src || { key: m.dmg ? "sk_meteor" : "meteor" }, col = m.color || "#ff8a3a";
       for (const e of S.enemies) if (hittable(e) && distTo(e, m.x, m.y) <= r) {
         hurt(e, calc(dmg, "magic", eDef(e), eRes(e)), "magic", true, src);
+        if (m.burn && !e.dead) burnEnemy(e, m.burn, 3, src);
         if (m.src && m.src.def && br(m.src, "star", "B")) markEnemy(e, 5);
       }
       addFx({ kind: "boom", x: m.x, y: m.y, r, color: col, life: 0.6 });
@@ -335,6 +336,7 @@ function step(dt) {
   S.shots = S.shots.filter(s => !s.done);
   S.enemies = S.enemies.filter(e => !e.dead);
   if (S.boss && S.boss.dead) S.boss = null;
+  fxQueueStep(dt);
   for (const f of S.fx) f.t += dt;
   S.fx = S.fx.filter(f => f.t < f.life);
   S.shake = Math.max(0, S.shake - dt);

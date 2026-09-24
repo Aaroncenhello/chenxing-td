@@ -84,7 +84,8 @@ function recordRun(win) {
   if (RELICS.every(r => d.relicSeen.includes(r.id))) unlockAchv("relics");
   if (CODEX_CARDS().every(c => d.cardSeen.includes(c.id))) unlockAchv("cards");
 }
-const CODEX_CARDS = () => CARDS.filter(c => !c.filler);
+const CODEX_CARDS = () => CARDS.filter(c => !c.filler && !c.evo);
+const EVO_CARDS = CARDS.filter(c => c.evo);
 
 // ---------- 结算经验 ----------
 function awardExp(win) {

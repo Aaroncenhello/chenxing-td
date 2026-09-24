@@ -209,7 +209,7 @@ const SYNERGY = [
   { id: "scholar", name: "群星学派", need: "5 张属性卡", desc: "全队攻击 +15%、生命 +15%", color: "#ffd860",
     prog: () => [CARDS.filter(c => c.kind === "stat" && cl(c.id) > 0).length, 5] },
   { id: "legendary", name: "传说之证", need: "2 张传说卡", desc: "全队攻击 +20%，晨星之力充能 +30%", color: "#ffb340",
-    prog: () => [CARDS.filter(c => c.rare === 2 && cl(c.id) > 0).length, 2] },
+    prog: () => [CARDS.filter(c => c.rare === 2 && !c.evo && cl(c.id) > 0).length, 2] },
 ];
 for (const g of SYNERGY) g.on = () => { const [a, b] = g.prog(); return a >= b; };
 // 羁绊说明页用：怎么凑（角色名、卡名都从配置里现取，改了配置这里跟着变）

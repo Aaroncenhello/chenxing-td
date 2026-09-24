@@ -150,7 +150,7 @@ function showCodex(tab) {
   if (tab) codexTab = tab;
   const save = loadSave(), kills = save.foeKill, nFoe = Object.keys(ENEMIES).length;
   const total = Object.values(kills).reduce((a, b) => a + b, 0);
-  const allCards = CODEX_CARDS().concat(SIG, CURSES), nCard = allCards.filter(c => save.cardSeen.includes(c.id)).length;
+  const allCards = CODEX_CARDS().concat(EVO_CARDS, SIG, CURSES), nCard = allCards.filter(c => save.cardSeen.includes(c.id)).length;
   const tabs = [["foe", `敌人 ${save.seen.length}/${nFoe}`], ["card", `卡牌 ${nCard}/${allCards.length}`], ["relic", `遗物 ${save.relicSeen.length}/${RELICS.length}`], ["syn", `羁绊 ${SYNERGY.length}`], ["afx", `词缀 ${save.afxSeen.length}/${AFFIX.length}`], ["ev", `事件 ${save.evSeen.length}/${EVENTS.length}`]];
   const head = `<div class="tabs">${tabs.map(([k, n]) => `<button class="tab${codexTab === k ? " on" : ""}" data-codex="${k}">${n}</button>`).join("")}</div>`;
   let body = "";
@@ -164,6 +164,7 @@ function showCodex(tab) {
     const has = l => l.filter(c => save.cardSeen.includes(c.id)).length;
     body = `<p>这局拿过的卡在结算时记到这里。集齐全部通用卡有成就。</p>
       <h3>通用卡 ${has(CODEX_CARDS())}/${CODEX_CARDS().length}</h3><div class="codex sm">${CODEX_CARDS().map(c => cardCx(c, "card")).join("")}</div>
+      <h3>进化卡 ${has(EVO_CARDS)}/${EVO_CARDS.length}</h3><p>自动技能卡升到满级后，牌堆里才会出现它的进化卡。</p><div class="codex sm">${EVO_CARDS.map(c => cardCx(c, "card")).join("")}</div>
       <h3>英雄专属卡 ${has(SIG)}/${SIG.length}</h3><div class="codex sm">${SIG.map(c => cardCx(c, "sig")).join("")}</div>
       <h3>诅咒卡 ${has(CURSES)}/${CURSES.length}</h3><div class="codex sm">${CURSES.map(c => cardCx(c, "curse")).join("")}</div>`;
   } else if (codexTab === "syn") {
@@ -355,7 +356,7 @@ function mvpOf() {
 function battleReport() {
   const sec = Math.max(1, Math.round(S.t || (Date.now() - (S.t0 || Date.now())) / 1000));
   const mm = Math.floor(sec / 60), ss = sec % 60;
-  const mvp = mvpOf(), legends = Object.keys(S.cards).filter(id => { const c = ANY_CARD(id); return c && (c.rare || 0) === 2; });
+  const mvp = mvpOf(), legends = Object.keys(S.cards).filter(id => { const c = ANY_CARD(id); return c && (c.rare || 0) === 2 && !c.evo; });
   const chip = (k, v, col) => `<div class="rep"><span>${k}</span><b${col ? ` style="color:${col}"` : ""}>${v}</b></div>`;
   const total = Object.values(S.stats).reduce((a, v) => a + v.dmg, 0);
   return `<div class="report">

@@ -365,6 +365,7 @@ function cardPool(minRare) {
     if (c.filler || cl(c.id) >= c.max) continue;
     if (minRare && (c.rare || 0) < minRare) continue;
     if (c.id === "lg_army" && S.mod === "solo") continue;
+    if (c.evo) { if (cl(c.evo) >= CARD_BY[c.evo].max) out.push({ id: c.id, w: c.w, card: c, rare: 2 }); continue; }   // 进化卡权重固定，不随稀有度打折
     out.push({ id: c.id, w: c.w * rareW(c.rare || 0) / 100, card: c, rare: c.rare || 0 });
   }
   // 英雄专属卡：只有本局英雄的那几张会进牌堆，权重更高
@@ -451,7 +452,8 @@ function pickCard(id, silent) {
     if (p.id === "lg_aegis") { S.crystal.maxHp = Math.round(S.crystal.maxHp * 1.4); S.crystal.hp = Math.min(S.crystal.maxHp, S.crystal.hp + S.crystal.maxHp * 0.3); }
     if (p.id === "lg_avatar" || p.id === "lg_army") for (const u of S.units) { const f = u.hp / u.maxHp; u.maxHp = uMaxHp(u); u.hp = Math.round(u.maxHp * Math.min(1, f + 0.2)); }
     if (p.id === "lg_army") for (const u of [...S.units]) if (!u.hero && !u.summon && u.lv < 3) { u.lv++; const f = u.hp / u.maxHp; u.maxHp = uMaxHp(u); u.hp = Math.round(u.maxHp * Math.min(1, f + 0.25)); addFx({ kind: "pillar", x: u.x, y: u.y, color: "#ffd860", life: 0.8 }); }
-    if ((p.card.rare || 0) === 2) { S.legends++; if (S.legends >= 3) S.events.push({ type: "achv", id: "legend" }); addFx({ kind: "banner", text: "传说 · " + p.card.name, life: 1.8 }); }
+    if (p.card.evo) { addFx({ kind: "banner", text: "进化 · " + p.card.name, life: 2 }); addFx({ kind: "flash", life: 0.4, color: "#ffe080" }); S.shake = Math.max(S.shake, 0.5); if (p.id === "ev_blade") buildBlades(); }
+    else if ((p.card.rare || 0) === 2) { S.legends++; if (S.legends >= 3) S.events.push({ type: "achv", id: "legend" }); addFx({ kind: "banner", text: "传说 · " + p.card.name, life: 1.8 }); }
   } else if (p.join) {
     addUnit(p.def);
     if (S.allies >= maxAllies()) S.events.push({ type: "achv", id: "allies" });

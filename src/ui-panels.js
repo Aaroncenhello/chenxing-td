@@ -102,7 +102,7 @@ function updateOffer() {
   setText("lu-title", title + (S.pending > 1 ? `（还有 ${S.pending - 1} 次）` : ""));
   $("cards3").innerHTML = S.offer.map((p, i) => {
     const c = cardInfo(p), r = p.rare || 0, R = RARITY[r] || { name: "诅咒", color: CURSE_COLOR };
-    const tag = r ? `<span class="rt" style="background:${R.color}">${R.name}</span>` : "";
+    const tag = p.card && p.card.evo ? `<span class="rt" style="background:#ffd860">进化</span>` : r ? `<span class="rt" style="background:${R.color}">${R.name}</span>` : "";
     const body = c.curse ? `<span>${p.curse.good}<em class="bad">代价：${p.curse.bad}</em></span>` : `<span>${c.desc}</span>`;
     const h = synHint(p), hint = h ? `<em class="sh${h.done ? " done" : ""}" style="--g:${h.g.color}">${h.done ? "凑齐羁绊 · " + h.g.name : `羁绊 ${h.g.name} ${h.a}/${h.b}`}</em>` : "";
     return `<button class="pcard r${r}${c.sig ? " sig" : ""}" data-pick="${p.id}" style="--c:${c.color}"><span class="key">${i + 1}</span>${tag}<canvas id="lu-${i}" aria-hidden="true"></canvas>
@@ -257,7 +257,9 @@ cv.addEventListener("click", ev => {
   if (performance.now() - dragEnd < 250) return;   // 刚拖完，别当成点选
   const p = posFromEvent(ev);
   if (S.spellMode === "meteor") { castSpell("meteor", p.x, p.y); S.spellMode = null; S.selSpell = null; return; }
-  S.selUnit = unitAt(p, 1.1) || null; S.selSpell = null;
+  const u = unitAt(p, 0.8), e = u ? null : enemyAt(p, 0.8);
+  if (e) { setFocus(e); return; }   // 点敌人 = 集火（再点一下取消）
+  S.selUnit = u || unitAt(p, 1.1) || null; S.selSpell = null;
 });
 cv.addEventListener("contextmenu", ev => {
   if (S.spellMode || S.selSpell) { ev.preventDefault(); S.spellMode = null; S.selSpell = null; return; }
@@ -381,8 +383,10 @@ function updatePInfo() {
   // 状态行：这一波的进度 + 大号连杀
   const waiting = S.wave < totalWaves() && !S.spawnQueue.length, info = waiting ? nextWaveInfo() : null;
   const tag = info && { boss: "首领！", tide: "潮汐！", elite: "精英！" }[info.kind];
-  const wtxt = S.over ? "" : waiting ? `下一波 ${S.autoWave !== false ? Math.ceil(Math.max(0, S.nextWaveIn)) + " 秒" : "等你出击"}${tag ? ` · <span class="warn">${tag}</span>` : ""}`
+  let wtxt = S.over ? "" : waiting ? `下一波 ${S.autoWave !== false ? Math.ceil(Math.max(0, S.nextWaveIn)) + " 秒" : "等你出击"}${tag ? ` · <span class="warn">${tag}</span>` : ""}`
     : S.spawnQueue.length ? `第 ${S.wave} 波 · 还有 ${S.spawnQueue.length} 只要出场` : `第 ${S.wave} 波 · 场上 ${S.enemies.length}`;
+  const fo = focusFoe(), ftxt = fo ? ` · <span class="warn">集火 ${fo.d.name} ${Math.ceil(fo.hp / fo.maxHp * 100)}%</span>` : "";
+  wtxt += ftxt;
   const we = $("pi-wave"); if (we.dataset.k !== wtxt) { we.dataset.k = wtxt; we.innerHTML = wtxt; }
   const ce = $("pi-combo"), c = S.comboT > 0 && S.combo >= 3 ? S.combo : 0;
   if (c !== piCombo) {
