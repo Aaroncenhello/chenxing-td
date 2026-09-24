@@ -54,7 +54,7 @@ async function saveFile() {
   } catch (e) { toast("<b>下载失败</b>可以改用「复制代码」。"); }
 }
 function showSaveBox(msg) {
-  const d = loadSave(), code = exportSave();
+  const d = loadSave(), code = exportSave(), bk = readBackup();
   const cleared = d.stars.filter(x => x > 0).length, lvs = charLevels(d);
   const top = UNITS.map(u => `${u.name} ${lvs[u.id]}`).slice(0, 4).join(" · ");
   openOverlay(`<h2>存档</h2>
@@ -63,8 +63,10 @@ function showSaveBox(msg) {
     ${msg ? `<p class="savemsg">${msg}</p>` : ""}
     <div class="savebox"><label>导出代码</label><textarea id="sv-out" readonly rows="4">${code}</textarea>
       <div class="btns"><button class="primary" id="btn-svcopy">复制代码</button><button id="btn-svdl">下载存档文件</button></div></div>
-    <div class="savebox"><label>导入代码（会覆盖当前进度，请先把上面的代码留一份）</label><textarea id="sv-in" rows="4" placeholder="把代码粘到这里"></textarea>
+    <div class="savebox"><label>导入代码（会覆盖当前进度；导入前会自动备份一份，导错了可以在下面恢复）</label><textarea id="sv-in" rows="4" placeholder="把代码粘到这里"></textarea>
       <div class="btns"><button class="primary" id="btn-svin">导入并重载</button></div></div>
+    ${bk ? `<div class="savebox"><label>自动备份 · ${new Date(bk.at).toLocaleString("zh-CN")} · ${bk.why}（恢复后当前进度会换进备份，还能再换回来）</label>
+      <div class="btns"><button id="btn-svbak">恢复这份备份并重载</button></div></div>` : ""}
     <div class="btns"><button id="btn-menu">返回选关</button></div>`);
 }
 let diffSel = 0, chapSel = null, abyssSel = 0;
@@ -209,6 +211,10 @@ $("ovbox").addEventListener("click", ev => {
     const err = importSave($("sv-in").value);
     if (err) showSaveBox(err);
     else { closeOverlay(); location.reload(); }
+  }
+  else if (b.id === "btn-svbak") {
+    if (restoreBackup()) { closeOverlay(); location.reload(); }
+    else showSaveBox("没有可以恢复的备份。");
   }
   else if (b.dataset.tal) {
     const [cid, tier, node] = b.dataset.tal.split(":");

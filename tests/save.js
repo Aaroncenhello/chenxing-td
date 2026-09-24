@@ -1,4 +1,4 @@
-// 结算和存档的回归测试：每周记录不互相覆盖、每周/守望通关不误发主线成就和剧情
+// 结算和存档的回归测试：每周记录不互相覆盖、每周/守望通关不误发主线成就和剧情、存档版本升级、坏存档清洗、导入备份和恢复
 const GAME = 'file://' + require('path').resolve(__dirname, '../dist/chenxing.html');
 const { chromium } = require('playwright');
 const { check, noErrors, report } = require('./lib');
@@ -60,6 +60,68 @@ const STAGE_ACHV = ['first', 'perfect', 'solo', 'chapter1', 'chapter2', 'chapter
     return { err, weeks: Object.keys(loadSave().week).length, same: starBank().earned === before };
   });
   check(io.err === null && io.weeks === 2 && io.same, '存档导出导入后每周记录和星星不变', io);
+
+  // 5) 存档版本：旧存档（只有 v5/v11 标记、没有 ver）读进来补上版本号，并先自动备份
+  const legacy = await p.evaluate(() => {
+    localStorage.removeItem('chenxing-td-v2-backup');
+    localStorage.setItem('chenxing-td-v2', JSON.stringify({ stars: [3, 2], v5: true, v11: true, tutorial: true, week: { W3: { clear: true, best: 12 } } }));
+    const d = loadSave(), again = JSON.parse(localStorage.getItem('chenxing-td-v2')), bk = readBackup();
+    return { ver: d.ver, savedVer: again.ver, week: again.week, bk: bk && bk.why, bkStars: bk && JSON.parse(bk.data).stars };
+  });
+  console.log('旧存档升级:', JSON.stringify(legacy));
+  check(legacy.ver === 12 && legacy.savedVer === 12, '旧存档读进来升到当前版本并写回', legacy);
+  check(legacy.week.W3 && legacy.week.W3.clear, '升级不丢数据', legacy.week);
+  check(!!legacy.bk && legacy.bkStars.join() === '3,2', '升级前自动备份了原来的存档', legacy);
+
+  // 10.x 以前的存档：星之祝福退还，提示标记要能留到选关页（以前白名单漏了 refunded，提示永远出不来）
+  const refund = await p.evaluate(() => {
+    localStorage.setItem('chenxing-td-v2', JSON.stringify({ stars: [3, 3, 3], perks: ['walls', 'veteran'], tutorial: true }));
+    loadSave();
+    return { refunded: loadSave().refunded, perks: loadSave().perks, exp: loadSave().chars.knight && loadSave().chars.knight.exp };
+  });
+  check(refund.refunded === 2 && refund.perks.length === 0 && refund.exp === 450, '10.x 存档：退还星之祝福、按通关数补经验、退还提示能留下来', refund);
+
+  // 6) 导入被改坏的存档：类型不对、id 不认识的都清洗掉，页面照常能用
+  const bad = await p.evaluate(() => {
+    const raw = { stars: ['3', 'x', 9, null], best: ['12'], hero: '<img src=x onerror=alert(1)>', seen: ['slime', 'nope'], achv: ['first', 'fake'],
+      disk: { atk: 999, zzz: 3, star: 'a' }, abyss: { 0: 99 }, week: { W1: { clear: 'yes', best: '8' }, W2: 5 }, bonusStars: '7', form: 99, chars: { knight: { exp: '100' } },
+      use: { knight: { runs: '2', dmg: 'lots' } }, daily: { '2026-01-01': { wave: '4' } }, tal: { knight: { 0: 't_atk', 1: 5 } }, ver: 12 };   // 标成当前版本，只测清洗（不触发按通关数补经验的旧升级）
+    const err = importSave('CX9-' + btoa(unescape(encodeURIComponent(JSON.stringify(raw)))));
+    const d = loadSave(), bank = starBank();
+    let menu = null; try { showLevels(); showSaveBox(); showPerks(); showCodex(); showAchv(); showRoster('knight'); closeOverlay(); } catch (e) { menu = e.message; }
+    return { err, stars: d.stars, best: d.best, hero: d.hero, seen: d.seen, achv: d.achv, disk: d.disk, abyss: d.abyss, week: d.week, bonus: d.bonusStars, form: d.form, exp: d.chars.knight.exp, use: d.use.knight, tal: d.tal.knight, bank: bank.earned, menu };
+  });
+  console.log('坏存档:', JSON.stringify(bad));
+  check(bad.err === null, '坏存档能导入（清洗后）', bad.err);
+  check(bad.stars.join() === '3,0,3,0' && bad.best[0] === 12, '星级转成 0–3 的数字', { stars: bad.stars, best: bad.best });
+  check(bad.hero === 'knight' && bad.seen.join() === 'slime' && bad.achv.join() === 'first', '不认识的英雄/敌人/成就 id 被丢掉', bad);
+  check(bad.disk.atk === 10 && !('zzz' in bad.disk) && !('star' in bad.disk) && bad.abyss[0] === 20, '星盘和深渊层数夹在上限内', { disk: bad.disk, abyss: bad.abyss });
+  check(bad.week.W1.clear === true && bad.week.W1.best === 8 && !bad.week.W2 && bad.bonus === 7 && bad.form === 1 && bad.exp === 100, '每周记录、星星、阵型、经验的类型被纠正', bad);
+  check(bad.use.runs === 2 && !('dmg' in bad.use) && bad.tal[0] === 't_atk' && !(1 in bad.tal), '战绩和天赋里的坏值被丢掉', { use: bad.use, tal: bad.tal });
+  check(typeof bad.bank === 'number' && isFinite(bad.bank), '星星账本算出来是正常数字', bad.bank);
+  check(bad.menu === null, '导入坏存档后各个菜单页都能打开', bad.menu);
+
+  // 7) 导入前自动备份，能恢复，恢复后还能换回来；更新版本的存档拒绝导入
+  const swap = await p.evaluate(() => {
+    localStorage.setItem('chenxing-td-v2', JSON.stringify({ stars: [3, 3, 3, 3, 3], ver: 12, tutorial: true }));
+    const mine = starBank().earned;
+    const err = importSave(exportSaveOf({ stars: [1], ver: 12 }));
+    const imported = starBank().earned, why = readBackup().why;
+    const ok = restoreBackup(), back = starBank().earned, why2 = readBackup().why;
+    restoreBackup(); const again = starBank().earned;
+    const future = importSave(exportSaveOf({ stars: [3], ver: 999 })), after = starBank().earned;
+    return { err, mine, imported, why, ok, back, why2, again, future, after };
+    function exportSaveOf(o) { return 'CX9-' + btoa(unescape(encodeURIComponent(JSON.stringify(o)))); }
+  });
+  console.log('备份恢复:', JSON.stringify(swap));
+  check(swap.err === null && swap.imported < swap.mine && /导入/.test(swap.why), '导入别的存档前自动备份了自己的进度', swap);
+  check(swap.ok && swap.back === swap.mine, '一键恢复回导入前的进度', swap);
+  check(swap.again === swap.imported, '恢复后还能再换回来', swap);
+  check(/更新的版本/.test(swap.future || '') && swap.after === swap.imported, '更新版本的存档拒绝导入、当前进度不动', swap);
+
+  // 存档页上有恢复按钮
+  const btn = await p.evaluate(() => { showSaveBox(); const has = !!document.getElementById('btn-svbak'); closeOverlay(); return has; });
+  check(btn, '存档页显示「恢复备份」按钮');
 
   noErrors(errs);
   report('save');
