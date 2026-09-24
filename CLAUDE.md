@@ -35,7 +35,10 @@ npm run sim            # 平衡模拟，见下
 新参数：`STARS=45` 按「便宜优先」把这么多星星花进星盘（代替手写 DISK）；`SEED=数字` 每局固定随机种子，**前后对比时必须用同一个 SEED**，否则每格 16 局的随机波动就有 ±15%；`HTML=路径` 用别的构建跑（改前改后对比）；`PATCH='STAGES[11].hp=2.5'` 先在页面里改数值再跑，用来快速试调法；`ALLCHARS=1` 让未解锁的角色也能出场（默认只用到这一关已解锁的）；`OUT=文件` 写出每局 JSON。
 **平衡矩阵** `tests/balance.js`：按 5 档玩家进度（新手 CLV3/0★、二章 CLV5/20★、三章 CLV7/45★、四章 CLV9/90★、毕业 CLV10/400★）把每关跑 RUNS 局，4 进程并行，输出胜率表并写 `tests/out/balance.json`。例：`cd tests/out && SEED=2026 RUNS=24 node ../balance.js`；只看部分：`PROFILES=三章,四章 ST0=8 ST=12`。
 调数值的做法：先用旧构建（`git show HEAD:dist/chenxing.html > before.html`）和新构建各跑一遍同 SEED 的矩阵再比较；没改的关卡两边数字应该完全一样。
-机器人不会调站位、选牌粗糙，**真人胜率明显高于模拟**。11.0 的参考结果：CLV4 无星盘约 25%；CLV8 + 少量星盘约 37%（第一章大多能过，三四章很难）；满级 + 400★ 星盘时第 9–13 关大多能赢，14–16 关很难。
+机器人不会调站位、选牌粗糙，**真人胜率明显高于模拟**。**基准（阶段 3 调整后，`SEED=2026 RUNS=24 node ../balance.js`）**，每档对应章节的机器人胜率：
+第一章·新手 50/46/0/21%；第二章·二章 13/21/21/4%；第三章·三章 17/13/29/0%；第四章·四章 25/0/0/4%。
+毕业档（CLV10 + 400★）：第 1–11 关 83–100%，第 12 关 46%，第 13–15 关 63–67%，第 16 关 8%。
+每章最后一关（第 4/8/12/16 关，首领战）都是本章最难的；第 12 关输掉时平均只打到全程 27–38%。
 
 **拼接顺序（build.sh 里固定，改顺序可能出错）：**
 `head.html config.js config-meta.js cards.js meta.js relic.js sig.js story.js arena.js haz.js boss.js event.js affix.js fight.js step.js px-core.js px-hero.js px-foe.js px-fx.js save.js ui-bar.js ui-panels.js ui-roster.js ui-menu.js settle.js main.js`
