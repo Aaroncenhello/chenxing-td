@@ -1,5 +1,6 @@
 const GAME = 'file://' + require('path').resolve(__dirname, '../dist/chenxing.html');
 const { chromium } = require('playwright');
+const { check, noErrors, report } = require('./lib');
 (async () => {
   const b = await chromium.launch();
   const p = await (await b.newContext({viewport:{width:1100,height:820}})).newPage();
@@ -12,6 +13,8 @@ const { chromium } = require('playwright');
     const S = T.S; S.offer=null; S.pending=0;
     // 手动放一个深渊领主，看入场演出
     const e = spawnAt('boss', 3, 4, false);
+    // 去掉随机词缀：「护壁」的护盾会吃掉下面那一下固定伤害，导致打断测试偶尔失败（词缀有自己的测试）
+    e.afx = []; e.shield = 0; e.maxShield = 0; e.afxWard = 0;
     out.cine = S.cine ? { name:S.cine.name, title:S.cine.title, ult:S.cine.ult, dur:S.cine.dur } : null;
     out.cineWave = S.cineWave;
     // 演出期间不推进模拟
@@ -59,6 +62,15 @@ const { chromium } = require('playwright');
     return out;
   });
   console.log(JSON.stringify(o, null, 1));
-  console.log('ERRORS', errs.slice(0,8));
+  check(!!o.cine, '首领入场有演出', o.cine);
+  check(!!o.cast && o.cast.need > 0, '首领会读条大招', o.cast);
+  check(o.broken && o.breaks === 1, '打够伤害能打断读条并破防', { broken: o.broken, breaks: o.breaks });
+  check(o.brokenMult > 1000, '破防期间受到的伤害变多', o.brokenMult);
+  check(o.ultFired, '不打断时大招能放出来', o.ultFired);
+  check(o.freezeBreak, '冻结能打断读条', o.freezeBreak);
+  check(!!o.eliteCine && o.eliteUlt, '最终波精英也有演出和大招', { eliteCine: o.eliteCine, eliteUlt: o.eliteUlt });
+  check(o.sameLook.length === 0, '每个英雄 4 阶两个分支外观不同', o.sameLook);
+  noErrors(errs);
+  report('boss');
   await b.close();
 })();

@@ -1,7 +1,12 @@
 <title>晨星守望</title>
+<meta charset="utf-8">
+<!-- 手机适配：没有这行时手机会按 980px 宽的电脑网页排版再整体缩小，竖屏什么都特别小；viewport-fit=cover 让画面铺进刘海和圆角区域 -->
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10131c">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&family=Noto+Serif+SC:wght@700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+<!-- 字体后台加载（media=print 再切回 all）：连不上 Google 时不会卡白屏，直接用手机自带的中文字体 -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&family=Noto+Serif+SC:wght@700;900&family=Press+Start+2P&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{
   --ground:#10131c; --panel:#1a1f2e; --panel-2:#242b3e; --line:#3a4460;
@@ -346,6 +351,7 @@ body.imm .stage{position:fixed;inset:0;z-index:30;border:0;box-shadow:none;backg
 body.imm .toasts{z-index:40;right:auto;left:50%;transform:translateX(-50%);bottom:6px;max-width:min(340px,60vw)}
 body.imm .toast{padding:5px 8px;font-size:11px;opacity:.94} body.imm .toast canvas{width:28px;height:28px}
 body.imm .toasts .toast:not(:last-child){display:none}
+body.imm.panel .toasts{display:none}
 .hud{position:absolute;inset:0;z-index:7;pointer-events:none;font-size:12px}
 .hud button{pointer-events:auto;min-width:54px;min-height:40px;padding:4px 6px;font-size:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;background:rgba(36,43,62,.86)}
 .hud button.primary{background:rgba(227,183,92,.95)}
@@ -365,6 +371,23 @@ body.imm .levelup,body.imm .shopbox{overflow:auto;justify-content:flex-start;pad
 body.imm .overlay{position:absolute;z-index:20;background:rgba(8,10,16,.96);place-items:start center;padding:10px 70px}
 @media (max-height:520px){body.imm .ovbox h2{font-size:20px} body.imm .ovbox{gap:8px}}
 body.imm .dlg{--boxh:44px}
+/* 手机竖屏沉浸：顶上一行状态，战场占满宽度，按钮全排在战场下面的大按钮区（一屏看全，不用滚动）
+   .hud 变成 display:contents，让顶栏和两组按钮直接排进 .stage 的竖向布局里；战场大小在 resize() 里按剩下的高度算 */
+@media (orientation:portrait){
+  body.imm .stage{flex-direction:column;justify-content:flex-start;align-items:stretch;gap:8px}
+  body.imm .screen{align-self:center}
+  body.imm .hud{display:contents}
+  body.imm .hud-top{position:relative;top:auto;left:auto;transform:none;order:-1;align-self:center;margin-top:6px;flex-wrap:wrap;justify-content:center;white-space:normal;gap:2px 12px;max-width:calc(100% - 16px);padding:4px 12px 7px}
+  body.imm .hud-top b{font-size:11px}
+  body.imm .hud-l,body.imm .hud-r{position:static;transform:none;display:grid;gap:6px;padding:0 10px}
+  body.imm .hud-l{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:auto}
+  body.imm .hud-r{grid-template-columns:repeat(4,minmax(0,1fr));padding-bottom:10px}
+  body.imm #h-call{grid-column:span 2}
+  body.imm .hud button{min-width:0;min-height:50px;font-size:15px}
+  body.imm .hud button small{font-size:11px}
+  body.imm .toasts{bottom:auto;top:var(--toast-top,50%);max-width:calc(100vw - 24px)}
+  body.imm .overlay{padding:12px 10px}
+}
 </style>
 
 <div class="app">

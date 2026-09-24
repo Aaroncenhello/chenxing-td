@@ -13,10 +13,21 @@ const OUT = "#1c1424";
 function resize() {
   const stage = document.querySelector(".stage");
   let w = (stage && stage.clientWidth) || 960, k = w / PW;
-  // 沉浸全屏：在整个窗口里等比缩放，左右留出按钮的位置
-  if (document.body.classList.contains("imm")) { const vw = window.innerWidth, vh = window.innerHeight; k = Math.min(vw / PW, vh / PHt); }
+  // 沉浸全屏：在整个窗口里等比缩放。横屏左右留出按钮的位置；竖屏宽度撑满，高度给顶栏和下面的按钮区留位置（布局见 CSS 的 orientation:portrait）
+  const imm = document.body.classList.contains("imm"), port = imm && window.matchMedia("(orientation: portrait)").matches;
+  if (imm) {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    if (port) {
+      const cs = getComputedStyle(stage), hOf = sel => (document.querySelector(sel) || {}).offsetHeight || 0;
+      const padH = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight), padV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      const room = vh - padV - hOf(".hud-top") - hOf(".hud-l") - hOf(".hud-r") - 3 * 8 - 16;
+      k = Math.min((vw - padH) / PW, Math.max(0.2, room / PHt));
+    } else k = Math.min(vw / PW, vh / PHt);
+  }
   const scr = document.getElementById("screen");
   scr.style.width = Math.floor(PW * k) + "px"; scr.style.height = Math.floor(PHt * k) + "px";
+  // 竖屏时提示（新敌人、遗物……）放在战场正下方，不挡战场也不挡按钮
+  if (port) document.body.style.setProperty("--toast-top", Math.round(scr.getBoundingClientRect().bottom + 6) + "px");
   DPR = Math.min(window.devicePixelRatio || 1, 2);
   tx.width = Math.round(PW * k * DPR); tx.height = Math.round(PHt * k * DPR);
   if (S && mapFor !== mapKey()) { drawMap(); mapFor = mapKey(); }

@@ -1,5 +1,6 @@
 const GAME = 'file://' + require('path').resolve(__dirname, '../dist/chenxing.html');
 const { chromium } = require('playwright');
+const { check, noErrors, report } = require('./lib');
 (async () => {
   const b = await chromium.launch();
   const p = await (await b.newContext({viewport:{width:1100,height:820}})).newPage();
@@ -29,10 +30,16 @@ const { chromium } = require('playwright');
     // 首领必带 2 条
     const bs = spawnAt('boss', 5, 4, false);
     out.bossAfx = bs.afx;
+    // 连刷 60 只首领：每只都要带满 2 条（以前抽到「分裂」会被跳过又不补，偶尔只剩 1 条）
+    out.bossMin = 9; for (let i = 0; i < 60; i++) { const b2 = spawnAt('boss', 5, 4, false); out.bossMin = Math.min(out.bossMin, (b2.afx || []).length); b2.dead = true; S2.cine = null; }
     out.eRes = eRes(bs) - bs.d.res;
     return out;
   });
   console.log(JSON.stringify(o, null, 1));
-  console.log('ERRORS', errs.slice(0,8));
+  check(o.bad.length === 0, '每条词缀挂上后都不出 NaN', o.bad);
+  check(Object.keys(o.rolled).length === o.affix, '300 只精英里每条词缀都至少出现过一次', o.rolled);
+  check(Array.isArray(o.bossAfx) && o.bossAfx.length >= 2 && o.bossMin >= 2, '首领每次都带满 2 条词缀', { first: o.bossAfx, min: o.bossMin });
+  noErrors(errs);
+  report('affix');
   await b.close();
 })();

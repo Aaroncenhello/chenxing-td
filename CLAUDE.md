@@ -21,25 +21,29 @@ tests/          Playwright 无头测试 + 平衡模拟（在 tests/out/ 目录�
 ```bash
 npm install            # 只装 playwright（首次还要 npx playwright install chromium）
 npm run check          # 构建 + 语法检查 + 顶层重名检查
-npm test               # 构建 + 全部功能测试
-npm run test:mobile    # 手机横屏 844×390 截图 + 检查每个浮动按钮都能点到
+npm test               # 构建 + 语法检查 + 全部功能测试（tests/run-all.js，任何一项失败都会以非零状态退出）
+node tests/run-all.js meta rewards   # 只跑指定的几个测试
+npm run test:mobile    # 手机横屏 844×390 + 竖屏（390×844 / 375×667 / 390×600）截图，检查每个按钮都在屏幕内、能点到
 npm run sim            # 平衡模拟，见下
 ```
+测试约定：每个测试文件用 `tests/lib.js` 的 `check(条件, 说明, 细节)` 断言、`noErrors(errs)` 检查页面报错、最后 `report(名字)` 汇总；新测试要加进 `tests/run-all.js` 的列表。截图用相对路径，会存在 `tests/out/`（已被 git 忽略）。Playwright 版本锁定为 1.56.1，和 `npx playwright install chromium` 装的浏览器对应。推送到 GitHub 后 `.github/workflows/test.yml` 会自动跑一遍，并检查 `dist/chenxing.html` 是否已重新构建。
+写断言时注意：战斗有随机性，别断言「一定会出现某件事」（例如事件选项不足 2 个时会被跳过、只有骑士时打不到飞行怪），要断言机制本身。
+
 平衡模拟 `tests/sim.js` 用环境变量控制：
 `ST0`=起始关（0 开始）`ST`=结束关（不含）`RUNS`=每关局数 `CLV`=角色等级 `DIFF`=0/1/2 `ABY`=深渊层数 `DISK='{"atk":5,...}'`=天赋星盘等级 `HERO`=指定英雄。
 例：`cd tests/out && ST=16 RUNS=3 CLV=8 DISK='{"atk":5,"hp":4,"walls":4}' node ../sim.js`
 机器人不会调站位、选牌粗糙，**真人胜率明显高于模拟**。11.0 的参考结果：CLV4 无星盘约 25%；CLV8 + 少量星盘约 37%（第一章大多能过，三四章很难）；满级 + 400★ 星盘时第 9–13 关大多能赢，14–16 关很难。
 
 **拼接顺序（build.sh 里固定，改顺序可能出错）：**
-`head.html config.js config2.js cards.js meta.js relic.js sig.js story.js arena.js haz.js boss.js event.js affix.js fight.js step.js px-core.js px-hero.js px-foe.js px-fx.js ui-a.js ui-b.js ui-d.js ui-c.js`
-`head.html` 里是 CSS 和整个页面的 HTML 结构，最后以 `<script>` 开头；`ui-c.js` 结尾是 `</script>`。
+`head.html config.js config-meta.js cards.js meta.js relic.js sig.js story.js arena.js haz.js boss.js event.js affix.js fight.js step.js px-core.js px-hero.js px-foe.js px-fx.js save.js ui-bar.js ui-panels.js ui-roster.js ui-menu.js settle.js main.js`
+`head.html` 里是 CSS 和整个页面的 HTML 结构，最后以 `<script>` 开头；`main.js` 结尾是 `</script>`。
 
 ## 各文件负责什么
 | 文件 | 内容 |
 |---|---|
 | head.html | 全部 CSS、页面结构（顶栏、战场、翻牌/商店/事件面板、HUD、底部面板、说明文字） |
 | config.js | `RULES`、16 个关卡 `STAGES`（地图字符画、敌人池、首领、机关）、16 名角色 `UNITS`、敌人 `ENEMIES`、`ELITE`、`SPELLS` |
-| config2.js | 难度 `DIFFS`、每日规则、商店 `SHOP`、稀有度 `RARE_W`、成就、天赋树、阵型 `FORMS`、角色传记等 |
+| config-meta.js | 难度 `DIFFS`、每日规则、商店 `SHOP`、稀有度 `RARE_W`、成就、天赋树、阵型 `FORMS`、角色传记等 |
 | cards.js | 升级卡 `CARDS`（含传说卡、`fl_*` 无限补充卡）、自动技能数值、卡牌像素图标 |
 | meta.js | **11.0** 天赋星盘 `DISK`/`dk()`、深渊层数 `ABYSS`/`ab()`/`abyssK()`、每周挑战 `WEEK_RULES`/`weekInfo()`/`wk()` |
 | relic.js | **11.0** 遗物 `RELICS`/`rl()`、掉落 `relicDrop`、每帧效果 `relicStep`、图标 |
@@ -53,31 +57,41 @@ npm run sim            # 平衡模拟，见下
 | fight.js | 伤害结算 `hurt/hurtUnit/hurtCrystal`、`killEnemy`、弹道、主动法术、晨星爆发 |
 | step.js | **整个模拟的一步** `step(dt)`（固定 30Hz）：波次推进、商店/事件触发、单位 AI、敌人 AI |
 | px-*.js | 像素渲染：地图、英雄、敌人、特效、HUD 上的文字（640×360 原生分辨率，`T=40` 每格，16×9 格） |
-| ui-a.js | 存档 `loadSave/writeSave/editSave`、星星账本 `starBank`、顶栏、卡牌栏、法术按钮 |
-| ui-b.js | 角色信息面板、翻牌面板、商店、事件面板、场地拖动站位、快捷键、**沉浸全屏 `setImm` 和手机 HUD** |
-| ui-d.js | 剧情播放、选英雄、角色养成页、天赋树、结算经验、战绩入档 |
-| ui-c.js | 选关页、星盘页、深渊/每周 UI、图鉴、成就、存档导入导出、结算页、主循环 `frame()`、`window.__td` 测试接口 |
+| save.js | 存档 `loadSave/writeSave/editSave`、导出导入 `exportSave/importSave`、星星账本 `starBank`、角色等级 `levelOf/charLevels` |
+| ui-bar.js | 顶栏、队伍栏、卡牌栏、提示 `toast`、成就解锁 `unlockAchv`、法术按钮 |
+| ui-panels.js | 角色信息面板、翻牌面板、商店、事件面板、场地拖动站位、快捷键、**沉浸全屏 `setImm` 和手机 HUD** |
+| ui-roster.js | 剧情播放、选英雄、角色养成页、天赋树、结算经验、战绩入档 |
+| ui-menu.js | 选关页、星盘页、深渊/每周 UI、图鉴、成就、存档页、进关流程 `beginStage/startRun`、新手引导、结算页 `checkOver/showResult(R)`（只画界面） |
+| settle.js | **结算** `settleRun()`：一局结束时写存档（战绩 `recordRun`、经验 `awardExp`、成就、星级、通关奖励 `runReward`、守望/每日/无尽/每周记录），返回结果对象给结算页 |
+| main.js | 主循环 `frame()`、开机、`window.__td` 测试接口 |
 
 ## 关键机制速查
 - **固定步长**：`step(dt)` 是全部游戏逻辑，`frame()` 只负责按 30Hz 调它并渲染。测试直接调 `__td.step(1/30)`。
 - **暂停条件**：`S.offer`（翻牌）/`S.shop`/`S.event`/`S.cine`（首领演出）任一存在时，`step` 不推进战斗。
 - **敌人强度**：`spawnAt` 里 `hp = d.hp × stageHp() × S.waveHp × S.diffK.hp × …`。`S.diffK` = 难度 × 深渊 × 每周规则，在 `newRun` 里合成。
 - **经验曲线**：`xpNeedOf(lv) = (12 + 4lv + 0.25lv²)`（深渊 11 层起 ×1.15）。这是控制「一局翻几次牌」的主旋钮。
+- **随机数**：影响对局的随机一律用 `roll("用途")`（arena.js 里的 `RNG_KEYS`：card/ev/relic/afx/spawn/fight/shop），波次生成用 `S.rng`。每日/每周挑战时它们都带种子，同样的操作打两次结果完全一样（`tests/seeded.js` 会检查）；**只有纯画面效果**（粒子、飘字、抖屏、走路动画）才直接用 `Math.random`。新加随机逻辑时别直接写 `Math.random()`。
+- **结算**：`settleRun()`（settle.js）把一局的存档结算一次做完，同一局重复调用返回同一个结果；`checkOver` 先结算、再播通关剧情、再出结算页，所以剧情中途关页面也不丢奖励。主线成就和关卡通关剧情只在主线关卡发/播（守望之战、每周、每日、无尽都不算）；「通关某关」的成就配在 `STAGES[i].clearAchv` 里。每周记录按周累积在 `save.week[key]` 里，每周首通各算 5★。
 - **牌池**：`cardPool()`；牌快抽空时自动补进 `fl_*` 补充卡（可无限叠加）。
 - **无尽模式**：`startWave` 里按需 `genWave()`，不会出现空波。
 - **商店/事件**会「欠着」：叠波跳过了第 4/5 波也会在之后补开。
-- **存档**：localStorage 键 `chenxing-td-v2`。`loadSave()` 是**白名单**，新加存档字段必须在 `loadSave` 里声明，否则下次写存档就被丢掉。导出码前缀 `CX9-`。
+- **存档**：localStorage 键 `chenxing-td-v2`，都在 `save.js`。`loadSave()` 是**白名单 + 类型清洗**，新加存档字段必须在 `loadSave` 里声明（写清类型和范围），否则下次写存档就被丢掉。导出码前缀 `CX9-`。
+  - **版本**：存档带 `ver`（当前 `SAVE_VER = 12`）。改存档结构时 `SAVE_VER` +1，并在 `SAVE_MIGRATE` 末尾加一步升级函数；旧存档读入时按顺序补跑，升级前自动备份。
+  - **备份**：`chenxing-td-v2-backup` 只存一份（导入前、升级前各自动存一次），存档页有「恢复这份备份」按钮，恢复是互换的，可以再换回来。更新版本的存档拒绝导入。
 - **星星账本**：`starBank()` = 关卡星级 + 困难/噩梦首通 + 无尽每 10 波 + 成就 + 深渊每层首通 + 每周首通 + `bonusStars`（每次通关给）− 星盘花费 `diskSpent`。
-- **沉浸全屏**：`body.imm` 类，战场 fixed 铺满窗口，`resize()` 按窗口等比缩放；手机横屏（高 ≤ 520px）开局自动进入。浏览器原生全屏只是顺带尝试，嵌在 iframe 里通常不给。
+- **沉浸全屏**：`body.imm` 类，战场 fixed 铺满窗口，`resize()` 按窗口等比缩放；手机（横屏高 ≤ 520px、竖屏宽 ≤ 520px）开局自动进入。横屏按钮浮在战场两边；**竖屏**（CSS `orientation:portrait`）是顶栏 + 撑满宽度的战场 + 下面的大按钮区，`.hud` 变成 `display:contents` 排进竖向布局，一屏看全不滚动。全屏时有翻牌/商店/菜单/剧情打开，`body.panel` 会把提示藏起来。浏览器原生全屏只是顺带尝试：嵌在 iframe 里通常不给，iPhone 上网页根本没有全屏接口，所以 Claude 页面的顶栏去不掉。
+- **viewport**：`head.html` 里的 `<meta name="viewport">` 不能删——没有它手机会按 980px 宽的电脑网页排版再整体缩小。
 
 ## 踩过的坑
 - 所有源码在同一个全局作用域：**顶层重名会让整页白屏**，每次改完跑 `node tests/syntax.js`。
 - 用 sed 批量改名时曾把 `next.res` 改成了 `nexeRes(t)`，只在特定专属卡触发时才崩。批量替换后要全局 grep 检查奇怪的标识符。
-- 无头测试里如果只调 `step()`，结算（`checkOver` → 发星星、记战绩）不会执行，因为它在 `frame()` 里；需要等浏览器跑几帧。
+- 无头测试里如果只调 `step()`，结算不会自动执行（`checkOver` 在 `frame()` 里）；要么设好 `S.over` 后直接调 `__td.settle()`，要么等浏览器跑几帧（结算页也会出来）。
 - 翻牌面板开着时，场地拖动和 HUD 按钮都会被挡住，这是故意的。
 
 ## 版本脉络
 7.0 固定阵地 + 自动战斗 + 翻牌 → 8.0 机关地图、稀有度、羁绊、商店、守望之战 → 9.0 专属卡、诅咒卡、首领演出与打断、第四章、天赋树、战报、存档导出、手机优化 → 10.0 局内事件、精英词缀、阵型与拖动站位、图鉴战绩 → 10.1 修无尽空波、牌堆见底、手动开波/叠波、难度上调 → **11.0 天赋星盘、深渊 20 层、遗物、每周挑战、手机横屏沉浸全屏、基础难度再上调**。
 
 ## 发布
-产物就是 `dist/chenxing.html`，浏览器直接打开即可。之前在 claude.ai 上以 Artifact 形式发布过（带 `downloads` 能力用于下载存档文件，代码里 `saveFile()` 在没有这个能力时会退回普通下载）。
+产物就是 `dist/chenxing.html`，浏览器直接打开即可。
+**网页版**：`.github/workflows/pages.yml` 在 main 分支更新时把它发布成 GitHub Pages 首页 https://aaroncenhello.github.io/chenxing-td/ （需要仓库公开、Settings → Pages → Source 选「GitHub Actions」）。
+Google 字体是后台加载的（`media=print` + `onload`）：别改回普通的 `<link rel=stylesheet>`，否则连不上 Google 的网络下整页会白屏。之前在 claude.ai 上以 Artifact 形式发布过（带 `downloads` 能力用于下载存档文件，代码里 `saveFile()` 在没有这个能力时会退回普通下载）。

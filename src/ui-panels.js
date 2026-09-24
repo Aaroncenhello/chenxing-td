@@ -265,8 +265,9 @@ function setImm(on) {
   hudKey = ""; resize();
 }
 const isImm = () => document.body.classList.contains("imm");
-const phoneLandscape = () => window.matchMedia("(max-height: 520px) and (orientation: landscape)").matches;
-function maybeImm() { if (!immOff && phoneLandscape() && !isImm()) setImm(true); }
+// 手机：横屏看高度、竖屏看宽度；开局自动进沉浸全屏（竖屏是战场在上、按钮在下的专用布局）
+const isPhone = () => window.matchMedia("(max-height: 520px) and (orientation: landscape), (max-width: 520px) and (orientation: portrait)").matches;
+function maybeImm() { if (!immOff && isPhone() && !isImm()) setImm(true); }
 $("btn-full").addEventListener("click", () => setImm(!isImm()));
 $("hud").addEventListener("click", ev => {
   const b = ev.target.closest("[data-h]"); if (!b || !S) return;
@@ -285,6 +286,8 @@ $("hud").addEventListener("click", ev => {
 let hudKey = "";
 function updateHud() {
   if (!isImm() || !S) return;
+  // 全屏时翻牌、商店、菜单、剧情都铺满整屏，提示（新敌人、遗物……）先藏起来，免得压在上面
+  document.body.classList.toggle("panel", !!(menuOpen || dlg || S.offer || S.shop || S.event));
   const m = Math.ceil(S.spells.meteor || 0), hl = Math.ceil(S.spells.heal || 0), st = Math.floor(S.star / ULT.max * 100);
   const waiting = S.wave < totalWaves() && !S.spawnQueue.length;
   const nx = waiting ? (S.autoWave ? Math.ceil(Math.max(0, S.nextWaveIn)) + "s" : "手动") : S.spawnQueue.length ? "出怪 " + S.spawnQueue.length : "剩 " + S.enemies.length;
@@ -300,7 +303,7 @@ function updateHud() {
   setText("h-auto", S.autoWave ? "自动·开" : "自动·关"); setText("h-speed", S.speed + "×"); setText("h-pause", S.paused ? "继续" : "暂停");
   setText("h-form", formOf().name);
 }
-window.addEventListener("orientationchange", () => setTimeout(() => { if (phoneLandscape()) maybeImm(); resize(); }, 250));
+window.addEventListener("orientationchange", () => setTimeout(() => { maybeImm(); resize(); }, 250));
 document.addEventListener("keydown", ev => {
   const k = ev.key.toLowerCase();
   if (dlg) { if (k === " " || k === "enter") { ev.preventDefault(); dlgNext(); } else if (k === "escape") dlgSkip(); return; }

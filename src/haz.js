@@ -4,7 +4,7 @@
 const HAZ_NAME = { vent: "喷发口", beam: "旋转光束", field: "寒气力场", spikes: "地刺阵", gate: "开合传送门" };
 function initHaz(list) {
   S.haz = [];
-  for (const [type, x, y, o] of (list || [])) S.haz.push({ type, x, y, ...(o || {}), t: 0, fire: 0, ang: Math.random() * 6.283, on: true });
+  for (const [type, x, y, o] of (list || [])) S.haz.push({ type, x, y, ...(o || {}), t: 0, fire: 0, ang: roll("spawn") * 6.283, on: true });
   const g = S.haz.find(h => h.type === "gate");
   S.gate = g ? { period: g.period || 14, open: g.open || 7, t: 0 } : null;
 }

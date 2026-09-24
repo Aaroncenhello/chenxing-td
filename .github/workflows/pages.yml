@@ -1,0 +1,36 @@
+# 发布网页：main 分支一更新，就把构建好的游戏发布到 GitHub Pages
+# 网址：https://aaroncenhello.github.io/chenxing-td/
+# 前提（只需设置一次）：仓库是公开的，并且 Settings → Pages → Source 选「GitHub Actions」
+name: 发布网页
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 构建 + 语法检查
+        run: bash build.sh && node tests/syntax.js
+      - name: 整理成网站（游戏就是首页）
+        run: mkdir -p site && cp dist/chenxing.html site/index.html && touch site/.nojekyll
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

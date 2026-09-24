@@ -40,7 +40,7 @@ function relicChance(e) {
 function gainRelic(id, quiet) {
   if (S.relics.length >= RELIC_MAX) { S.dust += 50; if (!quiet) addFx({ kind: "banner", text: "遗物满了 · 换成 50 星尘", life: 1.6 }); return null; }
   const pool = RELICS.filter(r => !S.relics.includes(r.id));
-  if (!id) { if (!pool.length) return null; id = pool[Math.floor(Math.random() * pool.length)].id; }
+  if (!id) { if (!pool.length) return null; id = pool[Math.floor(roll("relic") * pool.length)].id; }
   if (S.relics.includes(id)) return null;
   S.relics.push(id);
   const R = RELIC_BY[id];
@@ -54,7 +54,7 @@ function gainRelic(id, quiet) {
 }
 function relicDrop(e) {
   if (e.summoned || S.relics.length >= RELIC_MAX) return;
-  if (Math.random() < relicChance(e)) {
+  if (roll("relic") < relicChance(e)) {
     const id = gainRelic();
     if (id) addFx({ kind: "text", x: e.x, y: e.y - 1, text: "掉落遗物！", color: RELIC_BY[id].color, life: 1.5, big: true });
   }
@@ -68,7 +68,7 @@ function relicStep(dt) {
       S.hornT = 7;
       const list = S.enemies.filter(hittable);
       for (let i = 0; i < 3 && list.length; i++) {
-        const e = list.splice(Math.floor(Math.random() * list.length), 1)[0];
+        const e = list.splice(Math.floor(roll("relic") * list.length), 1)[0];
         addFx({ kind: "bolt", x: e.x, y: e.y - 3, x2: e.x, y2: e.y, life: 0.3 });
         addFx({ kind: "boom", x: e.x, y: e.y, r: 0.8, color: "#a0d8ff", life: 0.35 });
         hurt(e, calc(900 * powerK(), "magic", eDef(e), eRes(e)), "magic", false, { key: "rl_horn" });

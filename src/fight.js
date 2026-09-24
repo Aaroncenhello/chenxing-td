@@ -35,7 +35,7 @@ function killEnemy(e, src) {
     burst(e.x, e.y, "#ffe040", 40, 3.4, 1, 0.09); S.shake = 0.4;
   }
   // 传说卡「天罚」
-  if (cl("lg_judge") && src && src.def && Math.random() < 0.2 * cl("lg_judge")) {
+  if (cl("lg_judge") && src && src.def && roll("fight") < 0.2 * cl("lg_judge")) {
     const t = S.enemies.filter(o => hittable(o) && o !== e).sort((a, b) => dist(a, e) - dist(b, e))[0];
     if (t) {
       const dmg = SKILL_DMG.lg_judge * cl("lg_judge") * powerK();
@@ -53,7 +53,7 @@ function killEnemy(e, src) {
   if (isBoss(e)) { S.shake = 0.6; if (S.boss === e) S.boss = null; if (e.type === "boss") S.events.push({ type: "achv", id: "boss" }); }
   if (e.d.split) for (let i = 0; i < e.d.split; i++) { const s = spawnNear("slime", e, false, true); s.stop = 0.2; s.hitT = 0.1; }
   // 殉爆
-  if (cl("boom") && Math.random() < 0.18 * cl("boom") * (syn("bloodlust") ? 1.5 : 1)) {
+  if (cl("boom") && roll("fight") < 0.18 * cl("boom") * (syn("bloodlust") ? 1.5 : 1)) {
     const dmg = 500 * cl("boom") * powerK() * (syn("bloodlust") ? 1.5 : 1);
     addFx({ kind: "boom", x: e.x, y: e.y, r: 1.3, color: "#ff8a3a", life: 0.45 });
     burst(e.x, e.y, "#ffb040", 18, 2.8, 0.6, 0.07);
@@ -87,9 +87,9 @@ function hurt(e, amt, type, crit, src) {
   if (byUnit) {
     if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1);
     if (rl("rl_berserk") && !crit) { src.hitN = (src.hitN || 0) + 1; if (src.hitN % 8 === 0) { amt *= 3; crit = true; } }
-    if ((cl("crit") || cu("cu_moon") || dk("crit")) && !crit && Math.random() < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon")) { amt *= 2; crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
+    if ((cl("crit") || cu("cu_moon") || dk("crit")) && !crit && roll("fight") < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon")) { amt *= 2; crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
     if (src.hero && sg("sg_as2") && !isBoss(e) && e.hp <= e.maxHp * 0.25 && e.hp > 0) { amt = e.hp + e.shield + 1; addFx({ kind: "text", x: e.x, y: e.y - 0.6, text: "处决", color: "#4fc0b0", life: 0.9, big: true }); }
-    if (cl("freeze") && !e.d.unstoppable && Math.random() < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
+    if (cl("freeze") && !e.d.unstoppable && roll("fight") < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
     if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? 2 : 1), true, src);
     if (hasAfx(e, "thorns") && src.def.place === "ground" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.18, "magic", null);
     if (tal(src, "t_pierce") && !e.dead) applyCorrode(e, 0.25, 4, src);
@@ -224,7 +224,7 @@ function landShot(s) {
     hurt(t, calc(s.atk * chill, "magic", eDef(t), eRes(t)), "magic", false, u);
     const chance = (br(u, "frost", "A") ? 0.5 : u.lv >= 3 ? 0.25 : 0) + (u.hero ? 0.12 * sg("sg_fr1") : 0);
     const ft = (br(u, "frost", "A") ? 1.5 : 1) + (hasTal(u, "frost") ? 0.5 : 0);
-    if (Math.random() < chance) t.freezeT = Math.max(t.freezeT, ft); else if (t.freezeT <= 0) { t.slowT = 1.5; t.slowK = 0.6; }
+    if (roll("fight") < chance) t.freezeT = Math.max(t.freezeT, ft); else if (t.freezeT <= 0) { t.slowT = 1.5; t.slowK = 0.6; }
   } else if (false) {
   } else if (s.kind === "bard" || s.kind === "summoner") {
     hurt(t, calc(s.atk, "magic", eDef(t), eRes(t)), "magic", false, u);
@@ -277,11 +277,11 @@ function strike(u, targets) {
   for (const t of list) for (let h = 0; h < hits; h++) {
     if (t.dead) break;
     const critB = u.hero ? 0.15 * sg("sg_as1") : 0;
-    const crit = (D.id === "assassin" && (u.skillT > 0 || (u.lv >= 3 && Math.random() < 0.3 + critB))) || (br(u, "sword", "A") && Math.random() < 0.2 + critB) || (critB && Math.random() < critB);
+    const crit = (D.id === "assassin" && (u.skillT > 0 || (u.lv >= 3 && roll("fight") < 0.3 + critB))) || (br(u, "sword", "A") && roll("fight") < 0.2 + critB) || (critB && roll("fight") < critB);
     const mult = crit ? (D.id === "assassin" ? 2.2 : 2) * (u.hero ? 1 + 0.2 * sg("sg_as1") : 1) : 1;
     dealt += hurt(t, calc(uAtk(u) * mult, "phys", eDef(t), eRes(t)), "phys", crit, u);
     if (br(u, "assassin", "B")) t.poison = { dps: uAtk(u) * 0.4, t: 4, acc: 0, src: u };
-    if (D.id === "lancer" && u.lv >= 3 && !t.dead && Math.random() < 0.25) knock(t, 0.5);
+    if (D.id === "lancer" && u.lv >= 3 && !t.dead && roll("fight") < 0.25) knock(t, 0.5);
     if (u.hero && sg("sg_la1") && !t.dead) knock(t, 0.4);
     if (u.hero && sg("sg_me2") && !t.dead) burnEnemy(t, uAtk(u) * 0.35, 4, u);
     addFx({ kind: D.id === "lancer" ? "thrust" : "slash", x: t.x, y: t.y, color: crit ? "#ffe040" : D.color, face: u.face, life: 0.22, big: crit || h > 0 });
@@ -300,7 +300,7 @@ function densest(u, R) {
 }
 function golemSpot(u) {
   const foes = S.enemies.filter(e => hittable(e) && !e.d.flying);
-  let a = Math.random() * 6.283;
+  let a = roll("fight") * 6.283;
   if (foes.length) { const t = foes.sort((p, q) => toCrystal(p) - toCrystal(q))[0]; a = Math.atan2(t.y - CRYSTAL.y, t.x - CRYSTAL.x); }
   for (let k = 0; k < 10; k++) {
     const r = RULES.ringFront + 0.9, x = CRYSTAL.x + Math.cos(a + k * 0.3) * r, y = CRYSTAL.y + Math.sin(a + k * 0.3) * r;

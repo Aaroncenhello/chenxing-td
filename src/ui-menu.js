@@ -1,5 +1,5 @@
 
-// ================= 选关、流程、结算、主循环 =================
+// ================= 选关、星盘、图鉴、成就、存档页、进关流程、结算页 =================
 const THUMB = {
   forest: { g: "#3f7f45", p: "#b38a5a", b: "#245a30", w: "#2f6ea8" },
   snow: { g: "#e4ecf4", p: "#a89a88", b: "#6a9488", w: "#2f6ea8" },
@@ -33,21 +33,6 @@ function todayInfo() {
   return { date: ds, seed: h, stage: h % n, mod: DAILY_MODS[(h >>> 5) % DAILY_MODS.length].id };
 }
 
-// ---------- 存档导出 / 导入 ----------
-const SAVE_TAG = "CX9";
-function exportSave() {
-  try { return SAVE_TAG + "-" + btoa(unescape(encodeURIComponent(JSON.stringify(loadSave())))); }
-  catch (e) { return ""; }
-}
-function importSave(code) {
-  const txt = String(code || "").trim().replace(/\s+/g, "");
-  const body = txt.startsWith(SAVE_TAG + "-") ? txt.slice(SAVE_TAG.length + 1) : txt;
-  let d;
-  try { d = JSON.parse(decodeURIComponent(escape(atob(body)))); } catch (e) { return "这串代码看不懂，请确认完整复制了。"; }
-  if (!d || typeof d !== "object" || !Array.isArray(d.stars)) return "这不是《晨星守望》的存档代码。";
-  writeSave(d);
-  return null;
-}
 // 存档文件：在 claude.ai 上要走 downloads 能力，直接打开 html 时退回普通下载
 let dlCap = null, dlTried = false;
 async function saveFile() {
@@ -69,7 +54,7 @@ async function saveFile() {
   } catch (e) { toast("<b>下载失败</b>可以改用「复制代码」。"); }
 }
 function showSaveBox(msg) {
-  const d = loadSave(), code = exportSave();
+  const d = loadSave(), code = exportSave(), bk = readBackup();
   const cleared = d.stars.filter(x => x > 0).length, lvs = charLevels(d);
   const top = UNITS.map(u => `${u.name} ${lvs[u.id]}`).slice(0, 4).join(" · ");
   openOverlay(`<h2>存档</h2>
@@ -78,8 +63,10 @@ function showSaveBox(msg) {
     ${msg ? `<p class="savemsg">${msg}</p>` : ""}
     <div class="savebox"><label>导出代码</label><textarea id="sv-out" readonly rows="4">${code}</textarea>
       <div class="btns"><button class="primary" id="btn-svcopy">复制代码</button><button id="btn-svdl">下载存档文件</button></div></div>
-    <div class="savebox"><label>导入代码（会覆盖当前进度，请先把上面的代码留一份）</label><textarea id="sv-in" rows="4" placeholder="把代码粘到这里"></textarea>
+    <div class="savebox"><label>导入代码（会覆盖当前进度；导入前会自动备份一份，导错了可以在下面恢复）</label><textarea id="sv-in" rows="4" placeholder="把代码粘到这里"></textarea>
       <div class="btns"><button class="primary" id="btn-svin">导入并重载</button></div></div>
+    ${bk ? `<div class="savebox"><label>自动备份 · ${new Date(bk.at).toLocaleString("zh-CN")} · ${bk.why}（恢复后当前进度会换进备份，还能再换回来）</label>
+      <div class="btns"><button id="btn-svbak">恢复这份备份并重载</button></div></div>` : ""}
     <div class="btns"><button id="btn-menu">返回选关</button></div>`);
 }
 let diffSel = 0, chapSel = null, abyssSel = 0;
@@ -156,14 +143,6 @@ function weekHtml(save) {
     <p>${wi.rules.map(r => `<span class="wr">${WEEK_BY[r].name}</span>${WEEK_BY[r].desc}`).join("　")}</p>
     <p>${rec ? (rec.clear ? "本周已通关 ✓（再通关每次 +1★）" : `本周最好：第 ${rec.best} 波 · 首通 +${WEEK_STARS}★`) : `本周首通 +${WEEK_STARS}★`}</p></div><button class="primary" id="btn-week">开始挑战</button></div>`;
 }
-// 通关奖励：每次都给 1★，困难 +1，深渊每 5 层 +1；深渊新层首通另算
-function runReward() {
-  const prev = loadSave().abyss[S.stage] || 0, lay = S.abyss || 0;
-  const bonus = 1 + (S.diff ? 1 : 0) + Math.floor(lay / 5);
-  let first = 0; for (let l = prev + 1; l <= lay; l++) first += abyssStars(l);
-  editSave(d => { d.bonusStars += bonus; if (lay > prev) d.abyss[S.stage] = lay; });
-  return `通关奖励 +${bonus}★` + (first ? ` · 深渊 ${lay} 层首通 +${first}★` : "") + (S.relics.length ? ` · 本局带了 ${S.relics.length} 件遗物` : "");
-}
 let codexTab = "foe";
 function showCodex(tab) {
   if (tab) codexTab = tab;
@@ -225,6 +204,10 @@ $("ovbox").addEventListener("click", ev => {
     if (err) showSaveBox(err);
     else { closeOverlay(); location.reload(); }
   }
+  else if (b.id === "btn-svbak") {
+    if (restoreBackup()) { closeOverlay(); location.reload(); }
+    else showSaveBox("没有可以恢复的备份。");
+  }
   else if (b.dataset.tal) {
     const [cid, tier, node] = b.dataset.tal.split(":");
     editSave(dd => { dd.tal = dd.tal || {}; dd.tal[cid] = dd.tal[cid] || {}; dd.tal[cid][tier] = dd.tal[cid][tier] === node ? null : node; });
@@ -281,7 +264,7 @@ function replayStory(i) {
 function startRun(i, opts) {
   opts = opts || {}; lastOpts = opts;
   newRun(i, { ...opts, perks: opts.perks || loadSave().perks, charLv: opts.charLv || charLevels(), charTal: opts.charTal || loadSave().tal, charOpen: opts.charOpen || openChars().map(u => u.id), formIdx: opts.formIdx == null ? loadSave().form : opts.formIdx, disk: opts.disk || loadSave().disk, autoWave: opts.autoWave == null ? loadSave().autoWave : opts.autoWave });
-  acc = 0; shownOver = null; mapFor = -1; infoKey = ""; teamKey = ""; cardKey = ""; expGains = null;
+  acc = 0; shownOver = null; mapFor = -1; infoKey = ""; teamKey = ""; cardKey = "";
   setText("btn-speed", "1×"); setText("btn-pause", "暂停"); cycleForm(true);
   for (const el of document.querySelectorAll("[data-k]")) el.dataset.k = "";
   $("levelup").hidden = true; $("levelup").dataset.k = "";
@@ -392,113 +375,46 @@ function drawReport() {
   g.fillStyle = "#7a8396"; g.font = "10px sans-serif"; g.textAlign = "left";
   g.fillText("第 1 波", 4, h - 3); g.textAlign = "right"; g.fillText("第 " + log[n - 1].w + " 波 · Lv" + log[n - 1].lv, w - 4, h - 3);
 }
-let shownOver = null, expGains = null;
+let shownOver = null;
+// 一局结束：先把存档结算做完（settleRun，数据都在这一步写好，中途关页面也不会丢），再播通关剧情、出结算页
 function checkOver() {
   if (S.over === shownOver) return;
   shownOver = S.over;
   if (!S.over) return;
   S.fx = S.fx.filter(f => f.kind !== "cutin" && f.kind !== "combo" && f.kind !== "banner");
   S.ultPending = 0; S.slowmo = 0;
-  const win = S.over === "win";
-  recordRun(win);
-  expGains = awardExp(win);
-  const st = STORY[S.stage], key = "post" + S.stage;
-  if (win && !S.endless && !S.daily && st && st.post && !loadSave().story.includes(key)) {
-    editSave(d => { d.story.push(key); });
-    playStory(st.post, showResult);
-  } else showResult();
+  const R = settleRun();
+  if (R.story) playStory(R.story, () => showResult(R));
+  else showResult(R);
 }
-function showResult() {
-  const win = S.over === "win", exp = expHtml(expGains), full = S.crystal.hp >= S.crystal.maxHp;
-  if (win && !S.daily && !S.endless) {
-    if (S.stage === 0) unlockAchv("first");
-    if (full) unlockAchv("perfect");
-    if (S.allies === 0) unlockAchv("solo");
-    if (S.stage === 3) unlockAchv("chapter1");
-    if (S.stage === 7) unlockAchv("chapter2");
-    if (S.stage === 11) { unlockAchv("devourer"); unlockAchv("chapter3"); }
-    if (S.stage === 7) unlockAchv("final");
-    if (S.stage === STAGES.length - 1) unlockAchv("nameless");
-    if (S.diff === 1) unlockAchv("hard");
-    if (S.diff === 2) unlockAchv("nightmare");
-  }
-  if (S.vigil) {
-    const reached = win ? ST.waves : Math.max(0, S.wave - 1), old = loadSave().vigil || {};
-    editSave(d => { d.vigil = { best: Math.max(old.best || 0, reached), clear: !!old.clear || win, runs: (old.runs || 0) + 1 }; });
-    if (reached >= 20) unlockAchv("vigil");
-    openOverlay(`<h2>${win ? "长夜守望成功" : "长夜结束"}</h2><p>${ST.name}：撑过 ${reached}/${ST.waves} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}，攒了 ${S.dust} 星尘。</p>
-      <p>最好成绩：第 ${Math.max(old.best || 0, reached)} 波${(old.clear || win) ? " · 已通关 ✓" : ""}</p>
-      ${battleReport()}${cardsHtml()}${statsTable()}${exp}<div class="btns"><button class="primary" id="btn-vigil">再守一夜</button><button id="btn-menu">选关</button></div>`);
-    drawExpPortraits(); drawReport();
-    return;
-  }
-  if (S.daily) {
-    const reached = win ? ST.waves : Math.max(0, S.wave - 1);
-    editSave(d => { const r = d.daily[S.daily.date] || { wave: 0, cleared: false }; r.wave = Math.max(r.wave, reached); r.cleared = r.cleared || win; d.daily = { [S.daily.date]: r }; });
-    if (win) unlockAchv("daily");
-    openOverlay(`<h2>${win ? "每日挑战完成" : "每日挑战失败"}</h2><p>${ST.name} · 规则「${DAILY_MODS.find(m => m.id === S.mod).name}」：${win ? `守住了全部 ${ST.waves} 波` : `撑到第 ${reached} 波`}，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。</p>
-      ${battleReport()}${cardsHtml()}${statsTable()}${exp}<div class="btns"><button class="primary" id="btn-retry">再来一次</button><button id="btn-menu">选关</button></div>`);
-    drawExpPortraits(); drawReport();
-    return;
-  }
-  if (S.endless) {
-    const reached = Math.max(0, S.wave - 1), oldStars = endlessStars(loadSave(), S.stage);
-    saveBest(S.stage, reached);
-    if (reached >= 20) unlockAchv("endless20");
-    const after = loadSave(), got = endlessStars(after, S.stage) - oldStars;
-    openOverlay(`<h2>无尽模式结束</h2><p>${ST.name}：撑过 ${reached} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。最高纪录第 ${after.best[S.stage]} 波。</p>
-      ${got > 0 ? `<p style="color:#ffd860">新获得 ${got}★。</p>` : ""}${battleReport()}${cardsHtml()}${statsTable()}${exp}
+function showResult(R) {
+  R = R || settleRun();
+  const win = R.win, exp = expHtml(R.exp), tail = battleReport() + cardsHtml() + statsTable() + exp;
+  if (R.mode === "vigil") {
+    openOverlay(`<h2>${win ? "长夜守望成功" : "长夜结束"}</h2><p>${ST.name}：撑过 ${R.reached}/${ST.waves} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}，攒了 ${S.dust} 星尘。</p>
+      <p>最好成绩：第 ${R.best} 波${R.clear ? " · 已通关 ✓" : ""}</p>
+      ${tail}<div class="btns"><button class="primary" id="btn-vigil">再守一夜</button><button id="btn-menu">选关</button></div>`);
+  } else if (R.mode === "daily") {
+    openOverlay(`<h2>${win ? "每日挑战完成" : "每日挑战失败"}</h2><p>${ST.name} · 规则「${DAILY_MODS.find(m => m.id === S.mod).name}」：${win ? `守住了全部 ${ST.waves} 波` : `撑到第 ${R.reached} 波`}，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。</p>
+      ${tail}<div class="btns"><button class="primary" id="btn-retry">再来一次</button><button id="btn-menu">选关</button></div>`);
+  } else if (R.mode === "endless") {
+    openOverlay(`<h2>无尽模式结束</h2><p>${ST.name}：撑过 ${R.reached} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。最高纪录第 ${R.best} 波。</p>
+      ${R.got > 0 ? `<p style="color:#ffd860">新获得 ${R.got}★。</p>` : ""}${tail}
       <div class="btns"><button class="primary" id="btn-retry">再来一次</button><button id="btn-menu">选关</button></div>`);
-  } else if (S.week && !S.daily) {
-    const key = S.week.key, old = loadSave().week[key] || {}, first = win && !old.clear, reached = win ? ST.waves : Math.max(0, S.wave - 1);
-    editSave(d => { d.week = { [key]: { clear: !!old.clear || win, best: Math.max(old.best || 0, reached) } }; if (win) d.bonusStars += 1; });
-    openOverlay(`<h2>${win ? "每周挑战完成" : "每周挑战失败"}</h2><p>${ST.name} · ${S.week.rules.map(r => WEEK_BY[r].name).join(" + ")}：${win ? `守住了全部 ${ST.waves} 波` : `撑到第 ${reached} 波`}。</p>
-      ${first ? `<p class="stars">本周首通 +${WEEK_STARS}★</p>` : win ? `<p style="color:#ffd860">通关奖励 +1★</p>` : ""}
-      ${battleReport()}${cardsHtml()}${statsTable()}${exp}<div class="btns"><button class="primary" id="btn-week">再来一次</button><button id="btn-menu">选关</button></div>`);
+  } else if (R.mode === "week") {
+    openOverlay(`<h2>${win ? "每周挑战完成" : "每周挑战失败"}</h2><p>${ST.name} · ${S.week.rules.map(r => WEEK_BY[r].name).join(" + ")}：${win ? `守住了全部 ${ST.waves} 波` : `撑到第 ${R.reached} 波`}。</p>
+      ${R.first ? `<p class="stars">本周首通 +${WEEK_STARS}★</p>` : win ? `<p style="color:#ffd860">通关奖励 +1★</p>` : ""}
+      ${tail}<div class="btns"><button class="primary" id="btn-week">再来一次</button><button id="btn-menu">选关</button></div>`);
   } else if (win) {
-    const reward = runReward();
-    if (S.diff === 0) saveStars(S.stage, S.stars);
-    else editSave(d => { const a = d.diffClear[S.stage] || []; const id = DIFFS[S.diff].id; if (!a.includes(id)) a.push(id); d.diffClear[S.stage] = a; });
     const hasNext = S.stage + 1 < STAGES.length, final = S.stage === STAGES.length - 1;
     openOverlay(`<h2>${final ? "深渊之门封印了" : "晨星碑守住了"}</h2>${S.diff === 0 ? starHtml(S.stars) : `<p class="stars">${DIFFS[S.diff].name}通关 +1★</p>`}
       <p>第 ${S.stage + 1} 关 · ${ST.name}：击败 ${S.kills} 个敌人，升到 Lv ${S.level}，晨星碑还剩 ${Math.ceil(S.crystal.hp)}/${S.crystal.maxHp}。</p>
-      <p style="color:#ffd860">${reward}</p>
-      ${final ? "<p>主线通关！可以继续挑战困难、噩梦、无尽和每日挑战，把角色都练到 10 级。</p>" : ""}${battleReport()}${cardsHtml()}${statsTable()}${exp}
+      <p style="color:#ffd860">${R.reward}</p>
+      ${final ? "<p>主线通关！可以继续挑战困难、噩梦、无尽和每日挑战，把角色都练到 10 级。</p>" : ""}${tail}
       <div class="btns">${hasNext ? '<button class="primary" id="btn-next">下一关</button>' : ""}<button id="btn-retry">再玩一次</button><button id="btn-menu">选关</button></div>`);
   } else {
     openOverlay(`<h2>晨星碑碎了</h2><p>坚持到第 ${S.wave} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。换个英雄、或者优先翻伙伴和范围技能，再试一次吧。</p>
-      ${battleReport()}${cardsHtml()}${statsTable()}${exp}<div class="btns"><button class="primary" id="btn-retry">再试一次</button><button id="btn-menu">选关</button></div>`);
+      ${tail}<div class="btns"><button class="primary" id="btn-retry">再试一次</button><button id="btn-menu">选关</button></div>`);
   }
   drawExpPortraits(); drawReport();
 }
-
-// ---------- 主循环 ----------
-let last = performance.now(), acc = 0;
-function frame(now) {
-  const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  if (S.slowCd > 0) S.slowCd -= dt;
-  let k = 1; if (S.slowmo > 0) { S.slowmo -= dt; k = 0.3; }
-  if (!menuOpen && !dlg && !S.paused && !S.over && !S.offer && !S.shop && !S.event) {
-    acc += dt * S.speed * k;
-    let n = 0;
-    while (acc >= TICK && n < 16) { step(TICK); acc -= TICK; n++; }
-  }
-  if (!S.offer && !S.shop && !S.cine && !S.event && S.pending > 0 && !S.over && !dlg && !menuOpen) { const mr = S.forceRare || 0; S.forceRare = 0; openOffer(mr, true); }
-  handleEvents();
-  render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updateTut(dt); updateDlg(dt); animRoster(now);
-  if (!dlg) checkOver();
-  requestAnimationFrame(frame);
-}
-
-newRun(0, { perks: loadSave().perks, charLv: charLevels(), charTal: loadSave().tal, hero: loadSave().hero, charOpen: openChars().map(u => u.id) });
-buildSpells();
-resize();
-window.addEventListener("resize", resize);
-showLevels();
-window.__td = {
-  get S() { return S; }, step, newRun: (i, o) => startRun(i, o || {}), beginStage, castUlt, castSpell, useSkill, pickCard, openOffer, randomCards, cardInfo,
-  UNITS, STAGES, CARDS, awardExp, levelOf, buyShop, closeShop, rerollOffer, SYNERGY, VIGIL, EVENTS, takeEvent, openEvent,
-  FORMS, AFFIX, cycleForm, setSlot, clearSlot, arrange, formOf, callWaveEarly, toggleAutoWave, cardPool,
-};
-requestAnimationFrame(frame);
-</script>

@@ -1,5 +1,6 @@
 const GAME = 'file://' + require('path').resolve(__dirname, '../dist/chenxing.html');
 const { chromium } = require('playwright');
+const { check, noErrors, report } = require('./lib');
 (async () => {
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 1200, height: 800 } });
@@ -27,6 +28,8 @@ const { chromium } = require('playwright');
     return { wave: S.wave, over: S.over, shops, emptyWaves, noOffer, fillers, level: S.level, t: Math.round(S.t) };
   });
   console.log('无尽:', JSON.stringify(r1));
+  check(r1.wave >= 75 && r1.emptyWaves === 0 && r1.noOffer === 0, '无尽能打到 75 波，没有空波、没有翻不出牌', r1);
+  check(r1.shops > 0, '无尽模式会开商店', r1.shops);
   // 2) 手动开波
   const r2 = await p.evaluate(() => {
     const T = __td; T.newRun(1, { autoWave: false }); const S = T.S;
@@ -44,6 +47,9 @@ const { chromium } = require('playwright');
     return { w0, w1, q, w2, q2, bonus, auto: S.autoWave, btn: document.getElementById('btn-call').textContent, next: document.getElementById('s-next').textContent };
   });
   console.log('手动开波:', JSON.stringify(r2));
+  check(r2.w0 === 0, '手动开波模式下不会自己出第一波', r2.w0);
+  check(r2.w1 === 1 && r2.w2 === 2 && r2.q2 > r2.q, '手动开波和叠波都生效', r2);
+  check(r2.bonus > 0, '叠波给星尘奖励', r2.bonus);
   // 3) 叠波跳过第 4、5 波，商店和事件还是要补
   const r3 = await p.evaluate(() => {
     const T = __td; T.newRun(2, { autoWave: false }); const S = T.S;
@@ -60,11 +66,14 @@ const { chromium } = require('playwright');
       if (S.event) { ev++; T.takeEvent(0); continue; }
       if (S.wave >= 9) break;
       T.step(1/30);
-      if (!S.spawnQueue.length && !S.enemies.length) S.nextWaveIn = Math.min(S.nextWaveIn, 0);
+      // 这局只有骑士，打不到飞行怪；出完怪就清场，只测「欠着的商店/事件会补开」
+      if (!S.spawnQueue.length) { S.enemies = []; S.nextWaveIn = Math.min(S.nextWaveIn, 0); }
     }
-    return { wAfter, wave: S.wave, shop, ev };
+    return { wAfter, wave: S.wave, shop, ev, eventWave: S.eventWave };
   });
   console.log('叠波补商店/事件:', JSON.stringify(r3));
+  // 抽到的事件可用选项不足 2 个时会直接跳过（设计如此），所以看事件有没有被处理，而不是一定弹出
+  check(r3.shop >= 1 && r3.eventWave >= 5, '叠波跳过的商店和事件之后会补开', r3);
   const r4 = await p.evaluate(() => {
     const T = __td; T.newRun(0, {}); const S = T.S; S.pending = 0; S.offer = null;
     for (const c of T.CARDS) if (!c.filler) S.cards[c.id] = c.max;
@@ -73,6 +82,8 @@ const { chromium } = require('playwright');
     return { pool, offer: S.offer && S.offer.map(x => x.id) };
   });
   console.log('补充卡:', JSON.stringify(r4));
-  console.log('ERR', errs.slice(0, 4));
+  check(r4.offer && r4.offer.length === 3 && r4.pool.some(id => id.startsWith('fl_')), '牌池见底时补进 fl_ 补充卡', r4);
+  noErrors(errs);
+  report('waves-endless');
   await b.close();
 })();
