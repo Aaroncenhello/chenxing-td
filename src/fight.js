@@ -125,6 +125,7 @@ function hurt(e, amt, type, crit, src) {
   if (src && src.hero && sg("sg_fr1") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1 + 0.2 * sg("sg_fr1");
   if (src && src.hero && sg("sg_ch1") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1 + 0.18 * sg("sg_ch1");
   if (syn("frostbite") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1.4;
+  if (syn("shockwave") && e.stunT > 0) amt *= 1.3;
   if (e.burn > 0 && syn("inferno")) amt *= 1.1;
   if (e === S.focus && src && src.def) amt *= FOCUS_BONUS * (cl("lg_focus") ? 1.25 : 1);
   const byUnit = src && src.def && type !== "poison";
@@ -225,6 +226,7 @@ function hurtUnit(u, amt, type, from) {
   amt *= 1 + 0.2 * cu("cu_blood");
   if (type === "magic" && hasTal(u, "lancer")) amt *= 0.6;
   if (type === "magic" && cl("wardmind")) amt *= Math.max(0.3, 1 - 0.08 * cl("wardmind"));
+  if (type === "magic" && syn("wardguard")) amt *= 0.9;
   if (from && from.d && hasAfx(from, "vampiric") && !from.dead) from.hp = Math.min(from.maxHp, from.hp + amt * 0.4);
   u.hp -= amt; u.hitT = type === "poison" ? Math.max(u.hitT, 0.06) : 0.14; if (type !== "poison") u.kb = 1;
   addStat(u, "taken", amt);

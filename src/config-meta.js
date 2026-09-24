@@ -213,6 +213,12 @@ const SYNERGY = [
     prog: () => [CARDS.filter(c => c.kind === "stat" && cl(c.id) > 0).length, 5] },
   { id: "legendary", name: "传说之证", need: "2 张传说卡", desc: "全队攻击 +20%，晨星之力充能 +30%", color: "#ffb340",
     prog: () => [CARDS.filter(c => c.rare === 2 && !c.evo && cl(c.id) > 0).length, 2] },
+  { id: "shockwave", name: "雷霆战阵", need: "落雷之枪 + 追猎箭雨", desc: "被眩晕的敌人受到的伤害 +30%", color: "#ffe860",
+    prog: () => [(cl("sk_spear") > 0) + (cl("sk_gale") > 0), 2] },
+  { id: "wardguard", name: "秘法壁垒", need: "奥术护壁 + 心灵屏障", desc: "受到的法术伤害再 −10%，全队法抗额外 +10", color: "#b8e0ff",
+    prog: () => [(cl("res") > 0) + (cl("wardmind") > 0), 2] },
+  { id: "corrosive", name: "锈蚀猎手", need: "剧毒喷雾 + 破甲", desc: "中毒/被腐蚀的敌人防御再 −15%", color: "#a8d848",
+    prog: () => [(cl("sk_toxic") > 0) + (cl("pierce") > 0), 2] },
 ];
 for (const g of SYNERGY) g.on = () => { const [a, b] = g.prog(); return a >= b; };
 // 羁绊说明页用：怎么凑（角色名、卡名都从配置里现取，改了配置这里跟着变）
@@ -227,4 +233,7 @@ const SYN_HOW = {
   bloodlust: () => `同一局拿到 ${synCards("vamp", "boom")}`,
   scholar: () => `同一局拿到 5 种不同的属性卡（同一张升级多次只算 1 种），例如 ${CARDS.filter(c => c.kind === "stat" && !c.filler && !c.rare).slice(0, 4).map(c => "「" + c.name + "」").join("")}`,
   legendary: () => "同一局拿到 2 种传说卡（金色边框的卡）",
+  shockwave: () => `同一局拿到技能卡 ${synCards("sk_spear", "sk_gale")}`,
+  wardguard: () => `同一局拿到 ${synCards("res", "wardmind")}`,
+  corrosive: () => `同一局拿到 ${synCards("sk_toxic", "pierce")}`,
 };
