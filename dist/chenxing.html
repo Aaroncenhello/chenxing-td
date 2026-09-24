@@ -1165,7 +1165,7 @@ const CARDS = [
   { id: "xp", rare: 0, kind: "stat", name: "学者", max: 4, w: 7, desc: lv => `获得的经验 +20%（当前 +${20 * lv}%）` },
   { id: "shield", rare: 1, kind: "stat", name: "碑之守护", max: 4, w: 8, desc: lv => `晨星碑生命上限 +20% 并立即回复 20%（当前 +${20 * lv}%）` },
   { id: "regen", rare: 1, kind: "stat", name: "战地医疗", max: 4, w: 8, desc: lv => `全队每秒回复 1.2% 生命（当前 ${(1.2 * lv).toFixed(1)}%）` },
-  { id: "critdmg", rare: 1, kind: "stat", name: "会心强化", max: 4, w: 7, desc: lv => `暴击伤害倍数 +${15 * lv}%（当前 2 → ${(2 + 0.15 * lv).toFixed(2)} 倍）` },
+  { id: "critdmg", rare: 1, kind: "stat", name: "会心强化", max: 4, w: 7, need: () => cl("crit") > 0 || dk("crit") > 0 || cu("cu_moon") > 0, desc: lv => `暴击伤害倍数 +${15 * lv}%（当前 2 → ${(2 + 0.15 * lv).toFixed(2)} 倍）` },
   { id: "res", rare: 1, kind: "stat", name: "奥术护壁", max: 4, w: 7, desc: lv => `全队法抗额外 +${10 * lv}（不叠加铁甲的法抗）` },
   { id: "loot", rare: 0, kind: "stat", name: "掠夺", max: 4, w: 7, desc: lv => `击杀获得的星尘 +${15 * lv}%` },
 
@@ -1190,7 +1190,7 @@ const CARDS = [
   { id: "freeze", rare: 1, kind: "special", name: "寒霜之心", max: 3, w: 6, desc: lv => `攻击有 ${6 * lv}% 几率冻结敌人 0.8 秒` },
   { id: "pierce", rare: 1, kind: "special", name: "破甲", max: 3, w: 6, desc: lv => `攻击无视敌人 ${15 * lv}% 的防御` },
   { id: "dodge", rare: 1, kind: "special", name: "闪避步", max: 3, w: 6, desc: lv => `每次受到攻击有 ${7 * lv}% 几率完全闪避` },
-  { id: "cdr", rare: 1, kind: "special", name: "疾风节拍", max: 3, w: 6, desc: lv => `自动技能冷却额外 −${8 * lv}%` },
+  { id: "cdr", rare: 1, kind: "special", name: "疾风节拍", max: 3, w: 6, need: () => CARDS.some(k => k.kind === "skill" && !k.evo && cl(k.id) > 0), desc: lv => `自动技能冷却额外 −${8 * lv}%` },
   { id: "wardmind", rare: 1, kind: "special", name: "心灵屏障", max: 3, w: 6, desc: lv => `受到的法术伤害 −${8 * lv}%` },
   // ---- 传说卡（每局最多见到几张，效果很强）----
   { id: "lg_twin", rare: 2, kind: "skill", name: "双生奥义", max: 1, w: 5, desc: () => "所有自动技能冷却 −40%、威力 +35%" },
@@ -1201,7 +1201,7 @@ const CARDS = [
   { id: "lg_army", rare: 2, kind: "ally", name: "万军之阵", max: 1, w: 5, desc: () => "伙伴上限 +2，场上所有伙伴立刻升 1 阶" },
   { id: "lg_aegis", rare: 2, kind: "stat", name: "永恒壁垒", max: 2, w: 5, desc: lv => `晨星碑生命上限 +${40 * lv}%，每波结束回复 ${8 * lv}%` },
   { id: "lg_greed", rare: 2, kind: "stat", name: "星尘洪流", max: 1, w: 5, desc: () => "经验和星尘获得翻倍" },
-  { id: "lg_bond", rare: 2, kind: "stat", name: "誓约之环", max: 1, w: 5, desc: () => "全队攻击和生命上限随伙伴数量提升：每有一名伙伴在场 +8%，没有上限" },
+  { id: "lg_bond", rare: 2, kind: "stat", name: "誓约之环", max: 1, w: 5, need: () => S.mod !== "solo", desc: () => "全队攻击和生命上限随伙伴数量提升：每有一名伙伴在场 +8%，没有上限" },
   { id: "lg_ward", rare: 2, kind: "stat", name: "圣域壁垒", max: 1, w: 5, desc: () => "晨星碑受到的伤害 −20%" },
   { id: "lg_focus", rare: 2, kind: "special", name: "焚天之力", max: 1, w: 5, desc: () => "对集火目标的伤害额外 +25%" },
   // ---- 进化卡：自动技能升到满级后才会进牌堆，拿了技能形态大变（按传说卡的样子显示，但不算「传说卡」）----
@@ -1441,6 +1441,11 @@ const RELICS = [
   { id: "rl_key", name: "裂隙钥匙", color: "#c890ff", desc: "提前出击的星尘奖励翻倍，叠波时额外获得经验" },
   { id: "rl_banner", name: "战旗", color: "#e3b75c", desc: "场上每有 1 名伙伴，全队攻击 +4%" },
   { id: "rl_mirror", name: "镜之盾", color: "#cfe6ff", desc: "角色受到的伤害 −15%" },
+  { id: "rl_rot", name: "腐蚀之心", color: "#a8d848", desc: "中毒、灼烧或被腐蚀的敌人，受到的伤害 +20%" },
+  { id: "rl_stoneheart", name: "磐石之心", color: "#8fb3e0", desc: "全队不再被冰系敌人的寒气拖慢攻速" },
+  { id: "rl_frenzy", name: "血色狂热", color: "#ff6a5a", desc: "连杀数越高全队攻速越快，每 10 连杀 +4%，最多 +40%" },
+  { id: "rl_hawkeye", name: "猎人之眼", color: "#ffd860", desc: "对集火目标的伤害额外 +20%" },
+  { id: "rl_slayer", name: "屠戮嘉奖", color: "#e0676a", desc: "击杀精英和首领额外获得经验" },
 ];
 const RELIC_BY = Object.fromEntries(RELICS.map(r => [r.id, r]));
 const rl = id => !!(S && S.relics && S.relics.includes(id));
@@ -2116,7 +2121,8 @@ function uInterval(u) {
   if (br(u, "gunner", "B")) i *= 0.5;
   if (br(u, "summoner", "B") && golemOf(u)) i *= 0.5;
   if (syn("volley") && u.def.place === "high") i *= 0.8;
-  if (u.chill) i *= 1 + u.chill;
+  if (u.chill && !rl("rl_stoneheart")) i *= 1 + u.chill;
+  if (rl("rl_frenzy")) i /= 1 + Math.min(0.4, Math.floor((S.combo || 0) / 10) * 0.04);
   if (u.hero) { if (sg("sg_sw1")) i /= 1 + 0.15 * sg("sg_sw1"); if (sg("sg_ar1")) i /= 1 + 0.1 * sg("sg_ar1"); if (sg("sg_gu1")) i *= Math.max(0.5, 1 - 0.08 * sg("sg_gu1")); }
   i /= 1 + 0.35 * cu("cu_brittle");
   i /= 1 + 0.4 * cu("cu_haste");
@@ -2328,6 +2334,7 @@ function cardPool(minRare) {
   const out = [];
   for (const c of CARDS) {
     if (c.filler || cl(c.id) >= c.max) continue;
+    if (c.need && !c.need()) continue;   // 有前提的卡（没暴击的会心强化、没技能的疾风节拍）不满足就不进牌堆，免得白占一个选项
     if (minRare && (c.rare || 0) < minRare) continue;
     if (c.id === "lg_army" && S.mod === "solo") continue;
     if (c.evo) { if (cl(c.evo) >= CARD_BY[c.evo].max) out.push({ id: c.id, w: c.w, card: c, rare: 2 }); continue; }   // 进化卡权重固定，不随稀有度打折
@@ -2357,14 +2364,13 @@ function randomCards(n, minRare) {
   let pool = cardPool(minRare);
   if (!pool.length && minRare) pool = cardPool();
   const out = [];
-  // 前两次翻牌保证至少有一张伙伴卡
-  // 补短板：没有前排先给前排，打不到飞行先给能打飞行的，队伍太少先给伙伴
+  // 补短板：没有前排先给前排，打不到飞行先给能打飞行的，6 级以内伙伴不到 3 名时每次翻牌至少有一张伙伴卡
   const solo = S.mod === "solo";
   const hasFront = S.units.some(u => !u.dead && u.def.place === "ground");
   const airN = S.units.filter(u => !u.dead && u.def.air).length;
   const stageAir = !S.endless && ST.pool.concat(ST.boss || []).some(p => ENEMIES[p[0]] && ENEMIES[p[0]].flying);
   const needAir = airN < 2 && (stageAir || S.enemies.some(e => e.d.flying));
-  const want = minRare || solo ? null : !hasFront ? (p => p.join && p.def.place === "ground") : needAir ? (p => p.join && p.def.air) : (S.allies < 2 && S.level <= 6 ? (p => p.join) : null);
+  const want = minRare || solo ? null : !hasFront ? (p => p.join && p.def.place === "ground") : needAir ? (p => p.join && p.def.air) : (S.allies < 3 && S.level <= 6 ? (p => p.join) : null);
   for (let i = 0; i < n && pool.length; i++) {
     let list = pool;
     if (i === 0 && want) { const a = pool.filter(want); if (a.length) list = a; }
@@ -3132,6 +3138,9 @@ const AFFIX = [
   { id: "swift", name: "疾行", desc: "移速 +35%，不怕减速", color: "#8fe0f0" },
   { id: "bulwark", name: "护壁", desc: "自带护盾，破了还会再生一层", color: "#8ac8ff" },
   { id: "splitting", name: "分裂", desc: "死的时候裂成两只小怪", color: "#58b84a" },
+  { id: "harden", name: "钢化", desc: "受到的物理伤害 −25%", color: "#c8ccd4" },
+  { id: "warp", name: "扭曲", desc: "用法术攻击它会反弹 15% 伤害给攻击者", color: "#c890ff" },
+  { id: "venom", name: "剧毒", desc: "攻击附带中毒，持续掉血", color: "#9ae040" },
 ];
 const AFFIX_BY = Object.fromEntries(AFFIX.map(a => [a.id, a]));
 const hasAfx = (e, id) => !!(e.afx && e.afx.includes(id));
@@ -3276,6 +3285,7 @@ function killEnemy(e, src) {
   if (e === S.focus) S.focusKills = (S.focusKills || 0) + 1;
   addStat(src, "kills", 1);
   gainXp(e.d.reward * RULES.xpKill * (e.elite ? 2 : 1));
+  if (rl("rl_slayer") && (e.elite || isBoss(e))) gainXp(e.d.reward * RULES.xpKill * 0.8);
   gainStar(e); addCombo();
   afxDeath(e);
   relicDrop(e);
@@ -3336,6 +3346,7 @@ function killEnemy(e, src) {
 function hurt(e, amt, type, crit, src) {
   if (e.dead) return 0;
   if (type === "phys" && e.d.physRes) amt *= 1 - e.d.physRes;
+  if (type === "phys" && hasAfx(e, "harden")) amt *= 0.75;
   if (e.brokenT > 0) amt *= BREAK_BONUS;
   if (e.mark > 0) amt *= 1.25;
   if (S.weakWaves > 0) amt *= 1.1;
@@ -3345,7 +3356,8 @@ function hurt(e, amt, type, crit, src) {
   if (syn("frostbite") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1.4;
   if (syn("shockwave") && e.stunT > 0) amt *= 1.3;
   if (e.burn > 0 && syn("inferno")) amt *= 1.1;
-  if (e === S.focus && src && src.def) amt *= FOCUS_BONUS * (cl("lg_focus") ? 1.25 : 1);
+  if (e === S.focus && src && src.def) amt *= FOCUS_BONUS * (cl("lg_focus") ? 1.25 : 1) * (rl("rl_hawkeye") ? 1.2 : 1);
+  if (rl("rl_rot") && (e.burn > 0 || (e.poison && e.poison.t > 0) || corrodeK(e) > 0)) amt *= 1.2;
   const byUnit = src && src.def && type !== "poison";
   if (byUnit) {
     if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1);
@@ -3355,6 +3367,7 @@ function hurt(e, amt, type, crit, src) {
     if (cl("freeze") && !e.d.unstoppable && roll("fight") < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
     if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? 2 : 1), true, src);
     if (hasAfx(e, "thorns") && src.def.place === "ground" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.18, "magic", null);
+    if (hasAfx(e, "warp") && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.15, "magic", null);
     if (tal(src, "t_pierce") && !e.dead) applyCorrode(e, 0.25, 4, src);
   }
   if (e.shield > 0) {
@@ -4237,6 +4250,7 @@ function step(dt) {
         if (e.pend <= 0 && u && alive(u)) {
           hurtUnit(u, calc(eAtk(e), e.d.ranged ? "magic" : "phys", uDef(u), uRes(u)), e.d.ranged ? "magic" : "phys", e);
           if (e.d.venom && alive(u)) u.poison = { dps: eAtk(e) * e.d.venom.k, t: e.d.venom.t, acc: 0 };
+          else if (hasAfx(e, "venom") && alive(u)) u.poison = { dps: eAtk(e) * 0.35, t: 4, acc: 0 };
           u.stop = 0.06; e.stop = 0.06;
         }
         continue;

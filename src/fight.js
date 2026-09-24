@@ -70,6 +70,7 @@ function killEnemy(e, src) {
   if (e === S.focus) S.focusKills = (S.focusKills || 0) + 1;
   addStat(src, "kills", 1);
   gainXp(e.d.reward * RULES.xpKill * (e.elite ? 2 : 1));
+  if (rl("rl_slayer") && (e.elite || isBoss(e))) gainXp(e.d.reward * RULES.xpKill * 0.8);
   gainStar(e); addCombo();
   afxDeath(e);
   relicDrop(e);
@@ -130,6 +131,7 @@ function killEnemy(e, src) {
 function hurt(e, amt, type, crit, src) {
   if (e.dead) return 0;
   if (type === "phys" && e.d.physRes) amt *= 1 - e.d.physRes;
+  if (type === "phys" && hasAfx(e, "harden")) amt *= 0.75;
   if (e.brokenT > 0) amt *= BREAK_BONUS;
   if (e.mark > 0) amt *= 1.25;
   if (S.weakWaves > 0) amt *= 1.1;
@@ -139,7 +141,8 @@ function hurt(e, amt, type, crit, src) {
   if (syn("frostbite") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1.4;
   if (syn("shockwave") && e.stunT > 0) amt *= 1.3;
   if (e.burn > 0 && syn("inferno")) amt *= 1.1;
-  if (e === S.focus && src && src.def) amt *= FOCUS_BONUS * (cl("lg_focus") ? 1.25 : 1);
+  if (e === S.focus && src && src.def) amt *= FOCUS_BONUS * (cl("lg_focus") ? 1.25 : 1) * (rl("rl_hawkeye") ? 1.2 : 1);
+  if (rl("rl_rot") && (e.burn > 0 || (e.poison && e.poison.t > 0) || corrodeK(e) > 0)) amt *= 1.2;
   const byUnit = src && src.def && type !== "poison";
   if (byUnit) {
     if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1);
@@ -149,6 +152,7 @@ function hurt(e, amt, type, crit, src) {
     if (cl("freeze") && !e.d.unstoppable && roll("fight") < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
     if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? 2 : 1), true, src);
     if (hasAfx(e, "thorns") && src.def.place === "ground" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.18, "magic", null);
+    if (hasAfx(e, "warp") && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.15, "magic", null);
     if (tal(src, "t_pierce") && !e.dead) applyCorrode(e, 0.25, 4, src);
   }
   if (e.shield > 0) {

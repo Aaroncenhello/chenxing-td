@@ -160,7 +160,8 @@ function uInterval(u) {
   if (br(u, "gunner", "B")) i *= 0.5;
   if (br(u, "summoner", "B") && golemOf(u)) i *= 0.5;
   if (syn("volley") && u.def.place === "high") i *= 0.8;
-  if (u.chill) i *= 1 + u.chill;
+  if (u.chill && !rl("rl_stoneheart")) i *= 1 + u.chill;
+  if (rl("rl_frenzy")) i /= 1 + Math.min(0.4, Math.floor((S.combo || 0) / 10) * 0.04);
   if (u.hero) { if (sg("sg_sw1")) i /= 1 + 0.15 * sg("sg_sw1"); if (sg("sg_ar1")) i /= 1 + 0.1 * sg("sg_ar1"); if (sg("sg_gu1")) i *= Math.max(0.5, 1 - 0.08 * sg("sg_gu1")); }
   i /= 1 + 0.35 * cu("cu_brittle");
   i /= 1 + 0.4 * cu("cu_haste");
@@ -372,6 +373,7 @@ function cardPool(minRare) {
   const out = [];
   for (const c of CARDS) {
     if (c.filler || cl(c.id) >= c.max) continue;
+    if (c.need && !c.need()) continue;   // 有前提的卡（没暴击的会心强化、没技能的疾风节拍）不满足就不进牌堆，免得白占一个选项
     if (minRare && (c.rare || 0) < minRare) continue;
     if (c.id === "lg_army" && S.mod === "solo") continue;
     if (c.evo) { if (cl(c.evo) >= CARD_BY[c.evo].max) out.push({ id: c.id, w: c.w, card: c, rare: 2 }); continue; }   // 进化卡权重固定，不随稀有度打折
@@ -401,14 +403,13 @@ function randomCards(n, minRare) {
   let pool = cardPool(minRare);
   if (!pool.length && minRare) pool = cardPool();
   const out = [];
-  // 前两次翻牌保证至少有一张伙伴卡
-  // 补短板：没有前排先给前排，打不到飞行先给能打飞行的，队伍太少先给伙伴
+  // 补短板：没有前排先给前排，打不到飞行先给能打飞行的，6 级以内伙伴不到 3 名时每次翻牌至少有一张伙伴卡
   const solo = S.mod === "solo";
   const hasFront = S.units.some(u => !u.dead && u.def.place === "ground");
   const airN = S.units.filter(u => !u.dead && u.def.air).length;
   const stageAir = !S.endless && ST.pool.concat(ST.boss || []).some(p => ENEMIES[p[0]] && ENEMIES[p[0]].flying);
   const needAir = airN < 2 && (stageAir || S.enemies.some(e => e.d.flying));
-  const want = minRare || solo ? null : !hasFront ? (p => p.join && p.def.place === "ground") : needAir ? (p => p.join && p.def.air) : (S.allies < 2 && S.level <= 6 ? (p => p.join) : null);
+  const want = minRare || solo ? null : !hasFront ? (p => p.join && p.def.place === "ground") : needAir ? (p => p.join && p.def.air) : (S.allies < 3 && S.level <= 6 ? (p => p.join) : null);
   for (let i = 0; i < n && pool.length; i++) {
     let list = pool;
     if (i === 0 && want) { const a = pool.filter(want); if (a.length) list = a; }

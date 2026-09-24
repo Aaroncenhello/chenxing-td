@@ -12,6 +12,9 @@ const AFFIX = [
   { id: "swift", name: "疾行", desc: "移速 +35%，不怕减速", color: "#8fe0f0" },
   { id: "bulwark", name: "护壁", desc: "自带护盾，破了还会再生一层", color: "#8ac8ff" },
   { id: "splitting", name: "分裂", desc: "死的时候裂成两只小怪", color: "#58b84a" },
+  { id: "harden", name: "钢化", desc: "受到的物理伤害 −25%", color: "#c8ccd4" },
+  { id: "warp", name: "扭曲", desc: "用法术攻击它会反弹 15% 伤害给攻击者", color: "#c890ff" },
+  { id: "venom", name: "剧毒", desc: "攻击附带中毒，持续掉血", color: "#9ae040" },
 ];
 const AFFIX_BY = Object.fromEntries(AFFIX.map(a => [a.id, a]));
 const hasAfx = (e, id) => !!(e.afx && e.afx.includes(id));

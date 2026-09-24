@@ -23,6 +23,11 @@ const RELICS = [
   { id: "rl_key", name: "裂隙钥匙", color: "#c890ff", desc: "提前出击的星尘奖励翻倍，叠波时额外获得经验" },
   { id: "rl_banner", name: "战旗", color: "#e3b75c", desc: "场上每有 1 名伙伴，全队攻击 +4%" },
   { id: "rl_mirror", name: "镜之盾", color: "#cfe6ff", desc: "角色受到的伤害 −15%" },
+  { id: "rl_rot", name: "腐蚀之心", color: "#a8d848", desc: "中毒、灼烧或被腐蚀的敌人，受到的伤害 +20%" },
+  { id: "rl_stoneheart", name: "磐石之心", color: "#8fb3e0", desc: "全队不再被冰系敌人的寒气拖慢攻速" },
+  { id: "rl_frenzy", name: "血色狂热", color: "#ff6a5a", desc: "连杀数越高全队攻速越快，每 10 连杀 +4%，最多 +40%" },
+  { id: "rl_hawkeye", name: "猎人之眼", color: "#ffd860", desc: "对集火目标的伤害额外 +20%" },
+  { id: "rl_slayer", name: "屠戮嘉奖", color: "#e0676a", desc: "击杀精英和首领额外获得经验" },
 ];
 const RELIC_BY = Object.fromEntries(RELICS.map(r => [r.id, r]));
 const rl = id => !!(S && S.relics && S.relics.includes(id));
