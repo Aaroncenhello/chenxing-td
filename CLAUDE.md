@@ -92,4 +92,6 @@ npm run sim            # 平衡模拟，见下
 7.0 固定阵地 + 自动战斗 + 翻牌 → 8.0 机关地图、稀有度、羁绊、商店、守望之战 → 9.0 专属卡、诅咒卡、首领演出与打断、第四章、天赋树、战报、存档导出、手机优化 → 10.0 局内事件、精英词缀、阵型与拖动站位、图鉴战绩 → 10.1 修无尽空波、牌堆见底、手动开波/叠波、难度上调 → **11.0 天赋星盘、深渊 20 层、遗物、每周挑战、手机横屏沉浸全屏、基础难度再上调**。
 
 ## 发布
-产物就是 `dist/chenxing.html`，浏览器直接打开即可。之前在 claude.ai 上以 Artifact 形式发布过（带 `downloads` 能力用于下载存档文件，代码里 `saveFile()` 在没有这个能力时会退回普通下载）。
+产物就是 `dist/chenxing.html`，浏览器直接打开即可。
+**网页版**：`.github/workflows/pages.yml` 在 main 分支更新时把它发布成 GitHub Pages 首页 https://aaroncenhello.github.io/chenxing-td/ （需要仓库公开、Settings → Pages → Source 选「GitHub Actions」）。
+Google 字体是后台加载的（`media=print` + `onload`）：别改回普通的 `<link rel=stylesheet>`，否则连不上 Google 的网络下整页会白屏。之前在 claude.ai 上以 Artifact 形式发布过（带 `downloads` 能力用于下载存档文件，代码里 `saveFile()` 在没有这个能力时会退回普通下载）。

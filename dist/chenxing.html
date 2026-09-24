@@ -5,7 +5,8 @@
 <meta name="theme-color" content="#10131c">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&family=Noto+Serif+SC:wght@700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+<!-- 字体后台加载（media=print 再切回 all）：连不上 Google 时不会卡白屏，直接用手机自带的中文字体 -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&family=Noto+Serif+SC:wght@700;900&family=Press+Start+2P&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <style>
 :root{
   --ground:#10131c; --panel:#1a1f2e; --panel-2:#242b3e; --line:#3a4460;
