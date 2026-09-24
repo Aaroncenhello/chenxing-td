@@ -14,6 +14,7 @@ const RULES = {
 };
 const CRYSTAL = { x: 8, y: 4, r: 0.85 };
 
+// 平衡（阶段 3）：第 9 关冰霜巨魔推迟到第 8 波；第 12 关幽灵/寒冰妖灵推迟、血量 2.75→2.6——原来开局就要同时克制法抗和物抗，队伍没成形就在第 4–5 波崩掉
 // clearAchv：主线通关这一关时解锁的成就（跟着关卡走，调整关卡顺序时不用改结算代码）
 const STAGES = [
   { name: "翠林小径", clearAchv: ["first"], theme: "forest", chapter: 0, brief: "森林里的第一座晨星碑。敌人从三个传送门涌来。", hp: 1.3, crystalHp: 1000, waves: 10, budget: 1.05,
@@ -50,7 +51,7 @@ const STAGES = [
     midBoss: [["boss", 1, false]],
     map: ["#S###S####S###S#", "#..............#", "#..~#......#~..#", "#..............#", "#.......B......#", "#..............#", "#..~#......#~..#", "#..............#", "#S###S####S###S#"] },
   { name: "冰封王座", theme: "ice", chapter: 2, brief: "永冻的王座厅。冰霜巨魔会砸地震伤一片，寒冰妖灵在天上放冰锥。", hp: 2.3, crystalHp: 2000, waves: 14, budget: 1.42,
-    pool: [["wolf", 1.2, 1], ["skeleton", 0.9, 1], ["icewraith", 2.6, 3], ["shield", 3, 3], ["frostgiant", 7.5, 6], ["garg", 2, 3], ["orc", 3, 5], ["necro", 3.5, 6], ["golem", 5, 8], ["stalker", 2, 7], ["bigslime", 3, 9]],
+    pool: [["wolf", 1.2, 1], ["skeleton", 0.9, 1], ["icewraith", 2.6, 3], ["shield", 3, 3], ["frostgiant", 7.5, 8], ["garg", 2, 3], ["orc", 3, 5], ["necro", 3.5, 6], ["golem", 5, 8], ["stalker", 2, 7], ["bigslime", 3, 9]],
     boss: [["frostgiant", 2, true], ["icewraith", 8, false]],
     midBoss: [["frostgiant", 1, true]],
     haz: [["vent", 4, 2, { every: 6, r: 1.5, dmg: 700, color: "#8fe0f0", kind: "ice" }], ["vent", 11, 6, { every: 6, r: 1.5, dmg: 700, color: "#8fe0f0", kind: "ice" }],
@@ -70,8 +71,8 @@ const STAGES = [
     haz: [["gate", 0, 0, { period: 14, open: 7 }],
           ["spikes", 8, 4, { r: 2.9, every: 2.2, dmg: 320, color: "#e05a5a" }]],
     map: ["S###SS####SS###S", "#..............#", "#.#..#....#..#.#", "#..............#", "S.......B......S", "#..............#", "#.#..#....#..#.#", "#..............#", "S###SS####SS###S"] },
-  { name: "星界深渊", clearAchv: ["devourer", "chapter3"], theme: "star", chapter: 2, brief: "世界尽头的星海。星界吞噬者在这里等着吞下整座晨星碑。", hp: 2.75, crystalHp: 2600, waves: 18, budget: 1.6,
-    pool: [["voidling", 1.2, 1], ["icewraith", 2.4, 2], ["starguard", 6, 7], ["ghost", 2, 2], ["mechspider", 1.6, 3], ["golem", 5, 9], ["wyvern", 4, 6], ["warmech", 9, 11], ["frostgiant", 7.5, 9], ["necro", 3.5, 6], ["bloodwolf", 4, 9], ["sovereign", 22, 15]],
+  { name: "星界深渊", clearAchv: ["devourer", "chapter3"], theme: "star", chapter: 2, brief: "世界尽头的星海。星界吞噬者在这里等着吞下整座晨星碑。", hp: 2.6, crystalHp: 2600, waves: 18, budget: 1.6,
+    pool: [["voidling", 1.2, 1], ["icewraith", 2.4, 4], ["starguard", 6, 7], ["ghost", 2, 3], ["mechspider", 1.6, 3], ["golem", 5, 9], ["wyvern", 4, 6], ["warmech", 9, 11], ["frostgiant", 7.5, 9], ["necro", 3.5, 6], ["bloodwolf", 4, 9], ["sovereign", 22, 15]],
     boss: [["devourer", 1, false], ["voidling", 14, false], ["starguard", 2, false]],
     midBoss: [["sovereign", 1, false]],
     haz: [["beam", 8, 4, { n: 3, speed: 0.4, len: 6, dps: 300, color: "#c890ff" }],

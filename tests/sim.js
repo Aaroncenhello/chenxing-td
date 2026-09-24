@@ -1,4 +1,5 @@
-const GAME = 'file://' + require('path').resolve(__dirname, '../dist/chenxing.html');
+// HTML=文件路径：拿别的构建（比如改之前的版本）来跑，做前后对比
+const GAME = 'file://' + require('path').resolve(process.env.HTML || require('path').resolve(__dirname, '../dist/chenxing.html'));
 // 无头平衡模拟：机器人自动选牌、买商店、放法术，按关统计胜率
 const { chromium } = require('playwright');
 const SP = process.env.SP;
@@ -12,6 +13,16 @@ const PERKS = (process.env.PERKS || '').split(',').filter(Boolean);
 const VIG = !!process.env.VIG;
 const DISK = JSON.parse(process.env.DISK || "{}");
 const ABY = +(process.env.ABY || 0);
+// STARS=45：按「每次买当前最便宜的节点」把这么多星星花进星盘（模拟真实玩家到这个进度时的星盘），和 DISK 二选一
+const STARS = +(process.env.STARS || 0);
+// 默认只让到这一关时已经解锁的角色出场（真实玩家打第 1 关时翻不到第 4 章的角色）；ALLCHARS=1 恢复成全员可用
+const ALLCHARS = !!process.env.ALLCHARS;
+// OUT=文件名：把每一局的结果写成 JSON，方便汇总
+const OUT = process.env.OUT || '';
+// PATCH='STAGES[11].pool[1][2]=4'：跑之前在页面里执行一段 JS 临时改数值，用来快速试调法（不用改源码重新构建）
+const PATCH = process.env.PATCH || '';
+// SEED=数字：每一局用固定的随机种子（第 st 关第 r 局 = SEED + st*1000 + r），前后两个版本用同一组种子对比，随机波动小得多
+const SEED = +(process.env.SEED || 0);
 
 (async () => {
   const b = await chromium.launch();
@@ -24,16 +35,27 @@ const ABY = +(process.env.ABY || 0);
   await p.evaluate(() => localStorage.setItem('chenxing-td-v2', JSON.stringify({ stars: [3,3,3,3,3,3,3,3,3,3,3,3], tutorial: true, story: [0,1,2,3,4,5,6,7].map(i => 'pre' + i) })));
   await p.reload();
   await p.waitForTimeout(500);
+  if (PATCH) await p.evaluate(PATCH);
 
-  const out = await p.evaluate(async ({ STAGES_N, ST0, RUNS, DIFF, HERO, CLV, PERKS, VIG, DISK, ABY }) => {
+  const out = await p.evaluate(async ({ STAGES_N, ST0, RUNS, DIFF, HERO, CLV, PERKS, VIG, DISK_in, ABY, STARS, ALLCHARS, SEED }) => {
     const res = [];
-    const T = window.__td;
+    const T = window.__td, DISK_disk = {};   // DISK 是页面里的星盘节点表，传进来的等级叫 DISK_in
+    if (STARS) {   // 便宜优先地把星星花光，同价按 DISK 表里的顺序
+      let left = STARS;
+      for (;;) {
+        const opts = DISK.filter(n => (DISK_disk[n.id] || 0) < n.max).map(n => ({ id: n.id, c: diskCost(n.id, DISK_disk[n.id] || 0) })).filter(o => o.c <= left).sort((a, b) => a.c - b.c);
+        if (!opts.length) break;
+        DISK_disk[opts[0].id] = (DISK_disk[opts[0].id] || 0) + 1; left -= opts[0].c;
+      }
+    }
     const heroes = T.UNITS.filter(u => u.joinAt === 0).map(u => u.id);
     for (let st = ST0; st < STAGES_N; st++) {
       for (let r = 0; r < RUNS; r++) {
         const hero = HERO || heroes[r % heroes.length];
         const clv = Object.fromEntries(T.UNITS.map(u => [u.id, CLV]));
-        T.newRun(st, { hero, diff: DIFF, charLv: clv, perks: PERKS, charOpen: T.UNITS.map(u=>u.id), vigil: !!VIG, disk: DISK, abyss: ABY });
+        if (SEED) Math.random = seeded(SEED + st * 1000 + r);
+        const open = T.UNITS.filter(u => ALLCHARS || (u.joinAt || 0) <= st).map(u => u.id);
+        T.newRun(st, { hero, diff: DIFF, charLv: clv, perks: PERKS, charOpen: open, vigil: !!VIG, disk: STARS ? DISK_disk : DISK_in, abyss: ABY });
         const S = T.S;
         let guard = 0, picks = [];
         while (!S.over && guard < 60 * 30 * 25) {
@@ -71,12 +93,15 @@ const ABY = +(process.env.ABY || 0);
           units: S.units.filter(u => !u.summon).length, picks: picks.length });
       }
     }
-    return res;
-  }, { STAGES_N, ST0, RUNS, DIFF, HERO, CLV, PERKS, VIG, DISK, ABY });
+    return { res, disk: STARS ? DISK_disk : DISK_in };
+  }, { STAGES_N, ST0, RUNS, DIFF, HERO, CLV, PERKS, VIG, DISK_in: DISK, ABY, STARS, ALLCHARS, SEED });
+  if (OUT) require('fs').writeFileSync(OUT, JSON.stringify(out));
+  const out_res = out.res;
+  console.log('星盘:', JSON.stringify(out.disk));
 
   console.log('ERRORS:', errs.slice(0, 8));
   const byStage = {};
-  for (const r of out) (byStage[r.st] = byStage[r.st] || []).push(r);
+  for (const r of out_res) (byStage[r.st] = byStage[r.st] || []).push(r);
   for (const st of Object.keys(byStage)) {
     const rs = byStage[st];
     const w = rs.filter(r => r.win).length;

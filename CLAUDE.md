@@ -32,6 +32,9 @@ npm run sim            # 平衡模拟，见下
 平衡模拟 `tests/sim.js` 用环境变量控制：
 `ST0`=起始关（0 开始）`ST`=结束关（不含）`RUNS`=每关局数 `CLV`=角色等级 `DIFF`=0/1/2 `ABY`=深渊层数 `DISK='{"atk":5,...}'`=天赋星盘等级 `HERO`=指定英雄。
 例：`cd tests/out && ST=16 RUNS=3 CLV=8 DISK='{"atk":5,"hp":4,"walls":4}' node ../sim.js`
+新参数：`STARS=45` 按「便宜优先」把这么多星星花进星盘（代替手写 DISK）；`SEED=数字` 每局固定随机种子，**前后对比时必须用同一个 SEED**，否则每格 16 局的随机波动就有 ±15%；`HTML=路径` 用别的构建跑（改前改后对比）；`PATCH='STAGES[11].hp=2.5'` 先在页面里改数值再跑，用来快速试调法；`ALLCHARS=1` 让未解锁的角色也能出场（默认只用到这一关已解锁的）；`OUT=文件` 写出每局 JSON。
+**平衡矩阵** `tests/balance.js`：按 5 档玩家进度（新手 CLV3/0★、二章 CLV5/20★、三章 CLV7/45★、四章 CLV9/90★、毕业 CLV10/400★）把每关跑 RUNS 局，4 进程并行，输出胜率表并写 `tests/out/balance.json`。例：`cd tests/out && SEED=2026 RUNS=24 node ../balance.js`；只看部分：`PROFILES=三章,四章 ST0=8 ST=12`。
+调数值的做法：先用旧构建（`git show HEAD:dist/chenxing.html > before.html`）和新构建各跑一遍同 SEED 的矩阵再比较；没改的关卡两边数字应该完全一样。
 机器人不会调站位、选牌粗糙，**真人胜率明显高于模拟**。11.0 的参考结果：CLV4 无星盘约 25%；CLV8 + 少量星盘约 37%（第一章大多能过，三四章很难）；满级 + 400★ 星盘时第 9–13 关大多能赢，14–16 关很难。
 
 **拼接顺序（build.sh 里固定，改顺序可能出错）：**
