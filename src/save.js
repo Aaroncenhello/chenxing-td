@@ -44,7 +44,7 @@ function loadSave(noBackup) {
     abyss: Object.fromEntries(Object.entries(numMap(v.abyss, 0, ABYSS_MAX)).map(([k, n]) => [k, Math.floor(n)])),
     week: objMap(v.week, r => ({ clear: !!r.clear, best: Math.floor(clampN(r.best, 0)) })),
     gfx: Number.isInteger(v.gfx) && v.gfx >= -1 && v.gfx <= 2 ? v.gfx : -1,   // 画质：-1 自动，0 低 1 中 2 高
-    relicSeen: idList(v.relicSeen, id => !!RELIC_BY[id]), cardSeen: idList(v.cardSeen, id => !!ANY_CARD(id)), bonusStars: Math.floor(clampN(v.bonusStars, 0)), refunded: Math.floor(clampN(v.refunded, 0)),
+    relicSeen: idList(v.relicSeen, id => !!RELIC_BY[id]), exped: { best: Math.floor(clampN((v.exped || {}).best, 0, 99)), clears: Math.floor(clampN((v.exped || {}).clears, 0)), runs: Math.floor(clampN((v.exped || {}).runs, 0)) }, bounty: { date: typeof (v.bounty || {}).date === "string" ? v.bounty.date.slice(0, 10) : "", done: idList((v.bounty || {}).done).slice(0, 3) }, cardSeen: idList(v.cardSeen, id => !!ANY_CARD(id)), bonusStars: Math.floor(clampN(v.bonusStars, 0)), refunded: Math.floor(clampN(v.refunded, 0)),
     ver: Number.isInteger(v.ver) ? v.ver : legacyVer(v),
   };
   if (d.ver < SAVE_VER) {
@@ -84,8 +84,11 @@ const starHtml = n => `<span class="stars">${[0, 1, 2].map(i => i < n ? '<span c
 
 // ---------- 角色等级 ----------
 function levelOf(exp) { let lv = 1, e = exp || 0; while (lv < PROG.max && e >= expNeed(lv)) { e -= expNeed(lv); lv++; } return { lv, into: e, need: lv < PROG.max ? expNeed(lv) : 0 }; }
+function awkOf(exp) { const L = levelOf(exp); return L.lv >= PROG.max ? Math.min(AWK.max, Math.floor(L.into / AWK.need)) : 0; }
+function awkInfo(exp) { const L = levelOf(exp), a = awkOf(exp); return { a, into: L.lv >= PROG.max && a < AWK.max ? L.into - a * AWK.need : 0, full: a >= AWK.max }; }
 function joinExp(D) { let e = 0; for (let l = 1; l < (D.joinAt || 0); l++) e += expNeed(l); return e; }
 const charExp = (d, id) => Math.max((d.chars[id] && d.chars[id].exp) || 0, joinExp(UNITS.find(u => u.id === id) || {}));
+function charAwks(d) { d = d || loadSave(); const o = {}; for (const u of UNITS) o[u.id] = awkOf(charExp(d, u.id)); return o; }
 function charLevels(d) { d = d || loadSave(); const o = {}; for (const u of UNITS) o[u.id] = levelOf(charExp(d, u.id)).lv; return o; }
 const charOpen = u => unlocked(u.joinAt || 0);
 const openChars = () => UNITS.filter(charOpen);

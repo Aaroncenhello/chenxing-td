@@ -92,6 +92,8 @@ function showLevels() {
     <div class="daily"><div><b>每日挑战 · ${td.date}</b><p>场地：${STAGES[td.stage].name} · 规则：${mod.name}（${mod.desc}）</p>
       <p>${rec ? (rec.cleared ? `今天已经通关 ✓ 领了 ${rec.got || 0}★` : `今天最好成绩：第 ${rec.wave} 波${rec.got ? ` · 已领 ${rec.got}★，通关再补 ${DAILY_STARS.win - rec.got}★` : ""}`) : "今天还没挑战"}</p>
       <p class="drw">每天奖励：通关 <b>+${DAILY_STARS.win}★</b>，没通关但撑过一半波数 +${DAILY_STARS.half}★（按今天最好的一次算）</p></div><button class="primary" id="btn-daily">开始挑战</button></div>
+    ${bountyHtml(save)}
+    ${expCardHtml(save)}
     ${weekHtml(save)}
     ${unlocked(VIGIL.unlockAt) ? `<div class="daily vigil"><div><b>守望之战 · 长夜</b><p>随机生成的地图 + ${VIGIL.waves} 波超长局：第 8、16、25 波是首领，中途有补给，能把等级和卡叠到很高。</p>
       <p>${save.vigil && save.vigil.best ? `最好成绩：撑到第 ${save.vigil.best} 波${save.vigil.clear ? " · 已通关 ✓" : ""}` : "还没挑战过"}</p></div><button class="primary" id="btn-vigil">开始守望</button></div>`
@@ -113,20 +115,26 @@ function showPerks() {
   const bank = starBank(), disk = bank.disk;
   const node = n => {
     const lv = disk[n.id] || 0, inf = n.max > 999, full = !inf && lv >= n.max, cost = full ? 0 : diskCost(n.id, lv);
+    if (n.key) {   // 核心天赋：一次点亮，有前置条件
+      const lineLv = diskLineLv(disk, n.line), why = lv ? "" : lineLv < KEY_NEED ? `本线投入 ${lineLv}/${KEY_NEED} 级后才能点亮` : diskKeys(disk) >= KEY_MAX ? `最多同时点亮 ${KEY_MAX} 个核心天赋（重置星盘可以换）` : "";
+      return `<div class="dnode dkey${lv ? " on full" : ""}"><div class="dh"><b>◆ ${n.name}</b><span>核心天赋</span></div>
+        <p class="dnow">${n.desc(1)}</p>${why ? `<p class="dlock">${why}</p>` : ""}
+        <button data-disk="${n.id}" ${lv || !diskCanBuy(disk, n.id, bank.left) ? "disabled" : ""}>${lv ? "已点亮" : `点亮 · ${cost}★`}</button></div>`;
+    }
     return `<div class="dnode${lv ? " on" : ""}${full ? " full" : ""}"><div class="dh"><b>${n.name}</b><span>${inf ? "Lv " + lv : lv + "/" + n.max}</span></div>
       <p class="dnow">${lv ? "当前：" + n.desc(lv) : "还没点亮"}</p>
       ${full ? "" : `<p class="dnext">${lv ? "下一级" : "点亮后"}：${n.desc(lv + 1)}</p>`}
       <button data-disk="${n.id}" ${full || bank.left < cost ? "disabled" : ""}>${full ? "已满级" : `升级 · ${cost}★`}</button></div>`;
   };
-  openOverlay(`<h2>天赋星盘</h2><p>共获得 ${bank.earned}★，已投入 ${bank.spent}★，可用 <span class="starbank">${bank.left}★</span>。每个节点都能升好几级，最底下的「星辉」没有上限。</p>
+  openOverlay(`<h2>天赋星盘</h2><p>共获得 ${bank.earned}★，已投入 ${bank.spent}★，可用 <span class="starbank">${bank.left}★</span>。每个节点都能升好几级，最底下的「星辉」没有上限。每条线的终点是<b>核心天赋</b>：本线投入 ${KEY_NEED} 级后才能点亮，最多同时点亮 ${KEY_MAX} 个。</p>
     <p class="dsrc">星星来源：关卡星级、困难 / 噩梦首通、无尽每 10 波、成就、深渊每层首通、每周挑战首通；每日挑战每天最多 +${DAILY_STARS.win}★；另外<b>每次通关 +1★</b>（困难再 +${DIFF_BONUS[1]}、噩梦再 +${DIFF_BONUS[2]}，深渊每 5 层再 +1）。</p>
-    <div class="disk">${DISK_LINES.map(L => `<div class="dline" style="--c:${L.color}"><h4>${L.name}</h4>${DISK.filter(n => n.line === L.id).map(node).join("")}</div>`).join("")}</div>
+    <div class="disk">${DISK_LINES.map(L => `<div class="dline" style="--c:${L.color}"><h4>${L.name}</h4>${DISK.filter(n => n.line === L.id && !n.key).map(node).join("")}${DISK.filter(n => n.line === L.id && n.key).map(node).join("")}</div>`).join("")}</div>
     <div class="dline dstar" style="--c:#ffe8a0">${node(DISK_BY.star)}</div>
     <div class="btns"><button id="btn-diskreset">重置星盘（全部退还）</button><button id="btn-menu">返回选关</button></div>`);
 }
 function buyDisk(id) {
   const n = DISK_BY[id], bank = starBank(), lv = bank.disk[id] || 0;
-  if (!n || lv >= n.max || bank.left < diskCost(id, lv)) return;
+  if (!diskCanBuy(bank.disk, id, bank.left)) return;
   editSave(d => { d.disk[id] = lv + 1; });
   const sc = $("overlay").scrollTop; showPerks(); $("overlay").scrollTop = sc;
 }
@@ -137,6 +145,11 @@ function abyssHtml(save) {
   return `<div class="abyss"><div class="abrow"><button data-abyss="-1" ${abyssSel ? "" : "disabled"}>−</button><b>${abyssSel ? `深渊 ${abyssSel} 层` : "深渊：关闭"}</b><button data-abyss="1" ${abyssSel < open ? "" : "disabled"}>＋</button><small>已解锁到第 ${open} 层</small></div>
     <p>${a ? `本层新增<b>「${a.name}」</b>：${a.desc}。前面各层的规则同时生效。首次通关这一层 +${abyssStars(abyssSel)}★。` : "在任意一关通关深渊第 N 层，就能解锁第 N+1 层（最高 20 层）。每层都会叠一条新的敌方加成，星星奖励也越来越多。"}</p>
     ${abyssSel > 1 ? `<p class="abl">${ABYSS.slice(0, abyssSel).map((x, i) => `<span title="${x.desc}">${i + 1}·${x.name}</span>`).join("")}</p>` : ""}</div>`;
+}
+function bountyHtml(save) {
+  const B = todayBounties(), done = save.bounty.date === B.date ? save.bounty.done : [], n = B.list.filter(b => done.includes(b.key)).length;
+  return `<div class="daily bounty"><div><b>今日悬赏 · ${n}/${B.list.length}</b><p>每完成一条 +${BOUNTY_STARS}★，三条全完成再 +${BOUNTY_ALL}★。每天 0 点换新，哪种模式打的都算。</p>
+    <ul class="bl">${B.list.map(b => `<li class="${done.includes(b.key) ? "ok" : ""}">${done.includes(b.key) ? "✓" : "○"} ${b.text}</li>`).join("")}</ul></div></div>`;
 }
 function weekHtml(save) {
   if (!save.stars.some((x, i) => i >= 3 && x > 0)) return `<div class="daily week lockd"><div><b>每周挑战</b><p>通关第 4 关后解锁</p></div></div>`;
@@ -245,7 +258,7 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.dataset.lv != null) beginStage(+b.dataset.lv, { diff: diffSel, abyss: abyssSel });
   else if (b.dataset.endless != null) beginStage(+b.dataset.endless, { endless: true });
   else if (b.dataset.story != null) replayStory(+b.dataset.story);
-  else if (b.dataset.hero && heroCtx) { const { stage, opts } = heroCtx; heroCtx = null; editSave(d => { d.hero = b.dataset.hero; }); startRun(stage, { ...opts, hero: b.dataset.hero }); }
+  else if (b.dataset.hero && heroCtx) { const { stage, opts } = heroCtx; heroCtx = null; editSave(d => { d.hero = b.dataset.hero; }); if (opts.expedStart) expStart(b.dataset.hero); else startRun(stage, { ...opts, hero: b.dataset.hero }); }
   else if (b.dataset.ros) showRoster(b.dataset.ros);
   else if (b.dataset.rnav) showRoster(b.dataset.rnav);
   else if (b.id === "btn-roster") showRoster();
@@ -258,6 +271,11 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-vigil") { let last = 0; STAGES.forEach((_, i) => { if (unlocked(i)) last = i; }); beginStage(last, { vigil: true, seed: (Math.random() * 1e9) | 0, diff: diffSel }); }
   else if (b.id === "btn-resume") closeOverlay();
   else if (b.id === "btn-synback") closeOverlay();
+  else if (b.id === "btn-exped") { if (expLoad()) showExpMap(); else showHeroPick(0, { expedStart: true }); }
+  else if (b.dataset.exnode != null) expChoose(+b.dataset.exnode);
+  else if (b.dataset.exrest) expRest(b.dataset.exrest);
+  else if (b.id === "btn-expgo") showExpMap();
+  else if (b.id === "btn-expquit") { if (b.dataset.sure) { expClear(); showLevels(); } else { b.dataset.sure = "1"; b.textContent = "再点一次确认放弃（已得星星不扣）"; } }
   else if (b.id === "btn-retry") startRun(S.stage, lastOpts);
   else if (b.id === "btn-next") beginStage(S.stage + 1, { diff: S.diff && S.stage + 1 < STAGES.length && (loadSave().stars[S.stage + 1] || 0) > 0 ? S.diff : 0, abyss: S.abyss || 0 });
   else if (b.id === "btn-menu") { heroCtx = null; showLevels(); }
@@ -275,7 +293,7 @@ function beginStage(i, opts) {
   } else go();
 }
 function previewStage(i) {
-  newRun(i, { perks: loadSave().perks, charLv: charLevels(), charTal: loadSave().tal, hero: loadSave().hero, charOpen: openChars().map(u => u.id) });
+  newRun(i, { perks: loadSave().perks, charLv: charLevels(), charAwk: charAwks(), charTal: loadSave().tal, hero: loadSave().hero, charOpen: openChars().map(u => u.id) });
   mapFor = -1; infoKey = ""; teamKey = ""; cardKey = "";
   closeOverlay();
   for (const el of document.querySelectorAll("[data-k]")) el.dataset.k = "";
@@ -293,7 +311,7 @@ function replayStory(i) {
 }
 function startRun(i, opts) {
   opts = opts || {}; lastOpts = opts;
-  newRun(i, { ...opts, perks: opts.perks || loadSave().perks, charLv: opts.charLv || charLevels(), charTal: opts.charTal || loadSave().tal, charOpen: opts.charOpen || openChars().map(u => u.id), formIdx: opts.formIdx == null ? loadSave().form : opts.formIdx, disk: opts.disk || loadSave().disk, autoWave: opts.autoWave == null ? loadSave().autoWave : opts.autoWave });
+  newRun(i, { ...opts, perks: opts.perks || loadSave().perks, charLv: opts.charLv || charLevels(), charAwk: opts.charAwk || charAwks(), charTal: opts.charTal || loadSave().tal, charOpen: opts.charOpen || openChars().map(u => u.id), formIdx: opts.formIdx == null ? loadSave().form : opts.formIdx, disk: opts.disk || loadSave().disk, autoWave: opts.autoWave == null ? loadSave().autoWave : opts.autoWave });
   acc = 0; shownOver = null; mapFor = -1; infoKey = ""; teamKey = ""; cardKey = "";
   setText("btn-speed", "1×"); setText("btn-pause", "暂停"); cycleForm(true);
   for (const el of document.querySelectorAll("[data-k]")) el.dataset.k = "";
@@ -419,8 +437,13 @@ function checkOver() {
 }
 function showResult(R) {
   R = R || settleRun();
-  const win = R.win, exp = expHtml(R.exp), tail = battleReport() + cardsHtml() + statsTable() + exp;
-  if (R.mode === "vigil") {
+  const win = R.win, exp = expHtml(R.exp), tail = (R.bounty && R.bounty.length ? `<p class="stars bgot">悬赏完成：${R.bounty.join("、")} · +${R.bountyStars}★</p>` : "") + battleReport() + cardsHtml() + statsTable() + exp;
+  if (R.mode === "exped") {
+    const rl_ = R.expRelic ? `<p style="color:#ffd860">精英战利品：遗物「${RELIC_BY[R.expRelic].name}」</p>` : "";
+    if (R.expDone) openOverlay(`<h2>远征完成！</h2><p class="stars">首领击破 +${R.expStars}★ · 本次远征共 ${R.expTotal}★</p>${rl_}${tail}<div class="btns"><button class="primary" id="btn-exped">再来一次远征</button><button id="btn-menu">选关</button></div>`);
+    else if (win) openOverlay(`<h2>远征 · 第 ${R.expFloor} 层突破</h2><p class="stars">+${R.expStars}★</p>${rl_}<p>队伍、卡牌、遗物都带到下一层；晨星碑开局会回复一些。${expLoad() && expLoad().rest ? "<b>下一步可以休整一次。</b>" : ""}</p>${tail}<div class="btns"><button class="primary" id="btn-expgo">继续远征</button><button id="btn-menu">先回选关（进度保留）</button></div>`);
+    else openOverlay(`<h2>远征结束</h2><p>倒在第 ${R.expFloor} 层 · ${ST.name}。本次远征共得 ${R.expTotal || 0}★。</p>${tail}<div class="btns"><button class="primary" id="btn-exped">重新远征</button><button id="btn-menu">选关</button></div>`);
+  } else if (R.mode === "vigil") {
     openOverlay(`<h2>${win ? "长夜守望成功" : "长夜结束"}</h2><p>${ST.name}：撑过 ${R.reached}/${ST.waves} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}，攒了 ${S.dust} 星尘。</p>
       <p>最好成绩：第 ${R.best} 波${R.clear ? " · 已通关 ✓" : ""}</p>
       ${tail}<div class="btns"><button class="primary" id="btn-vigil">再守一夜</button><button id="btn-menu">选关</button></div>`);

@@ -76,7 +76,7 @@ const { check, noErrors, report } = require('./lib');
   await fresh(3);
   const bo = await p.evaluate(() => {
     const T = __td, S = T.S, out = {};
-    const e = spawnAt('boss', 8, 2, false); e.afx = []; S.boss = e; S.cine = null; S.fx = [];
+    const e = spawnAt('boss', 8, 2, false); e.afx = []; e.shield = 0; S.boss = e; S.cine = null; S.fx = [];
     hurt(e, e.maxHp * 0.55, 'true', false, S.units[0]);
     out.enrage = e.enraged; out.box = S.fx.some(f => f.kind === 'letterbox');
     S.fx = []; hurt(e, e.maxHp * 2, 'true', false, S.units[0]);

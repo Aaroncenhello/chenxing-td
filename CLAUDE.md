@@ -41,7 +41,7 @@ npm run sim            # 平衡模拟，见下
 每章最后一关（第 4/8/12/16 关，首领战）都是本章最难的；第 12 关输掉时平均只打到全程 27–38%。
 
 **拼接顺序（build.sh 里固定，改顺序可能出错）：**
-`head.html config.js config-meta.js cards.js meta.js relic.js sig.js story.js arena.js haz.js boss.js event.js affix.js fight.js step.js px-core.js px-hero.js px-foe.js px-fx.js save.js ui-bar.js ui-panels.js ui-roster.js ui-menu.js settle.js main.js`
+`head.html config.js config-meta.js cards.js meta.js relic.js sig.js story.js arena.js haz.js boss.js event.js affix.js fight.js step.js px-core.js px-hero.js px-foe.js px-fx.js save.js ui-bar.js ui-panels.js ui-roster.js ui-menu.js settle.js exped.js main.js`
 `head.html` 里是 CSS 和整个页面的 HTML 结构，最后以 `<script>` 开头；`main.js` 结尾是 `</script>`。
 
 ## 各文件负责什么
@@ -69,6 +69,7 @@ npm run sim            # 平衡模拟，见下
 | ui-roster.js | 剧情播放、选英雄、角色养成页、天赋树、结算经验、战绩入档 |
 | ui-menu.js | 选关页、星盘页、深渊/每周 UI、图鉴、成就、存档页、进关流程 `beginStage/startRun`、新手引导、结算页 `checkOver/showResult(R)`（只画界面） |
 | settle.js | **结算** `settleRun()`：一局结束时写存档（战绩 `recordRun`、经验 `awardExp`、成就、星级、通关奖励 `runReward`、守望/每日/无尽/每周记录），返回结果对象给结算页 |
+| exped.js | **远征模式**：路线图、战斗之间的快照 `expSnap/expRestore`、结算 `expSettle`、休整、选关页卡片 |
 | main.js | 主循环 `frame()`、开机、`window.__td` 测试接口 |
 
 ## 关键机制速查
@@ -104,6 +105,13 @@ npm run sim            # 平衡模拟，见下
   - **集火**：点战场上的敌人 `setFocus(e)`（再点取消），`S.focus` 存对象，`focusFoe()` 会在它死后清掉；`pickTargets` 把它排第一，`hurt` 对它 ×`FOCUS_BONUS`(1.15)。机器人不会用，所以不影响平衡模拟。
   - **首领演出**：`bossFanfare(e, "phase"|"death")`：上下黑边 `letterbox`、闪光、冲击环；击破时用 `queueFx` 排队放连环爆炸 → 光柱 → 「首领击破」横幅（`fxQueueStep` 在 step 里推进）。狂暴时画面四周暗红呼吸 `drawBossMood`。首领血条加宽、有残影和百分比，横屏全屏时自动挪到顶栏下面。
   - **技能特写**：`useSkill` 结束时加一条 `skillcut` 特效（头像 + 技能名的斜横幅，同一时间只留最新一条），英雄放技能再闪一下。
+- **阶段 6**（`tests/phase6.js`）：
+  - **核心天赋**：meta.js 的 `DISK` 里 `key: true` 的 4 个节点（`ks_atk/ks_def/ks_eco/ks_arc`），本线非核心节点投入 `KEY_NEED`(12) 级才能点，最多 `KEY_MAX`(2) 个；能不能买统一走 `diskCanBuy(disk, id, left)`（星盘页和 sim 都用它）。效果：`hurt` 里暴击弹射、`hurtCrystal` 复活、`startWave` 每 5 波多翻牌、`castUlt` 后 `S.resoT`。
+  - **觉醒**：不加存档字段，直接从角色经验算：10 级后每 `AWK.need`(600) 经验一级，最多 5 级（`awkOf(exp)`、`charAwks()`）。开局经 `startRun` 传 `charAwk`，`clvK` 里乘 `1 + AWK.perLv × 觉醒`；3 级脚下金色光环，5 级 `awkSp` 技力 +20%。**sim 必须传 `charAwk: {}`**，否则同一进程里前几局攒的经验会让后几局的角色觉醒，结果失真。
+  - **每日悬赏**：settle.js 的 `BOUNTY_TYPES`，`todayBounties()` 用日期种子抽 3 条，`checkBounties(R)` 在每次结算时判定，每条 +3★、全完成再 +3★，记在存档 `bounty: { date, done }`。靠 `S.eliteKills / S.focusKills / S.rerollsUsed` 等计数。**测星星数的测试要先把今天的悬赏标成已完成**，否则会顺带多出星星。
+  - **远征**：exped.js。6 层，每层普通战 / 精英战二选一或三选一，第 2、4 场后休整（五选一），最后一层首领。战斗用原关卡地图、波数 ×0.6（首领 ×0.75），敌人血量每层 +38%、攻击 +12%（`EXPED.hpStep/atkStep`），精英战再 ×1.3 并必掉遗物。进行中的进度存在单独的 localStorage 键 `chenxing-td-exp`（不进主存档），主存档只记 `exped: { best, clears, runs }`。结算模式 `R.mode === "exped"`。机器人（每层都挑普通战）完成率：四章进度约 17%，满级 + 400★ 约 50%。
+  - 远程敌人 8 秒没挨打就不再站桩放风筝（`e.hurtAt`），修了全队近战时打不到虚无术士、整局卡住的问题。
+  - `tests/balance.js` 开跑前会删掉上次的 `bal-*.json`，某一格没跑出来会直接报错，不会悄悄读旧数据；sim 在旧构建（没有 `diskCanBuy`）上会退回老的买法。
 - **viewport**：`head.html` 里的 `<meta name="viewport">` 不能删——没有它手机会按 980px 宽的电脑网页排版再整体缩小。
 
 ## 踩过的坑
@@ -113,7 +121,7 @@ npm run sim            # 平衡模拟，见下
 - 翻牌面板开着时，场地拖动和 HUD 按钮都会被挡住，这是故意的。
 
 ## 版本脉络
-7.0 固定阵地 + 自动战斗 + 翻牌 → 8.0 机关地图、稀有度、羁绊、商店、守望之战 → 9.0 专属卡、诅咒卡、首领演出与打断、第四章、天赋树、战报、存档导出、手机优化 → 10.0 局内事件、精英词缀、阵型与拖动站位、图鉴战绩 → 10.1 修无尽空波、牌堆见底、手动开波/叠波、难度上调 → **11.0 天赋星盘、深渊 20 层、遗物、每周挑战、手机横屏沉浸全屏、基础难度再上调** → 阶段 4 爽感：画质档位、打击感、出怪预告、竖屏信息区、翻牌仪式感、羁绊提示、结算动画、图鉴卡牌/遗物页 → 阶段 5：技能卡进化、集火、首领演出、技能特写。
+7.0 固定阵地 + 自动战斗 + 翻牌 → 8.0 机关地图、稀有度、羁绊、商店、守望之战 → 9.0 专属卡、诅咒卡、首领演出与打断、第四章、天赋树、战报、存档导出、手机优化 → 10.0 局内事件、精英词缀、阵型与拖动站位、图鉴战绩 → 10.1 修无尽空波、牌堆见底、手动开波/叠波、难度上调 → **11.0 天赋星盘、深渊 20 层、遗物、每周挑战、手机横屏沉浸全屏、基础难度再上调** → 阶段 4 爽感：画质档位、打击感、出怪预告、竖屏信息区、翻牌仪式感、羁绊提示、结算动画、图鉴卡牌/遗物页 → 阶段 5：技能卡进化、集火、首领演出、技能特写 → 阶段 6：远征、星盘核心天赋、每日悬赏、角色觉醒。
 
 ## 发布
 产物就是 `dist/chenxing.html`，浏览器直接打开即可。

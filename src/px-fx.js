@@ -588,6 +588,11 @@ function render(now) {
     const u = S.selUnit, [x, y] = tpx(u.x, u.y), R = uRange(u) * T;
     ctx.globalAlpha = 0.5; ring(ctx, x, y + 12, R, R * 0.8, u.def.color, (t * 8 | 0) % 2); ctx.globalAlpha = 1;
   }
+  // 觉醒 3 级以上的角色脚下一圈金色光环
+  for (const u of S.units) if (!u.dead && !u.summon && u.down <= 0 && awk(u.def.id) >= AWK.auraLv) {
+    const [x, y] = tpx(u.x, u.y), r = 11 + Math.sin(t * 3 + u.id) * 1.5;
+    ctx.globalAlpha = 0.22; disc(ctx, x, y + 12, r, "#ffd860"); ctx.globalAlpha = 0.7; ring(ctx, x, y + 12, r, r * 0.45, "#ffe8a0", (t * 4 | 0) % 2); ctx.globalAlpha = 1;
+  }
   drawStations(t);
   drawWavePreview(t);
   drawCrystalHp();

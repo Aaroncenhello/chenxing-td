@@ -97,12 +97,12 @@ function showHeroPick(stage, opts) {
   heroCtx = { stage, opts };
   const open = openChars().filter(D => !opts.week || weekAllows(D, opts.week.rules)), lvs = charLevels(), save = loadSave(), last = save.hero;
   const st = STAGES[stage], seen = save.seen;
-  const foes = opts.endless || opts.daily ? [] : [...new Set(st.pool.map(p => p[0]).concat(st.boss.map(b => b[0])))];
-  openOverlay(`<h2>选择出战英雄</h2><p>${opts.week ? "每周挑战" : opts.daily ? "每日挑战" : opts.endless ? "无尽模式" : `第 ${stage + 1} 关`}${opts.abyss ? ` · 深渊 ${opts.abyss} 层` : ""} · ${st.name}：一局只带 1 个英雄上场，其他伙伴靠升级翻牌加入。</p>
+  const foes = opts.endless || opts.daily || opts.expedStart ? [] : [...new Set(st.pool.map(p => p[0]).concat(st.boss.map(b => b[0])))];
+  openOverlay(`<h2>选择出战英雄</h2><p>${opts.expedStart ? "远征：这名英雄会一路带到最后" : opts.week ? "每周挑战" : opts.daily ? "每日挑战" : opts.endless ? "无尽模式" : `第 ${stage + 1} 关`}${opts.abyss ? ` · 深渊 ${opts.abyss} 层` : ""} · ${st.name}：一局只带 1 个英雄上场，其他伙伴靠升级翻牌加入。</p>
     ${foes.length ? `<div class="wavebar" style="justify-content:center"><span>本关敌人：</span>${foes.map(k => `<span class="chip${ENEMIES[k].flying ? " elite" : ""}">${seen.includes(k) ? ENEMIES[k].name + (ENEMIES[k].flying ? " · 飞行" : "") : "？？？"}</span>`).join("")}</div>` : ""}
     <div class="heroes">${open.map(D => `<button class="card${D.id === last ? " sel" : ""}" data-hero="${D.id}" style="--c:${D.color}">
       <canvas class="pt" id="hp-${D.id}" aria-hidden="true"></canvas><span class="nm">${D.name}</span>
-      <span class="meta">${D.cls} · ${D.place === "ground" ? "前排拦怪" : D.dmg === "heal" ? "治疗" : D.air ? "能打飞行" : "只打地面"}</span><span class="clv">Lv${lvs[D.id]}</span></button>`).join("")}</div>
+      <span class="meta">${D.cls} · ${D.place === "ground" ? "前排拦怪" : D.dmg === "heal" ? "治疗" : D.air ? "能打飞行" : "只打地面"}</span><span class="clv">Lv${lvs[D.id]}${awkOf(charExp(save, D.id)) ? "★" + awkOf(charExp(save, D.id)) : ""}</span></button>`).join("")}</div>
     <div class="btns"><button id="btn-menu">返回选关</button></div>`);
   for (const D of open) drawPortrait(D, $("hp-" + D.id), 1);
 }
@@ -138,22 +138,24 @@ function showRoster(id) {
   rosterAnim = null;
   const d = loadSave();
   if (!id) {
-    openOverlay(`<h2>角色</h2><p>角色上场会获得经验，最高 ${PROG.max} 级：每级生命、攻击 +4%，3 级出场生命 +10%，5 级解锁天赋，7 级复活更快，10 级出场自带 50% 技力。</p>
+    openOverlay(`<h2>角色</h2><p>角色上场会获得经验，最高 ${PROG.max} 级：每级生命、攻击 +4%，3 级出场生命 +10%，5 级解锁天赋，7 级复活更快，10 级出场自带 50% 技力。<br>满级后继续拿到的经验会让角色<b>觉醒</b>（最多 ${AWK.max} 级，每级 ${AWK.need} 经验）：每级攻击、生命 +${AWK.perLv * 100}%，觉醒 ${AWK.auraLv} 级起脚下有金色光环，觉醒 ${AWK.spLv} 级技力回复 +20%。</p>
       <div class="roster">${UNITS.map(D => { const open = charOpen(D), { L, pct } = expBar(charExp(d, D.id));
         return `<button class="card rc${open ? "" : " locked"}" ${open ? `data-ros="${D.id}"` : "disabled"} style="--c:${D.color}"><canvas class="pt" id="rs-${D.id}" aria-hidden="true"></canvas>
-          <span class="nm">${open ? D.name : "？？？"}</span><span class="meta">${open ? `${D.cls} · Lv${L.lv}` : `第 ${D.joinAt + 1} 关加入`}</span>
+          <span class="nm">${open ? D.name : "？？？"}</span><span class="meta">${open ? `${D.cls} · Lv${L.lv}${awkOf(charExp(d, D.id)) ? " · 觉醒" + awkOf(charExp(d, D.id)) : ""}` : `第 ${D.joinAt + 1} 关加入`}</span>
           ${open ? `<span class="xp"><i style="width:${pct}%"></i></span>` : ""}</button>`; }).join("")}</div>
       <div class="btns"><button id="btn-menu">返回选关</button></div>`);
     for (const D of UNITS) { const c = $("rs-" + D.id); if (charOpen(D)) drawPortrait(D, c, 1); else { c.width = 40; c.height = 40; const g = c.getContext("2d"); g.fillStyle = "#1a1f2e"; g.fillRect(0, 0, 40, 40); } }
     return;
   }
-  const D = UNITS.find(u => u.id === id), exp = charExp(d, id), { L, pct } = expBar(exp), k = 1 + PROG.perLv * (L.lv - 1), tal = TALENTS[id];
+  const D = UNITS.find(u => u.id === id), exp = charExp(d, id), { L, pct } = expBar(exp), k = (1 + PROG.perLv * (L.lv - 1)) * (1 + AWK.perLv * awkOf(exp)), tal = TALENTS[id];
   const open = UNITS.filter(charOpen), idx = open.indexOf(D);
   const st = (name, base, mul) => `<div><span>${name}</span><b>${R0(base * mul)}</b>${mul > 1 ? `<small>+${R0(base * mul) - base}</small>` : ""}</div>`;
   openOverlay(`<div class="rdetail">
     <div class="rleft"><canvas id="r-anim" class="ranim" aria-hidden="true" style="--c:${D.color}"></canvas>
       <h3>${D.name} <small>${D.cls} · ${placeName(D)}</small></h3>
       <div class="rlv"><b>Lv ${L.lv}</b><span>${L.lv >= PROG.max ? "已满级" : `经验 ${L.into} / ${L.need}`}</span></div><div class="meter"><i style="width:${pct}%;background:var(--gold)"></i></div>
+      ${L.lv >= PROG.max ? (() => { const A = awkInfo(exp); return `<div class="rlv awk"><b>觉醒 ${"★".repeat(A.a)}${"☆".repeat(AWK.max - A.a)}</b><span>${A.full ? "已完全觉醒" : `觉醒经验 ${A.into} / ${AWK.need}`}</span></div><div class="meter"><i style="width:${A.full ? 100 : Math.round(A.into / AWK.need * 100)}%;background:linear-gradient(90deg,#ffd860,#ff8ac0)"></i></div>
+        <p class="awkp">觉醒加成：攻击、生命 +${Math.round(A.a * AWK.perLv * 100)}%${A.a >= AWK.auraLv ? " · 金色光环" : ""}${A.a >= AWK.spLv ? " · 技力回复 +20%" : ""}</p>`; })() : ""}
       <p class="bio">${BIO[id]}</p></div>
     <div class="rright">
       <div class="rstats">${st("生命", D.hp, k)}${st("攻击", D.atk, k)}${st("防御", D.def, 1)}${st("法抗", D.res, 1)}
@@ -184,8 +186,8 @@ function animRoster(now) {
 function expHtml(gains) {
   if (!gains || !gains.length) return "";
   return `<div class="expt">${gains.map(g => { const { pct } = expBar(g.exp), up = g.after.lv > g.before;
-    return `<div class="ex${up ? " up" : ""}"><canvas data-ept="${g.D.id}" aria-hidden="true"></canvas><div><b>${g.D.name}</b><span>+${g.gain} 经验</span>
-      <em>${up ? `Lv${g.before} → Lv${g.after.lv}${g.before < PROG.talentLv && g.after.lv >= PROG.talentLv ? " · 天赋解锁" : ""}` : `Lv${g.after.lv}`}</em>
+    return `<div class="ex${up || awkOf(g.exp) > awkOf(g.exp - g.gain) ? " up" : ""}"><canvas data-ept="${g.D.id}" aria-hidden="true"></canvas><div><b>${g.D.name}</b><span>+${g.gain} 经验</span>
+      <em>${up ? `Lv${g.before} → Lv${g.after.lv}${g.before < PROG.talentLv && g.after.lv >= PROG.talentLv ? " · 天赋解锁" : ""}` : `Lv${g.after.lv}`}${(() => { const a0 = awkOf(g.exp - g.gain), a1 = awkOf(g.exp); return a1 > a0 ? ` · <b style="color:#ffd860">觉醒 ${a1}！</b>` : a1 ? ` · 觉醒 ${a1}` : ""; })()}</em>
       <span class="xp"><i style="width:${pct}%"></i></span></div></div>`; }).join("")}</div>`;
 }
 function drawExpPortraits() { for (const c of $("ovbox").querySelectorAll("canvas[data-ept]")) drawPortrait(UNITS.find(u => u.id === c.dataset.ept), c, 1); }

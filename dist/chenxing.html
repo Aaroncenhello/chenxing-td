@@ -259,6 +259,17 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .tablewrap{overflow-x:auto;max-width:100%}
 .daily{background:#2a2440;border:2px solid #0a0c12;box-shadow:var(--bevel);padding:10px 12px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;text-align:left;width:min(920px,100%)}
 .daily p{font-size:12px}
+.daily.bounty{background:#2a2a1a} .daily .bl{margin:4px 0 0;padding:0;list-style:none;font-size:12px;color:var(--text)} .daily .bl li{margin:2px 0} .daily .bl li.ok{color:#6fcf8e;text-decoration:line-through}
+.stars.bgot{font-size:15px;letter-spacing:0}
+.daily.exped{background:#1e2a36}
+.exmap{display:flex;flex-direction:column;gap:6px;width:min(720px,100%)}
+.exf{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 8px;background:var(--panel);box-shadow:0 0 0 2px #0a0c12}
+.exf.past{opacity:.6} .exf.next{opacity:.5} .exf.now{box-shadow:0 0 0 2px #ffd860,0 0 12px rgba(255,216,96,.35)}
+.exn{font-size:11px;color:var(--muted);width:48px;flex:none}
+.exnode{flex:1 1 150px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border-left:4px solid var(--c);padding:6px 8px}
+.exnode b{color:var(--c);font-size:14px} .exnode small{font-size:11px;color:var(--text)} .exnode span{font-size:11px;color:var(--muted)}
+.exdone,.exfut{font-size:12px;padding:2px 8px;border-left:3px solid var(--c);color:var(--c);background:#141824}
+.btns.col{flex-direction:column;align-items:stretch;width:min(420px,100%)}
 .daily.vigil{background:#1c2440}
 .daily.lockd{opacity:.55}
 .toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:9;max-width:min(340px,calc(100vw - 32px))}
@@ -382,6 +393,10 @@ kbd{font-family:var(--sans);background:var(--panel-2);border:1px solid var(--lin
 .dnode{background:var(--panel);box-shadow:0 0 0 2px #0a0c12,var(--bevel);padding:7px 8px;display:flex;flex-direction:column;gap:4px;border-left:3px solid #3a4460}
 .dnode.on{border-left-color:var(--c)}
 .dnode.full{background:#1f2618}
+.dnode.dkey{border:2px solid var(--c);border-left-width:2px;background:linear-gradient(160deg,color-mix(in srgb,var(--c) 18%,var(--panel)),var(--panel))}
+.dnode.dkey.on{box-shadow:0 0 0 2px #0a0c12,0 0 14px color-mix(in srgb,var(--c) 60%,transparent)}
+.dnode .dlock{color:#e08a7a}
+.rlv.awk b{color:#ffd860;letter-spacing:1px} .awkp{margin:2px 0 6px;font-size:12px;color:#ffd860}
 .dnode .dh{display:flex;justify-content:space-between;align-items:baseline}
 .dnode .dh b{font-size:13px;color:var(--c)} .dnode .dh span{font-family:var(--pix);font-size:8px;color:var(--muted)}
 .dnode p{margin:0;font-size:11px;color:var(--muted);line-height:1.45}
@@ -922,6 +937,8 @@ const COMBO = { window: 2.5, marks: [10, 25, 50, 80, 120, 200], xp: [10, 20, 35,
 
 // 角色等级 1–10：每级生命、攻击 +4%；5 级解锁天赋
 const PROG = { max: 10, perLv: 0.04, talentLv: 5, startLv: 3, reviveLv: 7, spLv: 10 };
+// 觉醒：10 级以后继续拿到的经验攒成觉醒等级（每级要 need 经验，最多 max 级）；每级攻击、生命 +perLv，3 级起脚下有金色光环，5 级技力回复 +20%
+const AWK = { max: 5, need: 600, perLv: 0.03, auraLv: 3, spLv: 5 };
 const expNeed = n => 60 * n;
 
 // ================= 9.0：角色天赋树（Lv3 / Lv6 / Lv9 各三选一，随时可以改） =================
@@ -1026,6 +1043,7 @@ const ACHV = [
   { id: "chapter3", name: "第三章完结", desc: "通关第 12 关" },
   { id: "nameless", name: "叫出它的名字", desc: "通关第 16 关，击败无名者" },
   { id: "allchars16", name: "十六人", desc: "解锁全部 16 名角色" },
+  { id: "exped", name: "远征归来", desc: "完成一次远征（打赢最后一层的首领）" },
   { id: "relics", name: "遗物收藏家", desc: "图鉴里集齐全部遗物" },
   { id: "cards", name: "博览群牌", desc: "图鉴里集齐全部通用升级卡（不含专属卡、诅咒卡和补充卡）" },
 ];
@@ -1268,9 +1286,24 @@ const DISK = [
   { id: "supply", line: "arc", name: "开局补给", max: 2, base: 5, step: 4, desc: lv => `开局直接白送 ${lv} 张随机升级卡`, per: "每级 +1 张" },
   { id: "prep", line: "arc", name: "有备而来", max: 2, base: 5, step: 4, desc: lv => `开局多翻 ${lv} 次牌（自己挑）`, per: "每级 +1 次" },
   { id: "relic", line: "arc", name: "寻宝", max: 4, base: 3, step: 2, desc: lv => `击败精英、首领时掉落遗物的几率 +${10 * lv}%`, per: "每级 +10%" },
+  // 核心天赋：每条线的终点。本线投入够 KEY_NEED 级才能点，整个星盘最多点亮 KEY_MAX 个（重置星盘可以换）
+  { id: "ks_atk", line: "atk", key: true, name: "连锁星芒", max: 1, base: 40, step: 0, desc: () => "暴击时，再对附近另一个敌人造成这一击 50% 的伤害" },
+  { id: "ks_def", line: "def", key: true, name: "不灭之碑", max: 1, base: 40, step: 0, desc: () => "晨星碑第一次被打碎时以 40% 生命复活（每局一次，可以和凤凰羽叠加）" },
+  { id: "ks_eco", line: "eco", key: true, name: "点金", max: 1, base: 40, step: 0, desc: () => "每打完 5 波，额外翻一次牌并获得 30 星尘" },
+  { id: "ks_arc", line: "arc", key: true, name: "星辰共鸣", max: 1, base: 40, step: 0, desc: () => "放出晨星爆发后 10 秒内，全队技力回复 ×2，自动技能冷却加快 50%" },
   { id: "star", line: "all", name: "星辉", max: 9999, base: 6, step: 1, desc: lv => `全队攻击、生命 +${lv}%（没有上限）`, per: "每级攻击、生命 +1%" },
 ];
 const DISK_BY = Object.fromEntries(DISK.map(n => [n.id, n]));
+const KEY_NEED = 12, KEY_MAX = 2;
+const diskLineLv = (disk, line) => DISK.filter(n => n.line === line && !n.key).reduce((a, n) => a + ((disk || {})[n.id] || 0), 0);
+const diskKeys = disk => DISK.filter(n => n.key && (disk || {})[n.id]).length;
+// 能不能再升一级：满级 / 星星不够 / 核心天赋的前置条件
+function diskCanBuy(disk, id, left) {
+  const n = DISK_BY[id], lv = (disk || {})[id] || 0;
+  if (!n || lv >= n.max || left < diskCost(id, lv)) return false;
+  if (n.key && (diskLineLv(disk, n.line) < KEY_NEED || diskKeys(disk) >= KEY_MAX)) return false;
+  return true;
+}
 const diskCost = (id, lv) => { const n = DISK_BY[id]; return n.base + n.step * lv; };
 const diskSpent = disk => Object.entries(disk || {}).reduce((s, [id, lv]) => { if (!DISK_BY[id]) return s; for (let i = 0; i < lv; i++) s += diskCost(id, i); return s; }, 0);
 // 局内读取：本局带进来的星盘等级
@@ -1909,7 +1942,9 @@ const roll = k => S.rngs[k]();
 // ---------- 卡牌 / 角色等级 ----------
 const cl = id => (S.cards && S.cards[id]) || 0;
 const clv = id => (S.charLv && S.charLv[id]) || 1;
-const clvK = u => 1 + PROG.perLv * (clv(u.def.id) - 1);
+const awk = id => (S && S.charAwk && S.charAwk[id]) || 0;
+const clvK = u => (1 + PROG.perLv * (clv(u.def.id) - 1)) * (u.summon ? 1 : 1 + AWK.perLv * awk(u.def.id));   // 角色等级 × 觉醒
+const awkSp = u => (!u.summon && awk(u.def.id) >= AWK.spLv ? 0.2 : 0);
 const hasTal = (u, id) => !!(u && u.def && u.def.id === id) && clv(id) >= PROG.talentLv;
 // 天赋树：Lv3 / Lv6 / Lv9 各选一个
 const talPick = (id, tier) => (S.charTal && S.charTal[id] && S.charTal[id][tier]) || null;
@@ -2117,19 +2152,20 @@ let S;
 function newRun(stage, opts) {
   opts = opts || {};
   const seedN = opts.daily ? opts.daily.seed : (opts.seed || (Math.random() * 1e9) | 0);
-  const gen = opts.vigil || opts.genMap ? genStage(stage, seedN, opts) : null;
+  const gen = opts.vigil || opts.genMap ? genStage(stage, seedN, opts) : opts.exped ? { ...STAGES[stage], waves: opts.exped.waves } : null;   // 远征：同一张图，波数缩短
   loadStage(stage, gen);
   const perks = opts.perks || [], daily = opts.daily || null, abyss = Math.max(0, Math.min(ABYSS_MAX, opts.abyss || 0)), week = opts.week || null;
   // 难度 × 深渊层数 × 每周规则 合成一个敌人强度系数
   const d0 = DIFFS[opts.diff || 0], ak = abyssK(abyss);
   const diffK = { ...d0, hp: d0.hp * ak.hp, atk: d0.atk * ak.atk, elite: d0.elite + ak.elite };
+  if (opts.exped) { diffK.hp *= opts.exped.hpK || 1; diffK.atk *= opts.exped.atkK || 1; diffK.elite += opts.exped.elite || 0; }
   if (week && week.rules.includes("giants")) diffK.hp *= 1.7;
   if (week && week.rules.includes("swarm")) diffK.hp *= 0.65;
   if (week && week.rules.includes("elite")) diffK.elite += 0.25;
   const disk = opts.disk || {}, dkk = id => disk[id] || 0;
   const heroDef = UNITS.find(u => u.id === (opts.hero || "knight")) || UNITS[0];
   S = {
-    stage, disk, abyss, week, relics: [], phoenixUsed: false, endless: !!opts.endless, vigil: !!opts.vigil, gen: !!gen, seed: seedN, daily, mod: daily ? daily.mod : null, diff: opts.diff || 0, diffK, perks, charLv: opts.charLv || {}, charTal: opts.charTal || {},
+    stage, disk, abyss, week, relics: [], phoenixUsed: false, endless: !!opts.endless, vigil: !!opts.vigil, gen: !!gen, seed: seedN, daily, mod: daily ? daily.mod : null, diff: opts.diff || 0, diffK, perks, charLv: opts.charLv || {}, charAwk: opts.charAwk || {}, charTal: opts.charTal || {},
     charOpen: (opts.charOpen || UNITS.map(u => u.id)).filter(id => !week || weekAllows(UNITS.find(u => u.id === id) || {}, week.rules)),
     rng: daily ? seeded(daily.seed) : week ? seeded(week.seed) : Math.random,
     rngs: makeRngs(daily ? daily.seed : week ? week.seed : 0),
@@ -2145,6 +2181,7 @@ function newRun(stage, opts) {
     shop: null, shopDone: 0, shopWave: 0, syn: {}, synN: 0, chest: 0, haz: [], gate: null, legends: 0, curses: {},
     cine: null, cineWave: -1, breaks: 0, ultsFired: 0, log: [], t0: Date.now(), maxHit: 0, bestSyn: 0,
     formIdx: opts.formIdx == null ? 1 : opts.formIdx, drag: null, autoWave: opts.autoWave !== false, earlyCalls: 0,
+    exped: opts.exped ? { node: opts.exped.node, floor: opts.exped.floor } : null, waveScale: opts.exped ? STAGES[stage].waves / opts.exped.waves : 0,
     event: null, eventWave: -1, eventsDone: [], buff: {}, nextWaveK: 1, slowWaves: 0, weakWaves: 0, hazK: 1, hazSlow: false, ultK: 1, forceRare: 0, riftDust: 0,
   };
   if (week && week.rules.includes("nospell")) S.mod = "noSpell";
@@ -2154,6 +2191,7 @@ function newRun(stage, opts) {
   S.xpNeed = xpNeedOf(1);
   S.crystal.hp = S.crystal.maxHp;
   addUnit(heroDef, true);
+  if (opts.exped && opts.exped.snap) { expRestore(opts.exped.snap, opts.exped.flips); return; }   // 远征第 2 场起：接着上一场的队伍打
   for (let i = 0; i < dk("supply"); i++) { const c = randomCards(1)[0]; if (c) pickCard(c.id, true); }
   if (wk("relics")) for (let i = 0; i < 3; i++) gainRelic(null, true);
   if (wk("cursed")) for (let i = 0; i < 2; i++) { const cp = cursePool(); if (cp.length) pickCard(cp[Math.floor(roll("card") * cp.length)].id, true); }
@@ -2362,7 +2400,7 @@ function pickCard(id, silent) {
 }
 function rerollOffer() {
   if (!S.offer || S.rerolls <= 0 || S.over) return false;
-  S.rerolls--; S.offer = randomCards(3, S.offerRare || 0);
+  S.rerolls--; S.rerollsUsed = (S.rerollsUsed || 0) + 1; S.offer = randomCards(3, S.offerRare || 0);
   return true;
 }
 function openOffer(minRare, noCharge) {
@@ -2404,9 +2442,9 @@ function genWaves() {
 function genWave(w, total) {
   const R = S.rng;
   {
-    const out = [], last = !S.endless && w === total;
-    const pool = ST.pool.filter(p => w >= p[2]);
-    let budget = (2.5 + w * 1.8) * ST.budget * (S.endless ? 1 + w * 0.05 : 1) * (S.vigil ? 1 + w * 0.075 : 1) * (wk("giants") ? 0.7 : 1) * (wk("swarm") ? 1.6 : 1);
+    const out = [], last = !S.endless && w === total, wE = S.waveScale ? Math.max(1, Math.round(w * S.waveScale)) : w;   // 远征波数缩短：按原关卡的进度出怪
+    const pool = ST.pool.filter(p => wE >= p[2]);
+    let budget = (2.5 + wE * 1.8) * ST.budget * (S.endless ? 1 + w * 0.05 : 1) * (S.vigil ? 1 + w * 0.075 : 1) * (wk("giants") ? 0.7 : 1) * (wk("swarm") ? 1.6 : 1);
     // 特殊波次：潮汐（数量多）/ 精英（少而强）
     let tag = "";
     if (!last && w >= 4 && !S.vigil && w % 5 === 0) { tag = "tide"; budget *= 1.5; }
@@ -2457,6 +2495,7 @@ function startWave(append) {
   S.waveHp = S.vigil ? Math.pow(1 + VIGIL.hpStep, S.wave - 1) : 1 + 0.095 * (S.wave - 1) + (S.endless ? 0.004 * (S.wave - 1) ** 2 : 0);
   // 每波结束前的收尾：永恒壁垒回血、守望之战补给、商店
   if (cl("lg_aegis") && S.wave > 1) { S.crystal.hp = Math.min(S.crystal.maxHp, S.crystal.hp + S.crystal.maxHp * 0.08 * cl("lg_aegis")); addFx({ kind: "pillar", x: CRYSTAL.x, y: CRYSTAL.y, color: "#62b4ff", life: 0.8 }); }
+  if (dk("ks_eco") && S.wave > 1 && (S.wave - 1) % 5 === 0) { S.pending++; S.dust += 30; addFx({ kind: "banner", text: "点金 · 多翻一张牌 · 星尘 +30", life: 1.8 }); }
   if (S.vigil && VIGIL.supplyAt.includes(S.wave)) { S.pending++; addFx({ kind: "banner", text: "补给到了 · 多翻一张牌", life: 1.8 }); }
   const isBossW = q.some(x => ENEMIES[x.type] && (isBossType(x.type) || x.elite));
   const tagTxt = wv.tag === "tide" ? " · 潮汐" : wv.tag === "elite" ? " · 精英波" : "";
@@ -2502,7 +2541,7 @@ function spawnAt(type, x, y, elite, summoned) {
   const d = ENEMIES[type], hpK = S.waveHp * (S.waveK || 1), scale = stageHp() * hpK * S.diffK.hp * (1 + 0.12 * cu("cu_greed")) * (rl("rl_ring") ? 1.08 : 1) * (ab(18) && isBossType(type) ? 1.3 : 1);
   const hp = Math.round(d.hp * scale * (elite ? ELITE.hp : 1));
   const e = {
-    id: S.uid++, type, d, elite: !!elite, summoned: !!summoned, hpK, hp, maxHp: hp, x, y, face: -1,
+    id: S.uid++, type, d, elite: !!elite, summoned: !!summoned, hpK, hp, maxHp: hp, x, y, face: -1, hurtAt: S.t,
     shield: d.shield ? Math.round(d.shield * scale * (elite ? 1.5 : 1)) : 0, revealed: !d.stealth, under: false, bT: d.burrow ? d.burrow.up * (0.4 + roll("spawn") * 0.6) : 0, phase: 0,
     target: null, atkCd: d.interval * 0.5, slowT: 0, slowK: 0.6, freezeT: 0, stunT: 0, poison: null, corrode: null,
     aoeCd: d.aoe ? d.aoe.every * 0.6 : 0, healCd: d.heal ? d.heal.every * 0.5 : 0, summonCd: d.summon ? d.summon.every * 0.5 : 0,
@@ -3181,6 +3220,8 @@ function addNum(x, y, v, color, big, key, maxHp) {
 function killEnemy(e, src) {
   e.dead = true; S.kills++;
   S.foeKill[e.type] = (S.foeKill[e.type] || 0) + 1;
+  if (e.elite || isBoss(e)) S.eliteKills = (S.eliteKills || 0) + 1;
+  if (e === S.focus) S.focusKills = (S.focusKills || 0) + 1;
   addStat(src, "kills", 1);
   gainXp(e.d.reward * RULES.xpKill * (e.elite ? 2 : 1));
   gainStar(e); addCombo();
@@ -3271,10 +3312,16 @@ function hurt(e, amt, type, crit, src) {
   }
   const real = Math.min(amt, e.hp);
   if (amt > (S.maxHit || 0)) { S.maxHit = amt; S.maxHitBy = statName(statKey(src)); }
-  e.hp -= amt; e.hitT = 0.12; e.kb = crit ? 1.6 : 1;
+  e.hp -= amt; e.hitT = 0.12; e.kb = crit ? 1.6 : 1; e.hurtAt = S.t;
   if (e.cast) castHit(e, amt);
   addStat(src, "dmg", real);
   addNum(e.x, e.y, amt, type === "true" ? "#fff0a0" : crit ? "#ffe040" : type === "magic" ? "#d4b4ff" : type === "poison" ? "#9cf07a" : "#ffffff", crit, e.id, e.maxHp);
+  // 核心天赋「连锁星芒」：暴击弹一下给附近另一个敌人（弹出去的这一下不再暴击，不会连环）
+  if (crit && src && src.def && dk("ks_atk")) {
+    let o = null, bd = 2.2;
+    for (const x of S.enemies) if (x !== e && hittable(x)) { const d = dist(x, e); if (d < bd) { bd = d; o = x; } }
+    if (o) { addFx({ kind: "bolt", x: e.x, y: e.y, x2: o.x, y2: o.y, life: 0.25, color: "#ffe040" }); hurt(o, amt * 0.5, type, false, src); }
+  }
   if (type !== "poison") burst(e.x, e.y - 0.1, type === "magic" ? "#d4b4ff" : "#ffe7a8", crit ? 8 : 4, 2.2, 0.3, 0.045);
   if (e.type === "boss" && !e.enraged && e.hp > 0 && e.hp <= e.maxHp * 0.5) enrage(e);
   if (e.d.phases && e.hp > 0) while (e.phase < e.d.phases.length && e.hp <= e.maxHp * e.d.phases[e.phase]) phaseShift(e, e.phase++);
@@ -3370,6 +3417,10 @@ function hurtCrystal(amt, e) {
   if (S.crystal.hp <= 0 && rl("rl_phoenix") && !S.phoenixUsed) {
     S.phoenixUsed = true; S.crystal.hp = S.crystal.maxHp * 0.35;
     addFx({ kind: "banner", text: "凤凰羽 · 晨星碑重生", life: 2 }); addFx({ kind: "pillar", x: CRYSTAL.x, y: CRYSTAL.y, color: "#ff8a3a", life: 1.2 });
+  }
+  if (S.crystal.hp <= 0 && dk("ks_def") && !S.ksDefUsed) {
+    S.ksDefUsed = true; S.crystal.hp = S.crystal.maxHp * 0.4;
+    addFx({ kind: "banner", text: "不灭之碑 · 晨星碑重生", life: 2 }); addFx({ kind: "pillar", x: CRYSTAL.x, y: CRYSTAL.y, color: "#62b4ff", life: 1.2 }); addFx({ kind: "flash", life: 0.3, color: "#8ac8ff" });
   }
   S.crystal.hitT = 0.3; S.hitFlash = 0.5; S.shake = Math.max(S.shake, 0.2);
   addNum(CRYSTAL.x + (Math.random() - 0.5), CRYSTAL.y - 0.2, amt, "#ff6a5a", true);
@@ -3668,6 +3719,7 @@ function gainStar(e) {
 function castUlt() {
   if (!ultReady()) return false;
   S.star = 0; S.ultPending = 0.45; S.ultKills = S.kills; S.usedUlt = true;
+  if (dk("ks_arc")) S.resoT = 10;
   S.slowmo = Math.max(S.slowmo, 0.9); S.shake = Math.max(S.shake, 0.4);
   const ids = S.units.filter(u => !u.summon).sort((a, b) => b.lv - a.lv).slice(0, 4).map(u => u.def.id);
   addFx({ kind: "cutin", ids, life: 1.5 });
@@ -3703,6 +3755,7 @@ function buildBlades() {
 const twinCd = () => (cl("lg_twin") ? 0.6 : 1) * Math.max(0.3, 1 - 0.35 * cu("cu_sand")) * (S.buff.cd || 1);
 const twinDmg = () => (cl("lg_twin") ? 1.35 : 1);
 function autoSkills(dt) {
+  if (S.resoT > 0) S.resoT -= dt;
   if (sg("sg_st2")) {
     S.sigStar = (S.sigStar || 4) - dt;
     if (S.sigStar <= 0) { S.sigStar = 14; const h = heroOf(); if (h) { const pool = S.enemies.filter(hittable); for (let k = 0; k < 3 && pool.length; k++) { let best = pool[0], bn = -1; for (const e of pool) { const n = pool.filter(o => dist(o, e) <= 1.6).length; if (n > bn) { bn = n; best = e; } } S.meteors.push({ x: best.x, y: best.y, t: 0.5, dmg: uAtk(h) * 2.2, r: uSplash(h) + 0.8, src: h, color: "#a0b8ff" }); addFx({ kind: "meteor", x: best.x, y: best.y, life: 0.5, color: "#a0b8ff" }); const i2 = pool.indexOf(best); if (i2 >= 0) pool.splice(i2, 1); } } }
@@ -3710,7 +3763,7 @@ function autoSkills(dt) {
   for (const id of ["sk_meteor", "sk_chain", "sk_nova", "sk_fire", "sk_holy", "lg_time"]) {
     const lv = cl(id); if (!lv) continue;
     if (S.skillCd[id] == null) S.skillCd[id] = SKILL_CD[id](lv) * twinCd() * 0.4;
-    S.skillCd[id] -= dt;
+    S.skillCd[id] -= dt * (S.resoT > 0 ? 1.5 : 1);
     if (S.skillCd[id] <= 0) { S.skillCd[id] = SKILL_CD[id](lv) * twinCd(); autoCast(id, lv); }
   }
   const spike = cl("sk_spike");
@@ -3972,7 +4025,7 @@ function step(dt) {
       if (u.skillT > 0) {
         u.skillT = Math.max(0, u.skillT - dt);
         if (u.skillT === 0 && hasTal(u, "bard")) for (const a of S.units) if (a !== u && !a.summon && alive(a) && dist(u, a) <= uRange(u) && a.skillT <= 0) { a.sp = Math.min(a.def.sp, a.sp + 8); addFx({ kind: "text", x: a.x, y: a.y - 0.5, text: "技力 +8", color: "#f07aa8", life: 0.9 }); }
-      } else u.sp = Math.min(u.def.sp, u.sp + dt * (rl("rl_hourglass") ? 1.3 : 1) * (bardSp(u) ? 1.3 : 1) * (1 + 0.3 * cl("sp")) * (tal(u, "t_sp") ? 1.3 : 1) * (S.buff.sp || 1));
+      } else u.sp = Math.min(u.def.sp, u.sp + dt * (rl("rl_hourglass") ? 1.3 : 1) * (bardSp(u) ? 1.3 : 1) * (1 + 0.3 * cl("sp")) * (tal(u, "t_sp") ? 1.3 : 1) * (S.buff.sp || 1) * (S.resoT > 0 ? 2 : 1) * (1 + awkSp(u)));
       if (u.auto && u.skillT <= 0 && u.sp >= u.def.sp && autoWant(u)) useSkill(u);
     }
     u.atkCd -= dt;
@@ -4104,7 +4157,8 @@ function step(dt) {
         continue;
       }
       // 走到能打到的距离再动手（近战要贴身，远程够得着就停）
-      const reach = e.d.ranged ? Math.max(0.7, e.d.ranged * 0.8) : 0.62;
+      // 远程敌人 8 秒没挨打（比如全队都是近战、够不着它）就贴上来，免得僵住打不完
+      const reach = e.d.ranged && S.t - (e.hurtAt || 0) < 8 ? Math.max(0.7, e.d.ranged * 0.8) : 0.62;
       if (dist(e, e.target) > reach) { moveToward(e, e.target.x, e.target.y, dt); continue; }
       e.atkCd -= dt;
       if (e.atkCd <= 0 && eAtk(e) > 0) { e.atkCd = eInt(e); e.atkT = 0; e.pend = WINDUP.enemy; faceTo(e, e.target.x); }
@@ -4114,7 +4168,7 @@ function step(dt) {
     // 远程敌人：够得着角色就停下来打
     if (e.d.ranged && !e.under) {
       const near = S.units.filter(u => alive(u) && dist(u, e) <= e.d.ranged).sort((a, b) => dist(a, e) - dist(b, e))[0];
-      if (near) {
+      if (near && S.t - (e.hurtAt || 0) < 8) {   // 8 秒没挨打就不再站着放风筝，继续往晨星碑走
         e.atkCd -= dt;
         if (e.atkCd <= 0) { shoot(e, near, e.type === "wyvern" ? "fire" : e.type === "sovereign" ? "dark" : "enemy", eAtk(e)); e.atkCd = eInt(e); e.atkT = 0; faceTo(e, near.x); }
         continue;
@@ -5823,6 +5877,11 @@ function render(now) {
     const u = S.selUnit, [x, y] = tpx(u.x, u.y), R = uRange(u) * T;
     ctx.globalAlpha = 0.5; ring(ctx, x, y + 12, R, R * 0.8, u.def.color, (t * 8 | 0) % 2); ctx.globalAlpha = 1;
   }
+  // 觉醒 3 级以上的角色脚下一圈金色光环
+  for (const u of S.units) if (!u.dead && !u.summon && u.down <= 0 && awk(u.def.id) >= AWK.auraLv) {
+    const [x, y] = tpx(u.x, u.y), r = 11 + Math.sin(t * 3 + u.id) * 1.5;
+    ctx.globalAlpha = 0.22; disc(ctx, x, y + 12, r, "#ffd860"); ctx.globalAlpha = 0.7; ring(ctx, x, y + 12, r, r * 0.45, "#ffe8a0", (t * 4 | 0) % 2); ctx.globalAlpha = 1;
+  }
   drawStations(t);
   drawWavePreview(t);
   drawCrystalHp();
@@ -5893,7 +5952,7 @@ function loadSave(noBackup) {
     abyss: Object.fromEntries(Object.entries(numMap(v.abyss, 0, ABYSS_MAX)).map(([k, n]) => [k, Math.floor(n)])),
     week: objMap(v.week, r => ({ clear: !!r.clear, best: Math.floor(clampN(r.best, 0)) })),
     gfx: Number.isInteger(v.gfx) && v.gfx >= -1 && v.gfx <= 2 ? v.gfx : -1,   // 画质：-1 自动，0 低 1 中 2 高
-    relicSeen: idList(v.relicSeen, id => !!RELIC_BY[id]), cardSeen: idList(v.cardSeen, id => !!ANY_CARD(id)), bonusStars: Math.floor(clampN(v.bonusStars, 0)), refunded: Math.floor(clampN(v.refunded, 0)),
+    relicSeen: idList(v.relicSeen, id => !!RELIC_BY[id]), exped: { best: Math.floor(clampN((v.exped || {}).best, 0, 99)), clears: Math.floor(clampN((v.exped || {}).clears, 0)), runs: Math.floor(clampN((v.exped || {}).runs, 0)) }, bounty: { date: typeof (v.bounty || {}).date === "string" ? v.bounty.date.slice(0, 10) : "", done: idList((v.bounty || {}).done).slice(0, 3) }, cardSeen: idList(v.cardSeen, id => !!ANY_CARD(id)), bonusStars: Math.floor(clampN(v.bonusStars, 0)), refunded: Math.floor(clampN(v.refunded, 0)),
     ver: Number.isInteger(v.ver) ? v.ver : legacyVer(v),
   };
   if (d.ver < SAVE_VER) {
@@ -5933,8 +5992,11 @@ const starHtml = n => `<span class="stars">${[0, 1, 2].map(i => i < n ? '<span c
 
 // ---------- 角色等级 ----------
 function levelOf(exp) { let lv = 1, e = exp || 0; while (lv < PROG.max && e >= expNeed(lv)) { e -= expNeed(lv); lv++; } return { lv, into: e, need: lv < PROG.max ? expNeed(lv) : 0 }; }
+function awkOf(exp) { const L = levelOf(exp); return L.lv >= PROG.max ? Math.min(AWK.max, Math.floor(L.into / AWK.need)) : 0; }
+function awkInfo(exp) { const L = levelOf(exp), a = awkOf(exp); return { a, into: L.lv >= PROG.max && a < AWK.max ? L.into - a * AWK.need : 0, full: a >= AWK.max }; }
 function joinExp(D) { let e = 0; for (let l = 1; l < (D.joinAt || 0); l++) e += expNeed(l); return e; }
 const charExp = (d, id) => Math.max((d.chars[id] && d.chars[id].exp) || 0, joinExp(UNITS.find(u => u.id === id) || {}));
+function charAwks(d) { d = d || loadSave(); const o = {}; for (const u of UNITS) o[u.id] = awkOf(charExp(d, u.id)); return o; }
 function charLevels(d) { d = d || loadSave(); const o = {}; for (const u of UNITS) o[u.id] = levelOf(charExp(d, u.id)).lv; return o; }
 const charOpen = u => unlocked(u.joinAt || 0);
 const openChars = () => UNITS.filter(charOpen);
@@ -6465,7 +6527,7 @@ function unitStats(u) {
 }
 function unitCardHtml(u) {
   const D = u.def;
-  return `<div class="uc-h" style="--c:${D.color}"><b>${D.name}</b><span>${D.cls} · ${DMG_NAME[D.dmg] || ""}${u.hero ? " · 英雄" : ""}</span>${u.summon ? "" : `<em>Lv${clv(D.id)}</em>`}<em class="rk">${unitRank(u)}</em></div>
+  return `<div class="uc-h" style="--c:${D.color}"><b>${D.name}</b><span>${D.cls} · ${DMG_NAME[D.dmg] || ""}${u.hero ? " · 英雄" : ""}</span>${u.summon ? "" : `<em>Lv${clv(D.id)}${awk(D.id) ? " · 觉醒" + awk(D.id) : ""}</em>`}<em class="rk">${unitRank(u)}</em></div>
     <div class="uc-s">${unitStats(u).map(([k, v]) => `<span>${k} <b>${v}</b></span>`).join("")}</div>
     ${u.summon ? "" : `<div class="uc-k">技能 · ${D.skill.name}：${D.skill.desc}</div>`}`;
 }
@@ -6666,12 +6728,12 @@ function showHeroPick(stage, opts) {
   heroCtx = { stage, opts };
   const open = openChars().filter(D => !opts.week || weekAllows(D, opts.week.rules)), lvs = charLevels(), save = loadSave(), last = save.hero;
   const st = STAGES[stage], seen = save.seen;
-  const foes = opts.endless || opts.daily ? [] : [...new Set(st.pool.map(p => p[0]).concat(st.boss.map(b => b[0])))];
-  openOverlay(`<h2>选择出战英雄</h2><p>${opts.week ? "每周挑战" : opts.daily ? "每日挑战" : opts.endless ? "无尽模式" : `第 ${stage + 1} 关`}${opts.abyss ? ` · 深渊 ${opts.abyss} 层` : ""} · ${st.name}：一局只带 1 个英雄上场，其他伙伴靠升级翻牌加入。</p>
+  const foes = opts.endless || opts.daily || opts.expedStart ? [] : [...new Set(st.pool.map(p => p[0]).concat(st.boss.map(b => b[0])))];
+  openOverlay(`<h2>选择出战英雄</h2><p>${opts.expedStart ? "远征：这名英雄会一路带到最后" : opts.week ? "每周挑战" : opts.daily ? "每日挑战" : opts.endless ? "无尽模式" : `第 ${stage + 1} 关`}${opts.abyss ? ` · 深渊 ${opts.abyss} 层` : ""} · ${st.name}：一局只带 1 个英雄上场，其他伙伴靠升级翻牌加入。</p>
     ${foes.length ? `<div class="wavebar" style="justify-content:center"><span>本关敌人：</span>${foes.map(k => `<span class="chip${ENEMIES[k].flying ? " elite" : ""}">${seen.includes(k) ? ENEMIES[k].name + (ENEMIES[k].flying ? " · 飞行" : "") : "？？？"}</span>`).join("")}</div>` : ""}
     <div class="heroes">${open.map(D => `<button class="card${D.id === last ? " sel" : ""}" data-hero="${D.id}" style="--c:${D.color}">
       <canvas class="pt" id="hp-${D.id}" aria-hidden="true"></canvas><span class="nm">${D.name}</span>
-      <span class="meta">${D.cls} · ${D.place === "ground" ? "前排拦怪" : D.dmg === "heal" ? "治疗" : D.air ? "能打飞行" : "只打地面"}</span><span class="clv">Lv${lvs[D.id]}</span></button>`).join("")}</div>
+      <span class="meta">${D.cls} · ${D.place === "ground" ? "前排拦怪" : D.dmg === "heal" ? "治疗" : D.air ? "能打飞行" : "只打地面"}</span><span class="clv">Lv${lvs[D.id]}${awkOf(charExp(save, D.id)) ? "★" + awkOf(charExp(save, D.id)) : ""}</span></button>`).join("")}</div>
     <div class="btns"><button id="btn-menu">返回选关</button></div>`);
   for (const D of open) drawPortrait(D, $("hp-" + D.id), 1);
 }
@@ -6707,22 +6769,24 @@ function showRoster(id) {
   rosterAnim = null;
   const d = loadSave();
   if (!id) {
-    openOverlay(`<h2>角色</h2><p>角色上场会获得经验，最高 ${PROG.max} 级：每级生命、攻击 +4%，3 级出场生命 +10%，5 级解锁天赋，7 级复活更快，10 级出场自带 50% 技力。</p>
+    openOverlay(`<h2>角色</h2><p>角色上场会获得经验，最高 ${PROG.max} 级：每级生命、攻击 +4%，3 级出场生命 +10%，5 级解锁天赋，7 级复活更快，10 级出场自带 50% 技力。<br>满级后继续拿到的经验会让角色<b>觉醒</b>（最多 ${AWK.max} 级，每级 ${AWK.need} 经验）：每级攻击、生命 +${AWK.perLv * 100}%，觉醒 ${AWK.auraLv} 级起脚下有金色光环，觉醒 ${AWK.spLv} 级技力回复 +20%。</p>
       <div class="roster">${UNITS.map(D => { const open = charOpen(D), { L, pct } = expBar(charExp(d, D.id));
         return `<button class="card rc${open ? "" : " locked"}" ${open ? `data-ros="${D.id}"` : "disabled"} style="--c:${D.color}"><canvas class="pt" id="rs-${D.id}" aria-hidden="true"></canvas>
-          <span class="nm">${open ? D.name : "？？？"}</span><span class="meta">${open ? `${D.cls} · Lv${L.lv}` : `第 ${D.joinAt + 1} 关加入`}</span>
+          <span class="nm">${open ? D.name : "？？？"}</span><span class="meta">${open ? `${D.cls} · Lv${L.lv}${awkOf(charExp(d, D.id)) ? " · 觉醒" + awkOf(charExp(d, D.id)) : ""}` : `第 ${D.joinAt + 1} 关加入`}</span>
           ${open ? `<span class="xp"><i style="width:${pct}%"></i></span>` : ""}</button>`; }).join("")}</div>
       <div class="btns"><button id="btn-menu">返回选关</button></div>`);
     for (const D of UNITS) { const c = $("rs-" + D.id); if (charOpen(D)) drawPortrait(D, c, 1); else { c.width = 40; c.height = 40; const g = c.getContext("2d"); g.fillStyle = "#1a1f2e"; g.fillRect(0, 0, 40, 40); } }
     return;
   }
-  const D = UNITS.find(u => u.id === id), exp = charExp(d, id), { L, pct } = expBar(exp), k = 1 + PROG.perLv * (L.lv - 1), tal = TALENTS[id];
+  const D = UNITS.find(u => u.id === id), exp = charExp(d, id), { L, pct } = expBar(exp), k = (1 + PROG.perLv * (L.lv - 1)) * (1 + AWK.perLv * awkOf(exp)), tal = TALENTS[id];
   const open = UNITS.filter(charOpen), idx = open.indexOf(D);
   const st = (name, base, mul) => `<div><span>${name}</span><b>${R0(base * mul)}</b>${mul > 1 ? `<small>+${R0(base * mul) - base}</small>` : ""}</div>`;
   openOverlay(`<div class="rdetail">
     <div class="rleft"><canvas id="r-anim" class="ranim" aria-hidden="true" style="--c:${D.color}"></canvas>
       <h3>${D.name} <small>${D.cls} · ${placeName(D)}</small></h3>
       <div class="rlv"><b>Lv ${L.lv}</b><span>${L.lv >= PROG.max ? "已满级" : `经验 ${L.into} / ${L.need}`}</span></div><div class="meter"><i style="width:${pct}%;background:var(--gold)"></i></div>
+      ${L.lv >= PROG.max ? (() => { const A = awkInfo(exp); return `<div class="rlv awk"><b>觉醒 ${"★".repeat(A.a)}${"☆".repeat(AWK.max - A.a)}</b><span>${A.full ? "已完全觉醒" : `觉醒经验 ${A.into} / ${AWK.need}`}</span></div><div class="meter"><i style="width:${A.full ? 100 : Math.round(A.into / AWK.need * 100)}%;background:linear-gradient(90deg,#ffd860,#ff8ac0)"></i></div>
+        <p class="awkp">觉醒加成：攻击、生命 +${Math.round(A.a * AWK.perLv * 100)}%${A.a >= AWK.auraLv ? " · 金色光环" : ""}${A.a >= AWK.spLv ? " · 技力回复 +20%" : ""}</p>`; })() : ""}
       <p class="bio">${BIO[id]}</p></div>
     <div class="rright">
       <div class="rstats">${st("生命", D.hp, k)}${st("攻击", D.atk, k)}${st("防御", D.def, 1)}${st("法抗", D.res, 1)}
@@ -6753,8 +6817,8 @@ function animRoster(now) {
 function expHtml(gains) {
   if (!gains || !gains.length) return "";
   return `<div class="expt">${gains.map(g => { const { pct } = expBar(g.exp), up = g.after.lv > g.before;
-    return `<div class="ex${up ? " up" : ""}"><canvas data-ept="${g.D.id}" aria-hidden="true"></canvas><div><b>${g.D.name}</b><span>+${g.gain} 经验</span>
-      <em>${up ? `Lv${g.before} → Lv${g.after.lv}${g.before < PROG.talentLv && g.after.lv >= PROG.talentLv ? " · 天赋解锁" : ""}` : `Lv${g.after.lv}`}</em>
+    return `<div class="ex${up || awkOf(g.exp) > awkOf(g.exp - g.gain) ? " up" : ""}"><canvas data-ept="${g.D.id}" aria-hidden="true"></canvas><div><b>${g.D.name}</b><span>+${g.gain} 经验</span>
+      <em>${up ? `Lv${g.before} → Lv${g.after.lv}${g.before < PROG.talentLv && g.after.lv >= PROG.talentLv ? " · 天赋解锁" : ""}` : `Lv${g.after.lv}`}${(() => { const a0 = awkOf(g.exp - g.gain), a1 = awkOf(g.exp); return a1 > a0 ? ` · <b style="color:#ffd860">觉醒 ${a1}！</b>` : a1 ? ` · 觉醒 ${a1}` : ""; })()}</em>
       <span class="xp"><i style="width:${pct}%"></i></span></div></div>`; }).join("")}</div>`;
 }
 function drawExpPortraits() { for (const c of $("ovbox").querySelectorAll("canvas[data-ept]")) drawPortrait(UNITS.find(u => u.id === c.dataset.ept), c, 1); }
@@ -6852,6 +6916,8 @@ function showLevels() {
     <div class="daily"><div><b>每日挑战 · ${td.date}</b><p>场地：${STAGES[td.stage].name} · 规则：${mod.name}（${mod.desc}）</p>
       <p>${rec ? (rec.cleared ? `今天已经通关 ✓ 领了 ${rec.got || 0}★` : `今天最好成绩：第 ${rec.wave} 波${rec.got ? ` · 已领 ${rec.got}★，通关再补 ${DAILY_STARS.win - rec.got}★` : ""}`) : "今天还没挑战"}</p>
       <p class="drw">每天奖励：通关 <b>+${DAILY_STARS.win}★</b>，没通关但撑过一半波数 +${DAILY_STARS.half}★（按今天最好的一次算）</p></div><button class="primary" id="btn-daily">开始挑战</button></div>
+    ${bountyHtml(save)}
+    ${expCardHtml(save)}
     ${weekHtml(save)}
     ${unlocked(VIGIL.unlockAt) ? `<div class="daily vigil"><div><b>守望之战 · 长夜</b><p>随机生成的地图 + ${VIGIL.waves} 波超长局：第 8、16、25 波是首领，中途有补给，能把等级和卡叠到很高。</p>
       <p>${save.vigil && save.vigil.best ? `最好成绩：撑到第 ${save.vigil.best} 波${save.vigil.clear ? " · 已通关 ✓" : ""}` : "还没挑战过"}</p></div><button class="primary" id="btn-vigil">开始守望</button></div>`
@@ -6873,20 +6939,26 @@ function showPerks() {
   const bank = starBank(), disk = bank.disk;
   const node = n => {
     const lv = disk[n.id] || 0, inf = n.max > 999, full = !inf && lv >= n.max, cost = full ? 0 : diskCost(n.id, lv);
+    if (n.key) {   // 核心天赋：一次点亮，有前置条件
+      const lineLv = diskLineLv(disk, n.line), why = lv ? "" : lineLv < KEY_NEED ? `本线投入 ${lineLv}/${KEY_NEED} 级后才能点亮` : diskKeys(disk) >= KEY_MAX ? `最多同时点亮 ${KEY_MAX} 个核心天赋（重置星盘可以换）` : "";
+      return `<div class="dnode dkey${lv ? " on full" : ""}"><div class="dh"><b>◆ ${n.name}</b><span>核心天赋</span></div>
+        <p class="dnow">${n.desc(1)}</p>${why ? `<p class="dlock">${why}</p>` : ""}
+        <button data-disk="${n.id}" ${lv || !diskCanBuy(disk, n.id, bank.left) ? "disabled" : ""}>${lv ? "已点亮" : `点亮 · ${cost}★`}</button></div>`;
+    }
     return `<div class="dnode${lv ? " on" : ""}${full ? " full" : ""}"><div class="dh"><b>${n.name}</b><span>${inf ? "Lv " + lv : lv + "/" + n.max}</span></div>
       <p class="dnow">${lv ? "当前：" + n.desc(lv) : "还没点亮"}</p>
       ${full ? "" : `<p class="dnext">${lv ? "下一级" : "点亮后"}：${n.desc(lv + 1)}</p>`}
       <button data-disk="${n.id}" ${full || bank.left < cost ? "disabled" : ""}>${full ? "已满级" : `升级 · ${cost}★`}</button></div>`;
   };
-  openOverlay(`<h2>天赋星盘</h2><p>共获得 ${bank.earned}★，已投入 ${bank.spent}★，可用 <span class="starbank">${bank.left}★</span>。每个节点都能升好几级，最底下的「星辉」没有上限。</p>
+  openOverlay(`<h2>天赋星盘</h2><p>共获得 ${bank.earned}★，已投入 ${bank.spent}★，可用 <span class="starbank">${bank.left}★</span>。每个节点都能升好几级，最底下的「星辉」没有上限。每条线的终点是<b>核心天赋</b>：本线投入 ${KEY_NEED} 级后才能点亮，最多同时点亮 ${KEY_MAX} 个。</p>
     <p class="dsrc">星星来源：关卡星级、困难 / 噩梦首通、无尽每 10 波、成就、深渊每层首通、每周挑战首通；每日挑战每天最多 +${DAILY_STARS.win}★；另外<b>每次通关 +1★</b>（困难再 +${DIFF_BONUS[1]}、噩梦再 +${DIFF_BONUS[2]}，深渊每 5 层再 +1）。</p>
-    <div class="disk">${DISK_LINES.map(L => `<div class="dline" style="--c:${L.color}"><h4>${L.name}</h4>${DISK.filter(n => n.line === L.id).map(node).join("")}</div>`).join("")}</div>
+    <div class="disk">${DISK_LINES.map(L => `<div class="dline" style="--c:${L.color}"><h4>${L.name}</h4>${DISK.filter(n => n.line === L.id && !n.key).map(node).join("")}${DISK.filter(n => n.line === L.id && n.key).map(node).join("")}</div>`).join("")}</div>
     <div class="dline dstar" style="--c:#ffe8a0">${node(DISK_BY.star)}</div>
     <div class="btns"><button id="btn-diskreset">重置星盘（全部退还）</button><button id="btn-menu">返回选关</button></div>`);
 }
 function buyDisk(id) {
   const n = DISK_BY[id], bank = starBank(), lv = bank.disk[id] || 0;
-  if (!n || lv >= n.max || bank.left < diskCost(id, lv)) return;
+  if (!diskCanBuy(bank.disk, id, bank.left)) return;
   editSave(d => { d.disk[id] = lv + 1; });
   const sc = $("overlay").scrollTop; showPerks(); $("overlay").scrollTop = sc;
 }
@@ -6897,6 +6969,11 @@ function abyssHtml(save) {
   return `<div class="abyss"><div class="abrow"><button data-abyss="-1" ${abyssSel ? "" : "disabled"}>−</button><b>${abyssSel ? `深渊 ${abyssSel} 层` : "深渊：关闭"}</b><button data-abyss="1" ${abyssSel < open ? "" : "disabled"}>＋</button><small>已解锁到第 ${open} 层</small></div>
     <p>${a ? `本层新增<b>「${a.name}」</b>：${a.desc}。前面各层的规则同时生效。首次通关这一层 +${abyssStars(abyssSel)}★。` : "在任意一关通关深渊第 N 层，就能解锁第 N+1 层（最高 20 层）。每层都会叠一条新的敌方加成，星星奖励也越来越多。"}</p>
     ${abyssSel > 1 ? `<p class="abl">${ABYSS.slice(0, abyssSel).map((x, i) => `<span title="${x.desc}">${i + 1}·${x.name}</span>`).join("")}</p>` : ""}</div>`;
+}
+function bountyHtml(save) {
+  const B = todayBounties(), done = save.bounty.date === B.date ? save.bounty.done : [], n = B.list.filter(b => done.includes(b.key)).length;
+  return `<div class="daily bounty"><div><b>今日悬赏 · ${n}/${B.list.length}</b><p>每完成一条 +${BOUNTY_STARS}★，三条全完成再 +${BOUNTY_ALL}★。每天 0 点换新，哪种模式打的都算。</p>
+    <ul class="bl">${B.list.map(b => `<li class="${done.includes(b.key) ? "ok" : ""}">${done.includes(b.key) ? "✓" : "○"} ${b.text}</li>`).join("")}</ul></div></div>`;
 }
 function weekHtml(save) {
   if (!save.stars.some((x, i) => i >= 3 && x > 0)) return `<div class="daily week lockd"><div><b>每周挑战</b><p>通关第 4 关后解锁</p></div></div>`;
@@ -7005,7 +7082,7 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.dataset.lv != null) beginStage(+b.dataset.lv, { diff: diffSel, abyss: abyssSel });
   else if (b.dataset.endless != null) beginStage(+b.dataset.endless, { endless: true });
   else if (b.dataset.story != null) replayStory(+b.dataset.story);
-  else if (b.dataset.hero && heroCtx) { const { stage, opts } = heroCtx; heroCtx = null; editSave(d => { d.hero = b.dataset.hero; }); startRun(stage, { ...opts, hero: b.dataset.hero }); }
+  else if (b.dataset.hero && heroCtx) { const { stage, opts } = heroCtx; heroCtx = null; editSave(d => { d.hero = b.dataset.hero; }); if (opts.expedStart) expStart(b.dataset.hero); else startRun(stage, { ...opts, hero: b.dataset.hero }); }
   else if (b.dataset.ros) showRoster(b.dataset.ros);
   else if (b.dataset.rnav) showRoster(b.dataset.rnav);
   else if (b.id === "btn-roster") showRoster();
@@ -7018,6 +7095,11 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-vigil") { let last = 0; STAGES.forEach((_, i) => { if (unlocked(i)) last = i; }); beginStage(last, { vigil: true, seed: (Math.random() * 1e9) | 0, diff: diffSel }); }
   else if (b.id === "btn-resume") closeOverlay();
   else if (b.id === "btn-synback") closeOverlay();
+  else if (b.id === "btn-exped") { if (expLoad()) showExpMap(); else showHeroPick(0, { expedStart: true }); }
+  else if (b.dataset.exnode != null) expChoose(+b.dataset.exnode);
+  else if (b.dataset.exrest) expRest(b.dataset.exrest);
+  else if (b.id === "btn-expgo") showExpMap();
+  else if (b.id === "btn-expquit") { if (b.dataset.sure) { expClear(); showLevels(); } else { b.dataset.sure = "1"; b.textContent = "再点一次确认放弃（已得星星不扣）"; } }
   else if (b.id === "btn-retry") startRun(S.stage, lastOpts);
   else if (b.id === "btn-next") beginStage(S.stage + 1, { diff: S.diff && S.stage + 1 < STAGES.length && (loadSave().stars[S.stage + 1] || 0) > 0 ? S.diff : 0, abyss: S.abyss || 0 });
   else if (b.id === "btn-menu") { heroCtx = null; showLevels(); }
@@ -7035,7 +7117,7 @@ function beginStage(i, opts) {
   } else go();
 }
 function previewStage(i) {
-  newRun(i, { perks: loadSave().perks, charLv: charLevels(), charTal: loadSave().tal, hero: loadSave().hero, charOpen: openChars().map(u => u.id) });
+  newRun(i, { perks: loadSave().perks, charLv: charLevels(), charAwk: charAwks(), charTal: loadSave().tal, hero: loadSave().hero, charOpen: openChars().map(u => u.id) });
   mapFor = -1; infoKey = ""; teamKey = ""; cardKey = "";
   closeOverlay();
   for (const el of document.querySelectorAll("[data-k]")) el.dataset.k = "";
@@ -7053,7 +7135,7 @@ function replayStory(i) {
 }
 function startRun(i, opts) {
   opts = opts || {}; lastOpts = opts;
-  newRun(i, { ...opts, perks: opts.perks || loadSave().perks, charLv: opts.charLv || charLevels(), charTal: opts.charTal || loadSave().tal, charOpen: opts.charOpen || openChars().map(u => u.id), formIdx: opts.formIdx == null ? loadSave().form : opts.formIdx, disk: opts.disk || loadSave().disk, autoWave: opts.autoWave == null ? loadSave().autoWave : opts.autoWave });
+  newRun(i, { ...opts, perks: opts.perks || loadSave().perks, charLv: opts.charLv || charLevels(), charAwk: opts.charAwk || charAwks(), charTal: opts.charTal || loadSave().tal, charOpen: opts.charOpen || openChars().map(u => u.id), formIdx: opts.formIdx == null ? loadSave().form : opts.formIdx, disk: opts.disk || loadSave().disk, autoWave: opts.autoWave == null ? loadSave().autoWave : opts.autoWave });
   acc = 0; shownOver = null; mapFor = -1; infoKey = ""; teamKey = ""; cardKey = "";
   setText("btn-speed", "1×"); setText("btn-pause", "暂停"); cycleForm(true);
   for (const el of document.querySelectorAll("[data-k]")) el.dataset.k = "";
@@ -7179,8 +7261,13 @@ function checkOver() {
 }
 function showResult(R) {
   R = R || settleRun();
-  const win = R.win, exp = expHtml(R.exp), tail = battleReport() + cardsHtml() + statsTable() + exp;
-  if (R.mode === "vigil") {
+  const win = R.win, exp = expHtml(R.exp), tail = (R.bounty && R.bounty.length ? `<p class="stars bgot">悬赏完成：${R.bounty.join("、")} · +${R.bountyStars}★</p>` : "") + battleReport() + cardsHtml() + statsTable() + exp;
+  if (R.mode === "exped") {
+    const rl_ = R.expRelic ? `<p style="color:#ffd860">精英战利品：遗物「${RELIC_BY[R.expRelic].name}」</p>` : "";
+    if (R.expDone) openOverlay(`<h2>远征完成！</h2><p class="stars">首领击破 +${R.expStars}★ · 本次远征共 ${R.expTotal}★</p>${rl_}${tail}<div class="btns"><button class="primary" id="btn-exped">再来一次远征</button><button id="btn-menu">选关</button></div>`);
+    else if (win) openOverlay(`<h2>远征 · 第 ${R.expFloor} 层突破</h2><p class="stars">+${R.expStars}★</p>${rl_}<p>队伍、卡牌、遗物都带到下一层；晨星碑开局会回复一些。${expLoad() && expLoad().rest ? "<b>下一步可以休整一次。</b>" : ""}</p>${tail}<div class="btns"><button class="primary" id="btn-expgo">继续远征</button><button id="btn-menu">先回选关（进度保留）</button></div>`);
+    else openOverlay(`<h2>远征结束</h2><p>倒在第 ${R.expFloor} 层 · ${ST.name}。本次远征共得 ${R.expTotal || 0}★。</p>${tail}<div class="btns"><button class="primary" id="btn-exped">重新远征</button><button id="btn-menu">选关</button></div>`);
+  } else if (R.mode === "vigil") {
     openOverlay(`<h2>${win ? "长夜守望成功" : "长夜结束"}</h2><p>${ST.name}：撑过 ${R.reached}/${ST.waves} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}，攒了 ${S.dust} 星尘。</p>
       <p>最好成绩：第 ${R.best} 波${R.clear ? " · 已通关 ✓" : ""}</p>
       ${tail}<div class="btns"><button class="primary" id="btn-vigil">再守一夜</button><button id="btn-menu">选关</button></div>`);
@@ -7233,11 +7320,13 @@ function settleRun() {
   if (!S || !S.over) return null;
   if (S.settled) return S.settled;
   const win = S.over === "win";
-  const mode = S.vigil ? "vigil" : S.daily ? "daily" : S.endless ? "endless" : S.week ? "week" : "main";
+  const mode = S.exped ? "exped" : S.vigil ? "vigil" : S.daily ? "daily" : S.endless ? "endless" : S.week ? "week" : "main";
   const R = S.settled = { win, mode, reached: win && !S.endless ? ST.waves : Math.max(0, S.wave - 1) };
   recordRun(win);
   R.exp = awardExp(win);
   // 「通关某关 / 任意关卡」类成就和通关剧情只算主线；守望之战的 S.stage 是解锁到的最后一关，每周挑战是指定关卡，都不算真的打通了那一关
+  if (mode === "exped") expSettle(R);
+  checkBounties(R);
   if (win && mode === "main") {
     const full = S.crystal.hp >= S.crystal.maxHp;
     for (const id of stageAchv(S.stage)) unlockAchv(id);
@@ -7275,6 +7364,45 @@ function settleRun() {
     else editSave(d => { const a = d.diffClear[S.stage] || []; const id = DIFFS[S.diff].id; if (!a.includes(id)) { a.push(id); R.diffFirst = true; } d.diffClear[S.stage] = a; });
   }
   return R;
+}
+
+// ---------- 每日悬赏：按日期固定抽 3 条，每条 +3★，三条都完成再 +3★（哪种模式打的都算）----------
+const BOUNTY_STARS = 3, BOUNTY_ALL = 3;
+const mainWin = R => R.win && R.mode === "main";
+const BOUNTY_TYPES = [
+  { id: "hero", make: r => { const pool = openChars(), D = pool[Math.floor(r() * pool.length)] || UNITS[0]; return { key: "hero_" + D.id, text: `用「${D.name}」当英雄通关任意主线关卡`, ok: R => mainWin(R) && S.heroId === D.id }; } },
+  { id: "elite", make: r => { const n = [6, 8, 10][Math.floor(r() * 3)]; return { key: "elite" + n, text: `一局里击败 ${n} 个精英或首领`, ok: () => (S.eliteKills || 0) >= n }; } },
+  { id: "focus", make: () => ({ key: "focus", text: "一局里集火击杀 3 个敌人（点敌人就能集火）", ok: () => (S.focusKills || 0) >= 3 }) },
+  { id: "combo", make: r => { const n = [30, 40, 50][Math.floor(r() * 3)]; return { key: "combo" + n, text: `一局里连杀达到 ${n}`, ok: () => S.comboBest >= n }; } },
+  { id: "break", make: () => ({ key: "break", text: "一局里打断 2 次首领读条", ok: () => (S.breaks || 0) >= 2 }), need: 3 },
+  { id: "syn", make: () => ({ key: "syn2", text: "一局里同时激活 2 个羁绊", ok: () => (S.bestSyn || 0) >= 2 }) },
+  { id: "noreroll", make: () => ({ key: "noreroll", text: "一次都不重抽，通关任意关卡", ok: R => R.win && !S.rerollsUsed && R.mode !== "endless" }) },
+  { id: "nospell", make: () => ({ key: "nospell", text: "不放陨星术和圣愈之光，通关任意关卡", ok: R => R.win && !S.usedSpell && R.mode !== "endless" }) },
+  { id: "hard", make: () => ({ key: "hard", text: "在困难或噩梦难度通关任意主线关卡", ok: R => mainWin(R) && S.diff >= 1 }), need: 4 },
+  { id: "legend", make: () => ({ key: "legend2", text: "一局里拿到 2 张传说卡", ok: () => S.legends >= 2 }) },
+  { id: "evo", make: () => ({ key: "evo", text: "一局里拿到一张进化卡（技能卡升满级后出现）", ok: () => Object.keys(S.cards).some(id => id.startsWith("ev_")) }), need: 4 },
+  { id: "lv", make: r => { const n = [14, 16][Math.floor(r() * 2)]; return { key: "lv" + n, text: `一局里升到 ${n} 级`, ok: () => S.level >= n }; } },
+  { id: "daily", make: () => ({ key: "daily", text: "通关今天的每日挑战", ok: R => R.win && R.mode === "daily" }) },
+  { id: "exped", make: () => ({ key: "exped", text: "远征里打赢一场精英战或首领战", ok: R => R.win && R.mode === "exped" && S.exped && S.exped.node !== "fight" }), need: 4 },
+];
+// 今天的 3 条悬赏：同一天打开几次都一样（用日期当种子）
+function todayBounties() {
+  const td = todayInfo(), r = seeded(td.seed ^ 0x5bd1e995), cleared = loadSave().stars.filter(x => x > 0).length;
+  const types = BOUNTY_TYPES.filter(t => cleared >= (t.need || 0));
+  const out = [];
+  while (out.length < 3 && types.length) out.push(types.splice(Math.floor(r() * types.length), 1)[0].make(r));
+  return { date: td.date, list: out };
+}
+function checkBounties(R) {
+  const B = todayBounties(), got = [];
+  let bonus = 0;
+  editSave(d => {
+    if (d.bounty.date !== B.date) d.bounty = { date: B.date, done: [] };
+    for (const b of B.list) if (!d.bounty.done.includes(b.key)) { let ok = false; try { ok = b.ok(R); } catch (e) {} if (ok) { d.bounty.done.push(b.key); got.push(b.text); bonus += BOUNTY_STARS; } }
+    if (got.length && B.list.every(b => d.bounty.done.includes(b.key))) bonus += BOUNTY_ALL;
+    d.bonusStars += bonus;
+  });
+  R.bounty = got; R.bountyStars = bonus;
 }
 
 // 通关奖励：每次都给 1★，困难再 +2、噩梦再 +3，深渊每 5 层 +1；深渊新层首通另算
@@ -7334,6 +7462,145 @@ function awardExp(win) {
   writeSave(d);
   if (gains.some(g => g.after.lv >= PROG.max)) unlockAchv("lv10");
   return gains.sort((a, b) => (b.played ? 1 : 0) - (a.played ? 1 : 0) || b.gain - a.gain);
+}
+
+// ================= 远征模式：连闯 6 层，队伍 / 卡牌 / 遗物 / 星尘一路带下去 =================
+// 进度单独存在 localStorage 的 EXPED.key 里（不进主存档的白名单）：中途关掉页面，回来还停在路线图上；战斗打到一半关掉就从这一层的战斗重新开始。
+// 主存档里只记战绩 save.exped = { best, clears, runs }。
+const EXPED = { floors: 6, unlockAt: 3, restAfter: [1, 3], waveK: 0.6, hpStep: 0.38, atkStep: 0.12, eliteHp: 1.3, eliteExtra: 0.15, heal: 0.25, minHp: 0.4, key: "chenxing-td-exp",
+  stars: { fight: 2, elite: 3, boss: 10 } };
+const EXP_NODE = {
+  fight: { name: "战斗", desc: "普通的一关（波数缩短），打赢继续前进", color: "#8fb3e0" },
+  elite: { name: "精英战", desc: "敌人更硬、精英更多；打赢必得一件遗物", color: "#ff6a5a" },
+  boss: { name: "首领", desc: "远征终点：打赢就完成远征", color: "#c860ff" },
+};
+const expUnlocked = d => ((d || loadSave()).stars[EXPED.unlockAt] || 0) > 0;
+function expLoad() { try { const v = JSON.parse(localStorage.getItem(EXPED.key) || "null"); return v && v.v === 1 && Array.isArray(v.map) && UNITS.some(u => u.id === v.hero) ? v : null; } catch (e) { return null; } }
+function expSave(st) { try { localStorage.setItem(EXPED.key, JSON.stringify(st)); } catch (e) {} }
+function expClear() { try { localStorage.removeItem(EXPED.key); } catch (e) {} }
+
+// 路线图：每层都是一场仗（普通战 / 精英战二选一或三选一），最后一层是首领关；第 2、4 场打赢后有一次休整
+function expMakeMap() {
+  const cleared = STAGES.map((_, i) => i).filter(i => (loadSave().stars[i] || 0) > 0);
+  const pickStage = f => {   // 越往后越挑后面的关卡
+    const c = cleared.length ? cleared : [0], mid = (f / (EXPED.floors - 1)) * (c.length - 1), j = Math.round(mid + (Math.random() - 0.5) * 2);
+    return c[Math.max(0, Math.min(c.length - 1, j))];
+  };
+  const bosses = cleared.filter(i => i % 4 === 3);
+  const map = [];
+  for (let f = 0; f < EXPED.floors; f++) {
+    if (f === EXPED.floors - 1) { map.push([{ type: "boss", stage: bosses.length ? bosses[Math.floor(Math.random() * bosses.length)] : pickStage(f) }]); continue; }
+    const row = [{ type: "fight", stage: pickStage(f) }, f === 0 ? { type: "fight", stage: pickStage(f) } : { type: "elite", stage: pickStage(f) }];
+    if (f > 0 && Math.random() < 0.5) row.push({ type: "fight", stage: pickStage(f) });
+    map.push(row.sort(() => Math.random() - 0.5));
+  }
+  return map;
+}
+function expStart(hero) {
+  const st = { v: 1, hero, floor: 0, map: expMakeMap(), path: [], snap: null, flips: 0, stars: 0, won: 0 };
+  expSave(st); editSave(d => { d.exped.runs++; });
+  showExpMap();
+}
+// 本局打完后记下来带到下一层的东西
+function expSnap() {
+  return { cards: { ...S.cards }, curses: { ...S.curses }, relics: [...S.relics], dust: S.dust, rerolls: S.rerolls, level: S.level, xp: S.xp, legends: S.legends,
+    units: S.units.filter(u => !u.summon && !u.dead).map(u => ({ id: u.def.id, lv: u.lv, branch: u.branch, hero: u.hero })), crystal: S.crystal.maxHp ? S.crystal.hp / S.crystal.maxHp : 1 };
+}
+// newRun 末尾调用：把上一层带来的队伍、卡牌、遗物装回去（拿牌时的一次性效果在这里补算）
+function expRestore(sn, flips) {
+  S.cards = { ...sn.cards }; S.curses = { ...sn.curses }; S.relics = [...sn.relics].filter(id => RELIC_BY[id]);
+  S.dust = sn.dust; S.rerolls = sn.rerolls; S.level = sn.level; S.xp = sn.xp; S.xpNeed = xpNeedOf(S.level); S.legends = sn.legends || 0;
+  const hero = S.units.find(u => u.hero), hs = sn.units.find(u => u.hero);
+  if (hero && hs) { hero.lv = hs.lv; hero.branch = hs.branch; }
+  for (const x of sn.units) if (!x.hero) { const D = UNITS.find(u => u.id === x.id); if (!D) continue; const u = addUnit(D); u.lv = x.lv; u.branch = x.branch; }
+  S.crystal.maxHp = Math.round(S.crystal.maxHp * Math.pow(1.2, cl("shield")) * Math.pow(1.4, cl("lg_aegis")) * Math.pow(0.75, cu("cu_brittle")));
+  S.crystal.hp = Math.round(S.crystal.maxHp * Math.min(1, Math.max(EXPED.minHp, (sn.crystal || 1) + EXPED.heal)));
+  for (const u of S.units) { u.maxHp = uMaxHp(u); u.hp = u.maxHp; }
+  if (cl("sk_blade")) buildBlades();
+  if (hero && hero.def.id === "summoner" && (sg("sg_su1") || sg("sg_su2"))) summonGolem(hero);
+  updateSyn(); arrange();
+  S.pending = flips || 0;
+}
+function expBattle(node) {
+  const st = expLoad(); if (!st) return;
+  const f = st.floor, elite = node.type === "elite";
+  startRun(node.stage, { hero: st.hero, exped: { node: node.type, floor: f, waves: Math.max(5, Math.ceil(STAGES[node.stage].waves * (node.type === "boss" ? 0.75 : EXPED.waveK))),
+    hpK: (1 + EXPED.hpStep * f) * (elite ? EXPED.eliteHp : 1), atkK: 1 + EXPED.atkStep * f, elite: elite ? EXPED.eliteExtra : 0, snap: st.snap, flips: st.flips } });
+}
+// 结算（settleRun 里调用）：赢了记快照、发星星、前进一层；输了远征结束
+function expSettle(R) {
+  const st = expLoad(); R.expFloor = (st ? st.floor : 0) + 1;
+  if (!st) return;
+  const node = S.exped.node;
+  if (R.win) {
+    const got = EXPED.stars[node] || 2;
+    if (node === "elite") { const pool = RELICS.filter(r => !S.relics.includes(r.id)); if (pool.length && S.relics.length < RELIC_MAX) { const id = pool[Math.floor(Math.random() * pool.length)].id; S.relics.push(id); R.expRelic = id; editSave(d => { if (!d.relicSeen.includes(id)) d.relicSeen.push(id); }); } }
+    st.snap = expSnap(); st.flips = 0; st.won++; st.stars += got; st.path.push(node);
+    if (EXPED.restAfter.includes(st.floor)) st.rest = true;   // 这一层打完有休整
+    st.floor++;
+    R.expStars = got;
+    editSave(d => { d.bonusStars += got; d.exped.best = Math.max(d.exped.best, st.floor); });
+    if (node === "boss" || st.floor >= EXPED.floors) { R.expDone = true; R.expTotal = st.stars; editSave(d => { d.exped.clears++; }); unlockAchv("exped"); expClear(); }
+    else expSave(st);
+  } else { R.expEnd = true; R.expTotal = st.stars; editSave(d => { d.exped.best = Math.max(d.exped.best, st.floor); }); expClear(); }
+}
+
+// ---------- 界面 ----------
+function expRowHtml(st) {
+  const sn = st.snap, H = UNITS.find(u => u.id === st.hero);
+  if (!sn) return `<p>英雄：<b style="color:${H.color}">${H.name}</b> · 还没出发</p>`;
+  const nc = Object.keys(sn.cards).length, team = sn.units.map(u => UNITS.find(d => d.id === u.id)).filter(Boolean);
+  return `<p>队伍：${team.map(d => `<b style="color:${d.color}">${d.name}</b>`).join("、")} · Lv ${sn.level} · 卡牌 ${nc} 张 · 遗物 ${sn.relics.length} 件 · 星尘 ${sn.dust} · 晨星碑 ${Math.round(sn.crystal * 100)}%（下一战开局回复到至少 ${Math.round(Math.min(1, Math.max(EXPED.minHp, sn.crystal + EXPED.heal)) * 100)}%）${st.flips ? ` · 下一战多翻 ${st.flips} 张` : ""}</p>`;
+}
+function showExpMap() {
+  const st = expLoad(); if (!st) { showLevels(); return; }
+  if (st.rest && st.snap) { openOverlay(expRestHtml(st)); return; }
+  const f = st.floor;
+  const floors = st.map.map((row, i) => {
+    const cls = i < f ? "past" : i === f ? "now" : "next";
+    const chosen = i < f ? st.path[i] : null;
+    return `<div class="exf ${cls}"><span class="exn">第 ${i + 1} 层</span>${i === f
+      ? row.map((n, k) => { const N = EXP_NODE[n.type]; return `<button class="exnode" data-exnode="${k}" style="--c:${N.color}"><b>${N.name}</b>${n.stage != null ? `<small>第 ${n.stage + 1} 关 · ${STAGES[n.stage].name}</small>` : ""}<span>${N.desc}</span></button>`; }).join("")
+      : i < f ? `<span class="exdone" style="--c:${(EXP_NODE[chosen] || EXP_NODE.fight).color}">✓ ${(EXP_NODE[chosen] || EXP_NODE.fight).name}</span>`
+      : row.map(n => `<span class="exfut" style="--c:${EXP_NODE[n.type].color}">${EXP_NODE[n.type].name}</span>`).join("")}</div>`;
+  }).reverse().join("");
+  openOverlay(`<h2>远征 · 第 ${f + 1}/${EXPED.floors} 层</h2>${expRowHtml(st)}
+    <p class="dsrc">每层选一场仗：普通战，或者更难但必掉遗物的精英战；第 2、4 场打赢后能休整一次。战斗之间队伍、卡牌、遗物、星尘和等级都会带下去，敌人一层比一层强。输一场远征就结束（已经拿到的星星不会扣）。本次远征已得 ${st.stars}★。</p>
+    <div class="exmap">${floors}</div>
+    <div class="btns"><button id="btn-expquit">放弃远征</button><button id="btn-menu">返回选关（进度保留）</button></div>`);
+}
+function expChoose(k) {
+  const st = expLoad(); if (!st || st.rest) return;
+  const node = st.map[st.floor][k]; if (node) expBattle(node);
+}
+// 休整站：五选一
+const EXP_REST = [
+  { id: "heal", name: "修补晨星碑", desc: "下一战开局晨星碑满血" },
+  { id: "dust", name: "整理行囊", desc: "星尘 +80" },
+  { id: "rank", name: "操练", desc: "队伍里没到 3 阶的角色各升 1 阶" },
+  { id: "relic", name: "打开宝箱", desc: "随机一件遗物" },
+  { id: "flip", name: "研读星图", desc: "下一战开局多翻 2 张牌" },
+];
+function expRestHtml(st) {
+  const sn = st.snap, can = { rank: sn.units.some(u => u.lv < 3), relic: sn.relics.length < RELIC_MAX };
+  return `<h2>休整</h2>${expRowHtml(st)}<p>连打了几场，找个地方歇口气。选一样：</p>
+    <div class="btns col">${EXP_REST.map(r => `<button data-exrest="${r.id}"${can[r.id] === false ? " disabled" : ""}><b>${r.name}</b> · ${r.desc}</button>`).join("")}</div>`;
+}
+function expRest(what) {
+  const st = expLoad(); if (!st || !st.snap || !st.rest) return;
+  const sn = st.snap;
+  if (what === "heal") sn.crystal = 1;
+  if (what === "dust") sn.dust += 80;
+  if (what === "rank") for (const u of sn.units) if (u.lv < 3) u.lv++;
+  if (what === "relic") { const pool = RELICS.filter(r => !sn.relics.includes(r.id)); if (pool.length && sn.relics.length < RELIC_MAX) { const id = pool[Math.floor(Math.random() * pool.length)].id; sn.relics.push(id); editSave(d => { if (!d.relicSeen.includes(id)) d.relicSeen.push(id); }); toast(`<b>遗物 · ${RELIC_BY[id].name}</b>${RELIC_BY[id].desc}`, c => drawRelicIcon(c, id, 44)); } }
+  if (what === "flip") st.flips += 2;
+  st.rest = false; expSave(st); showExpMap();
+}
+function expCardHtml(save) {
+  if (!expUnlocked(save)) return `<div class="daily exped lockd"><div><b>远征</b><p>通关第 ${EXPED.unlockAt + 1} 关后解锁</p></div></div>`;
+  const st = expLoad(), E = save.exped;
+  return `<div class="daily exped"><div><b>远征 · 连闯 ${EXPED.floors} 层</b><p>队伍、卡牌、遗物一路带下去，连打 ${EXPED.floors} 场：每层选普通战或精英战，中途休整两次，最后一层打首领。每赢一场 +${EXPED.stars.fight}★（精英 +${EXPED.stars.elite}★，首领 +${EXPED.stars.boss}★）。</p>
+    <p>${st ? `进行中：第 ${st.floor + 1} 层 · 已得 ${st.stars}★` : `最好成绩：第 ${E.best} 层 · 完成 ${E.clears} 次`}</p></div><button class="primary" id="btn-exped">${st ? "继续远征" : "开始远征"}</button></div>`;
 }
 
 // ================= 主循环、开机、测试接口 =================

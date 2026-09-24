@@ -162,7 +162,7 @@ function step(dt) {
       if (u.skillT > 0) {
         u.skillT = Math.max(0, u.skillT - dt);
         if (u.skillT === 0 && hasTal(u, "bard")) for (const a of S.units) if (a !== u && !a.summon && alive(a) && dist(u, a) <= uRange(u) && a.skillT <= 0) { a.sp = Math.min(a.def.sp, a.sp + 8); addFx({ kind: "text", x: a.x, y: a.y - 0.5, text: "技力 +8", color: "#f07aa8", life: 0.9 }); }
-      } else u.sp = Math.min(u.def.sp, u.sp + dt * (rl("rl_hourglass") ? 1.3 : 1) * (bardSp(u) ? 1.3 : 1) * (1 + 0.3 * cl("sp")) * (tal(u, "t_sp") ? 1.3 : 1) * (S.buff.sp || 1));
+      } else u.sp = Math.min(u.def.sp, u.sp + dt * (rl("rl_hourglass") ? 1.3 : 1) * (bardSp(u) ? 1.3 : 1) * (1 + 0.3 * cl("sp")) * (tal(u, "t_sp") ? 1.3 : 1) * (S.buff.sp || 1) * (S.resoT > 0 ? 2 : 1) * (1 + awkSp(u)));
       if (u.auto && u.skillT <= 0 && u.sp >= u.def.sp && autoWant(u)) useSkill(u);
     }
     u.atkCd -= dt;
@@ -294,7 +294,8 @@ function step(dt) {
         continue;
       }
       // 走到能打到的距离再动手（近战要贴身，远程够得着就停）
-      const reach = e.d.ranged ? Math.max(0.7, e.d.ranged * 0.8) : 0.62;
+      // 远程敌人 8 秒没挨打（比如全队都是近战、够不着它）就贴上来，免得僵住打不完
+      const reach = e.d.ranged && S.t - (e.hurtAt || 0) < 8 ? Math.max(0.7, e.d.ranged * 0.8) : 0.62;
       if (dist(e, e.target) > reach) { moveToward(e, e.target.x, e.target.y, dt); continue; }
       e.atkCd -= dt;
       if (e.atkCd <= 0 && eAtk(e) > 0) { e.atkCd = eInt(e); e.atkT = 0; e.pend = WINDUP.enemy; faceTo(e, e.target.x); }
@@ -304,7 +305,7 @@ function step(dt) {
     // 远程敌人：够得着角色就停下来打
     if (e.d.ranged && !e.under) {
       const near = S.units.filter(u => alive(u) && dist(u, e) <= e.d.ranged).sort((a, b) => dist(a, e) - dist(b, e))[0];
-      if (near) {
+      if (near && S.t - (e.hurtAt || 0) < 8) {   // 8 秒没挨打就不再站着放风筝，继续往晨星碑走
         e.atkCd -= dt;
         if (e.atkCd <= 0) { shoot(e, near, e.type === "wyvern" ? "fire" : e.type === "sovereign" ? "dark" : "enemy", eAtk(e)); e.atkCd = eInt(e); e.atkT = 0; faceTo(e, near.x); }
         continue;

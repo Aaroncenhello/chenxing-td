@@ -43,7 +43,8 @@ const SEED = +(process.env.SEED || 0);
     if (STARS) {   // 便宜优先地把星星花光，同价按 DISK 表里的顺序
       let left = STARS;
       for (;;) {
-        const opts = DISK.filter(n => (DISK_disk[n.id] || 0) < n.max).map(n => ({ id: n.id, c: diskCost(n.id, DISK_disk[n.id] || 0) })).filter(o => o.c <= left).sort((a, b) => a.c - b.c);
+        const canBuy = typeof diskCanBuy === "function" ? diskCanBuy : (d, id, l) => (d[id] || 0) < DISK_BY[id].max && diskCost(id, d[id] || 0) <= l;   // 旧构建没有 diskCanBuy
+        const opts = DISK.filter(n => canBuy(DISK_disk, n.id, left)).map(n => ({ id: n.id, c: diskCost(n.id, DISK_disk[n.id] || 0) })).sort((a, b) => a.c - b.c);
         if (!opts.length) break;
         DISK_disk[opts[0].id] = (DISK_disk[opts[0].id] || 0) + 1; left -= opts[0].c;
       }
@@ -55,7 +56,7 @@ const SEED = +(process.env.SEED || 0);
         const clv = Object.fromEntries(T.UNITS.map(u => [u.id, CLV]));
         if (SEED) Math.random = seeded(SEED + st * 1000 + r);
         const open = T.UNITS.filter(u => ALLCHARS || (u.joinAt || 0) <= st).map(u => u.id);
-        T.newRun(st, { hero, diff: DIFF, charLv: clv, perks: PERKS, charOpen: open, vigil: !!VIG, disk: STARS ? DISK_disk : DISK_in, abyss: ABY });
+        T.newRun(st, { hero, diff: DIFF, charLv: clv, charAwk: {}, perks: PERKS, charOpen: open, vigil: !!VIG, disk: STARS ? DISK_disk : DISK_in, abyss: ABY });
         const S = T.S;
         let guard = 0, picks = [];
         while (!S.over && guard < 60 * 30 * 25) {
