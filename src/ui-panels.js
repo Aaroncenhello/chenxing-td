@@ -360,7 +360,10 @@ function updateUnitCards(now) {
   const pe = $("pi-sel");
   if (pe && $("pinfo").offsetHeight) { const u = sel || S.units.find(x => x.hero); pe.innerHTML = u ? unitCardHtml(u) : ""; }
   const he = $("h-unit");
-  if (he) { he.hidden = !sel; if (sel) he.innerHTML = unitCardHtml(sel); }
+  if (he) {
+    he.hidden = !sel;
+    if (sel) { he.innerHTML = unitCardHtml(sel); const t = document.querySelector(".hud-top"); if (t) he.style.top = Math.round(t.getBoundingClientRect().bottom + 6) + "px"; }   // 放在顶栏下面，字体宽窄不同也不会压到顶栏
+  }
 }
 // 晨星碑血条（电脑顶部 + 全屏顶栏各一条）
 function updateCrystalBars() {

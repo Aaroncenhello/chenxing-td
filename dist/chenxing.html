@@ -459,7 +459,7 @@ body.imm .dlg{--boxh:44px}
 .ucard .uc-k{color:#98a1b3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pi-sel{background:var(--panel);box-shadow:0 0 0 2px #0a0c12;padding:5px 8px}
 .hud-unit{display:none}
-body.imm .hud-unit:not([hidden]){display:block;position:absolute;top:calc(8px + env(safe-area-inset-top,0));left:calc((100vw - var(--fw,100vw)) / 2 + 6px);box-sizing:border-box;width:clamp(130px,calc(var(--fw,100vw) / 2 - 174px),170px);font-size:10px;background:rgba(16,19,28,.9);box-shadow:0 0 0 2px #0a0c12;padding:5px 7px;z-index:4;pointer-events:none}
+body.imm .hud-unit:not([hidden]){display:block;position:absolute;top:calc(8px + env(safe-area-inset-top,0));left:calc((100vw - var(--fw,100vw)) / 2 + 6px);box-sizing:border-box;width:170px;font-size:10px;background:rgba(16,19,28,.9);box-shadow:0 0 0 2px #0a0c12;padding:5px 7px;z-index:4;pointer-events:none}
 body.imm .hud-unit .uc-k{white-space:normal;font-size:10px}
 .pu.down{opacity:.45}
 .pu.rdy{box-shadow:var(--bevel),0 0 0 2px #ffd860;animation:ultglow .6s steps(2) infinite}
@@ -6326,7 +6326,10 @@ function updateUnitCards(now) {
   const pe = $("pi-sel");
   if (pe && $("pinfo").offsetHeight) { const u = sel || S.units.find(x => x.hero); pe.innerHTML = u ? unitCardHtml(u) : ""; }
   const he = $("h-unit");
-  if (he) { he.hidden = !sel; if (sel) he.innerHTML = unitCardHtml(sel); }
+  if (he) {
+    he.hidden = !sel;
+    if (sel) { he.innerHTML = unitCardHtml(sel); const t = document.querySelector(".hud-top"); if (t) he.style.top = Math.round(t.getBoundingClientRect().bottom + 6) + "px"; }   // 放在顶栏下面，字体宽窄不同也不会压到顶栏
+  }
 }
 // 晨星碑血条（电脑顶部 + 全屏顶栏各一条）
 function updateCrystalBars() {

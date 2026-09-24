@@ -96,11 +96,11 @@ async function page(b, vp, mobile) {
   const lu = await L.evaluate(() => ({ hidden: document.getElementById('h-unit').offsetHeight === 0 }));
   await L.evaluate(() => { __td.S.selUnit = __td.S.units[0]; }); await L.waitForTimeout(400);
   Object.assign(lu, await L.evaluate(() => { const c = document.getElementById('h-unit').getBoundingClientRect(), t = document.querySelector('.hud-top').getBoundingClientRect();
-    return { shown: c.height > 0, text: document.getElementById('h-unit').textContent, clearTop: c.right <= t.left + 1 || c.top >= t.bottom - 1 }; }));
+    return { shown: c.height > 0, text: document.getElementById('h-unit').textContent, clearTop: c.right <= t.left + 1 || c.top >= t.bottom - 1, onScreen: c.bottom <= innerHeight }; }));
   console.log('队员属性:', JSON.stringify({ pu, lu }));
   check(pu.tile === 'Lv8 · 1阶', '竖屏队员格显示角色等级和阶数', pu.tile);
   check(/Lv8/.test(pu.card) && /攻击 \d+/.test(pu.card) && /生命 \d+\/\d+/.test(pu.card) && /防御/.test(pu.card) && /攻速/.test(pu.card) && /技能/.test(pu.card), '竖屏属性栏默认显示英雄的等级和主要属性', pu.card);
-  check(lu.hidden && lu.shown && /攻击/.test(lu.text) && lu.clearTop, '横屏选中队员才弹属性卡，不挡顶栏', lu);
+  check(lu.hidden && lu.shown && /攻击/.test(lu.text) && lu.clearTop && lu.onScreen, '横屏选中队员才弹属性卡，不挡顶栏', lu);
   // ---------- 晨星碑血条 ----------
   for (const [name, m] of [['竖屏', P], ['横屏', L], ['电脑', p]]) {
     await m.evaluate(() => { closeOverlay(); if (!__td.S || __td.S.over) __td.newRun(6, {}); const S = __td.S; S.pending = 0; S.offer = null; S.crystal.hp = S.crystal.maxHp * 0.2; S.crystal.hitT = 5; });
