@@ -42,6 +42,18 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .chip{background:var(--panel);border:2px solid #0a0c12;padding:2px 8px;color:var(--text)}
 .chip.elite{color:#ffd860;border-color:#6a5010}
 /* 经验条 */
+/* 晨星碑血条：电脑在经验条上面，全屏时在顶栏第一行；掉血时白色残影慢慢缩回、闪红，低于 30% 变红闪烁 */
+.cbar{position:relative;height:18px;background:#0c0f15;box-shadow:0 0 0 2px #0a0c12,var(--bevel);overflow:hidden;margin-bottom:6px}
+.cbar i{position:absolute;inset:0 auto 0 0;width:100%}
+.cbar .tr{background:rgba(255,236,190,.55);transition:width .5s ease-in .35s}
+.cbar .fl{background:linear-gradient(180deg,#8fd0ff,#3a8ee0)}
+.cbar.mid .fl{background:linear-gradient(180deg,#ffe08a,#e0a030)}
+.cbar.low .fl{background:linear-gradient(180deg,#ff8a7a,#d0402f)} .cbar.low{animation:cbarlow .7s steps(2) infinite}
+.cbar.hit{box-shadow:0 0 0 2px #ff4a3a,0 0 12px rgba(255,74,58,.8)}
+.cbar span{position:relative;display:block;line-height:18px;padding:0 10px;font-size:11px;color:#fff;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
+.cbar em{font-style:normal;opacity:.85} .cbar b{font-family:var(--pix);font-size:10px;font-weight:400}
+@keyframes cbarlow{50%{box-shadow:0 0 0 2px #ff4a3a,0 0 14px rgba(255,60,40,.9)}}
+.hud-top .cbar{display:none}
 .xpwrap{position:relative;height:18px;background:#0c0f15;box-shadow:0 0 0 2px #0a0c12,var(--bevel);overflow:hidden}
 .xpwrap i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#2a6a4a,#6fcf8e);transition:width .18s}
 .xpwrap span{position:relative;display:block;line-height:18px;padding:0 10px;font-size:11px;color:#fff;text-shadow:1px 1px 0 #000}
@@ -118,9 +130,19 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .lubar button{padding:5px 12px;font-size:12px}
 .lubar .dust{font-family:var(--pix);font-size:10px;color:#ffd860}
 /* 羁绊 */
-.syns{display:flex;flex-wrap:wrap;gap:6px;min-height:24px}
-.syn{font-size:11px;padding:3px 8px;background:var(--panel);box-shadow:0 0 0 2px #0a0c12;color:var(--c);border-left:3px solid var(--c)}
-.syn.off{color:#5d677d;border-left-color:#3a4460}
+.syns,.pi-syn,.hud-syn{display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-height:24px;cursor:pointer}
+.sch{font-size:11px;color:var(--muted);font-weight:400}
+.sc{font-size:11px;padding:2px 6px;background:var(--panel);box-shadow:0 0 0 2px #0a0c12;color:var(--c);border-left:3px solid var(--c);opacity:.75;white-space:nowrap}
+.sc u{text-decoration:none}
+.sch{display:flex;align-items:center;gap:4px}
+.sc i{font-style:normal;margin-left:4px;color:var(--muted);font-size:10px}
+.sc.on{opacity:1;background:color-mix(in srgb,var(--c) 22%,var(--panel));color:#fff;font-weight:700;text-shadow:1px 1px 0 #000}
+.sc.none{color:#5d677d;border-left-color:#3a4460;--c:#3a4460}
+.sc.help{border:0;border-left:0;min-height:0;min-width:0;padding:2px 7px;color:#ffd860;opacity:1;font-weight:700;cursor:pointer}
+.hud-syn{display:none}
+.codex.syng .cx{border-left:4px solid var(--c)} .codex.syng .cx.on{background:color-mix(in srgb,var(--c) 14%,var(--panel))}
+.codex.syng .sp{margin-left:8px;font-size:11px;color:var(--muted);font-weight:400} .codex.syng .cx.on .sp{color:#6fcf8e}
+.codex.syng .need{color:var(--text)} .codex.syng .eff{color:#ffd860}
 /* 商店 */
 .shopbox{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(8,10,16,.82);padding:10px}
 .shopbox h3{margin:0;font-family:var(--serif);font-size:clamp(17px,2.6vw,26px);color:var(--gold);text-shadow:2px 2px 0 #000;letter-spacing:.1em}
@@ -363,6 +385,7 @@ kbd{font-family:var(--sans);background:var(--panel-2);border:1px solid var(--lin
 .dnode .dh{display:flex;justify-content:space-between;align-items:baseline}
 .dnode .dh b{font-size:13px;color:var(--c)} .dnode .dh span{font-family:var(--pix);font-size:8px;color:var(--muted)}
 .dnode p{margin:0;font-size:11px;color:var(--muted);line-height:1.45}
+.dnode .dnow{color:var(--text)} .dnode:not(.on) .dnow{color:#5d677d} .dnode .dnext{color:#8ac8ff}
 .dnode button{padding:4px 8px;font-size:12px}
 .dstar{width:min(420px,100%)} .dstar .dnode{border-left-color:var(--c);background:#262214}
 /* 深渊 */
@@ -397,6 +420,10 @@ body.imm.panel .toasts{display:none}
 .hud-top{position:absolute;top:calc(4px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:rgba(10,12,18,.72);padding:3px 10px 5px;box-shadow:0 0 0 2px #0a0c12;white-space:nowrap}
 .hud-top b{font-family:var(--pix);font-size:10px;font-weight:400;color:var(--text)}
 .hud-top .hc b{color:#62b4ff} .hud-top .hl b{color:var(--gold)} .hud-top .hd b{color:#ffd860}
+body.imm .hud-top{flex-wrap:wrap;justify-content:center;row-gap:3px}
+body.imm .hud-top .cbar{display:block;flex:0 0 100%;height:14px;margin:2px 0 0} body.imm .hud-top .cbar span{line-height:14px;font-size:10px}
+body.imm .hud-top .hc{display:none}
+body.imm .cbar.desk{display:none}
 .h-xp{position:absolute;left:0;right:0;bottom:0;height:3px;background:#0c0f15}
 .h-xp i{display:block;height:100%;background:#6fcf8e;width:0}
 .hud-l,.hud-r{position:absolute;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
@@ -416,12 +443,24 @@ body.imm .dlg{--boxh:44px}
 .pi-status .warn{color:#ff8a7a;font-weight:700}
 .pi-team{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
 .pu{position:relative;display:grid;grid-template-columns:30px 1fr;column-gap:5px;align-items:center;padding:4px 5px;min-height:44px;text-align:left;overflow:hidden}
-.pu canvas{grid-row:1/4;width:30px;height:30px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12;background:var(--c)}
+.pu canvas{grid-row:1/5;width:30px;height:30px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12;background:var(--c)}
 .pu b{font-size:11px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pu i{display:block;height:4px;background:#0c0f15;box-shadow:0 0 0 1px #0a0c12}
 .pu i s{display:block;height:100%;text-decoration:none}
 .pu .hp s{background:var(--ok)} .pu .sp s{background:var(--sp)}
 .pu.sel{outline:2px solid #fff;outline-offset:-2px}
+.pu .lv{font-size:9px;line-height:1.1;color:#ffd860;white-space:nowrap;overflow:hidden}
+/* 队员属性卡：竖屏在信息区（选中的队员，没选就是英雄）；横屏全屏时选中队员才在战场左上角出现 */
+.ucard{font-size:11px;line-height:1.45}
+.ucard .uc-h{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.ucard .uc-h b{color:var(--c);font-size:13px} .ucard .uc-h span{color:var(--muted)}
+.ucard em{font-style:normal;font-size:10px;padding:0 4px;background:#243049;color:#8ac8ff} .ucard em.rk{background:#3a3012;color:#ffd860}
+.ucard .uc-s{display:flex;flex-wrap:wrap;gap:2px 10px;color:var(--muted)} .ucard .uc-s b{color:var(--text);font-weight:600}
+.ucard .uc-k{color:#98a1b3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pi-sel{background:var(--panel);box-shadow:0 0 0 2px #0a0c12;padding:5px 8px}
+.hud-unit{display:none}
+body.imm .hud-unit:not([hidden]){display:block;position:absolute;top:calc(8px + env(safe-area-inset-top,0));left:calc((100vw - var(--fw,100vw)) / 2 + 6px);box-sizing:border-box;width:170px;font-size:10px;background:rgba(16,19,28,.9);box-shadow:0 0 0 2px #0a0c12;padding:5px 7px;z-index:4;pointer-events:none}
+body.imm .hud-unit .uc-k{white-space:normal;font-size:10px}
 .pu.down{opacity:.45}
 .pu.rdy{box-shadow:var(--bevel),0 0 0 2px #ffd860;animation:ultglow .6s steps(2) infinite}
 .pu.rdy .sp s{background:#ffd860}
@@ -430,12 +469,19 @@ body.imm .dlg{--boxh:44px}
 .pi-cards{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;overflow:hidden}
 .pi-cards canvas{width:24px;height:24px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12}
 .pi-cards .rl canvas{box-shadow:0 0 0 2px #e3b75c}
+/* 横屏全屏：羁绊看板竖着排在左下角（战场左边的黑边里） */
+body.imm .hud-syn{display:flex;position:absolute;left:calc(6px + env(safe-area-inset-left,0));bottom:8px;flex-direction:column;align-items:stretch;gap:3px;width:max(64px,calc((100vw - var(--fw,100vw)) / 2 - 12px));max-width:160px;max-height:34%;overflow:hidden;z-index:3}
+body.imm .hud-syn .sc{font-size:10px;padding:1px 4px;line-height:1.35}
+body.imm .hud-syn .sc u{display:none}
+body.imm .hud-syn{max-height:44%}
 /* 手机竖屏沉浸：顶上一行状态，战场占满宽度，按钮全排在战场下面的大按钮区（一屏看全，不用滚动）
    .hud 变成 display:contents，让顶栏和两组按钮直接排进 .stage 的竖向布局里；战场大小在 resize() 里按剩下的高度算 */
 @media (orientation:portrait){
   body.imm .stage{flex-direction:column;justify-content:flex-start;align-items:stretch;gap:8px}
   body.imm .screen{align-self:center}
   body.imm .hud{display:contents}
+  body.imm .hud-syn{display:none}
+  body.imm .hud-unit:not([hidden]){display:none}
   body.imm .hud-top{position:relative;top:auto;left:auto;transform:none;order:-1;align-self:center;margin-top:6px;flex-wrap:wrap;justify-content:center;white-space:normal;gap:2px 12px;max-width:calc(100% - 16px);padding:4px 12px 7px}
   body.imm .hud-top b{font-size:11px}
   body.imm .hud-l,body.imm .hud-r{position:static;transform:none;display:grid;gap:6px;padding:0 10px}
@@ -471,6 +517,7 @@ body.imm .dlg{--boxh:44px}
       <button id="btn-full" title="战场铺满整个屏幕（手机横屏推荐）">全屏</button>
     </div>
   </header>
+  <div class="cbar desk" aria-label="晨星碑生命"><i class="tr"></i><i class="fl"></i><span><em>晨星碑</em> <b class="cv"></b></span></div>
   <div class="xpwrap"><i id="xp-fill" style="width:0%"></i><span id="xp-txt">Lv 1 · 0/12</span></div>
   <div class="wavebar" id="wavebar"></div>
   <div class="tut" id="tut" hidden></div>
@@ -478,7 +525,7 @@ body.imm .dlg{--boxh:44px}
   <div class="stage">
     <div class="screen" id="screen"><canvas id="cv" aria-label="战场"></canvas><canvas id="tx" aria-hidden="true"></canvas></div>
     <!-- 竖屏信息区：战场和按钮之间（只在手机竖屏全屏时显示，内容由 updatePInfo 画） -->
-    <div class="pinfo" id="pinfo"><div class="pi-row pi-status"><span id="pi-wave"></span><b id="pi-combo"></b></div><div class="pi-team" id="pi-team"></div><div class="pi-row pi-next" id="pi-next"></div><div class="pi-cards" id="pi-cards"></div></div>
+    <div class="pinfo" id="pinfo"><div class="pi-row pi-status"><span id="pi-wave"></span><b id="pi-combo"></b></div><div class="pi-syn" id="pi-syn"></div><div class="pi-team" id="pi-team"></div><div class="pi-sel ucard" id="pi-sel"></div><div class="pi-row pi-next" id="pi-next"></div><div class="pi-cards" id="pi-cards"></div></div>
     <div class="dlg" id="dlg" hidden>
       <canvas class="bust L" id="bust-L" aria-hidden="true"></canvas><canvas class="bust R" id="bust-R" aria-hidden="true"></canvas>
       <div class="dlgbox" id="dlgbox"><b id="dlg-name"></b><p id="dlg-text" aria-live="polite"></p><span class="dlgmore">▼</span></div>
@@ -503,7 +550,9 @@ body.imm .dlg{--boxh:44px}
       <div class="lubar"><span class="dust" id="shop-dust">星尘 0</span><button class="primary" id="btn-shopgo">继续下一波</button></div>
     </div>
     <div class="hud" id="hud" hidden>
-      <div class="hud-top"><span class="hc">碑 <b id="h-hp"></b></span><span>波 <b id="h-wave"></b></span><span class="hl">Lv <b id="h-lv"></b></span><span class="hd">尘 <b id="h-dust"></b></span><span id="h-next"></span><span class="h-xp"><i id="h-xpf"></i></span></div>
+      <div class="hud-top"><div class="cbar" aria-label="晨星碑生命"><i class="tr"></i><i class="fl"></i><span><em>晨星碑</em> <b class="cv"></b></span></div><span class="hc">碑 <b id="h-hp"></b></span><span>波 <b id="h-wave"></b></span><span class="hl">Lv <b id="h-lv"></b></span><span class="hd">尘 <b id="h-dust"></b></span><span id="h-next"></span><span class="h-xp"><i id="h-xpf"></i></span></div>
+      <div class="hud-syn" id="h-syn"></div>
+      <div class="hud-unit ucard" id="h-unit" hidden></div>
       <div class="hud-l">
         <button data-h="meteor" id="h-meteor"><b>陨星</b><small id="h-cd-meteor"></small></button>
         <button data-h="heal" id="h-heal"><b>圣愈</b><small id="h-cd-heal"></small></button>
@@ -852,6 +901,10 @@ const DIFFS = [
 ];
 // 每日挑战：按日期固定关卡和一条规则
 const DAILY = { diff: 0 };
+// 每日挑战奖励：每天只结算一次，通关给 win 颗，没通关但撑过一半波数给 half 颗（取最好的一次，不重复发）
+const DAILY_STARS = { win: 5, half: 2 };
+// 通关奖励里难度的额外星星（普通 / 困难 / 噩梦）
+const DIFF_BONUS = [0, 2, 3];
 const DAILY_MODS = [
   { id: "fast", name: "疾行", desc: "敌人移动速度 +30%" },
   { id: "tough", name: "铜墙铁壁", desc: "所有敌人防御 +150" },
@@ -1053,6 +1106,19 @@ const SYNERGY = [
     prog: () => [CARDS.filter(c => c.rare === 2 && cl(c.id) > 0).length, 2] },
 ];
 for (const g of SYNERGY) g.on = () => { const [a, b] = g.prog(); return a >= b; };
+// 羁绊说明页用：怎么凑（角色名、卡名都从配置里现取，改了配置这里跟着变）
+const synNames = f => UNITS.filter(f).map(u => u.name).join("、");
+const synCards = (...ids) => ids.map(id => "「" + CARD_BY[id].name + "」").join(" + ");
+const SYN_HOW = {
+  wall: () => `场上同时有 3 名站前排（地面）的角色，英雄也算，召唤物不算。前排角色：${synNames(u => u.place === "ground")}`,
+  arcane: () => `场上同时有 3 名打法术伤害的角色。法术角色：${synNames(u => u.dmg === "magic")}`,
+  volley: () => `场上同时有 3 名站后排（高台）的输出角色，治疗不算。后排输出：${synNames(u => u.place === "high" && u.dmg !== "heal")}`,
+  inferno: () => `同一局拿到技能卡 ${synCards("sk_fire", "sk_meteor")}`,
+  frostbite: () => `同一局拿到 ${synCards("sk_nova", "freeze")}`,
+  bloodlust: () => `同一局拿到 ${synCards("vamp", "boom")}`,
+  scholar: () => `同一局拿到 5 种不同的属性卡（同一张升级多次只算 1 种），例如 ${CARDS.filter(c => c.kind === "stat" && !c.filler && !c.rare).slice(0, 4).map(c => "「" + c.name + "」").join("")}`,
+  legendary: () => "同一局拿到 2 种传说卡（金色边框的卡）",
+};
 
 // ================= 升级卡牌 =================
 // kind: stat 属性 / skill 自动技能 / special 特殊 / ally 伙伴
@@ -1170,22 +1236,22 @@ const DISK_LINES = [
 const DISK = [
   { id: "atk", line: "atk", name: "锋芒", max: 10, base: 2, step: 1, desc: lv => `全队攻击 +${3 * lv}%`, per: "每级攻击 +3%" },
   { id: "aspd", line: "atk", name: "迅捷", max: 8, base: 2, step: 1, desc: lv => `全队攻击速度 +${2 * lv}%`, per: "每级攻速 +2%" },
-  { id: "crit", line: "atk", name: "会心", max: 5, base: 3, step: 1, desc: lv => `全队暴击几率 +${2 * lv}%`, per: "每级暴击 +2%" },
-  { id: "boss", line: "atk", name: "屠龙", max: 6, base: 3, step: 1, desc: lv => `对精英和首领的伤害 +${5 * lv}%`, per: "每级 +5%" },
-  { id: "walls", line: "def", name: "碑座", max: 10, base: 2, step: 1, desc: lv => `晨星碑生命 +${6 * lv}%`, per: "每级 +6%" },
-  { id: "hp", line: "def", name: "体魄", max: 10, base: 2, step: 1, desc: lv => `全队生命 +${4 * lv}%`, per: "每级 +4%" },
-  { id: "armor", line: "def", name: "铁壁", max: 6, base: 2, step: 1, desc: lv => `全队防御 +${5 * lv}%`, per: "每级 +5%" },
-  { id: "rally", line: "def", name: "急救", max: 6, base: 2, step: 1, desc: lv => `复活时间 −${6 * lv}%`, per: "每级 −6%" },
-  { id: "merchant", line: "eco", name: "商路", max: 5, base: 2, step: 1, desc: lv => `开局星尘 +${10 * lv}，商店价格 −${4 * lv}%`, per: "每级 +10 星尘、−4% 价格" },
-  { id: "bounty", line: "eco", name: "求知", max: 6, base: 3, step: 1, desc: lv => `获得的经验 +${4 * lv}%`, per: "每级 +4%" },
-  { id: "reroll", line: "eco", name: "运筹", max: 4, base: 3, step: 2, desc: lv => `每局重抽次数 +${lv}`, per: "每级 +1 次" },
-  { id: "lucky", line: "eco", name: "时运", max: 5, base: 3, step: 1, desc: lv => `稀有、传说卡出现几率 +${8 * lv}%`, per: "每级 +8%" },
-  { id: "mentor", line: "eco", name: "名师", max: 5, base: 2, step: 1, desc: lv => `结算时角色经验 +${15 * lv}%`, per: "每级 +15%" },
-  { id: "arcane", line: "arc", name: "法术精通", max: 6, base: 2, step: 1, desc: lv => `陨星术、圣愈之光冷却 −${5 * lv}%`, per: "每级 −5%" },
-  { id: "ult", line: "arc", name: "星能", max: 5, base: 3, step: 1, desc: lv => `晨星之力充能 +${6 * lv}%`, per: "每级 +6%" },
-  { id: "supply", line: "arc", name: "开局补给", max: 2, base: 5, step: 4, desc: lv => `开局白送 ${lv} 张随机卡`, per: "每级 +1 张" },
-  { id: "prep", line: "arc", name: "有备而来", max: 2, base: 5, step: 4, desc: lv => `开局多翻 ${lv} 次牌`, per: "每级 +1 次" },
-  { id: "relic", line: "arc", name: "寻宝", max: 4, base: 3, step: 2, desc: lv => `遗物掉落几率 +${10 * lv}%`, per: "每级 +10%" },
+  { id: "crit", line: "atk", name: "会心", max: 5, base: 3, step: 1, desc: lv => `全队暴击几率 +${2 * lv}%（暴击造成 2 倍伤害）`, per: "每级暴击 +2%" },
+  { id: "boss", line: "atk", name: "屠龙", max: 6, base: 3, step: 1, desc: lv => `全队对精英怪和首领造成的伤害 +${5 * lv}%`, per: "每级 +5%" },
+  { id: "walls", line: "def", name: "碑座", max: 10, base: 2, step: 1, desc: lv => `晨星碑（中间要守的石碑）生命上限 +${6 * lv}%`, per: "每级 +6%" },
+  { id: "hp", line: "def", name: "体魄", max: 10, base: 2, step: 1, desc: lv => `全队生命上限 +${4 * lv}%`, per: "每级 +4%" },
+  { id: "armor", line: "def", name: "铁壁", max: 6, base: 2, step: 1, desc: lv => `全队防御 +${5 * lv}%（受到的物理伤害更少）`, per: "每级 +5%" },
+  { id: "rally", line: "def", name: "急救", max: 6, base: 2, step: 1, desc: lv => `角色倒下后重新站起来的时间 −${6 * lv}%`, per: "每级 −6%" },
+  { id: "merchant", line: "eco", name: "商路", max: 5, base: 2, step: 1, desc: lv => `开局多带 ${10 * lv} 星尘，波间商店价格 −${4 * lv}%`, per: "每级 +10 星尘、−4% 价格" },
+  { id: "bounty", line: "eco", name: "求知", max: 6, base: 3, step: 1, desc: lv => `局内打怪获得的经验 +${4 * lv}%（升级更快、翻牌更多）`, per: "每级 +4%" },
+  { id: "reroll", line: "eco", name: "运筹", max: 4, base: 3, step: 2, desc: lv => `翻牌时的重抽次数每局 +${lv}`, per: "每级 +1 次" },
+  { id: "lucky", line: "eco", name: "时运", max: 5, base: 3, step: 1, desc: lv => `翻牌时稀有卡、传说卡出现的几率 +${8 * lv}%`, per: "每级 +8%" },
+  { id: "mentor", line: "eco", name: "名师", max: 5, base: 2, step: 1, desc: lv => `一局结束时角色得到的养成经验 +${15 * lv}%`, per: "每级 +15%" },
+  { id: "arcane", line: "arc", name: "法术精通", max: 6, base: 2, step: 1, desc: lv => `手动法术（陨星术、圣愈之光）冷却时间 −${5 * lv}%`, per: "每级 −5%" },
+  { id: "ult", line: "arc", name: "星能", max: 5, base: 3, step: 1, desc: lv => `晨星之力（全屏大招）充能速度 +${6 * lv}%`, per: "每级 +6%" },
+  { id: "supply", line: "arc", name: "开局补给", max: 2, base: 5, step: 4, desc: lv => `开局直接白送 ${lv} 张随机升级卡`, per: "每级 +1 张" },
+  { id: "prep", line: "arc", name: "有备而来", max: 2, base: 5, step: 4, desc: lv => `开局多翻 ${lv} 次牌（自己挑）`, per: "每级 +1 次" },
+  { id: "relic", line: "arc", name: "寻宝", max: 4, base: 3, step: 2, desc: lv => `击败精英、首领时掉落遗物的几率 +${10 * lv}%`, per: "每级 +10%" },
   { id: "star", line: "all", name: "星辉", max: 9999, base: 6, step: 1, desc: lv => `全队攻击、生命 +${lv}%（没有上限）`, per: "每级攻击、生命 +1%" },
 ];
 const DISK_BY = Object.fromEntries(DISK.map(n => [n.id, n]));
@@ -4031,7 +4097,7 @@ function resize() {
   }
   const scr = document.getElementById("screen");
   scr.style.width = Math.floor(PW * k) + "px"; scr.style.height = Math.floor(PHt * k) + "px";
-  // 竖屏时提示（新敌人、遗物……）放在战场正下方，不挡战场也不挡按钮
+  document.body.style.setProperty("--fw", Math.floor(PW * k) + "px");   // 横屏全屏时左右黑边的宽度靠它算（羁绊看板）
   // 竖屏时提示（新敌人、遗物……）弹在按钮区正上方，盖住的是信息区最下面的卡牌行，不挡战场和按钮
   if (port) { const hl = document.querySelector(".hud-l"); document.body.style.setProperty("--toast-bottom", Math.round(window.innerHeight - (hl ? hl.getBoundingClientRect().top : window.innerHeight * 0.6) + 6) + "px"); }
   DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -5668,7 +5734,7 @@ function loadSave(noBackup) {
     stars: arr("stars").slice(0, STAGES.length).map(x => Math.round(clampN(x, 0, 3))), best: arr("best").slice(0, STAGES.length).map(x => Math.floor(clampN(x, 0))),
     perks: idList(v.perks), seen: idList(v.seen, id => !!ENEMIES[id]), achv: idList(v.achv, id => achvIds.has(id)),
     diffClear: Object.fromEntries(Object.entries(obj("diffClear")).map(([k, a]) => [k, idList(a, id => diffIds.has(id))])),
-    daily: objMap(v.daily, r => ({ wave: Math.floor(clampN(r.wave, 0)), cleared: !!r.cleared })),
+    daily: objMap(v.daily, r => ({ wave: Math.floor(clampN(r.wave, 0)), cleared: !!r.cleared, got: Math.floor(clampN(r.got, 0, DAILY_STARS.win)) })),
     tutorial: !!v.tutorial, chars: objMap(v.chars, c => ({ ...c, exp: Math.floor(clampN(c.exp, 0)) })), story: idList(v.story),
     hero: UNITS.some(u => u.id === v.hero) ? v.hero : "knight",
     vigil: isObj(v.vigil) ? { best: Math.floor(clampN(v.vigil.best, 0)), clear: !!v.vigil.clear, runs: Math.floor(clampN(v.vigil.runs, 0)) } : {},
@@ -5823,7 +5889,7 @@ function updateTeam() {
   if (key !== teamKey) {
     teamKey = key;
     teamEl.innerHTML = S.units.map(u => `<button class="tm${u.hero ? " hero" : ""}" data-unit="${u.id}" style="--c:${u.def.color}">
-      <canvas class="pt" id="tm-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b><span>${u.summon ? "召唤物" : u.lv >= 4 ? u.def.branches[u.branch === "A" ? 0 : 1].name : u.lv + " 阶"}</span><i class="hpb" style="width:100%"></i></button>`).join("");
+      <canvas class="pt" id="tm-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b><span>${u.summon ? "召唤物" : "Lv" + clv(u.def.id) + " · " + (u.lv >= 4 ? u.def.branches[u.branch === "A" ? 0 : 1].name : u.lv + " 阶")}</span><i class="hpb" style="width:100%"></i></button>`).join("");
     for (const u of S.units) drawPortrait(u.def, $("tm-" + u.id), u.lv, u.branch);
   }
   for (const u of S.units) {
@@ -5926,8 +5992,8 @@ function renderInfo() {
     return;
   }
   const D = u.def, bIdx = u.branch ? (u.branch === "A" ? 0 : 1) : -1;
-  const head = `<h3><canvas class="ipt" id="i-pt" aria-hidden="true"></canvas><span>${D.name} <small>${D.cls}${u.hero ? " · 本局英雄" : u.summon ? " · 召唤物" : ""}</small></span>${u.summon ? "" : `<span class="lvtag">${u.lv >= 4 ? D.branches[bIdx].name : u.lv + " 阶"}</span>`}</h3>`;
-  const stats = `<div class="row"><span>${D.dmg === "heal" ? "治疗" : "攻击"} ${R0(uAtk(u))}</span><span>防御 ${R0(uDef(u))}</span><span>范围 ${uRange(u).toFixed(1)}</span>${D.place === "ground" ? `<span>拦截 ${uBlock(u)}</span>` : ""}</div>`;
+  const head = `<h3><canvas class="ipt" id="i-pt" aria-hidden="true"></canvas><span>${D.name} <small>${D.cls}${u.hero ? " · 本局英雄" : u.summon ? " · 召唤物" : ""}</small></span>${u.summon ? "" : `<span class="lvtag">Lv${clv(D.id)} · ${u.lv >= 4 ? D.branches[bIdx].name : u.lv + " 阶"}</span>`}</h3>`;
+  const stats = `<div class="row"><span>${D.dmg === "heal" ? "治疗" : "攻击"} ${R0(uAtk(u))}</span><span>防御 ${R0(uDef(u))}</span><span>攻速 ${(1 / uInterval(u)).toFixed(2)}/秒</span><span>范围 ${uRange(u).toFixed(1)}</span>${D.place === "ground" ? `<span>拦截 ${uBlock(u)}</span>` : ""}</div>`;
   if (u.summon) {
     infoEl.innerHTML = head + `<div class="row"><span>生命</span><span id="i-hp"></span></div><div class="meter"><i id="i-hpbar" style="background:var(--ok)"></i></div>
       <div class="row"><span>剩余时间</span><span id="i-life"></span></div><div class="meter"><i id="i-lifebar" style="background:#b8845a"></i></div>` + stats +
@@ -6061,17 +6127,36 @@ $("shop3").addEventListener("click", ev => {
 });
 $("btn-shopgo").addEventListener("click", () => { closeShop(); $("shopbox").dataset.k = ""; });
 
-// ---------- 羁绊 ----------
+// ---------- 羁绊看板：已经凑齐的 + 正在凑的，点一下看全部羁绊说明 ----------
+function synState() {
+  return SYNERGY.map(g => { let a = 0, b = 1; try { [a, b] = g.prog(); } catch (e) {} return { g, a: Math.min(a, b), b, on: !!(S.syn && S.syn[g.id]) }; });
+}
+function synChips() {
+  const list = synState().filter(x => x.on || x.a > 0).sort((x, y) => (y.on - x.on) || (x.b - x.a) - (y.b - y.a));
+  return list.map(x => `<span class="sc${x.on ? " on" : ""}" style="--c:${x.g.color}" title="${x.g.need}：${x.g.desc}">${x.on ? "✓" : ""}${x.g.name.slice(0, 2)}<u>${x.g.name.slice(2)}</u>${x.on ? "" : `<i>${x.a}/${x.b}</i>`}</span>`).join("")
+    || `<span class="sc none">还没有羁绊</span>`;
+}
 let synKey = "";
 function updateSynBar() {
-  const box = $("syns"), on = SYNERGY.filter(g => S.syn && S.syn[g.id]);
-  const key = on.map(g => g.id).join("|");
+  if (!S) return;
+  const st = synState(), key = st.map(x => x.a + (x.on ? "!" : "")).join(",");
   if (synKey === key) return;
   synKey = key;
-  box.innerHTML = on.length
-    ? on.map(g => `<span class="syn" style="--c:${g.color}" title="${g.desc}">${g.name}</span>`).join("")
-    : `<span class="syn off">羁绊：还没凑齐（凑齐会自动生效）</span>`;
+  const html = `<b class="sch">羁绊<button class="sc help" data-synhelp aria-label="羁绊说明">?</button></b>${synChips()}`;
+  for (const id of ["syns", "pi-syn", "h-syn"]) { const el = $(id); if (el) el.innerHTML = html; }
 }
+function synGuideHtml(live) {
+  const st = live ? synState() : null;
+  return `<div class="codex syng">${SYNERGY.map((g, i) => { const x = st && st[i];
+    return `<div class="cx${x && x.on ? " on" : ""}" style="--c:${g.color}"><div><b style="color:${g.color}">${x && x.on ? "✓ " : ""}${g.name}${x ? `<span class="sp">${x.on ? "已生效" : `${x.a}/${x.b}`}</span>` : ""}</b>
+      <p class="need">条件：${g.need}</p><p class="eff">效果：${g.desc}</p><p>${SYN_HOW[g.id] ? SYN_HOW[g.id]() : ""}</p></div></div>`; }).join("")}</div>`;
+}
+function showSynGuide() {
+  if (!S || S.over || S.offer || S.shop || S.event || S.cine) return;
+  openOverlay(`<h2>羁绊一览</h2><p>羁绊凑齐条件后自动生效，一直持续到条件不满足为止（例如前排倒下）。数字是这局现在的进度。</p>
+    ${synGuideHtml(true)}<div class="btns"><button class="primary" id="btn-synback">返回战斗</button></div>`);
+}
+document.addEventListener("click", ev => { if (ev.target.closest("[data-synhelp], .syns, #pi-syn, #h-syn")) showSynGuide(); });
 // 选中一张卡的庆祝：全屏闪一下对应颜色；传说卡在晨星碑周围再炸一圈金光
 const CELE_COL = { 0: "rgba(255,248,220,.5)", 1: "rgba(98,180,255,.55)", 2: "rgba(255,200,80,.75)", 3: "rgba(224,40,80,.6)" };
 function celebratePick(p) {
@@ -6218,7 +6303,44 @@ function updateHud() {
   setText("h-form", formOf().name);
 }
 // ---------- 竖屏信息区 ----------
-let piTeamKey = "", piNextKey = "", piCardKey = "", piCombo = 0;
+let piTeamKey = "", piNextKey = "", piCardKey = "", piCombo = 0, uselT = 0;
+// 队员的阶数和主要属性：竖屏信息区、横屏属性卡共用
+const DMG_NAME = { phys: "物理", magic: "法术", heal: "治疗" };
+const unitRank = u => u.summon ? "召唤物" : u.lv >= 4 ? "转职 · " + u.def.branches[u.branch === "A" ? 0 : 1].name : u.lv + " 阶";
+function unitStats(u) {
+  const D = u.def, out = [[D.dmg === "heal" ? "治疗" : "攻击", R0(uAtk(u))], ["生命", u.down > 0 ? "倒下" : `${Math.ceil(u.hp)}/${u.maxHp}`], ["防御", R0(uDef(u))],
+    ["攻速", (1 / uInterval(u)).toFixed(2) + "/秒"], ["范围", uRange(u).toFixed(1)]];
+  if (D.place === "ground") out.push(["拦截", uBlock(u)]);
+  return out;
+}
+function unitCardHtml(u) {
+  const D = u.def;
+  return `<div class="uc-h" style="--c:${D.color}"><b>${D.name}</b><span>${D.cls} · ${DMG_NAME[D.dmg] || ""}${u.hero ? " · 英雄" : ""}</span>${u.summon ? "" : `<em>Lv${clv(D.id)}</em>`}<em class="rk">${unitRank(u)}</em></div>
+    <div class="uc-s">${unitStats(u).map(([k, v]) => `<span>${k} <b>${v}</b></span>`).join("")}</div>
+    ${u.summon ? "" : `<div class="uc-k">技能 · ${D.skill.name}：${D.skill.desc}</div>`}`;
+}
+// 选中的队员（没选就看英雄）：竖屏写在信息区里，横屏全屏在战场左上角弹一张小卡；每 0.25 秒刷新一次
+function updateUnitCards(now) {
+  if (!S || now - uselT < 250) return; uselT = now;
+  const sel = S.selUnit && !S.selUnit.dead ? S.selUnit : null;
+  const pe = $("pi-sel");
+  if (pe && $("pinfo").offsetHeight) { const u = sel || S.units.find(x => x.hero); pe.innerHTML = u ? unitCardHtml(u) : ""; }
+  const he = $("h-unit");
+  if (he) {
+    he.hidden = !sel;
+    if (sel) { he.innerHTML = unitCardHtml(sel); const t = document.querySelector(".hud-top"); if (t) he.style.top = Math.round(t.getBoundingClientRect().bottom + 6) + "px"; }   // 放在顶栏下面，字体宽窄不同也不会压到顶栏
+  }
+}
+// 晨星碑血条（电脑顶部 + 全屏顶栏各一条）
+function updateCrystalBars() {
+  if (!S) return;
+  const c = S.crystal, f = Math.max(0, c.hp / c.maxHp), w = (f * 100).toFixed(1) + "%", txt = `${Math.ceil(Math.max(0, c.hp))} / ${c.maxHp}`;
+  for (const el of document.querySelectorAll(".cbar")) {
+    el.querySelector(".fl").style.width = w; el.querySelector(".tr").style.width = w;
+    const v = el.querySelector(".cv"); if (v.textContent !== txt) v.textContent = txt;
+    el.classList.toggle("low", f < 0.3); el.classList.toggle("mid", f >= 0.3 && f < 0.6); el.classList.toggle("hit", (c.hitT || 0) > 0);
+  }
+}
 function updatePInfo() {
   const box = $("pinfo");
   if (!S || !box.offsetHeight) return;   // 只在竖屏全屏时可见
@@ -6238,15 +6360,15 @@ function updatePInfo() {
   const team = S.units.filter(u => !u.summon), key = team.map(u => u.id + u.def.id + ":" + u.lv + (u.branch || "")).join(",");
   if (key !== piTeamKey) {
     piTeamKey = key;
-    $("pi-team").innerHTML = team.map(u => `<button class="pu${u.hero ? " hero" : ""}" data-pu="${u.id}" style="--c:${u.def.color}"><canvas id="pu-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b><i class="hp"><s></s></i><i class="sp"><s></s></i></button>`).join("");
+    $("pi-team").innerHTML = team.map(u => `<button class="pu${u.hero ? " hero" : ""}" data-pu="${u.id}" style="--c:${u.def.color}"><canvas id="pu-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b><small class="lv">Lv${clv(u.def.id)} · ${u.lv >= 4 ? "转职" : u.lv + "阶"}</small><i class="hp"><s></s></i><i class="sp"><s></s></i></button>`).join("");
     for (const u of team) drawPortrait(u.def, $("pu-" + u.id), u.lv, u.branch);
   }
   for (const u of team) {
     const el = $("pi-team").querySelector(`[data-pu="${u.id}"]`); if (!el) continue;
     const rdy = u.skillT <= 0 && u.sp >= u.def.sp && u.down <= 0;
     el.classList.toggle("down", u.down > 0); el.classList.toggle("sel", S.selUnit === u); el.classList.toggle("rdy", rdy);
-    el.children[2].firstChild.style.width = (u.down > 0 ? 0 : u.hp / u.maxHp * 100).toFixed(0) + "%";
-    el.children[3].firstChild.style.width = (u.skillT > 0 ? u.skillT / (u.def.skill.dur || 1) * 100 : u.sp / u.def.sp * 100).toFixed(0) + "%";
+    el.querySelector(".hp s").style.width = (u.down > 0 ? 0 : u.hp / u.maxHp * 100).toFixed(0) + "%";
+    el.querySelector(".sp s").style.width = (u.skillT > 0 ? u.skillT / (u.def.skill.dur || 1) * 100 : u.sp / u.def.sp * 100).toFixed(0) + "%";
   }
   // 下一波预告
   const nk = waiting && info ? S.wave + ":" + info.kind : "";
@@ -6572,11 +6694,12 @@ function showLevels() {
   openOverlay(`<h2>选择关卡</h2>
     <div class="diffs">${CHAPTERS.map((c, j) => `<button data-chap="${j}" class="${j === chapSel ? "on" : ""}" ${unlocked(c.from) ? "" : "disabled"}>${c.name}${unlocked(c.from) ? "" : "（未解锁）"}</button>`).join("")}</div>
     <div class="diffs">${DIFFS.map((d, i) => `<button data-diff="${i}" class="${i === diffSel ? "on" : ""}">${d.name}</button>`).join("")}</div>
-    <p>${DIFFS[diffSel].desc}${diffSel ? "。要先在普通难度通关，通关后额外 +1★。" : "。"}</p>
+    <p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
     ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
     <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
     <div class="daily"><div><b>每日挑战 · ${td.date}</b><p>场地：${STAGES[td.stage].name} · 规则：${mod.name}（${mod.desc}）</p>
-      <p>${rec ? (rec.cleared ? "今天已经通关 ✓" : `今天最好成绩：第 ${rec.wave} 波`) : "今天还没挑战"}</p></div><button class="primary" id="btn-daily">开始挑战</button></div>
+      <p>${rec ? (rec.cleared ? `今天已经通关 ✓ 领了 ${rec.got || 0}★` : `今天最好成绩：第 ${rec.wave} 波${rec.got ? ` · 已领 ${rec.got}★，通关再补 ${DAILY_STARS.win - rec.got}★` : ""}`) : "今天还没挑战"}</p>
+      <p class="drw">每天奖励：通关 <b>+${DAILY_STARS.win}★</b>，没通关但撑过一半波数 +${DAILY_STARS.half}★（按今天最好的一次算）</p></div><button class="primary" id="btn-daily">开始挑战</button></div>
     ${weekHtml(save)}
     ${unlocked(VIGIL.unlockAt) ? `<div class="daily vigil"><div><b>守望之战 · 长夜</b><p>随机生成的地图 + ${VIGIL.waves} 波超长局：第 8、16、25 波是首领，中途有补给，能把等级和卡叠到很高。</p>
       <p>${save.vigil && save.vigil.best ? `最好成绩：撑到第 ${save.vigil.best} 波${save.vigil.clear ? " · 已通关 ✓" : ""}` : "还没挑战过"}</p></div><button class="primary" id="btn-vigil">开始守望</button></div>`
@@ -6599,11 +6722,12 @@ function showPerks() {
   const node = n => {
     const lv = disk[n.id] || 0, inf = n.max > 999, full = !inf && lv >= n.max, cost = full ? 0 : diskCost(n.id, lv);
     return `<div class="dnode${lv ? " on" : ""}${full ? " full" : ""}"><div class="dh"><b>${n.name}</b><span>${inf ? "Lv " + lv : lv + "/" + n.max}</span></div>
-      <p>${lv ? n.desc(lv) : n.per}</p>
+      <p class="dnow">${lv ? "当前：" + n.desc(lv) : "还没点亮"}</p>
+      ${full ? "" : `<p class="dnext">${lv ? "下一级" : "点亮后"}：${n.desc(lv + 1)}</p>`}
       <button data-disk="${n.id}" ${full || bank.left < cost ? "disabled" : ""}>${full ? "已满级" : `升级 · ${cost}★`}</button></div>`;
   };
   openOverlay(`<h2>天赋星盘</h2><p>共获得 ${bank.earned}★，已投入 ${bank.spent}★，可用 <span class="starbank">${bank.left}★</span>。每个节点都能升好几级，最底下的「星辉」没有上限。</p>
-    <p class="dsrc">星星来源：关卡星级、困难 / 噩梦首通、无尽每 10 波、成就、深渊每层首通、每周挑战首通；另外<b>每次通关 +1★</b>（困难再 +1，深渊每 5 层再 +1）。</p>
+    <p class="dsrc">星星来源：关卡星级、困难 / 噩梦首通、无尽每 10 波、成就、深渊每层首通、每周挑战首通；每日挑战每天最多 +${DAILY_STARS.win}★；另外<b>每次通关 +1★</b>（困难再 +${DIFF_BONUS[1]}、噩梦再 +${DIFF_BONUS[2]}，深渊每 5 层再 +1）。</p>
     <div class="disk">${DISK_LINES.map(L => `<div class="dline" style="--c:${L.color}"><h4>${L.name}</h4>${DISK.filter(n => n.line === L.id).map(node).join("")}</div>`).join("")}</div>
     <div class="dline dstar" style="--c:#ffe8a0">${node(DISK_BY.star)}</div>
     <div class="btns"><button id="btn-diskreset">重置星盘（全部退还）</button><button id="btn-menu">返回选关</button></div>`);
@@ -6635,7 +6759,7 @@ function showCodex(tab) {
   const save = loadSave(), kills = save.foeKill, nFoe = Object.keys(ENEMIES).length;
   const total = Object.values(kills).reduce((a, b) => a + b, 0);
   const allCards = CODEX_CARDS().concat(SIG, CURSES), nCard = allCards.filter(c => save.cardSeen.includes(c.id)).length;
-  const tabs = [["foe", `敌人 ${save.seen.length}/${nFoe}`], ["card", `卡牌 ${nCard}/${allCards.length}`], ["relic", `遗物 ${save.relicSeen.length}/${RELICS.length}`], ["afx", `词缀 ${save.afxSeen.length}/${AFFIX.length}`], ["ev", `事件 ${save.evSeen.length}/${EVENTS.length}`]];
+  const tabs = [["foe", `敌人 ${save.seen.length}/${nFoe}`], ["card", `卡牌 ${nCard}/${allCards.length}`], ["relic", `遗物 ${save.relicSeen.length}/${RELICS.length}`], ["syn", `羁绊 ${SYNERGY.length}`], ["afx", `词缀 ${save.afxSeen.length}/${AFFIX.length}`], ["ev", `事件 ${save.evSeen.length}/${EVENTS.length}`]];
   const head = `<div class="tabs">${tabs.map(([k, n]) => `<button class="tab${codexTab === k ? " on" : ""}" data-codex="${k}">${n}</button>`).join("")}</div>`;
   let body = "";
   const cardCx = (c, kind) => { const on = save.cardSeen.includes(c.id), R = RARITY[c.rare || 0];
@@ -6650,6 +6774,8 @@ function showCodex(tab) {
       <h3>通用卡 ${has(CODEX_CARDS())}/${CODEX_CARDS().length}</h3><div class="codex sm">${CODEX_CARDS().map(c => cardCx(c, "card")).join("")}</div>
       <h3>英雄专属卡 ${has(SIG)}/${SIG.length}</h3><div class="codex sm">${SIG.map(c => cardCx(c, "sig")).join("")}</div>
       <h3>诅咒卡 ${has(CURSES)}/${CURSES.length}</h3><div class="codex sm">${CURSES.map(c => cardCx(c, "curse")).join("")}</div>`;
+  } else if (codexTab === "syn") {
+    body = `<p>羁绊凑齐条件后自动生效，不用手动开启。战斗中下方的「羁绊」看板会显示已经凑齐的和正在凑的，点它能随时看这一页（带当前进度）。选牌时卡面也会提示「拿了这张羁绊进度 +1」。</p>${synGuideHtml(false)}`;
   } else if (codexTab === "relic") {
     body = `<p>击败精英和首领有机会掉落遗物，每局最多带 ${RELIC_MAX} 件。见过的遗物会记在这里，集齐有成就。</p>
       <div class="codex sm">${RELICS.map(r => { const on = save.relicSeen.includes(r.id);
@@ -6738,6 +6864,7 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-daily") { const td = todayInfo(); beginStage(td.stage, { daily: { seed: td.seed, mod: td.mod, date: td.date }, diff: DAILY.diff }); }
   else if (b.id === "btn-vigil") { let last = 0; STAGES.forEach((_, i) => { if (unlocked(i)) last = i; }); beginStage(last, { vigil: true, seed: (Math.random() * 1e9) | 0, diff: diffSel }); }
   else if (b.id === "btn-resume") closeOverlay();
+  else if (b.id === "btn-synback") closeOverlay();
   else if (b.id === "btn-retry") startRun(S.stage, lastOpts);
   else if (b.id === "btn-next") beginStage(S.stage + 1, { diff: S.diff && S.stage + 1 < STAGES.length && (loadSave().stars[S.stage + 1] || 0) > 0 ? S.diff : 0, abyss: S.abyss || 0 });
   else if (b.id === "btn-menu") { heroCtx = null; showLevels(); }
@@ -6906,6 +7033,7 @@ function showResult(R) {
       ${tail}<div class="btns"><button class="primary" id="btn-vigil">再守一夜</button><button id="btn-menu">选关</button></div>`);
   } else if (R.mode === "daily") {
     openOverlay(`<h2>${win ? "每日挑战完成" : "每日挑战失败"}</h2><p>${ST.name} · 规则「${DAILY_MODS.find(m => m.id === S.mod).name}」：${win ? `守住了全部 ${ST.waves} 波` : `撑到第 ${R.reached} 波`}，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。</p>
+      ${R.got > 0 ? `<p class="stars">今日奖励 +${R.got}★</p>` : `<p>${win ? "今天的通关奖励已经领过了" : `撑过一半波数（${Math.ceil(ST.waves / 2)} 波）有 +${DAILY_STARS.half}★，通关 +${DAILY_STARS.win}★`}</p>`}
       ${tail}<div class="btns"><button class="primary" id="btn-retry">再来一次</button><button id="btn-menu">选关</button></div>`);
   } else if (R.mode === "endless") {
     openOverlay(`<h2>无尽模式结束</h2><p>${ST.name}：撑过 ${R.reached} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。最高纪录第 ${R.best} 波。</p>
@@ -6917,7 +7045,7 @@ function showResult(R) {
       ${tail}<div class="btns"><button class="primary" id="btn-week">再来一次</button><button id="btn-menu">选关</button></div>`);
   } else if (win) {
     const hasNext = S.stage + 1 < STAGES.length, final = S.stage === STAGES.length - 1;
-    openOverlay(`<h2>${final ? "深渊之门封印了" : "晨星碑守住了"}</h2>${S.diff === 0 ? starHtml(S.stars) : `<p class="stars">${DIFFS[S.diff].name}通关 +1★</p>`}
+    openOverlay(`<h2>${final ? "深渊之门封印了" : "晨星碑守住了"}</h2>${S.diff === 0 ? starHtml(S.stars) : `<p class="stars">${DIFFS[S.diff].name}通关${R.diffFirst ? " · 首通 +1★" : ""}</p>`}
       <p>第 ${S.stage + 1} 关 · ${ST.name}：击败 ${S.kills} 个敌人，升到 Lv ${S.level}，晨星碑还剩 ${Math.ceil(S.crystal.hp)}/${S.crystal.maxHp}。</p>
       <p style="color:#ffd860">${R.reward}</p>
       ${final ? "<p>主线通关！可以继续挑战困难、噩梦、无尽和每日挑战，把角色都练到 10 级。</p>" : ""}${tail}
@@ -6973,7 +7101,10 @@ function settleRun() {
     editSave(d => { d.vigil = { best: R.best, clear: R.clear, runs: (old.runs || 0) + 1 }; });
     if (R.reached >= 20) unlockAchv("vigil");
   } else if (mode === "daily") {
-    editSave(d => { const r = d.daily[S.daily.date] || { wave: 0, cleared: false }; r.wave = Math.max(r.wave, R.reached); r.cleared = r.cleared || win; d.daily = { [S.daily.date]: r }; });   // 每日只留今天这一条
+    // 今天的奖励按最好的一次算，之前拿过的部分不重复发
+    const worth = win ? DAILY_STARS.win : R.reached >= Math.ceil(ST.waves / 2) ? DAILY_STARS.half : 0;
+    editSave(d => { const r = d.daily[S.daily.date] || { wave: 0, cleared: false, got: 0 }; r.wave = Math.max(r.wave, R.reached); r.cleared = r.cleared || win;
+      R.got = Math.max(0, worth - (r.got || 0)); r.got = Math.max(r.got || 0, worth); d.bonusStars += R.got; d.daily = { [S.daily.date]: r }; });   // 每日只留今天这一条
     if (win) unlockAchv("daily");
   } else if (mode === "endless") {
     const oldStars = endlessStars(loadSave(), S.stage);
@@ -6988,15 +7119,15 @@ function settleRun() {
   } else if (win) {
     R.reward = runReward();
     if (S.diff === 0) saveStars(S.stage, S.stars);
-    else editSave(d => { const a = d.diffClear[S.stage] || []; const id = DIFFS[S.diff].id; if (!a.includes(id)) a.push(id); d.diffClear[S.stage] = a; });
+    else editSave(d => { const a = d.diffClear[S.stage] || []; const id = DIFFS[S.diff].id; if (!a.includes(id)) { a.push(id); R.diffFirst = true; } d.diffClear[S.stage] = a; });
   }
   return R;
 }
 
-// 通关奖励：每次都给 1★，困难 +1，深渊每 5 层 +1；深渊新层首通另算
+// 通关奖励：每次都给 1★，困难再 +2、噩梦再 +3，深渊每 5 层 +1；深渊新层首通另算
 function runReward() {
   const prev = loadSave().abyss[S.stage] || 0, lay = S.abyss || 0;
-  const bonus = 1 + (S.diff ? 1 : 0) + Math.floor(lay / 5);
+  const bonus = 1 + (DIFF_BONUS[S.diff] || 0) + Math.floor(lay / 5);
   let first = 0; for (let l = prev + 1; l <= lay; l++) first += abyssStars(l);
   editSave(d => { d.bonusStars += bonus; if (lay > prev) d.abyss[S.stage] = lay; });
   return `通关奖励 +${bonus}★` + (first ? ` · 深渊 ${lay} 层首通 +${first}★` : "") + (S.relics.length ? ` · 本局带了 ${S.relics.length} 件遗物` : "");
@@ -7066,7 +7197,7 @@ function frame(now) {
   }
   if (!S.offer && !S.shop && !S.cine && !S.event && S.pending > 0 && !S.over && !dlg && !menuOpen) { const mr = S.forceRare || 0; S.forceRare = 0; openOffer(mr, true); }
   handleEvents();
-  render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateTut(dt); updateDlg(dt); animRoster(now);
+  render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateUnitCards(now); updateCrystalBars(); updateTut(dt); updateDlg(dt); animRoster(now);
   if (!dlg) checkOver();
   requestAnimationFrame(frame);
 }

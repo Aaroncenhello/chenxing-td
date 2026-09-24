@@ -26,8 +26,8 @@ function renderInfo() {
     return;
   }
   const D = u.def, bIdx = u.branch ? (u.branch === "A" ? 0 : 1) : -1;
-  const head = `<h3><canvas class="ipt" id="i-pt" aria-hidden="true"></canvas><span>${D.name} <small>${D.cls}${u.hero ? " · 本局英雄" : u.summon ? " · 召唤物" : ""}</small></span>${u.summon ? "" : `<span class="lvtag">${u.lv >= 4 ? D.branches[bIdx].name : u.lv + " 阶"}</span>`}</h3>`;
-  const stats = `<div class="row"><span>${D.dmg === "heal" ? "治疗" : "攻击"} ${R0(uAtk(u))}</span><span>防御 ${R0(uDef(u))}</span><span>范围 ${uRange(u).toFixed(1)}</span>${D.place === "ground" ? `<span>拦截 ${uBlock(u)}</span>` : ""}</div>`;
+  const head = `<h3><canvas class="ipt" id="i-pt" aria-hidden="true"></canvas><span>${D.name} <small>${D.cls}${u.hero ? " · 本局英雄" : u.summon ? " · 召唤物" : ""}</small></span>${u.summon ? "" : `<span class="lvtag">Lv${clv(D.id)} · ${u.lv >= 4 ? D.branches[bIdx].name : u.lv + " 阶"}</span>`}</h3>`;
+  const stats = `<div class="row"><span>${D.dmg === "heal" ? "治疗" : "攻击"} ${R0(uAtk(u))}</span><span>防御 ${R0(uDef(u))}</span><span>攻速 ${(1 / uInterval(u)).toFixed(2)}/秒</span><span>范围 ${uRange(u).toFixed(1)}</span>${D.place === "ground" ? `<span>拦截 ${uBlock(u)}</span>` : ""}</div>`;
   if (u.summon) {
     infoEl.innerHTML = head + `<div class="row"><span>生命</span><span id="i-hp"></span></div><div class="meter"><i id="i-hpbar" style="background:var(--ok)"></i></div>
       <div class="row"><span>剩余时间</span><span id="i-life"></span></div><div class="meter"><i id="i-lifebar" style="background:#b8845a"></i></div>` + stats +
@@ -161,17 +161,36 @@ $("shop3").addEventListener("click", ev => {
 });
 $("btn-shopgo").addEventListener("click", () => { closeShop(); $("shopbox").dataset.k = ""; });
 
-// ---------- 羁绊 ----------
+// ---------- 羁绊看板：已经凑齐的 + 正在凑的，点一下看全部羁绊说明 ----------
+function synState() {
+  return SYNERGY.map(g => { let a = 0, b = 1; try { [a, b] = g.prog(); } catch (e) {} return { g, a: Math.min(a, b), b, on: !!(S.syn && S.syn[g.id]) }; });
+}
+function synChips() {
+  const list = synState().filter(x => x.on || x.a > 0).sort((x, y) => (y.on - x.on) || (x.b - x.a) - (y.b - y.a));
+  return list.map(x => `<span class="sc${x.on ? " on" : ""}" style="--c:${x.g.color}" title="${x.g.need}：${x.g.desc}">${x.on ? "✓" : ""}${x.g.name.slice(0, 2)}<u>${x.g.name.slice(2)}</u>${x.on ? "" : `<i>${x.a}/${x.b}</i>`}</span>`).join("")
+    || `<span class="sc none">还没有羁绊</span>`;
+}
 let synKey = "";
 function updateSynBar() {
-  const box = $("syns"), on = SYNERGY.filter(g => S.syn && S.syn[g.id]);
-  const key = on.map(g => g.id).join("|");
+  if (!S) return;
+  const st = synState(), key = st.map(x => x.a + (x.on ? "!" : "")).join(",");
   if (synKey === key) return;
   synKey = key;
-  box.innerHTML = on.length
-    ? on.map(g => `<span class="syn" style="--c:${g.color}" title="${g.desc}">${g.name}</span>`).join("")
-    : `<span class="syn off">羁绊：还没凑齐（凑齐会自动生效）</span>`;
+  const html = `<b class="sch">羁绊<button class="sc help" data-synhelp aria-label="羁绊说明">?</button></b>${synChips()}`;
+  for (const id of ["syns", "pi-syn", "h-syn"]) { const el = $(id); if (el) el.innerHTML = html; }
 }
+function synGuideHtml(live) {
+  const st = live ? synState() : null;
+  return `<div class="codex syng">${SYNERGY.map((g, i) => { const x = st && st[i];
+    return `<div class="cx${x && x.on ? " on" : ""}" style="--c:${g.color}"><div><b style="color:${g.color}">${x && x.on ? "✓ " : ""}${g.name}${x ? `<span class="sp">${x.on ? "已生效" : `${x.a}/${x.b}`}</span>` : ""}</b>
+      <p class="need">条件：${g.need}</p><p class="eff">效果：${g.desc}</p><p>${SYN_HOW[g.id] ? SYN_HOW[g.id]() : ""}</p></div></div>`; }).join("")}</div>`;
+}
+function showSynGuide() {
+  if (!S || S.over || S.offer || S.shop || S.event || S.cine) return;
+  openOverlay(`<h2>羁绊一览</h2><p>羁绊凑齐条件后自动生效，一直持续到条件不满足为止（例如前排倒下）。数字是这局现在的进度。</p>
+    ${synGuideHtml(true)}<div class="btns"><button class="primary" id="btn-synback">返回战斗</button></div>`);
+}
+document.addEventListener("click", ev => { if (ev.target.closest("[data-synhelp], .syns, #pi-syn, #h-syn")) showSynGuide(); });
 // 选中一张卡的庆祝：全屏闪一下对应颜色；传说卡在晨星碑周围再炸一圈金光
 const CELE_COL = { 0: "rgba(255,248,220,.5)", 1: "rgba(98,180,255,.55)", 2: "rgba(255,200,80,.75)", 3: "rgba(224,40,80,.6)" };
 function celebratePick(p) {
@@ -318,7 +337,44 @@ function updateHud() {
   setText("h-form", formOf().name);
 }
 // ---------- 竖屏信息区 ----------
-let piTeamKey = "", piNextKey = "", piCardKey = "", piCombo = 0;
+let piTeamKey = "", piNextKey = "", piCardKey = "", piCombo = 0, uselT = 0;
+// 队员的阶数和主要属性：竖屏信息区、横屏属性卡共用
+const DMG_NAME = { phys: "物理", magic: "法术", heal: "治疗" };
+const unitRank = u => u.summon ? "召唤物" : u.lv >= 4 ? "转职 · " + u.def.branches[u.branch === "A" ? 0 : 1].name : u.lv + " 阶";
+function unitStats(u) {
+  const D = u.def, out = [[D.dmg === "heal" ? "治疗" : "攻击", R0(uAtk(u))], ["生命", u.down > 0 ? "倒下" : `${Math.ceil(u.hp)}/${u.maxHp}`], ["防御", R0(uDef(u))],
+    ["攻速", (1 / uInterval(u)).toFixed(2) + "/秒"], ["范围", uRange(u).toFixed(1)]];
+  if (D.place === "ground") out.push(["拦截", uBlock(u)]);
+  return out;
+}
+function unitCardHtml(u) {
+  const D = u.def;
+  return `<div class="uc-h" style="--c:${D.color}"><b>${D.name}</b><span>${D.cls} · ${DMG_NAME[D.dmg] || ""}${u.hero ? " · 英雄" : ""}</span>${u.summon ? "" : `<em>Lv${clv(D.id)}</em>`}<em class="rk">${unitRank(u)}</em></div>
+    <div class="uc-s">${unitStats(u).map(([k, v]) => `<span>${k} <b>${v}</b></span>`).join("")}</div>
+    ${u.summon ? "" : `<div class="uc-k">技能 · ${D.skill.name}：${D.skill.desc}</div>`}`;
+}
+// 选中的队员（没选就看英雄）：竖屏写在信息区里，横屏全屏在战场左上角弹一张小卡；每 0.25 秒刷新一次
+function updateUnitCards(now) {
+  if (!S || now - uselT < 250) return; uselT = now;
+  const sel = S.selUnit && !S.selUnit.dead ? S.selUnit : null;
+  const pe = $("pi-sel");
+  if (pe && $("pinfo").offsetHeight) { const u = sel || S.units.find(x => x.hero); pe.innerHTML = u ? unitCardHtml(u) : ""; }
+  const he = $("h-unit");
+  if (he) {
+    he.hidden = !sel;
+    if (sel) { he.innerHTML = unitCardHtml(sel); const t = document.querySelector(".hud-top"); if (t) he.style.top = Math.round(t.getBoundingClientRect().bottom + 6) + "px"; }   // 放在顶栏下面，字体宽窄不同也不会压到顶栏
+  }
+}
+// 晨星碑血条（电脑顶部 + 全屏顶栏各一条）
+function updateCrystalBars() {
+  if (!S) return;
+  const c = S.crystal, f = Math.max(0, c.hp / c.maxHp), w = (f * 100).toFixed(1) + "%", txt = `${Math.ceil(Math.max(0, c.hp))} / ${c.maxHp}`;
+  for (const el of document.querySelectorAll(".cbar")) {
+    el.querySelector(".fl").style.width = w; el.querySelector(".tr").style.width = w;
+    const v = el.querySelector(".cv"); if (v.textContent !== txt) v.textContent = txt;
+    el.classList.toggle("low", f < 0.3); el.classList.toggle("mid", f >= 0.3 && f < 0.6); el.classList.toggle("hit", (c.hitT || 0) > 0);
+  }
+}
 function updatePInfo() {
   const box = $("pinfo");
   if (!S || !box.offsetHeight) return;   // 只在竖屏全屏时可见
@@ -338,15 +394,15 @@ function updatePInfo() {
   const team = S.units.filter(u => !u.summon), key = team.map(u => u.id + u.def.id + ":" + u.lv + (u.branch || "")).join(",");
   if (key !== piTeamKey) {
     piTeamKey = key;
-    $("pi-team").innerHTML = team.map(u => `<button class="pu${u.hero ? " hero" : ""}" data-pu="${u.id}" style="--c:${u.def.color}"><canvas id="pu-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b><i class="hp"><s></s></i><i class="sp"><s></s></i></button>`).join("");
+    $("pi-team").innerHTML = team.map(u => `<button class="pu${u.hero ? " hero" : ""}" data-pu="${u.id}" style="--c:${u.def.color}"><canvas id="pu-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b><small class="lv">Lv${clv(u.def.id)} · ${u.lv >= 4 ? "转职" : u.lv + "阶"}</small><i class="hp"><s></s></i><i class="sp"><s></s></i></button>`).join("");
     for (const u of team) drawPortrait(u.def, $("pu-" + u.id), u.lv, u.branch);
   }
   for (const u of team) {
     const el = $("pi-team").querySelector(`[data-pu="${u.id}"]`); if (!el) continue;
     const rdy = u.skillT <= 0 && u.sp >= u.def.sp && u.down <= 0;
     el.classList.toggle("down", u.down > 0); el.classList.toggle("sel", S.selUnit === u); el.classList.toggle("rdy", rdy);
-    el.children[2].firstChild.style.width = (u.down > 0 ? 0 : u.hp / u.maxHp * 100).toFixed(0) + "%";
-    el.children[3].firstChild.style.width = (u.skillT > 0 ? u.skillT / (u.def.skill.dur || 1) * 100 : u.sp / u.def.sp * 100).toFixed(0) + "%";
+    el.querySelector(".hp s").style.width = (u.down > 0 ? 0 : u.hp / u.maxHp * 100).toFixed(0) + "%";
+    el.querySelector(".sp s").style.width = (u.skillT > 0 ? u.skillT / (u.def.skill.dur || 1) * 100 : u.sp / u.def.sp * 100).toFixed(0) + "%";
   }
   // 下一波预告
   const nk = waiting && info ? S.wave + ":" + info.kind : "";

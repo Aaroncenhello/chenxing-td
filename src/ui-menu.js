@@ -86,11 +86,12 @@ function showLevels() {
   openOverlay(`<h2>选择关卡</h2>
     <div class="diffs">${CHAPTERS.map((c, j) => `<button data-chap="${j}" class="${j === chapSel ? "on" : ""}" ${unlocked(c.from) ? "" : "disabled"}>${c.name}${unlocked(c.from) ? "" : "（未解锁）"}</button>`).join("")}</div>
     <div class="diffs">${DIFFS.map((d, i) => `<button data-diff="${i}" class="${i === diffSel ? "on" : ""}">${d.name}</button>`).join("")}</div>
-    <p>${DIFFS[diffSel].desc}${diffSel ? "。要先在普通难度通关，通关后额外 +1★。" : "。"}</p>
+    <p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
     ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
     <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
     <div class="daily"><div><b>每日挑战 · ${td.date}</b><p>场地：${STAGES[td.stage].name} · 规则：${mod.name}（${mod.desc}）</p>
-      <p>${rec ? (rec.cleared ? "今天已经通关 ✓" : `今天最好成绩：第 ${rec.wave} 波`) : "今天还没挑战"}</p></div><button class="primary" id="btn-daily">开始挑战</button></div>
+      <p>${rec ? (rec.cleared ? `今天已经通关 ✓ 领了 ${rec.got || 0}★` : `今天最好成绩：第 ${rec.wave} 波${rec.got ? ` · 已领 ${rec.got}★，通关再补 ${DAILY_STARS.win - rec.got}★` : ""}`) : "今天还没挑战"}</p>
+      <p class="drw">每天奖励：通关 <b>+${DAILY_STARS.win}★</b>，没通关但撑过一半波数 +${DAILY_STARS.half}★（按今天最好的一次算）</p></div><button class="primary" id="btn-daily">开始挑战</button></div>
     ${weekHtml(save)}
     ${unlocked(VIGIL.unlockAt) ? `<div class="daily vigil"><div><b>守望之战 · 长夜</b><p>随机生成的地图 + ${VIGIL.waves} 波超长局：第 8、16、25 波是首领，中途有补给，能把等级和卡叠到很高。</p>
       <p>${save.vigil && save.vigil.best ? `最好成绩：撑到第 ${save.vigil.best} 波${save.vigil.clear ? " · 已通关 ✓" : ""}` : "还没挑战过"}</p></div><button class="primary" id="btn-vigil">开始守望</button></div>`
@@ -113,11 +114,12 @@ function showPerks() {
   const node = n => {
     const lv = disk[n.id] || 0, inf = n.max > 999, full = !inf && lv >= n.max, cost = full ? 0 : diskCost(n.id, lv);
     return `<div class="dnode${lv ? " on" : ""}${full ? " full" : ""}"><div class="dh"><b>${n.name}</b><span>${inf ? "Lv " + lv : lv + "/" + n.max}</span></div>
-      <p>${lv ? n.desc(lv) : n.per}</p>
+      <p class="dnow">${lv ? "当前：" + n.desc(lv) : "还没点亮"}</p>
+      ${full ? "" : `<p class="dnext">${lv ? "下一级" : "点亮后"}：${n.desc(lv + 1)}</p>`}
       <button data-disk="${n.id}" ${full || bank.left < cost ? "disabled" : ""}>${full ? "已满级" : `升级 · ${cost}★`}</button></div>`;
   };
   openOverlay(`<h2>天赋星盘</h2><p>共获得 ${bank.earned}★，已投入 ${bank.spent}★，可用 <span class="starbank">${bank.left}★</span>。每个节点都能升好几级，最底下的「星辉」没有上限。</p>
-    <p class="dsrc">星星来源：关卡星级、困难 / 噩梦首通、无尽每 10 波、成就、深渊每层首通、每周挑战首通；另外<b>每次通关 +1★</b>（困难再 +1，深渊每 5 层再 +1）。</p>
+    <p class="dsrc">星星来源：关卡星级、困难 / 噩梦首通、无尽每 10 波、成就、深渊每层首通、每周挑战首通；每日挑战每天最多 +${DAILY_STARS.win}★；另外<b>每次通关 +1★</b>（困难再 +${DIFF_BONUS[1]}、噩梦再 +${DIFF_BONUS[2]}，深渊每 5 层再 +1）。</p>
     <div class="disk">${DISK_LINES.map(L => `<div class="dline" style="--c:${L.color}"><h4>${L.name}</h4>${DISK.filter(n => n.line === L.id).map(node).join("")}</div>`).join("")}</div>
     <div class="dline dstar" style="--c:#ffe8a0">${node(DISK_BY.star)}</div>
     <div class="btns"><button id="btn-diskreset">重置星盘（全部退还）</button><button id="btn-menu">返回选关</button></div>`);
@@ -149,7 +151,7 @@ function showCodex(tab) {
   const save = loadSave(), kills = save.foeKill, nFoe = Object.keys(ENEMIES).length;
   const total = Object.values(kills).reduce((a, b) => a + b, 0);
   const allCards = CODEX_CARDS().concat(SIG, CURSES), nCard = allCards.filter(c => save.cardSeen.includes(c.id)).length;
-  const tabs = [["foe", `敌人 ${save.seen.length}/${nFoe}`], ["card", `卡牌 ${nCard}/${allCards.length}`], ["relic", `遗物 ${save.relicSeen.length}/${RELICS.length}`], ["afx", `词缀 ${save.afxSeen.length}/${AFFIX.length}`], ["ev", `事件 ${save.evSeen.length}/${EVENTS.length}`]];
+  const tabs = [["foe", `敌人 ${save.seen.length}/${nFoe}`], ["card", `卡牌 ${nCard}/${allCards.length}`], ["relic", `遗物 ${save.relicSeen.length}/${RELICS.length}`], ["syn", `羁绊 ${SYNERGY.length}`], ["afx", `词缀 ${save.afxSeen.length}/${AFFIX.length}`], ["ev", `事件 ${save.evSeen.length}/${EVENTS.length}`]];
   const head = `<div class="tabs">${tabs.map(([k, n]) => `<button class="tab${codexTab === k ? " on" : ""}" data-codex="${k}">${n}</button>`).join("")}</div>`;
   let body = "";
   const cardCx = (c, kind) => { const on = save.cardSeen.includes(c.id), R = RARITY[c.rare || 0];
@@ -164,6 +166,8 @@ function showCodex(tab) {
       <h3>通用卡 ${has(CODEX_CARDS())}/${CODEX_CARDS().length}</h3><div class="codex sm">${CODEX_CARDS().map(c => cardCx(c, "card")).join("")}</div>
       <h3>英雄专属卡 ${has(SIG)}/${SIG.length}</h3><div class="codex sm">${SIG.map(c => cardCx(c, "sig")).join("")}</div>
       <h3>诅咒卡 ${has(CURSES)}/${CURSES.length}</h3><div class="codex sm">${CURSES.map(c => cardCx(c, "curse")).join("")}</div>`;
+  } else if (codexTab === "syn") {
+    body = `<p>羁绊凑齐条件后自动生效，不用手动开启。战斗中下方的「羁绊」看板会显示已经凑齐的和正在凑的，点它能随时看这一页（带当前进度）。选牌时卡面也会提示「拿了这张羁绊进度 +1」。</p>${synGuideHtml(false)}`;
   } else if (codexTab === "relic") {
     body = `<p>击败精英和首领有机会掉落遗物，每局最多带 ${RELIC_MAX} 件。见过的遗物会记在这里，集齐有成就。</p>
       <div class="codex sm">${RELICS.map(r => { const on = save.relicSeen.includes(r.id);
@@ -252,6 +256,7 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-daily") { const td = todayInfo(); beginStage(td.stage, { daily: { seed: td.seed, mod: td.mod, date: td.date }, diff: DAILY.diff }); }
   else if (b.id === "btn-vigil") { let last = 0; STAGES.forEach((_, i) => { if (unlocked(i)) last = i; }); beginStage(last, { vigil: true, seed: (Math.random() * 1e9) | 0, diff: diffSel }); }
   else if (b.id === "btn-resume") closeOverlay();
+  else if (b.id === "btn-synback") closeOverlay();
   else if (b.id === "btn-retry") startRun(S.stage, lastOpts);
   else if (b.id === "btn-next") beginStage(S.stage + 1, { diff: S.diff && S.stage + 1 < STAGES.length && (loadSave().stars[S.stage + 1] || 0) > 0 ? S.diff : 0, abyss: S.abyss || 0 });
   else if (b.id === "btn-menu") { heroCtx = null; showLevels(); }
@@ -420,6 +425,7 @@ function showResult(R) {
       ${tail}<div class="btns"><button class="primary" id="btn-vigil">再守一夜</button><button id="btn-menu">选关</button></div>`);
   } else if (R.mode === "daily") {
     openOverlay(`<h2>${win ? "每日挑战完成" : "每日挑战失败"}</h2><p>${ST.name} · 规则「${DAILY_MODS.find(m => m.id === S.mod).name}」：${win ? `守住了全部 ${ST.waves} 波` : `撑到第 ${R.reached} 波`}，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。</p>
+      ${R.got > 0 ? `<p class="stars">今日奖励 +${R.got}★</p>` : `<p>${win ? "今天的通关奖励已经领过了" : `撑过一半波数（${Math.ceil(ST.waves / 2)} 波）有 +${DAILY_STARS.half}★，通关 +${DAILY_STARS.win}★`}</p>`}
       ${tail}<div class="btns"><button class="primary" id="btn-retry">再来一次</button><button id="btn-menu">选关</button></div>`);
   } else if (R.mode === "endless") {
     openOverlay(`<h2>无尽模式结束</h2><p>${ST.name}：撑过 ${R.reached} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。最高纪录第 ${R.best} 波。</p>
@@ -431,7 +437,7 @@ function showResult(R) {
       ${tail}<div class="btns"><button class="primary" id="btn-week">再来一次</button><button id="btn-menu">选关</button></div>`);
   } else if (win) {
     const hasNext = S.stage + 1 < STAGES.length, final = S.stage === STAGES.length - 1;
-    openOverlay(`<h2>${final ? "深渊之门封印了" : "晨星碑守住了"}</h2>${S.diff === 0 ? starHtml(S.stars) : `<p class="stars">${DIFFS[S.diff].name}通关 +1★</p>`}
+    openOverlay(`<h2>${final ? "深渊之门封印了" : "晨星碑守住了"}</h2>${S.diff === 0 ? starHtml(S.stars) : `<p class="stars">${DIFFS[S.diff].name}通关${R.diffFirst ? " · 首通 +1★" : ""}</p>`}
       <p>第 ${S.stage + 1} 关 · ${ST.name}：击败 ${S.kills} 个敌人，升到 Lv ${S.level}，晨星碑还剩 ${Math.ceil(S.crystal.hp)}/${S.crystal.maxHp}。</p>
       <p style="color:#ffd860">${R.reward}</p>
       ${final ? "<p>主线通关！可以继续挑战困难、噩梦、无尽和每日挑战，把角色都练到 10 级。</p>" : ""}${tail}

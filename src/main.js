@@ -14,7 +14,7 @@ function frame(now) {
   }
   if (!S.offer && !S.shop && !S.cine && !S.event && S.pending > 0 && !S.over && !dlg && !menuOpen) { const mr = S.forceRare || 0; S.forceRare = 0; openOffer(mr, true); }
   handleEvents();
-  render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateTut(dt); updateDlg(dt); animRoster(now);
+  render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateUnitCards(now); updateCrystalBars(); updateTut(dt); updateDlg(dt); animRoster(now);
   if (!dlg) checkOver();
   requestAnimationFrame(frame);
 }

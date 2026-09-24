@@ -76,7 +76,7 @@ function updateTeam() {
   if (key !== teamKey) {
     teamKey = key;
     teamEl.innerHTML = S.units.map(u => `<button class="tm${u.hero ? " hero" : ""}" data-unit="${u.id}" style="--c:${u.def.color}">
-      <canvas class="pt" id="tm-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b><span>${u.summon ? "召唤物" : u.lv >= 4 ? u.def.branches[u.branch === "A" ? 0 : 1].name : u.lv + " 阶"}</span><i class="hpb" style="width:100%"></i></button>`).join("");
+      <canvas class="pt" id="tm-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b><span>${u.summon ? "召唤物" : "Lv" + clv(u.def.id) + " · " + (u.lv >= 4 ? u.def.branches[u.branch === "A" ? 0 : 1].name : u.lv + " 阶")}</span><i class="hpb" style="width:100%"></i></button>`).join("");
     for (const u of S.units) drawPortrait(u.def, $("tm-" + u.id), u.lv, u.branch);
   }
   for (const u of S.units) {

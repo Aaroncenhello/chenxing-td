@@ -42,6 +42,18 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .chip{background:var(--panel);border:2px solid #0a0c12;padding:2px 8px;color:var(--text)}
 .chip.elite{color:#ffd860;border-color:#6a5010}
 /* 经验条 */
+/* 晨星碑血条：电脑在经验条上面，全屏时在顶栏第一行；掉血时白色残影慢慢缩回、闪红，低于 30% 变红闪烁 */
+.cbar{position:relative;height:18px;background:#0c0f15;box-shadow:0 0 0 2px #0a0c12,var(--bevel);overflow:hidden;margin-bottom:6px}
+.cbar i{position:absolute;inset:0 auto 0 0;width:100%}
+.cbar .tr{background:rgba(255,236,190,.55);transition:width .5s ease-in .35s}
+.cbar .fl{background:linear-gradient(180deg,#8fd0ff,#3a8ee0)}
+.cbar.mid .fl{background:linear-gradient(180deg,#ffe08a,#e0a030)}
+.cbar.low .fl{background:linear-gradient(180deg,#ff8a7a,#d0402f)} .cbar.low{animation:cbarlow .7s steps(2) infinite}
+.cbar.hit{box-shadow:0 0 0 2px #ff4a3a,0 0 12px rgba(255,74,58,.8)}
+.cbar span{position:relative;display:block;line-height:18px;padding:0 10px;font-size:11px;color:#fff;text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
+.cbar em{font-style:normal;opacity:.85} .cbar b{font-family:var(--pix);font-size:10px;font-weight:400}
+@keyframes cbarlow{50%{box-shadow:0 0 0 2px #ff4a3a,0 0 14px rgba(255,60,40,.9)}}
+.hud-top .cbar{display:none}
 .xpwrap{position:relative;height:18px;background:#0c0f15;box-shadow:0 0 0 2px #0a0c12,var(--bevel);overflow:hidden}
 .xpwrap i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#2a6a4a,#6fcf8e);transition:width .18s}
 .xpwrap span{position:relative;display:block;line-height:18px;padding:0 10px;font-size:11px;color:#fff;text-shadow:1px 1px 0 #000}
@@ -118,9 +130,19 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .lubar button{padding:5px 12px;font-size:12px}
 .lubar .dust{font-family:var(--pix);font-size:10px;color:#ffd860}
 /* 羁绊 */
-.syns{display:flex;flex-wrap:wrap;gap:6px;min-height:24px}
-.syn{font-size:11px;padding:3px 8px;background:var(--panel);box-shadow:0 0 0 2px #0a0c12;color:var(--c);border-left:3px solid var(--c)}
-.syn.off{color:#5d677d;border-left-color:#3a4460}
+.syns,.pi-syn,.hud-syn{display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-height:24px;cursor:pointer}
+.sch{font-size:11px;color:var(--muted);font-weight:400}
+.sc{font-size:11px;padding:2px 6px;background:var(--panel);box-shadow:0 0 0 2px #0a0c12;color:var(--c);border-left:3px solid var(--c);opacity:.75;white-space:nowrap}
+.sc u{text-decoration:none}
+.sch{display:flex;align-items:center;gap:4px}
+.sc i{font-style:normal;margin-left:4px;color:var(--muted);font-size:10px}
+.sc.on{opacity:1;background:color-mix(in srgb,var(--c) 22%,var(--panel));color:#fff;font-weight:700;text-shadow:1px 1px 0 #000}
+.sc.none{color:#5d677d;border-left-color:#3a4460;--c:#3a4460}
+.sc.help{border:0;border-left:0;min-height:0;min-width:0;padding:2px 7px;color:#ffd860;opacity:1;font-weight:700;cursor:pointer}
+.hud-syn{display:none}
+.codex.syng .cx{border-left:4px solid var(--c)} .codex.syng .cx.on{background:color-mix(in srgb,var(--c) 14%,var(--panel))}
+.codex.syng .sp{margin-left:8px;font-size:11px;color:var(--muted);font-weight:400} .codex.syng .cx.on .sp{color:#6fcf8e}
+.codex.syng .need{color:var(--text)} .codex.syng .eff{color:#ffd860}
 /* 商店 */
 .shopbox{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(8,10,16,.82);padding:10px}
 .shopbox h3{margin:0;font-family:var(--serif);font-size:clamp(17px,2.6vw,26px);color:var(--gold);text-shadow:2px 2px 0 #000;letter-spacing:.1em}
@@ -363,6 +385,7 @@ kbd{font-family:var(--sans);background:var(--panel-2);border:1px solid var(--lin
 .dnode .dh{display:flex;justify-content:space-between;align-items:baseline}
 .dnode .dh b{font-size:13px;color:var(--c)} .dnode .dh span{font-family:var(--pix);font-size:8px;color:var(--muted)}
 .dnode p{margin:0;font-size:11px;color:var(--muted);line-height:1.45}
+.dnode .dnow{color:var(--text)} .dnode:not(.on) .dnow{color:#5d677d} .dnode .dnext{color:#8ac8ff}
 .dnode button{padding:4px 8px;font-size:12px}
 .dstar{width:min(420px,100%)} .dstar .dnode{border-left-color:var(--c);background:#262214}
 /* 深渊 */
@@ -397,6 +420,10 @@ body.imm.panel .toasts{display:none}
 .hud-top{position:absolute;top:calc(4px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:rgba(10,12,18,.72);padding:3px 10px 5px;box-shadow:0 0 0 2px #0a0c12;white-space:nowrap}
 .hud-top b{font-family:var(--pix);font-size:10px;font-weight:400;color:var(--text)}
 .hud-top .hc b{color:#62b4ff} .hud-top .hl b{color:var(--gold)} .hud-top .hd b{color:#ffd860}
+body.imm .hud-top{flex-wrap:wrap;justify-content:center;row-gap:3px}
+body.imm .hud-top .cbar{display:block;flex:0 0 100%;height:14px;margin:2px 0 0} body.imm .hud-top .cbar span{line-height:14px;font-size:10px}
+body.imm .hud-top .hc{display:none}
+body.imm .cbar.desk{display:none}
 .h-xp{position:absolute;left:0;right:0;bottom:0;height:3px;background:#0c0f15}
 .h-xp i{display:block;height:100%;background:#6fcf8e;width:0}
 .hud-l,.hud-r{position:absolute;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
@@ -416,12 +443,24 @@ body.imm .dlg{--boxh:44px}
 .pi-status .warn{color:#ff8a7a;font-weight:700}
 .pi-team{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
 .pu{position:relative;display:grid;grid-template-columns:30px 1fr;column-gap:5px;align-items:center;padding:4px 5px;min-height:44px;text-align:left;overflow:hidden}
-.pu canvas{grid-row:1/4;width:30px;height:30px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12;background:var(--c)}
+.pu canvas{grid-row:1/5;width:30px;height:30px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12;background:var(--c)}
 .pu b{font-size:11px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pu i{display:block;height:4px;background:#0c0f15;box-shadow:0 0 0 1px #0a0c12}
 .pu i s{display:block;height:100%;text-decoration:none}
 .pu .hp s{background:var(--ok)} .pu .sp s{background:var(--sp)}
 .pu.sel{outline:2px solid #fff;outline-offset:-2px}
+.pu .lv{font-size:9px;line-height:1.1;color:#ffd860;white-space:nowrap;overflow:hidden}
+/* 队员属性卡：竖屏在信息区（选中的队员，没选就是英雄）；横屏全屏时选中队员才在战场左上角出现 */
+.ucard{font-size:11px;line-height:1.45}
+.ucard .uc-h{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.ucard .uc-h b{color:var(--c);font-size:13px} .ucard .uc-h span{color:var(--muted)}
+.ucard em{font-style:normal;font-size:10px;padding:0 4px;background:#243049;color:#8ac8ff} .ucard em.rk{background:#3a3012;color:#ffd860}
+.ucard .uc-s{display:flex;flex-wrap:wrap;gap:2px 10px;color:var(--muted)} .ucard .uc-s b{color:var(--text);font-weight:600}
+.ucard .uc-k{color:#98a1b3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pi-sel{background:var(--panel);box-shadow:0 0 0 2px #0a0c12;padding:5px 8px}
+.hud-unit{display:none}
+body.imm .hud-unit:not([hidden]){display:block;position:absolute;top:calc(8px + env(safe-area-inset-top,0));left:calc((100vw - var(--fw,100vw)) / 2 + 6px);box-sizing:border-box;width:170px;font-size:10px;background:rgba(16,19,28,.9);box-shadow:0 0 0 2px #0a0c12;padding:5px 7px;z-index:4;pointer-events:none}
+body.imm .hud-unit .uc-k{white-space:normal;font-size:10px}
 .pu.down{opacity:.45}
 .pu.rdy{box-shadow:var(--bevel),0 0 0 2px #ffd860;animation:ultglow .6s steps(2) infinite}
 .pu.rdy .sp s{background:#ffd860}
@@ -430,12 +469,19 @@ body.imm .dlg{--boxh:44px}
 .pi-cards{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;overflow:hidden}
 .pi-cards canvas{width:24px;height:24px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12}
 .pi-cards .rl canvas{box-shadow:0 0 0 2px #e3b75c}
+/* 横屏全屏：羁绊看板竖着排在左下角（战场左边的黑边里） */
+body.imm .hud-syn{display:flex;position:absolute;left:calc(6px + env(safe-area-inset-left,0));bottom:8px;flex-direction:column;align-items:stretch;gap:3px;width:max(64px,calc((100vw - var(--fw,100vw)) / 2 - 12px));max-width:160px;max-height:34%;overflow:hidden;z-index:3}
+body.imm .hud-syn .sc{font-size:10px;padding:1px 4px;line-height:1.35}
+body.imm .hud-syn .sc u{display:none}
+body.imm .hud-syn{max-height:44%}
 /* 手机竖屏沉浸：顶上一行状态，战场占满宽度，按钮全排在战场下面的大按钮区（一屏看全，不用滚动）
    .hud 变成 display:contents，让顶栏和两组按钮直接排进 .stage 的竖向布局里；战场大小在 resize() 里按剩下的高度算 */
 @media (orientation:portrait){
   body.imm .stage{flex-direction:column;justify-content:flex-start;align-items:stretch;gap:8px}
   body.imm .screen{align-self:center}
   body.imm .hud{display:contents}
+  body.imm .hud-syn{display:none}
+  body.imm .hud-unit:not([hidden]){display:none}
   body.imm .hud-top{position:relative;top:auto;left:auto;transform:none;order:-1;align-self:center;margin-top:6px;flex-wrap:wrap;justify-content:center;white-space:normal;gap:2px 12px;max-width:calc(100% - 16px);padding:4px 12px 7px}
   body.imm .hud-top b{font-size:11px}
   body.imm .hud-l,body.imm .hud-r{position:static;transform:none;display:grid;gap:6px;padding:0 10px}
@@ -471,6 +517,7 @@ body.imm .dlg{--boxh:44px}
       <button id="btn-full" title="战场铺满整个屏幕（手机横屏推荐）">全屏</button>
     </div>
   </header>
+  <div class="cbar desk" aria-label="晨星碑生命"><i class="tr"></i><i class="fl"></i><span><em>晨星碑</em> <b class="cv"></b></span></div>
   <div class="xpwrap"><i id="xp-fill" style="width:0%"></i><span id="xp-txt">Lv 1 · 0/12</span></div>
   <div class="wavebar" id="wavebar"></div>
   <div class="tut" id="tut" hidden></div>
@@ -478,7 +525,7 @@ body.imm .dlg{--boxh:44px}
   <div class="stage">
     <div class="screen" id="screen"><canvas id="cv" aria-label="战场"></canvas><canvas id="tx" aria-hidden="true"></canvas></div>
     <!-- 竖屏信息区：战场和按钮之间（只在手机竖屏全屏时显示，内容由 updatePInfo 画） -->
-    <div class="pinfo" id="pinfo"><div class="pi-row pi-status"><span id="pi-wave"></span><b id="pi-combo"></b></div><div class="pi-team" id="pi-team"></div><div class="pi-row pi-next" id="pi-next"></div><div class="pi-cards" id="pi-cards"></div></div>
+    <div class="pinfo" id="pinfo"><div class="pi-row pi-status"><span id="pi-wave"></span><b id="pi-combo"></b></div><div class="pi-syn" id="pi-syn"></div><div class="pi-team" id="pi-team"></div><div class="pi-sel ucard" id="pi-sel"></div><div class="pi-row pi-next" id="pi-next"></div><div class="pi-cards" id="pi-cards"></div></div>
     <div class="dlg" id="dlg" hidden>
       <canvas class="bust L" id="bust-L" aria-hidden="true"></canvas><canvas class="bust R" id="bust-R" aria-hidden="true"></canvas>
       <div class="dlgbox" id="dlgbox"><b id="dlg-name"></b><p id="dlg-text" aria-live="polite"></p><span class="dlgmore">▼</span></div>
@@ -503,7 +550,9 @@ body.imm .dlg{--boxh:44px}
       <div class="lubar"><span class="dust" id="shop-dust">星尘 0</span><button class="primary" id="btn-shopgo">继续下一波</button></div>
     </div>
     <div class="hud" id="hud" hidden>
-      <div class="hud-top"><span class="hc">碑 <b id="h-hp"></b></span><span>波 <b id="h-wave"></b></span><span class="hl">Lv <b id="h-lv"></b></span><span class="hd">尘 <b id="h-dust"></b></span><span id="h-next"></span><span class="h-xp"><i id="h-xpf"></i></span></div>
+      <div class="hud-top"><div class="cbar" aria-label="晨星碑生命"><i class="tr"></i><i class="fl"></i><span><em>晨星碑</em> <b class="cv"></b></span></div><span class="hc">碑 <b id="h-hp"></b></span><span>波 <b id="h-wave"></b></span><span class="hl">Lv <b id="h-lv"></b></span><span class="hd">尘 <b id="h-dust"></b></span><span id="h-next"></span><span class="h-xp"><i id="h-xpf"></i></span></div>
+      <div class="hud-syn" id="h-syn"></div>
+      <div class="hud-unit ucard" id="h-unit" hidden></div>
       <div class="hud-l">
         <button data-h="meteor" id="h-meteor"><b>陨星</b><small id="h-cd-meteor"></small></button>
         <button data-h="heal" id="h-heal"><b>圣愈</b><small id="h-cd-heal"></small></button>
