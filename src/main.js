@@ -4,6 +4,7 @@
 let last = performance.now(), acc = 0;
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  adaptGfx(dt);
   if (S.slowCd > 0) S.slowCd -= dt;
   let k = 1; if (S.slowmo > 0) { S.slowmo -= dt; k = 0.3; }
   if (S.hitStop > 0) { S.hitStop -= dt; k = 0; }   // 顿帧：精英/首领被打死的一瞬间画面停住

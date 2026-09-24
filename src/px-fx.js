@@ -564,6 +564,7 @@ function drawComboGlow(t) {
 }
 
 // ---------- 每帧绘制 ----------
+const renderSortBuf = [];
 function render(now) {
   now = now || performance.now();
   const t = now / 1000;
@@ -571,8 +572,9 @@ function render(now) {
   ctx.imageSmoothingEnabled = false;
   const amp = S.shake > 0 ? Math.min(6, 2 + S.shake * 10) * GFX.shake : 0;
   const ox = amp ? R0((Math.random() - 0.5) * amp) : 0, oy = amp ? R0((Math.random() - 0.5) * amp) : 0;
+  const zoom = 1 + (S.zoomK || 0);   // 大招 / 击破首领：短促地往里顿一下镜头，加重打击感
   ctx.setTransform(1, 0, 0, 1, 0, 0); rect(ctx, 0, 0, PW, PHt, TH().bg);
-  ctx.setTransform(1, 0, 0, 1, ox, oy);
+  ctx.setTransform(zoom, 0, 0, zoom, PW / 2 * (1 - zoom) + ox, PHt / 2 * (1 - zoom) + oy);
   ctx.drawImage(mapCv, 0, 0);
   drawAmbient(now);
   drawHazGround(t);
@@ -596,9 +598,12 @@ function render(now) {
   drawStations(t);
   drawWavePreview(t);
   drawCrystalHp();
-  const list = [...S.units.filter(u => !u.dead).map(u => ({ y: unitFeet(u)[1], u })), ...S.enemies.filter(e => !e.d.flying).map(e => ({ y: foeFeet(e)[1], e }))];
-  list.sort((a, b) => a.y - b.y);
-  for (const it of list) it.u ? drawUnit(it.u, now) : drawEnemy(it.e, now);
+  // 复用同一个数组装「按脚下 y 排序画」的列表，别每帧都 filter+map+spread 出一堆临时数组
+  renderSortBuf.length = 0;
+  for (const u of S.units) if (!u.dead) renderSortBuf.push({ y: unitFeet(u)[1], u, e: null });
+  for (const e of S.enemies) if (!e.d.flying) renderSortBuf.push({ y: foeFeet(e)[1], u: null, e });
+  renderSortBuf.sort((a, b) => a.y - b.y);
+  for (const it of renderSortBuf) it.u ? drawUnit(it.u, now) : drawEnemy(it.e, now);
   for (const f of S.fx) if (f.kind === "corpse" || f.kind === "ucorpse" || f.kind === "shatter") drawFx(f, now);
   for (const e of S.enemies) if (e.d.flying) drawEnemy(e, now);
   drawBlades(t);
