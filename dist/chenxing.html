@@ -1217,7 +1217,7 @@ function relicChance(e) {
 function gainRelic(id, quiet) {
   if (S.relics.length >= RELIC_MAX) { S.dust += 50; if (!quiet) addFx({ kind: "banner", text: "遗物满了 · 换成 50 星尘", life: 1.6 }); return null; }
   const pool = RELICS.filter(r => !S.relics.includes(r.id));
-  if (!id) { if (!pool.length) return null; id = pool[Math.floor(Math.random() * pool.length)].id; }
+  if (!id) { if (!pool.length) return null; id = pool[Math.floor(roll("relic") * pool.length)].id; }
   if (S.relics.includes(id)) return null;
   S.relics.push(id);
   const R = RELIC_BY[id];
@@ -1231,7 +1231,7 @@ function gainRelic(id, quiet) {
 }
 function relicDrop(e) {
   if (e.summoned || S.relics.length >= RELIC_MAX) return;
-  if (Math.random() < relicChance(e)) {
+  if (roll("relic") < relicChance(e)) {
     const id = gainRelic();
     if (id) addFx({ kind: "text", x: e.x, y: e.y - 1, text: "掉落遗物！", color: RELIC_BY[id].color, life: 1.5, big: true });
   }
@@ -1245,7 +1245,7 @@ function relicStep(dt) {
       S.hornT = 7;
       const list = S.enemies.filter(hittable);
       for (let i = 0; i < 3 && list.length; i++) {
-        const e = list.splice(Math.floor(Math.random() * list.length), 1)[0];
+        const e = list.splice(Math.floor(roll("relic") * list.length), 1)[0];
         addFx({ kind: "bolt", x: e.x, y: e.y - 3, x2: e.x, y2: e.y, life: 0.3 });
         addFx({ kind: "boom", x: e.x, y: e.y, r: 0.8, color: "#a0d8ff", life: 0.35 });
         hurt(e, calc(900 * powerK(), "magic", eDef(e), eRes(e)), "magic", false, { key: "rl_horn" });
@@ -1725,6 +1725,12 @@ function loadStage(i, gen) {
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (MAP[r][c] === "S") PORTALS.push({ x: c, y: r });
 }
 function seeded(seed) { let s = (seed >>> 0) || 1; return () => (s = (Math.imul(s ^ (s >>> 15), 2246822507) + 0x9e3779b9 >>> 0), (s >>> 8) / 16777216); }
+// 局内随机数按用途分流：每日/每周挑战每条流都带种子，同一天/同一周大家遇到的出怪、事件、遗物、词缀、战斗判定都从同一串随机数里取；
+// 分开是为了让「翻了哪张牌、买了什么」不会打乱其他用途的顺序。其他模式全是 Math.random。
+// 只影响画面的随机（粒子、飘字、抖屏、走路动画）继续直接用 Math.random，不然帧率不同结果就不同。波次生成用 S.rng。
+const RNG_KEYS = ["card", "ev", "relic", "afx", "spawn", "fight", "shop"];
+function makeRngs(seed) { const o = {}; RNG_KEYS.forEach((k, i) => { o[k] = seed ? seeded(seed * 7 + (i + 1) * 104729) : Math.random; }); return o; }
+const roll = k => S.rngs[k]();
 
 // ---------- 卡牌 / 角色等级 ----------
 const cl = id => (S.cards && S.cards[id]) || 0;
@@ -1935,6 +1941,7 @@ function newRun(stage, opts) {
     stage, disk, abyss, week, relics: [], phoenixUsed: false, endless: !!opts.endless, vigil: !!opts.vigil, gen: !!gen, seed: seedN, daily, mod: daily ? daily.mod : null, diff: opts.diff || 0, diffK, perks, charLv: opts.charLv || {}, charTal: opts.charTal || {},
     charOpen: (opts.charOpen || UNITS.map(u => u.id)).filter(id => !week || weekAllows(UNITS.find(u => u.id === id) || {}, week.rules)),
     rng: daily ? seeded(daily.seed) : week ? seeded(week.seed) : Math.random,
+    rngs: makeRngs(daily ? daily.seed : week ? week.seed : 0),
     heroId: heroDef.id, t: 0, units: [], enemies: [], shots: [], fx: [], meteors: [], pools: [], blades: [], zones: [],
     crystal: { hp: 0, maxHp: 0, hitT: 0 },
     wave: 0, waveClock: 0, nextWaveIn: RULES.firstWave, spawnQueue: [], waveHp: 1, genWaves: [],
@@ -1958,7 +1965,7 @@ function newRun(stage, opts) {
   addUnit(heroDef, true);
   for (let i = 0; i < dk("supply"); i++) { const c = randomCards(1)[0]; if (c) pickCard(c.id, true); }
   if (wk("relics")) for (let i = 0; i < 3; i++) gainRelic(null, true);
-  if (wk("cursed")) for (let i = 0; i < 2; i++) { const cp = cursePool(); if (cp.length) pickCard(cp[Math.floor(Math.random() * cp.length)].id, true); }
+  if (wk("cursed")) for (let i = 0; i < 2; i++) { const cp = cursePool(); if (cp.length) pickCard(cp[Math.floor(roll("card") * cp.length)].id, true); }
   S.pending = Math.max(0, 1 + dk("prep") - (ab(5) ? 1 : 0));   // 开局先翻一张牌（深渊 5 层起少一张）
 }
 const xpNeedOf = lv => Math.round((12 + 4 * lv + 0.25 * lv * lv) * (S && S.abyss >= 11 ? 1.15 : 1));   // 10.1：升级明显变慢，翻牌次数大约少三分之一
@@ -2091,7 +2098,7 @@ function randomCards(n, minRare) {
   for (let i = 0; i < n && pool.length; i++) {
     let list = pool;
     if (i === 0 && want) { const a = pool.filter(want); if (a.length) list = a; }
-    let total = list.reduce((s, p) => s + p.w, 0), r = Math.random() * total, pick = list[list.length - 1];
+    let total = list.reduce((s, p) => s + p.w, 0), r = roll("card") * total, pick = list[list.length - 1];
     for (const p of list) { r -= p.w; if (r <= 0) { pick = p; break; } }
     out.push(pick);
     const k = pool.indexOf(pick); if (k >= 0) pool.splice(k, 1);
@@ -2099,9 +2106,9 @@ function randomCards(n, minRare) {
     if (pick.branch) for (let j = pool.length - 1; j >= 0; j--) if (pool[j].def === pick.def) pool.splice(j, 1);
   }
   // 恶魔交易：有几率把最后一张换成诅咒卡
-  if (!minRare && S.level >= 5 && out.length === 3 && Math.random() < curseChance()) {
+  if (!minRare && S.level >= 5 && out.length === 3 && roll("card") < curseChance()) {
     const cp = cursePool();
-    if (cp.length) out[2] = cp[Math.floor(Math.random() * cp.length)];
+    if (cp.length) out[2] = cp[Math.floor(roll("card") * cp.length)];
   }
   return out;
 }
@@ -2245,7 +2252,7 @@ function startWave(append) {
     at += 0.4;
   }
   const wv = S.genWaves[S.wave] || [];
-  if (cu("cu_sand")) { const extra = 3 * cu("cu_sand"), pool = ST.pool.filter(p => S.wave + 1 >= p[2]); for (let i = 0; i < extra && pool.length; i++) { const p = pool[Math.floor(Math.random() * pool.length)]; q.push({ type: p[0], at: at + i * 0.5, portal: Math.floor(Math.random() * Math.max(1, PORTALS.length)), elite: false }); } }
+  if (cu("cu_sand")) { const extra = 3 * cu("cu_sand"), pool = ST.pool.filter(p => S.wave + 1 >= p[2]); for (let i = 0; i < extra && pool.length; i++) { const p = pool[Math.floor(roll("spawn") * pool.length)]; q.push({ type: p[0], at: at + i * 0.5, portal: Math.floor(roll("spawn") * Math.max(1, PORTALS.length)), elite: false }); } }
   if (append) S.spawnQueue = S.spawnQueue.concat(q).sort((a, b) => a.at - b.at);
   else { S.spawnQueue = q; S.waveClock = 0; }
   S.wave++;
@@ -2292,7 +2299,7 @@ function spawnAt(type, x, y, elite, summoned) {
   const hp = Math.round(d.hp * scale * (elite ? ELITE.hp : 1));
   const e = {
     id: S.uid++, type, d, elite: !!elite, summoned: !!summoned, hpK, hp, maxHp: hp, x, y, face: -1,
-    shield: d.shield ? Math.round(d.shield * scale * (elite ? 1.5 : 1)) : 0, revealed: !d.stealth, under: false, bT: d.burrow ? d.burrow.up * (0.4 + Math.random() * 0.6) : 0, phase: 0,
+    shield: d.shield ? Math.round(d.shield * scale * (elite ? 1.5 : 1)) : 0, revealed: !d.stealth, under: false, bT: d.burrow ? d.burrow.up * (0.4 + roll("spawn") * 0.6) : 0, phase: 0,
     target: null, atkCd: d.interval * 0.5, slowT: 0, slowK: 0.6, freezeT: 0, stunT: 0, poison: null, corrode: null,
     aoeCd: d.aoe ? d.aoe.every * 0.6 : 0, healCd: d.heal ? d.heal.every * 0.5 : 0, summonCd: d.summon ? d.summon.every * 0.5 : 0,
     fuse: -1, hitT: 0, dead: false, atkT: 9, walk: Math.random() * 3, stop: 0, kb: 0, pend: 0, hitCd: 0,
@@ -2311,11 +2318,11 @@ function spawnPortal(type, portal, elite) {
   let idx = portal;
   if (S.gate && PORTALS.length > 1 && !portalOpen(idx)) { for (let k = 1; k <= PORTALS.length; k++) if (portalOpen((idx + k) % PORTALS.length)) { idx = (idx + k) % PORTALS.length; break; } }
   const p = PORTALS[idx] || PORTALS[0] || { x: 1, y: 1 };
-  const jx = (Math.random() - 0.5) * 0.7, jy = (Math.random() - 0.5) * 0.7;
+  const jx = (roll("spawn") - 0.5) * 0.7, jy = (roll("spawn") - 0.5) * 0.7;
   return spawnAt(type, p.x + jx, p.y + jy, elite);
 }
 function spawnNear(type, o, elite, summoned) {
-  const a = Math.random() * 6.283, r = 0.5 + Math.random() * 0.5;
+  const a = roll("spawn") * 6.283, r = 0.5 + roll("spawn") * 0.5;
   let x = o.x + Math.cos(a) * r, y = o.y + Math.sin(a) * r;
   if (solid(x, y)) { x = o.x; y = o.y; }
   return spawnAt(type, x, y, elite, summoned);
@@ -2329,7 +2336,7 @@ function takeCurse(id) {
     S.dust += 120;
     const allies = S.units.filter(u => !u.hero && !u.summon);
     if (allies.length) {
-      const v = allies[Math.floor(Math.random() * allies.length)];
+      const v = allies[Math.floor(roll("card") * allies.length)];
       addFx({ kind: "text", x: v.x, y: v.y - 0.6, text: v.def.name + " 被献祭了", color: CURSE_COLOR, life: 1.8, big: true });
       burst(v.x, v.y, CURSE_COLOR, 26, 2.8, 0.8, 0.08);
       v.dead = true; S.units = S.units.filter(u => u !== v); S.allies = Math.max(0, S.allies - 1); arrange();
@@ -2346,7 +2353,7 @@ function openShop() {
   const pool = SHOP.items.filter(it => !(it.id === "revive" && S.units.every(u => u.down <= 0 && u.hp >= u.maxHp)) && !(it.id === "ult" && S.star >= ULT.max));
   const out = [];
   const bag = pool.slice();
-  while (out.length < 3 && bag.length) out.push(bag.splice(Math.floor(Math.random() * bag.length), 1)[0]);
+  while (out.length < 3 && bag.length) out.push(bag.splice(Math.floor(roll("shop") * bag.length), 1)[0]);
   S.shop = { items: out.map(it => ({ ...it, price: shopCost(it) })) };
 }
 function buyShop(id) {
@@ -2370,7 +2377,7 @@ function closeShop() { S.shop = null; S.nextWaveIn = Math.min(S.nextWaveIn, 3); 
 const HAZ_NAME = { vent: "喷发口", beam: "旋转光束", field: "寒气力场", spikes: "地刺阵", gate: "开合传送门" };
 function initHaz(list) {
   S.haz = [];
-  for (const [type, x, y, o] of (list || [])) S.haz.push({ type, x, y, ...(o || {}), t: 0, fire: 0, ang: Math.random() * 6.283, on: true });
+  for (const [type, x, y, o] of (list || [])) S.haz.push({ type, x, y, ...(o || {}), t: 0, fire: 0, ang: roll("spawn") * 6.283, on: true });
   const g = S.haz.find(h => h.type === "gate");
   S.gate = g ? { period: g.period || 14, open: g.open || 7, t: 0 } : null;
 }
@@ -2713,7 +2720,7 @@ const EVENTS = [
   { id: "traveler", name: "倒下的旅人", text: "她还有气，手里攥着一枚旧徽章。",
     opts: [
       { name: "救她", cost: 60, desc: "花 60 星尘，随机一名伙伴加入队伍", need: () => S.allies < maxAllies() && freeAllies().length > 0,
-        on: () => { S.dust -= 60; const list = freeAllies(); addUnit(list[Math.floor(Math.random() * list.length)]); } },
+        on: () => { S.dust -= 60; const list = freeAllies(); addUnit(list[Math.floor(roll("ev") * list.length)]); } },
       { name: "取走徽章", desc: "立刻翻一张牌", on: () => { S.pending++; } },
       { name: "埋葬她", desc: "全队回满生命并立刻站起，晨星碑回复 15%", on: () => { for (const u of S.units) { if (u.down > 0) reviveUnit(u); u.hp = u.maxHp; } healCrystal(0.15); } },
     ] },
@@ -2749,9 +2756,9 @@ const EVENTS = [
     ] },
   { id: "whisper", name: "低语", text: "没有人说话，但每个人都听见了同一句。",
     opts: [
-      { name: "听下去", desc: "随机接受一道诅咒，换一张稀有卡和 100 星尘", need: () => cursePool().length > 0, on: () => { const cp = cursePool(); pickCard(cp[Math.floor(Math.random() * cp.length)].id, true); S.forceRare = 1; S.pending++; S.dust += 100; } },
+      { name: "听下去", desc: "随机接受一道诅咒，换一张稀有卡和 100 星尘", need: () => cursePool().length > 0, on: () => { const cp = cursePool(); pickCard(cp[Math.floor(roll("ev") * cp.length)].id, true); S.forceRare = 1; S.pending++; S.dust += 100; } },
       { name: "捂住耳朵", desc: "全队回满生命，损失 60 星尘", on: () => { S.dust = Math.max(0, S.dust - 60); for (const u of S.units) { if (u.down > 0) reviveUnit(u); u.hp = u.maxHp; } } },
-      { name: "念出自己的名字", desc: "洗掉身上一道诅咒；没有诅咒就 +140 星尘", on: () => { const ids = Object.keys(S.curses || {}); if (ids.length) { const id = ids[Math.floor(Math.random() * ids.length)]; delete S.curses[id]; for (const u of S.units) { u.maxHp = uMaxHp(u); u.hp = Math.min(u.hp, u.maxHp); } addFx({ kind: "banner", text: "洗掉了 · " + CURSE_BY[id].name, life: 1.8 }); } else S.dust += 140; } },
+      { name: "念出自己的名字", desc: "洗掉身上一道诅咒；没有诅咒就 +140 星尘", on: () => { const ids = Object.keys(S.curses || {}); if (ids.length) { const id = ids[Math.floor(roll("ev") * ids.length)]; delete S.curses[id]; for (const u of S.units) { u.maxHp = uMaxHp(u); u.hp = Math.min(u.hp, u.maxHp); } addFx({ kind: "banner", text: "洗掉了 · " + CURSE_BY[id].name, life: 1.8 }); } else S.dust += 140; } },
     ] },
 ];
 const EVENT_BY = Object.fromEntries(EVENTS.map(e => [e.id, e]));
@@ -2769,7 +2776,7 @@ function healCrystal(k) {
 function forgetCard() {
   const ids = Object.keys(S.cards).filter(id => CARD_BY[id]);
   if (!ids.length) return;
-  const id = ids[Math.floor(Math.random() * ids.length)];
+  const id = ids[Math.floor(roll("ev") * ids.length)];
   S.cards[id]--; if (S.cards[id] <= 0) delete S.cards[id];
   addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.2, text: "忘掉了 · " + CARD_BY[id].name, color: "#9aa0b4", life: 1.6, big: true });
   for (const u of S.units) { const f = u.hp / u.maxHp; u.maxHp = uMaxHp(u); u.hp = Math.max(1, Math.round(u.maxHp * f)); }
@@ -2793,7 +2800,7 @@ function riftRaid() {
   const pool = ST.pool.filter(p => S.wave >= p[2]).sort((a, b) => b[1] - a[1]);
   const type = (pool[0] || ["orc"])[0];
   for (let i = 0; i < 4; i++) {
-    const p = PORTALS[Math.floor(Math.random() * Math.max(1, PORTALS.length))] || { x: 1, y: 1 };
+    const p = PORTALS[Math.floor(roll("ev") * Math.max(1, PORTALS.length))] || { x: 1, y: 1 };
     spawnAt(type, p.x, p.y, true).hitT = 0.2;
   }
   S.riftDust = 150;
@@ -2810,7 +2817,7 @@ function openEvent() {
   if (S.over || S.event || S.shop) return;
   const pool = EVENTS.filter(e => !S.eventsDone.includes(e.id));
   const src = pool.length ? pool : EVENTS;
-  const def = src[Math.floor(Math.random() * src.length)];
+  const def = src[Math.floor(roll("ev") * src.length)];
   const opts = def.opts.filter(o => (!o.need || o.need()) && (!o.cost || S.dust >= o.cost));
   if (opts.length < 2) { S.eventWave = eventAt(S.wave); return; }   // 选项不够就跳过
   S.event = { def, opts };
@@ -2849,11 +2856,11 @@ const hasAfx = (e, id) => !!(e.afx && e.afx.includes(id));
 function rollAffix(e) {
   if (!e.elite && !isBoss(e)) return;
   if (S.mod === "solo") return;
-  const n = isBoss(e) ? (ab(4) ? 3 : 2) : ab(9) ? 2 : (S.wave >= 8 || S.vigil || S.endless) && Math.random() < 0.45 ? 2 : 1;
+  const n = isBoss(e) ? (ab(4) ? 3 : 2) : ab(9) ? 2 : (S.wave >= 8 || S.vigil || S.endless) && roll("afx") < 0.45 ? 2 : 1;
   const bag = AFFIX.slice();
   e.afx = [];
   for (let i = 0; i < n && bag.length; i++) {
-    const a = bag.splice(Math.floor(Math.random() * bag.length), 1)[0];
+    const a = bag.splice(Math.floor(roll("afx") * bag.length), 1)[0];
     if (a.id === "splitting" && (isBoss(e) || e.d.split)) continue;
     if (a.id === "swift" && e.d.unstoppable) continue;
     e.afx.push(a.id);
@@ -2951,7 +2958,7 @@ function killEnemy(e, src) {
     burst(e.x, e.y, "#ffe040", 40, 3.4, 1, 0.09); S.shake = 0.4;
   }
   // 传说卡「天罚」
-  if (cl("lg_judge") && src && src.def && Math.random() < 0.2 * cl("lg_judge")) {
+  if (cl("lg_judge") && src && src.def && roll("fight") < 0.2 * cl("lg_judge")) {
     const t = S.enemies.filter(o => hittable(o) && o !== e).sort((a, b) => dist(a, e) - dist(b, e))[0];
     if (t) {
       const dmg = SKILL_DMG.lg_judge * cl("lg_judge") * powerK();
@@ -2969,7 +2976,7 @@ function killEnemy(e, src) {
   if (isBoss(e)) { S.shake = 0.6; if (S.boss === e) S.boss = null; if (e.type === "boss") S.events.push({ type: "achv", id: "boss" }); }
   if (e.d.split) for (let i = 0; i < e.d.split; i++) { const s = spawnNear("slime", e, false, true); s.stop = 0.2; s.hitT = 0.1; }
   // 殉爆
-  if (cl("boom") && Math.random() < 0.18 * cl("boom") * (syn("bloodlust") ? 1.5 : 1)) {
+  if (cl("boom") && roll("fight") < 0.18 * cl("boom") * (syn("bloodlust") ? 1.5 : 1)) {
     const dmg = 500 * cl("boom") * powerK() * (syn("bloodlust") ? 1.5 : 1);
     addFx({ kind: "boom", x: e.x, y: e.y, r: 1.3, color: "#ff8a3a", life: 0.45 });
     burst(e.x, e.y, "#ffb040", 18, 2.8, 0.6, 0.07);
@@ -3003,9 +3010,9 @@ function hurt(e, amt, type, crit, src) {
   if (byUnit) {
     if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1);
     if (rl("rl_berserk") && !crit) { src.hitN = (src.hitN || 0) + 1; if (src.hitN % 8 === 0) { amt *= 3; crit = true; } }
-    if ((cl("crit") || cu("cu_moon") || dk("crit")) && !crit && Math.random() < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon")) { amt *= 2; crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
+    if ((cl("crit") || cu("cu_moon") || dk("crit")) && !crit && roll("fight") < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon")) { amt *= 2; crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
     if (src.hero && sg("sg_as2") && !isBoss(e) && e.hp <= e.maxHp * 0.25 && e.hp > 0) { amt = e.hp + e.shield + 1; addFx({ kind: "text", x: e.x, y: e.y - 0.6, text: "处决", color: "#4fc0b0", life: 0.9, big: true }); }
-    if (cl("freeze") && !e.d.unstoppable && Math.random() < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
+    if (cl("freeze") && !e.d.unstoppable && roll("fight") < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
     if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? 2 : 1), true, src);
     if (hasAfx(e, "thorns") && src.def.place === "ground" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.18, "magic", null);
     if (tal(src, "t_pierce") && !e.dead) applyCorrode(e, 0.25, 4, src);
@@ -3140,7 +3147,7 @@ function landShot(s) {
     hurt(t, calc(s.atk * chill, "magic", eDef(t), eRes(t)), "magic", false, u);
     const chance = (br(u, "frost", "A") ? 0.5 : u.lv >= 3 ? 0.25 : 0) + (u.hero ? 0.12 * sg("sg_fr1") : 0);
     const ft = (br(u, "frost", "A") ? 1.5 : 1) + (hasTal(u, "frost") ? 0.5 : 0);
-    if (Math.random() < chance) t.freezeT = Math.max(t.freezeT, ft); else if (t.freezeT <= 0) { t.slowT = 1.5; t.slowK = 0.6; }
+    if (roll("fight") < chance) t.freezeT = Math.max(t.freezeT, ft); else if (t.freezeT <= 0) { t.slowT = 1.5; t.slowK = 0.6; }
   } else if (false) {
   } else if (s.kind === "bard" || s.kind === "summoner") {
     hurt(t, calc(s.atk, "magic", eDef(t), eRes(t)), "magic", false, u);
@@ -3193,11 +3200,11 @@ function strike(u, targets) {
   for (const t of list) for (let h = 0; h < hits; h++) {
     if (t.dead) break;
     const critB = u.hero ? 0.15 * sg("sg_as1") : 0;
-    const crit = (D.id === "assassin" && (u.skillT > 0 || (u.lv >= 3 && Math.random() < 0.3 + critB))) || (br(u, "sword", "A") && Math.random() < 0.2 + critB) || (critB && Math.random() < critB);
+    const crit = (D.id === "assassin" && (u.skillT > 0 || (u.lv >= 3 && roll("fight") < 0.3 + critB))) || (br(u, "sword", "A") && roll("fight") < 0.2 + critB) || (critB && roll("fight") < critB);
     const mult = crit ? (D.id === "assassin" ? 2.2 : 2) * (u.hero ? 1 + 0.2 * sg("sg_as1") : 1) : 1;
     dealt += hurt(t, calc(uAtk(u) * mult, "phys", eDef(t), eRes(t)), "phys", crit, u);
     if (br(u, "assassin", "B")) t.poison = { dps: uAtk(u) * 0.4, t: 4, acc: 0, src: u };
-    if (D.id === "lancer" && u.lv >= 3 && !t.dead && Math.random() < 0.25) knock(t, 0.5);
+    if (D.id === "lancer" && u.lv >= 3 && !t.dead && roll("fight") < 0.25) knock(t, 0.5);
     if (u.hero && sg("sg_la1") && !t.dead) knock(t, 0.4);
     if (u.hero && sg("sg_me2") && !t.dead) burnEnemy(t, uAtk(u) * 0.35, 4, u);
     addFx({ kind: D.id === "lancer" ? "thrust" : "slash", x: t.x, y: t.y, color: crit ? "#ffe040" : D.color, face: u.face, life: 0.22, big: crit || h > 0 });
@@ -3216,7 +3223,7 @@ function densest(u, R) {
 }
 function golemSpot(u) {
   const foes = S.enemies.filter(e => hittable(e) && !e.d.flying);
-  let a = Math.random() * 6.283;
+  let a = roll("fight") * 6.283;
   if (foes.length) { const t = foes.sort((p, q) => toCrystal(p) - toCrystal(q))[0]; a = Math.atan2(t.y - CRYSTAL.y, t.x - CRYSTAL.x); }
   for (let k = 0; k < 10; k++) {
     const r = RULES.ringFront + 0.9, x = CRYSTAL.x + Math.cos(a + k * 0.3) * r, y = CRYSTAL.y + Math.sin(a + k * 0.3) * r;
@@ -6529,14 +6536,16 @@ function checkOver() {
   recordRun(win);
   expGains = awardExp(win);
   const st = STORY[S.stage], key = "post" + S.stage;
-  if (win && !S.endless && !S.daily && st && st.post && !loadSave().story.includes(key)) {
+  // 通关剧情只在主线关卡播（和开局剧情一致：守望之战、每周挑战不播）
+  if (win && !S.endless && !S.daily && !S.vigil && !S.week && st && st.post && !loadSave().story.includes(key)) {
     editSave(d => { d.story.push(key); });
     playStory(st.post, showResult);
   } else showResult();
 }
 function showResult() {
   const win = S.over === "win", exp = expHtml(expGains), full = S.crystal.hp >= S.crystal.maxHp;
-  if (win && !S.daily && !S.endless) {
+  // 「通关某关 / 任意关卡」类成就只算主线；守望之战的 S.stage 是解锁到的最后一关，每周挑战是指定关卡，都不算真的打通了那一关
+  if (win && !S.daily && !S.endless && !S.vigil && !S.week) {
     if (S.stage === 0) unlockAchv("first");
     if (full) unlockAchv("perfect");
     if (S.allies === 0) unlockAchv("solo");
@@ -6577,7 +6586,7 @@ function showResult() {
       <div class="btns"><button class="primary" id="btn-retry">再来一次</button><button id="btn-menu">选关</button></div>`);
   } else if (S.week && !S.daily) {
     const key = S.week.key, old = loadSave().week[key] || {}, first = win && !old.clear, reached = win ? ST.waves : Math.max(0, S.wave - 1);
-    editSave(d => { d.week = { [key]: { clear: !!old.clear || win, best: Math.max(old.best || 0, reached) } }; if (win) d.bonusStars += 1; });
+    editSave(d => { d.week[key] = { clear: !!old.clear || win, best: Math.max(old.best || 0, reached) }; if (win) d.bonusStars += 1; });   // 只改本周这一条：以前各周的首通都算在星星账本里
     openOverlay(`<h2>${win ? "每周挑战完成" : "每周挑战失败"}</h2><p>${ST.name} · ${S.week.rules.map(r => WEEK_BY[r].name).join(" + ")}：${win ? `守住了全部 ${ST.waves} 波` : `撑到第 ${reached} 波`}。</p>
       ${first ? `<p class="stars">本周首通 +${WEEK_STARS}★</p>` : win ? `<p style="color:#ffd860">通关奖励 +1★</p>` : ""}
       ${battleReport()}${cardsHtml()}${statsTable()}${exp}<div class="btns"><button class="primary" id="btn-week">再来一次</button><button id="btn-menu">选关</button></div>`);

@@ -13,6 +13,8 @@ const { check, noErrors, report } = require('./lib');
     const S = T.S; S.offer=null; S.pending=0;
     // 手动放一个深渊领主，看入场演出
     const e = spawnAt('boss', 3, 4, false);
+    // 去掉随机词缀：「护壁」的护盾会吃掉下面那一下固定伤害，导致打断测试偶尔失败（词缀有自己的测试）
+    e.afx = []; e.shield = 0; e.maxShield = 0; e.afxWard = 0;
     out.cine = S.cine ? { name:S.cine.name, title:S.cine.title, ult:S.cine.ult, dur:S.cine.dur } : null;
     out.cineWave = S.cineWave;
     // 演出期间不推进模拟

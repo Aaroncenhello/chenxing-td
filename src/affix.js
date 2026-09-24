@@ -19,11 +19,11 @@ const hasAfx = (e, id) => !!(e.afx && e.afx.includes(id));
 function rollAffix(e) {
   if (!e.elite && !isBoss(e)) return;
   if (S.mod === "solo") return;
-  const n = isBoss(e) ? (ab(4) ? 3 : 2) : ab(9) ? 2 : (S.wave >= 8 || S.vigil || S.endless) && Math.random() < 0.45 ? 2 : 1;
+  const n = isBoss(e) ? (ab(4) ? 3 : 2) : ab(9) ? 2 : (S.wave >= 8 || S.vigil || S.endless) && roll("afx") < 0.45 ? 2 : 1;
   const bag = AFFIX.slice();
   e.afx = [];
   for (let i = 0; i < n && bag.length; i++) {
-    const a = bag.splice(Math.floor(Math.random() * bag.length), 1)[0];
+    const a = bag.splice(Math.floor(roll("afx") * bag.length), 1)[0];
     if (a.id === "splitting" && (isBoss(e) || e.d.split)) continue;
     if (a.id === "swift" && e.d.unstoppable) continue;
     e.afx.push(a.id);

@@ -403,14 +403,16 @@ function checkOver() {
   recordRun(win);
   expGains = awardExp(win);
   const st = STORY[S.stage], key = "post" + S.stage;
-  if (win && !S.endless && !S.daily && st && st.post && !loadSave().story.includes(key)) {
+  // 通关剧情只在主线关卡播（和开局剧情一致：守望之战、每周挑战不播）
+  if (win && !S.endless && !S.daily && !S.vigil && !S.week && st && st.post && !loadSave().story.includes(key)) {
     editSave(d => { d.story.push(key); });
     playStory(st.post, showResult);
   } else showResult();
 }
 function showResult() {
   const win = S.over === "win", exp = expHtml(expGains), full = S.crystal.hp >= S.crystal.maxHp;
-  if (win && !S.daily && !S.endless) {
+  // 「通关某关 / 任意关卡」类成就只算主线；守望之战的 S.stage 是解锁到的最后一关，每周挑战是指定关卡，都不算真的打通了那一关
+  if (win && !S.daily && !S.endless && !S.vigil && !S.week) {
     if (S.stage === 0) unlockAchv("first");
     if (full) unlockAchv("perfect");
     if (S.allies === 0) unlockAchv("solo");
@@ -451,7 +453,7 @@ function showResult() {
       <div class="btns"><button class="primary" id="btn-retry">再来一次</button><button id="btn-menu">选关</button></div>`);
   } else if (S.week && !S.daily) {
     const key = S.week.key, old = loadSave().week[key] || {}, first = win && !old.clear, reached = win ? ST.waves : Math.max(0, S.wave - 1);
-    editSave(d => { d.week = { [key]: { clear: !!old.clear || win, best: Math.max(old.best || 0, reached) } }; if (win) d.bonusStars += 1; });
+    editSave(d => { d.week[key] = { clear: !!old.clear || win, best: Math.max(old.best || 0, reached) }; if (win) d.bonusStars += 1; });   // 只改本周这一条：以前各周的首通都算在星星账本里
     openOverlay(`<h2>${win ? "每周挑战完成" : "每周挑战失败"}</h2><p>${ST.name} · ${S.week.rules.map(r => WEEK_BY[r].name).join(" + ")}：${win ? `守住了全部 ${ST.waves} 波` : `撑到第 ${reached} 波`}。</p>
       ${first ? `<p class="stars">本周首通 +${WEEK_STARS}★</p>` : win ? `<p style="color:#ffd860">通关奖励 +1★</p>` : ""}
       ${battleReport()}${cardsHtml()}${statsTable()}${exp}<div class="btns"><button class="primary" id="btn-week">再来一次</button><button id="btn-menu">选关</button></div>`);

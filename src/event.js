@@ -24,7 +24,7 @@ const EVENTS = [
   { id: "traveler", name: "倒下的旅人", text: "她还有气，手里攥着一枚旧徽章。",
     opts: [
       { name: "救她", cost: 60, desc: "花 60 星尘，随机一名伙伴加入队伍", need: () => S.allies < maxAllies() && freeAllies().length > 0,
-        on: () => { S.dust -= 60; const list = freeAllies(); addUnit(list[Math.floor(Math.random() * list.length)]); } },
+        on: () => { S.dust -= 60; const list = freeAllies(); addUnit(list[Math.floor(roll("ev") * list.length)]); } },
       { name: "取走徽章", desc: "立刻翻一张牌", on: () => { S.pending++; } },
       { name: "埋葬她", desc: "全队回满生命并立刻站起，晨星碑回复 15%", on: () => { for (const u of S.units) { if (u.down > 0) reviveUnit(u); u.hp = u.maxHp; } healCrystal(0.15); } },
     ] },
@@ -60,9 +60,9 @@ const EVENTS = [
     ] },
   { id: "whisper", name: "低语", text: "没有人说话，但每个人都听见了同一句。",
     opts: [
-      { name: "听下去", desc: "随机接受一道诅咒，换一张稀有卡和 100 星尘", need: () => cursePool().length > 0, on: () => { const cp = cursePool(); pickCard(cp[Math.floor(Math.random() * cp.length)].id, true); S.forceRare = 1; S.pending++; S.dust += 100; } },
+      { name: "听下去", desc: "随机接受一道诅咒，换一张稀有卡和 100 星尘", need: () => cursePool().length > 0, on: () => { const cp = cursePool(); pickCard(cp[Math.floor(roll("ev") * cp.length)].id, true); S.forceRare = 1; S.pending++; S.dust += 100; } },
       { name: "捂住耳朵", desc: "全队回满生命，损失 60 星尘", on: () => { S.dust = Math.max(0, S.dust - 60); for (const u of S.units) { if (u.down > 0) reviveUnit(u); u.hp = u.maxHp; } } },
-      { name: "念出自己的名字", desc: "洗掉身上一道诅咒；没有诅咒就 +140 星尘", on: () => { const ids = Object.keys(S.curses || {}); if (ids.length) { const id = ids[Math.floor(Math.random() * ids.length)]; delete S.curses[id]; for (const u of S.units) { u.maxHp = uMaxHp(u); u.hp = Math.min(u.hp, u.maxHp); } addFx({ kind: "banner", text: "洗掉了 · " + CURSE_BY[id].name, life: 1.8 }); } else S.dust += 140; } },
+      { name: "念出自己的名字", desc: "洗掉身上一道诅咒；没有诅咒就 +140 星尘", on: () => { const ids = Object.keys(S.curses || {}); if (ids.length) { const id = ids[Math.floor(roll("ev") * ids.length)]; delete S.curses[id]; for (const u of S.units) { u.maxHp = uMaxHp(u); u.hp = Math.min(u.hp, u.maxHp); } addFx({ kind: "banner", text: "洗掉了 · " + CURSE_BY[id].name, life: 1.8 }); } else S.dust += 140; } },
     ] },
 ];
 const EVENT_BY = Object.fromEntries(EVENTS.map(e => [e.id, e]));
@@ -80,7 +80,7 @@ function healCrystal(k) {
 function forgetCard() {
   const ids = Object.keys(S.cards).filter(id => CARD_BY[id]);
   if (!ids.length) return;
-  const id = ids[Math.floor(Math.random() * ids.length)];
+  const id = ids[Math.floor(roll("ev") * ids.length)];
   S.cards[id]--; if (S.cards[id] <= 0) delete S.cards[id];
   addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.2, text: "忘掉了 · " + CARD_BY[id].name, color: "#9aa0b4", life: 1.6, big: true });
   for (const u of S.units) { const f = u.hp / u.maxHp; u.maxHp = uMaxHp(u); u.hp = Math.max(1, Math.round(u.maxHp * f)); }
@@ -104,7 +104,7 @@ function riftRaid() {
   const pool = ST.pool.filter(p => S.wave >= p[2]).sort((a, b) => b[1] - a[1]);
   const type = (pool[0] || ["orc"])[0];
   for (let i = 0; i < 4; i++) {
-    const p = PORTALS[Math.floor(Math.random() * Math.max(1, PORTALS.length))] || { x: 1, y: 1 };
+    const p = PORTALS[Math.floor(roll("ev") * Math.max(1, PORTALS.length))] || { x: 1, y: 1 };
     spawnAt(type, p.x, p.y, true).hitT = 0.2;
   }
   S.riftDust = 150;
@@ -121,7 +121,7 @@ function openEvent() {
   if (S.over || S.event || S.shop) return;
   const pool = EVENTS.filter(e => !S.eventsDone.includes(e.id));
   const src = pool.length ? pool : EVENTS;
-  const def = src[Math.floor(Math.random() * src.length)];
+  const def = src[Math.floor(roll("ev") * src.length)];
   const opts = def.opts.filter(o => (!o.need || o.need()) && (!o.cost || S.dust >= o.cost));
   if (opts.length < 2) { S.eventWave = eventAt(S.wave); return; }   // 选项不够就跳过
   S.event = { def, opts };

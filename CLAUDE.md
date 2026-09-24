@@ -67,6 +67,8 @@ npm run sim            # 平衡模拟，见下
 - **暂停条件**：`S.offer`（翻牌）/`S.shop`/`S.event`/`S.cine`（首领演出）任一存在时，`step` 不推进战斗。
 - **敌人强度**：`spawnAt` 里 `hp = d.hp × stageHp() × S.waveHp × S.diffK.hp × …`。`S.diffK` = 难度 × 深渊 × 每周规则，在 `newRun` 里合成。
 - **经验曲线**：`xpNeedOf(lv) = (12 + 4lv + 0.25lv²)`（深渊 11 层起 ×1.15）。这是控制「一局翻几次牌」的主旋钮。
+- **随机数**：影响对局的随机一律用 `roll("用途")`（arena.js 里的 `RNG_KEYS`：card/ev/relic/afx/spawn/fight/shop），波次生成用 `S.rng`。每日/每周挑战时它们都带种子，同样的操作打两次结果完全一样（`tests/seeded.js` 会检查）；**只有纯画面效果**（粒子、飘字、抖屏、走路动画）才直接用 `Math.random`。新加随机逻辑时别直接写 `Math.random()`。
+- **结算**：主线成就和关卡通关剧情只在主线关卡发/播（守望之战、每周、每日、无尽都不算）；每周记录按周累积在 `save.week[key]` 里，每周首通各算 5★。
 - **牌池**：`cardPool()`；牌快抽空时自动补进 `fl_*` 补充卡（可无限叠加）。
 - **无尽模式**：`startWave` 里按需 `genWave()`，不会出现空波。
 - **商店/事件**会「欠着」：叠波跳过了第 4/5 波也会在之后补开。
