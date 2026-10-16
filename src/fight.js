@@ -2,6 +2,10 @@
 // ================= 战斗：伤害、出手、技能、每一步 =================
 // 画质档位：粒子数量倍率 k、同屏特效上限 cap、抖屏强度 shake、背景飘落物 amb。-1 = 自动（手机用中，电脑用高，再按实际帧率动态调）
 const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true }];
+// 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
+const OPT_KEY = "chenxing-td-opts";
+const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm }; } catch (e) { return { eco: false, calm: false }; } })();
+function setOpt(k, v) { OPT[k] = !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
   gfxSel = sel == null ? -1 : sel;
@@ -59,6 +63,10 @@ function addNum(x, y, v, color, big, key, maxHp) {
   }
   const sz = numSize(maxHp ? v / maxHp : 0, big);
   if (sz === 4) S.shake = Math.max(S.shake, 0.12);
+  // 同一处刚冒出来的数字往上错开一格，别叠成一团
+  let stack = 0;
+  for (let i = S.fx.length - 1, n = 0; i >= 0 && n < 24; i--, n++) { const f = S.fx[i]; if (f.kind === "text" && f.val != null && f.t < 0.4 && Math.abs(f.x - x) < 0.6 && Math.abs(f.y - (y - 0.35)) < 0.9) stack++; }
+  y -= Math.min(stack, 3) * 0.22;
   addFx({ kind: "text", x: x + (Math.random() - 0.5) * 0.3, y: y - 0.35, text: String(Math.round(v)), val: v, color, life: sz >= 3 ? 0.95 : 0.8, crit: !!big, sz, key, big: sz === 4 });
 }
 

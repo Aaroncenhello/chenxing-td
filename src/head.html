@@ -61,7 +61,7 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .screen{position:relative;flex:none}
 #cv{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;cursor:pointer}
 #tx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(8,10,16,.82);overflow:auto;padding:12px;z-index:8}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(8,10,16,.94);overflow:auto;padding:12px;z-index:8}
 .ovbox{display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;max-width:100%}
 .ovbox h2{font-family:var(--serif);font-size:28px;margin:0;color:var(--gold);letter-spacing:.14em;text-shadow:3px 3px 0 #000}
 .ovbox h3{margin:0;font-family:var(--serif);font-size:18px;color:var(--text)}
@@ -118,6 +118,8 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .pcard span{font-size:12px;color:var(--muted);line-height:1.6}
 .pcard .sh{display:block;margin-top:4px;font-style:normal;font-size:11px;color:var(--g);line-height:1.4}
 .pcard .sh.done{width:fit-content;font-weight:bold;padding:2px 5px;background:color-mix(in srgb,var(--g) 22%,transparent);box-shadow:0 0 0 1px var(--g);animation:shpulse .9s steps(2) infinite}
+.tuthl{animation:tuthl .9s steps(2) infinite;position:relative;z-index:3}
+@keyframes tuthl{50%{box-shadow:0 0 0 3px #ffd860,0 0 14px rgba(255,216,96,.85)}}
 @keyframes shpulse{50%{box-shadow:0 0 0 1px var(--g),0 0 10px var(--g)}}
 .pcard .key{position:absolute;top:6px;right:8px;font-family:var(--pix);font-size:9px;color:#7d86a0}
 .pcard{position:relative}
@@ -219,7 +221,16 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .lvcard.locked{opacity:.55}
 .lvcard .btns{justify-content:flex-start}
 .lvcard .rec{font-size:11px;color:#8ac8ff}
+.ctrls{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.cgrp{display:flex;flex-wrap:wrap;gap:6px}
+.cgrp.sys{padding-left:14px;border-left:2px solid #0a0c12;box-shadow:-1px 0 0 rgba(255,255,255,.06)}
+@media (max-width:760px){.cgrp.sys{padding-left:0;border-left:0;box-shadow:none}}
 .diffs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.chaprog{font-family:var(--pix);font-size:10px;color:#ffd860;letter-spacing:.06em}
+.events{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:min(928px,100%)}
+.events .daily{width:auto;align-self:stretch}
+@media (max-width:760px){.events{grid-template-columns:1fr}.levels{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.levels{grid-template-columns:1fr}}
 .diffs button.on{background:var(--gold);color:#1a1408;font-weight:700}
 .heroes,.roster{display:grid;grid-template-columns:repeat(4,minmax(0,210px));gap:8px}
 @media (max-width:900px){.heroes,.roster{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -528,13 +539,17 @@ body.imm .hud-syn{max-height:44%}
       <div class="stat"><span id="s-next-label">下一波</span> <b id="s-next">6</b></div>
     </div>
     <div class="ctrls">
+      <div class="cgrp">
       <button id="btn-call" class="primary">立即出击</button>
       <button id="btn-auto" title="关掉后，每一波都要你按「立即出击」才会来">自动开波：开</button>
       <button id="btn-speed">1×</button>
       <button id="btn-form" title="切换阵型；在场上拖动角色可以固定他的站位">阵型 · 标准</button>
       <button id="btn-pause">暂停</button>
+      </div>
+      <div class="cgrp sys">
       <button id="btn-levels">选关</button>
       <button id="btn-full" title="战场铺满整个屏幕（手机横屏推荐）">全屏</button>
+      </div>
     </div>
   </header>
   <div class="cbar desk" aria-label="晨星碑生命"><i class="tr"></i><i class="fl"></i><span><em>晨星碑</em> <b class="cv"></b></span></div>
