@@ -111,6 +111,9 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 @keyframes cele{from{opacity:.75}to{opacity:0}}
 .pcard canvas{width:48px;height:48px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12;background:#12141f}
 .pcard small{font-family:var(--pix);font-size:8px;color:var(--c)}
+.pcard div small{display:block;margin-bottom:2px}
+.pcard div b{display:block;margin-bottom:3px;line-height:1.25}
+.pcard div > span{display:block}
 .pcard b{font-size:16px;color:var(--c)}
 .pcard span{font-size:12px;color:var(--muted);line-height:1.6}
 .pcard .sh{display:block;margin-top:4px;font-style:normal;font-size:11px;color:var(--g);line-height:1.4}
@@ -444,13 +447,14 @@ body.imm .cbar.desk{display:none}
 .h-xp i{display:block;height:100%;background:#6fcf8e;width:0}
 .hud-l,.hud-r{position:absolute;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
 .hud-l{left:calc(6px + env(safe-area-inset-left,0))} .hud-r{right:calc(6px + env(safe-area-inset-right,0))}
-@media (max-height:420px){.hud button{min-height:34px;min-width:50px;font-size:12px}.hud-r,.hud-l{gap:4px}.hud-r button{min-height:30px}}
+@media (max-height:420px){.hud button{min-height:36px;min-width:54px;font-size:12px}.hud-r,.hud-l{gap:4px}.hud-r button{min-height:38px}}
+@media (max-height:520px) and (orientation:landscape){body.imm .hud-top{background:rgba(10,12,18,.55)}body.imm.panel .hud-top{visibility:hidden}}
 body.imm .levelup,body.imm .shopbox{overflow:auto;justify-content:flex-start;padding-top:14px}
 body.imm .overlay{position:absolute;z-index:20;background:rgba(8,10,16,.96);place-items:start center;padding:10px 70px}
 @media (max-height:520px){body.imm .ovbox h2{font-size:20px} body.imm .ovbox{gap:8px}}
 body.imm .dlg{--boxh:44px}
 /* 竖屏信息区（默认隐藏，竖屏全屏时显示）：状态行 + 大号连杀、队伍（点选 / 技能就绪再点释放）、下一波预告、卡牌遗物 */
-.pinfo{display:none;flex:1 1 auto;min-height:0;overflow:hidden;flex-direction:column;gap:7px;padding:0 10px;font-size:12px}
+.pinfo{display:none;flex:1 1 auto;min-height:0;overflow:hidden;flex-direction:column;gap:9px;padding:0 10px;font-size:13px}
 .pi-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 .pi-status{justify-content:space-between;color:var(--muted);font-size:13px;min-height:24px}
 .pi-status b{font-family:var(--pix);font-size:16px;font-weight:400;color:#ffd860;text-shadow:2px 2px 0 #000;transition:transform .1s}
@@ -483,7 +487,7 @@ body.imm .hud-unit .uc-k{white-space:normal;font-size:10px}
 .pu.hero{border-color:#6a5010}
 .pi-next .chip{font-size:11px;padding:1px 6px}
 .pi-cards{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;overflow:hidden}
-.pi-cards canvas{width:24px;height:24px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12}
+.pi-cards canvas{width:28px;height:28px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12}
 .pi-cards .rl canvas{box-shadow:0 0 0 2px #e3b75c}
 /* 横屏全屏：羁绊看板竖着排在左下角（战场左边的黑边里） */
 body.imm .hud-syn{display:flex;position:absolute;left:calc(6px + env(safe-area-inset-left,0));bottom:8px;flex-direction:column;align-items:stretch;gap:3px;width:max(64px,calc((100vw - var(--fw,100vw)) / 2 - 12px));max-width:160px;max-height:34%;overflow:hidden;z-index:3}
