@@ -61,7 +61,7 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .screen{position:relative;flex:none}
 #cv{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none;cursor:pointer}
 #tx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(8,10,16,.82);overflow:auto;padding:12px;z-index:8}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(8,10,16,.94);overflow:auto;padding:12px;z-index:8}
 .ovbox{display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center;max-width:100%}
 .ovbox h2{font-family:var(--serif);font-size:28px;margin:0;color:var(--gold);letter-spacing:.14em;text-shadow:3px 3px 0 #000}
 .ovbox h3{margin:0;font-family:var(--serif);font-size:18px;color:var(--text)}
@@ -111,10 +111,15 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 @keyframes cele{from{opacity:.75}to{opacity:0}}
 .pcard canvas{width:48px;height:48px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12;background:#12141f}
 .pcard small{font-family:var(--pix);font-size:8px;color:var(--c)}
+.pcard div small{display:block;margin-bottom:2px}
+.pcard div b{display:block;margin-bottom:3px;line-height:1.25}
+.pcard div > span{display:block}
 .pcard b{font-size:16px;color:var(--c)}
 .pcard span{font-size:12px;color:var(--muted);line-height:1.6}
 .pcard .sh{display:block;margin-top:4px;font-style:normal;font-size:11px;color:var(--g);line-height:1.4}
 .pcard .sh.done{width:fit-content;font-weight:bold;padding:2px 5px;background:color-mix(in srgb,var(--g) 22%,transparent);box-shadow:0 0 0 1px var(--g);animation:shpulse .9s steps(2) infinite}
+.tuthl{animation:tuthl .9s steps(2) infinite;position:relative;z-index:3}
+@keyframes tuthl{50%{box-shadow:0 0 0 3px #ffd860,0 0 14px rgba(255,216,96,.85)}}
 @keyframes shpulse{50%{box-shadow:0 0 0 1px var(--g),0 0 10px var(--g)}}
 .pcard .key{position:absolute;top:6px;right:8px;font-family:var(--pix);font-size:9px;color:#7d86a0}
 .pcard{position:relative}
@@ -216,7 +221,16 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .lvcard.locked{opacity:.55}
 .lvcard .btns{justify-content:flex-start}
 .lvcard .rec{font-size:11px;color:#8ac8ff}
+.ctrls{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.cgrp{display:flex;flex-wrap:wrap;gap:6px}
+.cgrp.sys{padding-left:14px;border-left:2px solid #0a0c12;box-shadow:-1px 0 0 rgba(255,255,255,.06)}
+@media (max-width:760px){.cgrp.sys{padding-left:0;border-left:0;box-shadow:none}}
 .diffs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.chaprog{font-family:var(--pix);font-size:10px;color:#ffd860;letter-spacing:.06em}
+.events{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:min(928px,100%)}
+.events .daily{width:auto;align-self:stretch}
+@media (max-width:760px){.events{grid-template-columns:1fr}.levels{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.levels{grid-template-columns:1fr}}
 .diffs button.on{background:var(--gold);color:#1a1408;font-weight:700}
 .heroes,.roster{display:grid;grid-template-columns:repeat(4,minmax(0,210px));gap:8px}
 @media (max-width:900px){.heroes,.roster{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -444,13 +458,14 @@ body.imm .cbar.desk{display:none}
 .h-xp i{display:block;height:100%;background:#6fcf8e;width:0}
 .hud-l,.hud-r{position:absolute;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
 .hud-l{left:calc(6px + env(safe-area-inset-left,0))} .hud-r{right:calc(6px + env(safe-area-inset-right,0))}
-@media (max-height:420px){.hud button{min-height:34px;min-width:50px;font-size:12px}.hud-r,.hud-l{gap:4px}.hud-r button{min-height:30px}}
+@media (max-height:420px){.hud button{min-height:36px;min-width:54px;font-size:12px}.hud-r,.hud-l{gap:4px}.hud-r button{min-height:38px}}
+@media (max-height:520px) and (orientation:landscape){body.imm .hud-top{background:rgba(10,12,18,.55)}body.imm.panel .hud-top{visibility:hidden}}
 body.imm .levelup,body.imm .shopbox{overflow:auto;justify-content:flex-start;padding-top:14px}
 body.imm .overlay{position:absolute;z-index:20;background:rgba(8,10,16,.96);place-items:start center;padding:10px 70px}
 @media (max-height:520px){body.imm .ovbox h2{font-size:20px} body.imm .ovbox{gap:8px}}
 body.imm .dlg{--boxh:44px}
 /* 竖屏信息区（默认隐藏，竖屏全屏时显示）：状态行 + 大号连杀、队伍（点选 / 技能就绪再点释放）、下一波预告、卡牌遗物 */
-.pinfo{display:none;flex:1 1 auto;min-height:0;overflow:hidden;flex-direction:column;gap:7px;padding:0 10px;font-size:12px}
+.pinfo{display:none;flex:1 1 auto;min-height:0;overflow:hidden;flex-direction:column;gap:9px;padding:0 10px;font-size:13px}
 .pi-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 .pi-status{justify-content:space-between;color:var(--muted);font-size:13px;min-height:24px}
 .pi-status b{font-family:var(--pix);font-size:16px;font-weight:400;color:#ffd860;text-shadow:2px 2px 0 #000;transition:transform .1s}
@@ -483,7 +498,7 @@ body.imm .hud-unit .uc-k{white-space:normal;font-size:10px}
 .pu.hero{border-color:#6a5010}
 .pi-next .chip{font-size:11px;padding:1px 6px}
 .pi-cards{display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;overflow:hidden}
-.pi-cards canvas{width:24px;height:24px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12}
+.pi-cards canvas{width:28px;height:28px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12}
 .pi-cards .rl canvas{box-shadow:0 0 0 2px #e3b75c}
 /* 横屏全屏：羁绊看板竖着排在左下角（战场左边的黑边里） */
 body.imm .hud-syn{display:flex;position:absolute;left:calc(6px + env(safe-area-inset-left,0));bottom:8px;flex-direction:column;align-items:stretch;gap:3px;width:max(64px,calc((100vw - var(--fw,100vw)) / 2 - 12px));max-width:160px;max-height:34%;overflow:hidden;z-index:3}
@@ -524,13 +539,17 @@ body.imm .hud-syn{max-height:44%}
       <div class="stat"><span id="s-next-label">下一波</span> <b id="s-next">6</b></div>
     </div>
     <div class="ctrls">
+      <div class="cgrp">
       <button id="btn-call" class="primary">立即出击</button>
       <button id="btn-auto" title="关掉后，每一波都要你按「立即出击」才会来">自动开波：开</button>
       <button id="btn-speed">1×</button>
       <button id="btn-form" title="切换阵型；在场上拖动角色可以固定他的站位">阵型 · 标准</button>
       <button id="btn-pause">暂停</button>
+      </div>
+      <div class="cgrp sys">
       <button id="btn-levels">选关</button>
       <button id="btn-full" title="战场铺满整个屏幕（手机横屏推荐）">全屏</button>
+      </div>
     </div>
   </header>
   <div class="cbar desk" aria-label="晨星碑生命"><i class="tr"></i><i class="fl"></i><span><em>晨星碑</em> <b class="cv"></b></span></div>
@@ -3128,19 +3147,19 @@ function takeEvent(i) {
 // ================= 10.0：精英词缀 =================
 // 精英和首领会随机带 1–2 条词缀，让每次遭遇都不太一样
 const AFFIX = [
-  { id: "regen", name: "再生", desc: "每秒回复 2% 生命", color: "#7ee89c" },
-  { id: "warded", name: "护符", desc: "法抗 +35", color: "#c890ff" },
-  { id: "thorns", name: "尖刺", desc: "近战打它会被反弹 18% 伤害", color: "#a8d848" },
-  { id: "frenzy", name: "狂怒", desc: "血越少出手越快（最多快一倍）", color: "#ff6a5a" },
-  { id: "warcry", name: "战号", desc: "周围的敌人攻击 +25%、移速 +15%", color: "#ffb040" },
-  { id: "vampiric", name: "汲血", desc: "造成伤害的 40% 回复自己", color: "#e0486a" },
-  { id: "volatile", name: "爆裂", desc: "死的时候会炸一下", color: "#ff8a3a" },
-  { id: "swift", name: "疾行", desc: "移速 +35%，不怕减速", color: "#8fe0f0" },
-  { id: "bulwark", name: "护壁", desc: "自带护盾，破了还会再生一层", color: "#8ac8ff" },
-  { id: "splitting", name: "分裂", desc: "死的时候裂成两只小怪", color: "#58b84a" },
-  { id: "harden", name: "钢化", desc: "受到的物理伤害 −25%", color: "#c8ccd4" },
-  { id: "warp", name: "扭曲", desc: "用法术攻击它会反弹 15% 伤害给攻击者", color: "#c890ff" },
-  { id: "venom", name: "剧毒", desc: "攻击附带中毒，持续掉血", color: "#9ae040" },
+  { id: "regen", name: "再生", desc: "每秒回复 2% 生命", color: "#7ee89c", tip: "集火尽快打死，或用灼烧、中毒这类持续伤害压住回血。" },
+  { id: "warded", name: "护符", desc: "法抗 +35", color: "#c890ff", tip: "换物理输出，或者上穿透、破甲类的卡。" },
+  { id: "thorns", name: "尖刺", desc: "近战打它会被反弹 18% 伤害", color: "#a8d848", tip: "让远程角色和技能去打它，别用近战硬磕。" },
+  { id: "frenzy", name: "狂怒", desc: "血越少出手越快（最多快一倍）", color: "#ff6a5a", tip: "开场就爆发压血量，别拖到它残血。" },
+  { id: "warcry", name: "战号", desc: "周围的敌人攻击 +25%、移速 +15%", color: "#ffb040", tip: "优先打死带战号的，周围小怪会立刻变弱。" },
+  { id: "vampiric", name: "汲血", desc: "造成伤害的 40% 回复自己", color: "#e0486a", tip: "用控制或集火速杀，别让它一直咬人回血。" },
+  { id: "volatile", name: "爆裂", desc: "死的时候会炸一下", color: "#ff8a3a", tip: "近战角色打完立刻拉开，别站在它尸体旁边。" },
+  { id: "swift", name: "疾行", desc: "移速 +35%，不怕减速", color: "#8fe0f0", tip: "它不怕减速，靠地刺、陨星这类范围伤害提前覆盖路线。" },
+  { id: "bulwark", name: "护壁", desc: "自带护盾，破了还会再生一层", color: "#8ac8ff", tip: "先用大伤害一次打穿护盾，破盾后它还会再生一层。" },
+  { id: "splitting", name: "分裂", desc: "死的时候裂成两只小怪", color: "#58b84a", tip: "留着范围伤害，裂出来的小怪血量只有四分之一。" },
+  { id: "harden", name: "钢化", desc: "受到的物理伤害 −25%", color: "#c8ccd4", tip: "换法术或技能伤害，物理平 A 只有四分之三效果。" },
+  { id: "warp", name: "扭曲", desc: "用法术攻击它会反弹 15% 伤害给攻击者", color: "#c890ff", tip: "它的反弹只针对法术攻击，改用物理输出。" },
+  { id: "venom", name: "剧毒", desc: "攻击附带中毒，持续掉血", color: "#9ae040", tip: "带上圣光或战地医疗，被打中后会持续掉血。" },
 ];
 const AFFIX_BY = Object.fromEntries(AFFIX.map(a => [a.id, a]));
 const hasAfx = (e, id) => !!(e.afx && e.afx.includes(id));
@@ -3217,6 +3236,10 @@ function drawAfxPips(e, fx, top) {
 // ================= 战斗：伤害、出手、技能、每一步 =================
 // 画质档位：粒子数量倍率 k、同屏特效上限 cap、抖屏强度 shake、背景飘落物 amb。-1 = 自动（手机用中，电脑用高，再按实际帧率动态调）
 const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true }];
+// 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
+const OPT_KEY = "chenxing-td-opts";
+const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm }; } catch (e) { return { eco: false, calm: false }; } })();
+function setOpt(k, v) { OPT[k] = !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
   gfxSel = sel == null ? -1 : sel;
@@ -3274,6 +3297,10 @@ function addNum(x, y, v, color, big, key, maxHp) {
   }
   const sz = numSize(maxHp ? v / maxHp : 0, big);
   if (sz === 4) S.shake = Math.max(S.shake, 0.12);
+  // 同一处刚冒出来的数字往上错开一格，别叠成一团
+  let stack = 0;
+  for (let i = S.fx.length - 1, n = 0; i >= 0 && n < 24; i--, n++) { const f = S.fx[i]; if (f.kind === "text" && f.val != null && f.t < 0.4 && Math.abs(f.x - x) < 0.6 && Math.abs(f.y - (y - 0.35)) < 0.9) stack++; }
+  y -= Math.min(stack, 3) * 0.22;
   addFx({ kind: "text", x: x + (Math.random() - 0.5) * 0.3, y: y - 0.35, text: String(Math.round(v)), val: v, color, life: sz >= 3 ? 0.95 : 0.8, crit: !!big, sz, key, big: sz === 4 });
 }
 
@@ -5999,9 +6026,9 @@ function render(now) {
   const t = now / 1000;
   if (mapFor !== mapKey()) { drawMap(); mapFor = mapKey(); }
   ctx.imageSmoothingEnabled = false;
-  const amp = S.shake > 0 ? Math.min(6, 2 + S.shake * 10) * GFX.shake : 0;
+  const amp = S.shake > 0 ? Math.min(6, 2 + S.shake * 10) * GFX.shake * (OPT.calm ? 0.25 : 1) : 0;
   const ox = amp ? R0((Math.random() - 0.5) * amp) : 0, oy = amp ? R0((Math.random() - 0.5) * amp) : 0;
-  const zoom = 1 + (S.zoomK || 0);   // 大招 / 击破首领：短促地往里顿一下镜头，加重打击感
+  const zoom = 1 + (OPT.calm ? 0 : (S.zoomK || 0));   // 大招 / 击破首领：短促地往里顿一下镜头，加重打击感
   ctx.setTransform(1, 0, 0, 1, 0, 0); rect(ctx, 0, 0, PW, PHt, TH().bg);
   ctx.setTransform(zoom, 0, 0, zoom, PW / 2 * (1 - zoom) + ox, PHt / 2 * (1 - zoom) + oy);
   ctx.drawImage(mapCv, 0, 0);
@@ -6041,9 +6068,9 @@ function render(now) {
   for (const s of S.shots) drawShot(s);
   for (const f of S.fx) if (f.kind !== "corpse" && f.kind !== "ucorpse" && f.kind !== "shatter") drawFx(f, now);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  if (S.hitFlash > 0) { ctx.fillStyle = `rgba(255,40,40,${(S.hitFlash * 0.5).toFixed(3)})`; ctx.fillRect(0, 0, PW, 6); ctx.fillRect(0, PHt - 6, PW, 6); ctx.fillRect(0, 0, 6, PHt); ctx.fillRect(PW - 6, 0, 6, PHt); }
+  if (S.hitFlash > 0 && !OPT.calm) { ctx.fillStyle = `rgba(255,40,40,${(S.hitFlash * 0.5).toFixed(3)})`; ctx.fillRect(0, 0, PW, 6); ctx.fillRect(0, PHt - 6, PW, 6); ctx.fillRect(0, 0, 6, PHt); ctx.fillRect(PW - 6, 0, 6, PHt); }
   if (S.slowmo > 0) { ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fillRect(0, 0, PW, PHt); }
-  for (const f of S.fx) if (f.kind === "flash") { ctx.globalAlpha = 0.75 * (1 - f.t / f.life); ctx.fillStyle = f.color || "#fff8d2"; ctx.fillRect(0, 0, PW, PHt); ctx.globalAlpha = 1; }   // 以前忽略 color，诅咒的红闪也是米白
+  if (!OPT.calm) for (const f of S.fx) if (f.kind === "flash") { ctx.globalAlpha = 0.75 * (1 - f.t / f.life); ctx.fillStyle = f.color || "#fff8d2"; ctx.fillRect(0, 0, PW, PHt); ctx.globalAlpha = 1; }   // 以前忽略 color，诅咒的红闪也是米白
   if (S.star >= ULT.max && !S.over) { const a = 0.25 + Math.sin(t * 5) * 0.15; ctx.fillStyle = `rgba(255,224,128,${a.toFixed(3)})`; ctx.fillRect(0, 0, PW, 3); ctx.fillRect(0, PHt - 3, PW, 3); }
   if ((S.paused || S.offer) && !S.over) { ctx.fillStyle = "rgba(8,10,16,.45)"; ctx.fillRect(0, 0, PW, PHt); }
   drawComboGlow(t);
@@ -7054,13 +7081,7 @@ function showLevels() {
   if (openChars().length >= UNITS.length) unlockAchv("allchars16");
   if (chapSel == null) { let last = 0; STAGES.forEach((_, i) => { if (unlocked(i)) last = i; }); chapSel = chapterOf(last); }
   const ch = CHAPTERS[chapSel], to = (CHAPTERS[chapSel + 1] || { from: STAGES.length }).from, ids = STAGES.map((_, i) => i).filter(i => i >= ch.from && i < to);
-  openOverlay(`<h2>选择关卡</h2>
-    <div class="diffs">${CHAPTERS.map((c, j) => `<button data-chap="${j}" class="${j === chapSel ? "on" : ""}" ${unlocked(c.from) ? "" : "disabled"}>${c.name}${unlocked(c.from) ? "" : "（未解锁）"}</button>`).join("")}</div>
-    <div class="diffs">${DIFFS.map((d, i) => `<button data-diff="${i}" class="${i === diffSel ? "on" : ""}">${d.name}</button>`).join("")}</div>
-    <p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
-    ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
-    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
-    <div class="daily"><div><b>每日挑战 · ${td.date}</b><p>场地：${STAGES[td.stage].name} · 规则：${mod.name}（${mod.desc}）</p>
+  const evHtml = `    <div class="daily"><div><b>每日挑战 · ${td.date}</b><p>场地：${STAGES[td.stage].name} · 规则：${mod.name}（${mod.desc}）</p>
       <p>${rec ? (rec.cleared ? `今天已经通关 ✓ 领了 ${rec.got || 0}★` : `今天最好成绩：第 ${rec.wave} 波${rec.got ? ` · 已领 ${rec.got}★，通关再补 ${DAILY_STARS.win - rec.got}★` : ""}`) : "今天还没挑战"}</p>
       <p class="drw">每天奖励：通关 <b>+${DAILY_STARS.win}★</b>，没通关但撑过一半波数 +${DAILY_STARS.half}★（按今天最好的一次算）</p></div><button class="primary" id="btn-daily">开始挑战</button></div>
     ${bountyHtml(save)}
@@ -7068,7 +7089,14 @@ function showLevels() {
     ${weekHtml(save)}
     ${unlocked(VIGIL.unlockAt) ? `<div class="daily vigil"><div><b>守望之战 · 长夜</b><p>随机生成的地图 + ${VIGIL.waves} 波超长局：第 8、16、25 波是首领，中途有补给，能把等级和卡叠到很高。</p>
       <p>${save.vigil && save.vigil.best ? `最好成绩：撑到第 ${save.vigil.best} 波${save.vigil.clear ? " · 已通关 ✓" : ""}` : "还没挑战过"}</p></div><button class="primary" id="btn-vigil">开始守望</button></div>`
-      : `<div class="daily vigil lockd"><div><b>守望之战 · 长夜</b><p>通关第 ${VIGIL.unlockAt + 1} 关后解锁</p></div></div>`}
+      : `<div class="daily vigil lockd"><div><b>守望之战 · 长夜</b><p>通关第 ${VIGIL.unlockAt + 1} 关后解锁</p></div></div>`}`;
+  const chStars = ids.reduce((n, i) => n + (save.stars[i] || 0), 0);
+  openOverlay(`<h2>选择关卡</h2>
+    <div class="diffs">${CHAPTERS.map((c, j) => `<button data-chap="${j}" class="${j === chapSel ? "on" : ""}" ${unlocked(c.from) ? "" : "disabled"}>${c.name}${unlocked(c.from) ? "" : "（未解锁）"}</button>`).join("")}</div>
+    <div class="diffs">${DIFFS.map((d, i) => `<button data-diff="${i}" class="${i === diffSel ? "on" : ""}">${d.name}</button>`).join("")}</div>
+    <p class="chaprog">${ch.name} · 本章星级 ${chStars}/${ids.length * 3}</p><p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
+    ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
+    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="最多 30 帧，手机更省电、更不烫">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
     <div class="levels">` +
     ids.map(i => { const st = STAGES[i];
       const open = unlocked(i), cleared = (save.stars[i] || 0) > 0, dc = save.diffClear[i] || [];
@@ -7079,7 +7107,7 @@ function showLevels() {
       <span class="rec">${save.abyss[i] ? `深渊 ${save.abyss[i]} 层 ✓ ` : ""}${dc.includes("hard") ? "困难 ✓ " : ""}${dc.includes("nightmare") ? "噩梦 ✓ " : ""}${save.best[i] ? `无尽最高 ${save.best[i]} 波` : ""}&nbsp;</span>
       <div class="btns"><button class="primary" data-lv="${i}" ${can ? "" : "disabled"}>${!open ? "通关上一关解锁" : can ? "开始 · " + DIFFS[diffSel].name + (abyssSel ? " · 深渊 " + abyssSel : "") : "先通关普通"}</button>
       ${cleared ? `<button data-endless="${i}">无尽</button>` : ""}${open && STORY[i] ? `<button data-story="${i}">剧情</button>` : ""}</div></div>`;
-    }).join("") + `</div>`);
+    }).join("") + `</div><div class="events">${evHtml}</div>`);
   for (const i of ids) drawThumb($("thumb-" + i), STAGES[i]);
 }
 function showPerks() {
@@ -7162,7 +7190,7 @@ function showCodex(tab) {
     body = `<p>精英和首领会随机带 1–2 条词缀，头顶的小圆点就是它们。遇到过的会记在这里。</p>
       <div class="codex">${AFFIX.map(a => { const on = save.afxSeen.includes(a.id);
         return `<div class="cx${on ? "" : " unk"}"><div><b><i class="dot" style="background:${on ? a.color : "#39405a"}"></i>${on ? a.name : "？？？"}</b>
-          <p>${on ? a.desc : "还没遇到"}</p></div></div>`; }).join("")}</div>`;
+          <p>${on ? a.desc : "还没遇到"}</p>${on && a.tip ? `<p class="tip">应对：${a.tip}</p>` : ""}</div></div>`; }).join("")}</div>`;
   } else if (codexTab === "ev") {
     body = `<p>每 ${EVENT_EVERY} 波会在两波之间来一次三选一。选过的事件会把三个选项都记下来。</p>
       <div class="codex">${EVENTS.map(e => { const on = save.evSeen.includes(e.id);
@@ -7203,6 +7231,8 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-week") { const wi = weekInfo(); beginStage(wi.stage, { week: wi, diff: wi.diff }); }
   else if (b.dataset.chap != null) { chapSel = +b.dataset.chap; showLevels(); }
   else if (b.id === "btn-save") showSaveBox();
+  else if (b.id === "btn-eco") { setOpt("eco", !OPT.eco); showLevels(); }
+  else if (b.id === "btn-calm") { setOpt("calm", !OPT.calm); showLevels(); }
   else if (b.id === "btn-gfx") { const next = gfxSel >= 2 ? -1 : gfxSel + 1; editSave(d => { d.gfx = next; }); applyGfx(next); showLevels(); }
   else if (b.id === "btn-svcopy") {
     const ta = $("sv-out"); ta.select(); ta.setSelectionRange(0, 99999);
@@ -7302,16 +7332,23 @@ const TUT = [
   ["击杀还会给晨星之力充能，满了点上面那条金色的按钮（或按 E）放全屏大招。引导结束，祝你守住！", (tt) => S.usedUlt || tt > 30],
 ];
 let tut = null;
+// 引导到哪一步，就让对应的按钮闪一下金边（步骤序号 → 要高亮的按钮）
+const TUT_HL = { 3: ["#h-meteor", "#h-heal", "#spells button"], 4: ["#h-ult", "#ult"] };
+function tutHighlight(step) {
+  const want = new Set(TUT_HL[step] ? TUT_HL[step].flatMap(q => [...document.querySelectorAll(q)]) : []);
+  for (const el of document.querySelectorAll(".tuthl")) if (!want.has(el)) el.classList.remove("tuthl");
+  for (const el of want) el.classList.add("tuthl");
+}
 function updateTut(dt) {
   const box = $("tut");
-  if (!tut || menuOpen || dlg) { box.hidden = true; return; }
+  if (!tut || menuOpen || dlg) { box.hidden = true; tutHighlight(-1); return; }
   tut.t += dt;
   if (TUT[tut.step][1](tut.t)) { tut.step++; tut.t = 0; box.dataset.k = ""; }
-  if (tut.step >= TUT.length) { tut = null; editSave(d => { d.tutorial = true; }); box.hidden = true; return; }
-  box.hidden = false;
+  if (tut.step >= TUT.length) { tut = null; editSave(d => { d.tutorial = true; }); box.hidden = true; tutHighlight(-1); return; }
+  box.hidden = false; tutHighlight(tut.step);
   if (box.dataset.k !== String(tut.step)) { box.dataset.k = String(tut.step); box.innerHTML = `<span><b>引导 ${tut.step + 1}/${TUT.length}</b>${TUT[tut.step][0]}</span><button id="btn-skiptut">跳过引导</button>`; }
 }
-$("tut").addEventListener("click", ev => { if (ev.target.id === "btn-skiptut") { tut = null; editSave(d => { d.tutorial = true; }); $("tut").hidden = true; } });
+$("tut").addEventListener("click", ev => { if (ev.target.id === "btn-skiptut") { tut = null; tutHighlight(-1); editSave(d => { d.tutorial = true; }); $("tut").hidden = true; } });
 
 // ---------- 结算 ----------
 function statsTable() {
@@ -7754,6 +7791,7 @@ function expCardHtml(save) {
 // ---------- 主循环 ----------
 let last = performance.now(), acc = 0;
 function frame(now) {
+  if (OPT.eco && now - last < 30) { requestAnimationFrame(frame); return; }   // 省电：最多 30 帧
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   adaptGfx(dt);
   if (S.slowCd > 0) S.slowCd -= dt;
@@ -7782,5 +7820,7 @@ window.__td = {
   UNITS, STAGES, CARDS, awardExp, levelOf, buyShop, closeShop, rerollOffer, SYNERGY, VIGIL, EVENTS, takeEvent, openEvent,
   FORMS, AFFIX, cycleForm, setSlot, clearSlot, arrange, formOf, callWaveEarly, toggleAutoWave, cardPool,
 };
+// 切到别的标签页或后台时自动暂停，回来不会被偷袭
+document.addEventListener("visibilitychange", () => { if (document.hidden && S && !S.over && !S.paused && !menuOpen && !dlg && (S.wave > 0 || S.kills > 0)) togglePause(); });
 requestAnimationFrame(frame);
 </script>

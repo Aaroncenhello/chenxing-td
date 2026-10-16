@@ -83,13 +83,7 @@ function showLevels() {
   if (openChars().length >= UNITS.length) unlockAchv("allchars16");
   if (chapSel == null) { let last = 0; STAGES.forEach((_, i) => { if (unlocked(i)) last = i; }); chapSel = chapterOf(last); }
   const ch = CHAPTERS[chapSel], to = (CHAPTERS[chapSel + 1] || { from: STAGES.length }).from, ids = STAGES.map((_, i) => i).filter(i => i >= ch.from && i < to);
-  openOverlay(`<h2>选择关卡</h2>
-    <div class="diffs">${CHAPTERS.map((c, j) => `<button data-chap="${j}" class="${j === chapSel ? "on" : ""}" ${unlocked(c.from) ? "" : "disabled"}>${c.name}${unlocked(c.from) ? "" : "（未解锁）"}</button>`).join("")}</div>
-    <div class="diffs">${DIFFS.map((d, i) => `<button data-diff="${i}" class="${i === diffSel ? "on" : ""}">${d.name}</button>`).join("")}</div>
-    <p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
-    ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
-    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
-    <div class="daily"><div><b>每日挑战 · ${td.date}</b><p>场地：${STAGES[td.stage].name} · 规则：${mod.name}（${mod.desc}）</p>
+  const evHtml = `    <div class="daily"><div><b>每日挑战 · ${td.date}</b><p>场地：${STAGES[td.stage].name} · 规则：${mod.name}（${mod.desc}）</p>
       <p>${rec ? (rec.cleared ? `今天已经通关 ✓ 领了 ${rec.got || 0}★` : `今天最好成绩：第 ${rec.wave} 波${rec.got ? ` · 已领 ${rec.got}★，通关再补 ${DAILY_STARS.win - rec.got}★` : ""}`) : "今天还没挑战"}</p>
       <p class="drw">每天奖励：通关 <b>+${DAILY_STARS.win}★</b>，没通关但撑过一半波数 +${DAILY_STARS.half}★（按今天最好的一次算）</p></div><button class="primary" id="btn-daily">开始挑战</button></div>
     ${bountyHtml(save)}
@@ -97,7 +91,14 @@ function showLevels() {
     ${weekHtml(save)}
     ${unlocked(VIGIL.unlockAt) ? `<div class="daily vigil"><div><b>守望之战 · 长夜</b><p>随机生成的地图 + ${VIGIL.waves} 波超长局：第 8、16、25 波是首领，中途有补给，能把等级和卡叠到很高。</p>
       <p>${save.vigil && save.vigil.best ? `最好成绩：撑到第 ${save.vigil.best} 波${save.vigil.clear ? " · 已通关 ✓" : ""}` : "还没挑战过"}</p></div><button class="primary" id="btn-vigil">开始守望</button></div>`
-      : `<div class="daily vigil lockd"><div><b>守望之战 · 长夜</b><p>通关第 ${VIGIL.unlockAt + 1} 关后解锁</p></div></div>`}
+      : `<div class="daily vigil lockd"><div><b>守望之战 · 长夜</b><p>通关第 ${VIGIL.unlockAt + 1} 关后解锁</p></div></div>`}`;
+  const chStars = ids.reduce((n, i) => n + (save.stars[i] || 0), 0);
+  openOverlay(`<h2>选择关卡</h2>
+    <div class="diffs">${CHAPTERS.map((c, j) => `<button data-chap="${j}" class="${j === chapSel ? "on" : ""}" ${unlocked(c.from) ? "" : "disabled"}>${c.name}${unlocked(c.from) ? "" : "（未解锁）"}</button>`).join("")}</div>
+    <div class="diffs">${DIFFS.map((d, i) => `<button data-diff="${i}" class="${i === diffSel ? "on" : ""}">${d.name}</button>`).join("")}</div>
+    <p class="chaprog">${ch.name} · 本章星级 ${chStars}/${ids.length * 3}</p><p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
+    ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
+    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="最多 30 帧，手机更省电、更不烫">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
     <div class="levels">` +
     ids.map(i => { const st = STAGES[i];
       const open = unlocked(i), cleared = (save.stars[i] || 0) > 0, dc = save.diffClear[i] || [];
@@ -108,7 +109,7 @@ function showLevels() {
       <span class="rec">${save.abyss[i] ? `深渊 ${save.abyss[i]} 层 ✓ ` : ""}${dc.includes("hard") ? "困难 ✓ " : ""}${dc.includes("nightmare") ? "噩梦 ✓ " : ""}${save.best[i] ? `无尽最高 ${save.best[i]} 波` : ""}&nbsp;</span>
       <div class="btns"><button class="primary" data-lv="${i}" ${can ? "" : "disabled"}>${!open ? "通关上一关解锁" : can ? "开始 · " + DIFFS[diffSel].name + (abyssSel ? " · 深渊 " + abyssSel : "") : "先通关普通"}</button>
       ${cleared ? `<button data-endless="${i}">无尽</button>` : ""}${open && STORY[i] ? `<button data-story="${i}">剧情</button>` : ""}</div></div>`;
-    }).join("") + `</div>`);
+    }).join("") + `</div><div class="events">${evHtml}</div>`);
   for (const i of ids) drawThumb($("thumb-" + i), STAGES[i]);
 }
 function showPerks() {
@@ -191,7 +192,7 @@ function showCodex(tab) {
     body = `<p>精英和首领会随机带 1–2 条词缀，头顶的小圆点就是它们。遇到过的会记在这里。</p>
       <div class="codex">${AFFIX.map(a => { const on = save.afxSeen.includes(a.id);
         return `<div class="cx${on ? "" : " unk"}"><div><b><i class="dot" style="background:${on ? a.color : "#39405a"}"></i>${on ? a.name : "？？？"}</b>
-          <p>${on ? a.desc : "还没遇到"}</p></div></div>`; }).join("")}</div>`;
+          <p>${on ? a.desc : "还没遇到"}</p>${on && a.tip ? `<p class="tip">应对：${a.tip}</p>` : ""}</div></div>`; }).join("")}</div>`;
   } else if (codexTab === "ev") {
     body = `<p>每 ${EVENT_EVERY} 波会在两波之间来一次三选一。选过的事件会把三个选项都记下来。</p>
       <div class="codex">${EVENTS.map(e => { const on = save.evSeen.includes(e.id);
@@ -232,6 +233,8 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-week") { const wi = weekInfo(); beginStage(wi.stage, { week: wi, diff: wi.diff }); }
   else if (b.dataset.chap != null) { chapSel = +b.dataset.chap; showLevels(); }
   else if (b.id === "btn-save") showSaveBox();
+  else if (b.id === "btn-eco") { setOpt("eco", !OPT.eco); showLevels(); }
+  else if (b.id === "btn-calm") { setOpt("calm", !OPT.calm); showLevels(); }
   else if (b.id === "btn-gfx") { const next = gfxSel >= 2 ? -1 : gfxSel + 1; editSave(d => { d.gfx = next; }); applyGfx(next); showLevels(); }
   else if (b.id === "btn-svcopy") {
     const ta = $("sv-out"); ta.select(); ta.setSelectionRange(0, 99999);
@@ -331,16 +334,23 @@ const TUT = [
   ["击杀还会给晨星之力充能，满了点上面那条金色的按钮（或按 E）放全屏大招。引导结束，祝你守住！", (tt) => S.usedUlt || tt > 30],
 ];
 let tut = null;
+// 引导到哪一步，就让对应的按钮闪一下金边（步骤序号 → 要高亮的按钮）
+const TUT_HL = { 3: ["#h-meteor", "#h-heal", "#spells button"], 4: ["#h-ult", "#ult"] };
+function tutHighlight(step) {
+  const want = new Set(TUT_HL[step] ? TUT_HL[step].flatMap(q => [...document.querySelectorAll(q)]) : []);
+  for (const el of document.querySelectorAll(".tuthl")) if (!want.has(el)) el.classList.remove("tuthl");
+  for (const el of want) el.classList.add("tuthl");
+}
 function updateTut(dt) {
   const box = $("tut");
-  if (!tut || menuOpen || dlg) { box.hidden = true; return; }
+  if (!tut || menuOpen || dlg) { box.hidden = true; tutHighlight(-1); return; }
   tut.t += dt;
   if (TUT[tut.step][1](tut.t)) { tut.step++; tut.t = 0; box.dataset.k = ""; }
-  if (tut.step >= TUT.length) { tut = null; editSave(d => { d.tutorial = true; }); box.hidden = true; return; }
-  box.hidden = false;
+  if (tut.step >= TUT.length) { tut = null; editSave(d => { d.tutorial = true; }); box.hidden = true; tutHighlight(-1); return; }
+  box.hidden = false; tutHighlight(tut.step);
   if (box.dataset.k !== String(tut.step)) { box.dataset.k = String(tut.step); box.innerHTML = `<span><b>引导 ${tut.step + 1}/${TUT.length}</b>${TUT[tut.step][0]}</span><button id="btn-skiptut">跳过引导</button>`; }
 }
-$("tut").addEventListener("click", ev => { if (ev.target.id === "btn-skiptut") { tut = null; editSave(d => { d.tutorial = true; }); $("tut").hidden = true; } });
+$("tut").addEventListener("click", ev => { if (ev.target.id === "btn-skiptut") { tut = null; tutHighlight(-1); editSave(d => { d.tutorial = true; }); $("tut").hidden = true; } });
 
 // ---------- 结算 ----------
 function statsTable() {

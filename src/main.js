@@ -3,6 +3,7 @@
 // ---------- 主循环 ----------
 let last = performance.now(), acc = 0;
 function frame(now) {
+  if (OPT.eco && now - last < 30) { requestAnimationFrame(frame); return; }   // 省电：最多 30 帧
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   adaptGfx(dt);
   if (S.slowCd > 0) S.slowCd -= dt;
@@ -31,5 +32,7 @@ window.__td = {
   UNITS, STAGES, CARDS, awardExp, levelOf, buyShop, closeShop, rerollOffer, SYNERGY, VIGIL, EVENTS, takeEvent, openEvent,
   FORMS, AFFIX, cycleForm, setSlot, clearSlot, arrange, formOf, callWaveEarly, toggleAutoWave, cardPool,
 };
+// 切到别的标签页或后台时自动暂停，回来不会被偷袭
+document.addEventListener("visibilitychange", () => { if (document.hidden && S && !S.over && !S.paused && !menuOpen && !dlg && (S.wave > 0 || S.kills > 0)) togglePause(); });
 requestAnimationFrame(frame);
 </script>

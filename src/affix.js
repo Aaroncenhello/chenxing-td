@@ -2,19 +2,19 @@
 // ================= 10.0：精英词缀 =================
 // 精英和首领会随机带 1–2 条词缀，让每次遭遇都不太一样
 const AFFIX = [
-  { id: "regen", name: "再生", desc: "每秒回复 2% 生命", color: "#7ee89c" },
-  { id: "warded", name: "护符", desc: "法抗 +35", color: "#c890ff" },
-  { id: "thorns", name: "尖刺", desc: "近战打它会被反弹 18% 伤害", color: "#a8d848" },
-  { id: "frenzy", name: "狂怒", desc: "血越少出手越快（最多快一倍）", color: "#ff6a5a" },
-  { id: "warcry", name: "战号", desc: "周围的敌人攻击 +25%、移速 +15%", color: "#ffb040" },
-  { id: "vampiric", name: "汲血", desc: "造成伤害的 40% 回复自己", color: "#e0486a" },
-  { id: "volatile", name: "爆裂", desc: "死的时候会炸一下", color: "#ff8a3a" },
-  { id: "swift", name: "疾行", desc: "移速 +35%，不怕减速", color: "#8fe0f0" },
-  { id: "bulwark", name: "护壁", desc: "自带护盾，破了还会再生一层", color: "#8ac8ff" },
-  { id: "splitting", name: "分裂", desc: "死的时候裂成两只小怪", color: "#58b84a" },
-  { id: "harden", name: "钢化", desc: "受到的物理伤害 −25%", color: "#c8ccd4" },
-  { id: "warp", name: "扭曲", desc: "用法术攻击它会反弹 15% 伤害给攻击者", color: "#c890ff" },
-  { id: "venom", name: "剧毒", desc: "攻击附带中毒，持续掉血", color: "#9ae040" },
+  { id: "regen", name: "再生", desc: "每秒回复 2% 生命", color: "#7ee89c", tip: "集火尽快打死，或用灼烧、中毒这类持续伤害压住回血。" },
+  { id: "warded", name: "护符", desc: "法抗 +35", color: "#c890ff", tip: "换物理输出，或者上穿透、破甲类的卡。" },
+  { id: "thorns", name: "尖刺", desc: "近战打它会被反弹 18% 伤害", color: "#a8d848", tip: "让远程角色和技能去打它，别用近战硬磕。" },
+  { id: "frenzy", name: "狂怒", desc: "血越少出手越快（最多快一倍）", color: "#ff6a5a", tip: "开场就爆发压血量，别拖到它残血。" },
+  { id: "warcry", name: "战号", desc: "周围的敌人攻击 +25%、移速 +15%", color: "#ffb040", tip: "优先打死带战号的，周围小怪会立刻变弱。" },
+  { id: "vampiric", name: "汲血", desc: "造成伤害的 40% 回复自己", color: "#e0486a", tip: "用控制或集火速杀，别让它一直咬人回血。" },
+  { id: "volatile", name: "爆裂", desc: "死的时候会炸一下", color: "#ff8a3a", tip: "近战角色打完立刻拉开，别站在它尸体旁边。" },
+  { id: "swift", name: "疾行", desc: "移速 +35%，不怕减速", color: "#8fe0f0", tip: "它不怕减速，靠地刺、陨星这类范围伤害提前覆盖路线。" },
+  { id: "bulwark", name: "护壁", desc: "自带护盾，破了还会再生一层", color: "#8ac8ff", tip: "先用大伤害一次打穿护盾，破盾后它还会再生一层。" },
+  { id: "splitting", name: "分裂", desc: "死的时候裂成两只小怪", color: "#58b84a", tip: "留着范围伤害，裂出来的小怪血量只有四分之一。" },
+  { id: "harden", name: "钢化", desc: "受到的物理伤害 −25%", color: "#c8ccd4", tip: "换法术或技能伤害，物理平 A 只有四分之三效果。" },
+  { id: "warp", name: "扭曲", desc: "用法术攻击它会反弹 15% 伤害给攻击者", color: "#c890ff", tip: "它的反弹只针对法术攻击，改用物理输出。" },
+  { id: "venom", name: "剧毒", desc: "攻击附带中毒，持续掉血", color: "#9ae040", tip: "带上圣光或战地医疗，被打中后会持续掉血。" },
 ];
 const AFFIX_BY = Object.fromEntries(AFFIX.map(a => [a.id, a]));
 const hasAfx = (e, id) => !!(e.afx && e.afx.includes(id));
