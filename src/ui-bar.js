@@ -13,12 +13,17 @@ function once(key, html) {
   seen.push(key); try { localStorage.setItem("chenxing-td-hints", JSON.stringify(seen)); } catch (e) { }
   toast(html);
 }
+// 提示：战斗中缩成一行「角标」（只留标题），点一下展开看全文；菜单里仍是完整的卡片
 function toast(html, draw) {
-  const el = document.createElement("div"); el.className = "toast";
-  el.innerHTML = (draw ? '<canvas aria-hidden="true"></canvas>' : "") + `<div>${html}</div>`;
+  const el = document.createElement("div");
+  const mini = typeof S !== "undefined" && S && !S.over && (S.wave > 0 || S.kills > 0) && !menuOpen;
+  const m = /^\s*<b>([\s\S]*?)<\/b>([\s\S]*)$/.exec(html);
+  el.className = "toast" + (mini ? " mini" : "");
+  el.innerHTML = (draw ? '<canvas aria-hidden="true"></canvas>' : "") + (m ? `<div><b>${m[1]}</b><span class="tb">${m[2]}</span></div>` : `<div><span class="tb1">${html}</span></div>`);
+  if (mini) el.addEventListener("click", () => { el.classList.toggle("open"); clearTimeout(el._t); el._t = setTimeout(() => el.remove(), 7000); });
   $("toasts").appendChild(el);
   if (draw) draw(el.querySelector("canvas"));
-  setTimeout(() => el.remove(), 6000);
+  el._t = setTimeout(() => el.remove(), mini ? 4500 : 6000);
   while ($("toasts").children.length > 3) $("toasts").firstChild.remove();
 }
 function drawFoeIcon(cvs, type) {

@@ -39,6 +39,8 @@ function drawStations(t) {
 }
 function shadow(x, y, w) { ctx.fillStyle = "rgba(0,0,0,.33)"; ctx.fillRect(R0(x - w / 2), R0(y - 1), R0(w), 2); ctx.fillRect(R0(x - w / 2 + 2), R0(y + 1), R0(w - 4), 1); }
 function bar(x, y, w, frac, col, sub, subCol, gold) {
+  // 血量颜色随血量变：绿 → 黄 → 红，低于 30% 红色闪烁
+  if (col === "#6ee07a") col = frac < 0.3 ? (Math.sin(performance.now() / 110) > 0 ? "#ff4a3a" : "#c02a20") : frac < 0.6 ? "#f0c040" : col;
   rect(ctx, x - w / 2 - 1, y - 1, w + 2, sub == null ? 4 : 6, gold ? "#ffc830" : OUT);
   rect(ctx, x - w / 2, y, w, 2, "#3a2a2a"); rect(ctx, x - w / 2, y, Math.max(0, R0(w * frac)), 2, col);
   rect(ctx, x - w / 2, y, Math.max(0, R0(w * frac)), 1, "rgba(255,255,255,.35)");
@@ -53,6 +55,9 @@ function drawUnit(u, now) {
     ctx.globalAlpha = 0.5;
     ctx.save(); ctx.translate(fx, fy - 2); ctx.rotate(-(u.face || 1) * Math.PI / 2); ctx.drawImage(big, -HOX * 2, -80); ctx.restore();
     ctx.globalAlpha = 1;
+    // 复活倒计时圆环：弧线一圈圈补满
+    const k = 1 - u.down / (u.downMax || RULES.revive), n = 24;
+    for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i / n * 6.283; if (i / n <= k) rect(ctx, fx + Math.cos(a) * 11, fy - 10 + Math.sin(a) * 11, 2, 2, i / n > 0.85 ? "#ffe38a" : "#7ee89c"); else dot(ctx, fx + Math.cos(a) * 11, fy - 10 + Math.sin(a) * 11, "rgba(255,255,255,.18)"); }
     pixNum(ctx, String(Math.ceil(u.down)), fx, fy - 14, "#e2645a", 2);
     return;
   }

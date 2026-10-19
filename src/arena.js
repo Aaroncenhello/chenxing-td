@@ -346,9 +346,11 @@ function ringSlots(list, r, ph) {
   // 人少的时候往里收一点（保持和以前一样的手感），但阵型的差别还是留着
   const n = Math.max(1, list.length), rr = (n <= 2 ? r * 0.83 : r) + Math.max(0, n - 4) * 0.22;
   list.forEach((u, i) => {
+    // 三个以上时隔一个往外挪一点，前后错开，不叠成一堆（只是站位微调）
+    const rz = rr + (n >= 3 && i % 2 ? 0.32 : 0);
     let a = ph + (i / n) * Math.PI * 2, x = 0, y = 0;
     for (let k = 0; k < 16; k++) {
-      x = CRYSTAL.x + Math.cos(a) * rr; y = CRYSTAL.y + Math.sin(a) * rr;
+      x = CRYSTAL.x + Math.cos(a) * rz; y = CRYSTAL.y + Math.sin(a) * rz;
       if (!solid(x, y) && x > 0.6 && x < COLS - 1.6 && y > 0.6 && y < ROWS - 1.6) break;
       a += 0.3;
     }
@@ -365,7 +367,7 @@ function knockOut(u) {
   }
   if (u.down > 0 || u.dead) return;
   if (u.summon) { u.dead = true; S.units = S.units.filter(x => x !== u); burst(u.x, u.y, "#9ab0c8", 18, 2.2, 0.7, 0.07); arrange(); return; }
-  u.down = reviveT(); u.hp = 0; u.pend = null;
+  u.down = u.downMax = reviveT(); u.hp = 0; u.pend = null;
   for (const e of S.enemies) if (e.target === u) e.target = null;
   addFx({ kind: "ucorpse", def: u.def, lv: u.lv, branch: u.branch, x: u.x, y: u.y, face: u.face, life: 0.9 });
   burst(u.x, u.y, "#ff9a8f", 14, 2.4, 0.6, 0.06);
