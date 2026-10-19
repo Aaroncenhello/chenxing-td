@@ -3,14 +3,15 @@
 //      PROFILES=三章,四章 ST0=8 node ../balance.js       （只跑部分档位 / 关卡）
 // 结果同时写到 tests/out/balance.json，方便调数值前后对比
 const { spawn } = require('child_process'), fs = require('fs'), path = require('path');
-const RUNS = +(process.env.RUNS || 16), ST0 = +(process.env.ST0 || 0), ST = +(process.env.ST || 16), JOBS = +(process.env.JOBS || 4);
+const RUNS = +(process.env.RUNS || 16), ST0 = +(process.env.ST0 || 0), ST = +(process.env.ST || 20), JOBS = +(process.env.JOBS || 4);
 // 每档大约对应「刚打到这一章」的玩家：角色等级按每局经验估算，星星 = 关卡星级 + 通关奖励 + 成就
 const ALL = [
   { name: '新手', ch: 0, CLV: 3, STARS: 0 },
   { name: '二章', ch: 1, CLV: 5, STARS: 20 },
   { name: '三章', ch: 2, CLV: 7, STARS: 45 },
   { name: '四章', ch: 3, CLV: 9, STARS: 90 },
-  { name: '毕业', ch: 3, CLV: 10, STARS: 400 },
+  { name: '五章', ch: 4, CLV: 10, STARS: 200 },
+  { name: '毕业', ch: 4, CLV: 10, STARS: 400 },
 ];
 const want = (process.env.PROFILES || '').split(',').filter(Boolean);
 const profiles = want.length ? ALL.filter(p => want.includes(p.name)) : ALL;

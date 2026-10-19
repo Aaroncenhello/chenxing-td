@@ -544,7 +544,7 @@ function genStage(stage, seed, opts) {
     pool, boss: base.boss, map: g.map, haz: g.haz, generated: true,
   };
 }
-const THEME_NAME = { forest: "翠林", snow: "霜雪", lava: "熔岩", grave: "幽影", desert: "黄沙", sky: "浮空", cave: "晶洞", abyss: "深渊", ice: "冰封", mech: "机械", blood: "血月", star: "星界", ash: "灰烬", ruin: "碑墓", storm: "雷暴", dawn: "晨光" };
+const THEME_NAME = { forest: "翠林", snow: "霜雪", lava: "熔岩", grave: "幽影", desert: "黄沙", sky: "浮空", cave: "晶洞", abyss: "深渊", ice: "冰封", mech: "机械", blood: "血月", star: "星界", ash: "灰烬", ruin: "碑墓", storm: "雷暴", dawn: "晨光", tide: "潮汐", sunken: "沉没", mirror: "镜廊", silent: "无声" };
 const VIGIL_BOSS = ["boss", "sovereign", "devourer"];
 
 // ---------- 波次 ----------

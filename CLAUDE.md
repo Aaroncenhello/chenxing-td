@@ -48,7 +48,7 @@ npm run sim            # 平衡模拟，见下
 | 文件 | 内容 |
 |---|---|
 | head.html | 全部 CSS、页面结构（顶栏、战场、翻牌/商店/事件面板、HUD、底部面板、说明文字） |
-| config.js | `RULES`、16 个关卡 `STAGES`（地图字符画、敌人池、首领、机关）、16 名角色 `UNITS`、敌人 `ENEMIES`、`ELITE`、`SPELLS` |
+| config.js | `RULES`、20 个关卡 `STAGES`（地图字符画、敌人池、首领、机关）、16 名角色 `UNITS`、敌人 `ENEMIES`、`ELITE`、`SPELLS` |
 | config-meta.js | 难度 `DIFFS`、每日规则、商店 `SHOP`、稀有度 `RARE_W`、成就、天赋树、阵型 `FORMS`、角色传记等 |
 | cards.js | 升级卡 `CARDS`（含传说卡、`fl_*` 无限补充卡）、自动技能数值、卡牌像素图标 |
 | meta.js | **11.0** 天赋星盘 `DISK`/`dk()`、深渊层数 `ABYSS`/`ab()`/`abyssK()`、每周挑战 `WEEK_RULES`/`weekInfo()`/`wk()` |
@@ -121,6 +121,7 @@ npm run sim            # 平衡模拟，见下
   - **图鉴总完成度**（save.js `codexProgress`）：敌人 + 卡牌 + 遗物 + 词缀 + 事件的收集率，25/50/75/100% 给称号和星星（共 +20★，直接按进度算进 `starBank`，不额外存档）。
   - **本局规则页**（`rulesHtml`，点羁绊看板打开）、12.0 更新说明（`showNews`，localStorage `chenxing-td-news`）、一次性提示 `once(key, html)`（`chenxing-td-hints`）。
   - sim 机器人会在首领读条时集火并用陨星术打断（`NOFOCUS=1` 可关）；实测对胜率影响很小（多在噪声内），说明中后期的瓶颈不在打断。
+  - **第五章 · 无声之海**（第 17–20 关：潮汐海岸、沉没钟楼、镜面回廊、无声之海）：新主题 `tide/sunken/mirror/silent`（**新主题要同时加到 px-core.js `THEMES`、ui-menu.js `THUMB`、arena.js `THEME_NAME`，缺一个选关页就白屏**），7 种新敌人（皮肤复用 + `pal` 换色）、最终首领静默者（`BOSS_TYPES`）。`tests/ch5.js` 对**全部关卡**做数据体检（主题/敌人/地图可达/首领称号大招特性、剧情与关卡一一对应），以后加关卡先跑它。毕业档模拟胜率约 第17关 100% / 18 关 75% / 19 关 42% / 20 关 38%。`balance.js` 加了「五章」档，默认跑 20 关。
 - **viewport**：`head.html` 里的 `<meta name="viewport">` 不能删——没有它手机会按 980px 宽的电脑网页排版再整体缩小。
 
 ## 踩过的坑

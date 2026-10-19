@@ -17,6 +17,10 @@ const THUMB = {
   ruin: { g: "#5a5a52", p: "#8a8a7e", b: "#3a3a34", w: "#2f6ea8" },
   storm: { g: "#2e3446", p: "#48506a", b: "#181d28", w: "#2a4a8a" },
   dawn: { g: "#c8b488", p: "#e8dcb8", b: "#9a8660", w: "#5ab0d8" },
+  tide: { g: "#c8bc90", p: "#8a7a5a", b: "#6c8c92", w: "#3a9ac0" },
+  sunken: { g: "#2a4a52", p: "#5a6a60", b: "#142a30", w: "#58e0c8" },
+  mirror: { g: "#9aa4b8", p: "#d0d8e8", b: "#5e6880", w: "#a0e0ff" },
+  silent: { g: "#1c2030", p: "#3a4258", b: "#0e1220", w: "#8a96c0" },
 };
 function drawThumb(cvs, st) {
   const k = 4, g = cvs.getContext("2d"), th = THUMB[st.theme];
