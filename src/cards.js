@@ -62,6 +62,9 @@ const CARDS = [
   { id: "ev_fire", evo: "sk_fire", rare: 2, kind: "evo", name: "炼狱火环", max: 1, w: 8, desc: () => "烈焰环进化：范围扩大到 5 格，灼烧伤害 +60%、持续 5 秒" },
   { id: "ev_spike", evo: "sk_spike", rare: 2, kind: "evo", name: "荆棘王座", max: 1, w: 8, desc: () => "地刺阵进化：地刺范围扩大一圈，伤害 +40%，被刺中的敌人减速 40%" },
   { id: "ev_holy", evo: "sk_holy", rare: 2, kind: "evo", name: "神圣审判", max: 1, w: 8, desc: () => "圣光进化：回血量 +30%，对范围内所有敌人造成伤害（亡灵受到双倍）" },
+  { id: "ev_spear", evo: "sk_spear", rare: 2, kind: "evo", name: "雷神之矛", max: 1, w: 8, desc: () => "落雷之枪进化：同时击中离晨星碑最近的 3 个敌人，眩晕时间翻倍，伤害 +30%" },
+  { id: "ev_toxic", evo: "sk_toxic", rare: 2, kind: "evo", name: "瘟疫之云", max: 1, w: 8, desc: () => "剧毒喷雾进化：范围扩大到 5 格，毒伤 +60%、持续更久，防御下降翻倍" },
+  { id: "ev_gale", evo: "sk_gale", rare: 2, kind: "evo", name: "万箭齐发", max: 1, w: 8, desc: () => "追猎箭雨进化：每次射击的目标数翻倍，伤害 +20%，被射中的敌人减速" },
   // ---- 补充卡：牌堆快抽空时才出现，可以无限叠加 ----
   { id: "fl_atk", rare: 0, kind: "stat", name: "淬炼", max: 999, w: 10, filler: true, desc: lv => `全队攻击 +6%、生命 +6%（可以无限叠加，当前 +${6 * lv}%）` },
   { id: "fl_crystal", rare: 0, kind: "stat", name: "碑石修补", max: 999, w: 6, filler: true, desc: () => "晨星碑立即回复 20% 生命" },

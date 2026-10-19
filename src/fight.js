@@ -4,7 +4,7 @@
 const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true }];
 // 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
 const OPT_KEY = "chenxing-td-opts";
-const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm }; } catch (e) { return { eco: false, calm: false }; } })();
+const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix }; } catch (e) { return { eco: false, calm: false, pix: false }; } })();
 function setOpt(k, v) { OPT[k] = !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
@@ -723,28 +723,31 @@ function autoCast(id, lv) {
       if (undead || ev) hurt(e, calc(dmg * (undead ? (ev ? 3 : 1.5) : 1), "magic", eDef(e), eRes(e)), "magic", false, { key: "sk_holy" });
     }
   } else if (id === "sk_spear") {
-    const t = S.enemies.filter(hittable).sort((a, b) => toCrystal(a) - toCrystal(b))[0];
-    if (!t) { S.skillCd[id] = 0.6; return; }
-    const dmg = SKILL_DMG.sk_spear * lv * P;
-    addFx({ kind: "bolt", x: CRYSTAL.x, y: CRYSTAL.y, x2: t.x, y2: t.y, life: 0.3, color: "#ffe860" });
-    hurt(t, calc(dmg, "phys", eDef(t), eRes(t)), "phys", false, { key: "sk_spear" });
-    if (!t.d.unstoppable) t.stunT = Math.max(t.stunT || 0, 0.8 + lv * 0.15);
-    burst(t.x, t.y, "#ffe860", 10, 2.6, 0.5, 0.06);
+    const near = S.enemies.filter(hittable).sort((a, b) => toCrystal(a) - toCrystal(b));
+    if (!near.length) { S.skillCd[id] = 0.6; return; }
+    const ev = evo("sk_spear"), dmg = SKILL_DMG.sk_spear * lv * P * (ev ? 1.3 : 1);
+    for (const t of near.slice(0, ev ? 3 : 1)) {
+      addFx({ kind: "bolt", x: CRYSTAL.x, y: CRYSTAL.y, x2: t.x, y2: t.y, life: 0.3, color: ev ? "#fff6a0" : "#ffe860" });
+      hurt(t, calc(dmg, "phys", eDef(t), eRes(t)), "phys", false, { key: "sk_spear" });
+      if (!t.d.unstoppable) t.stunT = Math.max(t.stunT || 0, (0.8 + lv * 0.15) * (ev ? 2 : 1));
+      burst(t.x, t.y, "#ffe860", ev ? 16 : 10, 2.6, 0.5, 0.06);
+    }
   } else if (id === "sk_toxic") {
-    const R = 3.4, dps = SKILL_DMG.sk_toxic * lv * P * 0.25;
-    addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#a8d848", life: 0.7, r0: 0.4, r1: R, fill: true });
+    const ev = evo("sk_toxic"), R = ev ? 5 : 3.4, dps = SKILL_DMG.sk_toxic * lv * P * 0.25 * (ev ? 1.6 : 1);
+    addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#a8d848", life: ev ? 0.9 : 0.7, r0: 0.4, r1: R, fill: true });
     for (const e of S.enemies) if (hittable(e) && toCrystal(e) <= R) {
-      burnEnemy(e, dps, 3.5, { key: "sk_toxic" });
-      applyCorrode(e, 0.12 + 0.02 * lv, 3.5, { key: "sk_toxic" });
+      burnEnemy(e, dps, ev ? 5.5 : 3.5, { key: "sk_toxic" });
+      applyCorrode(e, (0.12 + 0.02 * lv) * (ev ? 2 : 1), ev ? 5.5 : 3.5, { key: "sk_toxic" });
     }
   } else if (id === "sk_gale") {
     const pool = S.enemies.filter(hittable);
     if (!pool.length) { S.skillCd[id] = 0.6; return; }
-    const n = Math.min(pool.length, 2 + Math.floor(lv / 2)), dmg = SKILL_DMG.sk_gale * lv * P, picked = [], left = pool.slice();
+    const ev = evo("sk_gale"), n = Math.min(pool.length, (2 + Math.floor(lv / 2)) * (ev ? 2 : 1)), dmg = SKILL_DMG.sk_gale * lv * P * (ev ? 1.2 : 1), picked = [], left = pool.slice();
     for (let i = 0; i < n; i++) { const idx = Math.floor(roll("fight") * left.length); picked.push(left[idx]); left.splice(idx, 1); }
     for (const t of picked) {
       addFx({ kind: "bolt", x: CRYSTAL.x, y: CRYSTAL.y, x2: t.x, y2: t.y, life: 0.25, color: "#c8f0a0" });
       hurt(t, calc(dmg, "phys", eDef(t), eRes(t)), "phys", false, { key: "sk_gale" });
+      if (ev && !t.dead && !t.d.unstoppable) { t.slowT = Math.max(t.slowT, 1.5); t.slowK = Math.min(t.slowK || 1, 0.6); }
     }
   }
 }

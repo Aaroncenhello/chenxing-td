@@ -91,15 +91,18 @@ teamEl.addEventListener("click", ev => {
 });
 
 // ---------- 升级翻牌 ----------
+let banishMode = false;
+function toggleBanish() { if (!S.offer || (S.banishLeft <= 0 && !banishMode)) return; banishMode = !banishMode; $("levelup").dataset.k = ""; }
 function updateOffer() {
   const box = $("levelup");
-  if (!S.offer) { if (!box.hidden) { box.hidden = true; box.dataset.k = ""; } return; }
-  const key = S.offer.map(p => p.id).join("|") + "#" + S.rerolls;
+  if (!S.offer) { banishMode = false; if (!box.hidden) { box.hidden = true; box.dataset.k = ""; } return; }
+  const key = S.offer.map(p => p.id).join("|") + "#" + S.rerolls + "#" + S.banishLeft + (banishMode ? "!" : "");
   if (box.dataset.k === key) return;
   box.dataset.k = key; box.hidden = false;
   box.classList.toggle("lg", S.offer.some(p => (p.rare || 0) === 2));   // 有传说卡：背景亮起金色光芒
-  $("cards3").classList.toggle("n4", S.offer.length > 3);   // 混入诅咒卡时变成 2x2 的 4 选 1
-  $("lu-tip").innerHTML = S.offer.length > 3 ? "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> 选卡，<kbd>R</kbd> 重抽" : "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 选卡，<kbd>R</kbd> 重抽";
+  $("cards3").classList.toggle("n4", S.offer.length > 3);
+  $("cards3").classList.toggle("banishing", banishMode);   // 混入诅咒卡时变成 2x2 的 4 选 1
+  $("lu-tip").innerHTML = S.offer.length > 3 ? "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> 选卡，<kbd>R</kbd> 重抽，<kbd>X</kbd> 放逐" : "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 选卡，<kbd>R</kbd> 重抽，<kbd>X</kbd> 放逐";
   const title = S.offerRare ? "稀有货架！选一张" : S.level <= 1 && !S.kills ? "开局翻牌！选一张" : `升到 Lv ${S.level}！选一张卡`;
   setText("lu-title", title + (S.pending > 1 ? `（还有 ${S.pending - 1} 次）` : ""));
   $("cards3").innerHTML = S.offer.map((p, i) => {
@@ -113,6 +116,9 @@ function updateOffer() {
   const rb = $("btn-reroll");
   rb.textContent = S.rerolls > 0 ? `重抽（剩 ${S.rerolls} 次）` : "没有重抽次数了";
   rb.disabled = S.rerolls <= 0;
+  const bb = $("btn-banish");
+  bb.textContent = banishMode ? "点要放逐的那张卡（再点取消）" : S.banishLeft > 0 ? `放逐（剩 ${S.banishLeft} 次）` : "没有放逐次数了";
+  bb.disabled = S.banishLeft <= 0 && !banishMode; bb.classList.toggle("on", banishMode);
   S.offer.forEach((p, i) => {
     const cvs = $("lu-" + i), c = cardInfo(p);
     if (c.unit) drawPortrait(c.unit, cvs, p.branch ? 4 : (p.unit ? p.unit.lv + 1 : 1), p.branch);
@@ -123,9 +129,11 @@ function updateOffer() {
 }
 $("cards3").addEventListener("click", ev => {
   const b = ev.target.closest("[data-pick]"); if (!b) return;
+  if (banishMode) { if (banishCard(b.dataset.pick)) { banishMode = false; $("levelup").dataset.k = ""; if (!S.offer) { $("levelup").hidden = true; openOffer(); } } return; }
   takeCard(b.dataset.pick);
 });
 $("btn-reroll").addEventListener("click", () => { if (rerollOffer()) $("levelup").dataset.k = ""; });
+$("btn-banish").addEventListener("click", toggleBanish);
 
 // ---------- 波间商店 ----------
 function updateShop() {
@@ -440,7 +448,8 @@ document.addEventListener("keydown", ev => {
   if (S && S.event) { if (/^[1-3]$/.test(k) && S.event.opts[+k - 1]) { ev.preventDefault(); if (takeEvent(+k - 1)) $("eventbox").dataset.k = ""; } return; }
   if (S && S.shop) { if (k === "enter" || k === " ") { ev.preventDefault(); closeShop(); $("shopbox").dataset.k = ""; } return; }
   if (S && S.offer) {
-    if (/^[1-4]$/.test(k) && S.offer[+k - 1]) { ev.preventDefault(); takeCard(S.offer[+k - 1].id); }
+    if (/^[1-4]$/.test(k) && S.offer[+k - 1]) { ev.preventDefault(); const id = S.offer[+k - 1].id; if (banishMode) { if (banishCard(id)) { banishMode = false; $("levelup").dataset.k = ""; if (!S.offer) { $("levelup").hidden = true; openOffer(); } } } else takeCard(id); }
+    else if (k === "x") toggleBanish();
     else if (k === "r" && rerollOffer()) $("levelup").dataset.k = "";
     return;
   }

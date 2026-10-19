@@ -262,6 +262,7 @@ function newRun(stage, opts) {
     uid: 1, kills: 0, leaked: 0, stats: {}, foeKill: {}, afxSeen: [], events: [], boss: null, spawned: {},
     star: 0, ultPending: 0, ultKills: 0, combo: 0, comboT: 0, comboBest: 0, usedSpell: false, usedUlt: false,
     speed: 1, paused: false, over: null, stars: 0, selUnit: null, selSpell: null, spellMode: null, hover: null, shake: 0, slowmo: 0, slowCd: 0, hitFlash: 0,
+    banishLeft: BANISH_N, banished: [],
     dust: SHOP.start + 10 * dkk("merchant"), rerolls: Math.max(0, REROLLS + dkk("reroll") - (abyss >= 12 ? 2 : 0)),
     shop: null, shopDone: 0, shopWave: 0, syn: {}, synN: 0, chest: 0, haz: [], gate: null, legends: 0, curses: {},
     cine: null, cineWave: -1, breaks: 0, ultsFired: 0, log: [], t0: Date.now(), maxHit: 0, bestSyn: 0,
@@ -394,10 +395,10 @@ function cardPool(minRare) {
   }
   // 牌堆快见底了：补上可以无限叠加的补充卡，永远有牌可翻
   if (!minRare && out.length < 6) for (const c of CARDS) if (c.filler) out.push({ id: c.id, w: c.w, card: c, rare: 0 });
-  return out;
+  return S.banished && S.banished.length ? out.filter(p => !S.banished.includes(p.id)) : out;
 }
 function cursePool() {
-  return CURSES.filter(c => cu(c.id) < c.max && !(c.id === "cu_pact" && S.allies < 2)).map(c => ({ id: c.id, w: c.w, curse: c, rare: 3 }));
+  return CURSES.filter(c => cu(c.id) < c.max && !(c.id === "cu_pact" && S.allies < 2) && !(S.banished || []).includes(c.id)).map(c => ({ id: c.id, w: c.w, curse: c, rare: 3 }));
 }
 function randomCards(n, minRare) {
   let pool = cardPool(minRare);
@@ -486,6 +487,26 @@ function pickCard(id, silent) {
 function rerollOffer() {
   if (!S.offer || S.rerolls <= 0 || S.over) return false;
   S.rerolls--; S.rerollsUsed = (S.rerollsUsed || 0) + 1; S.offer = randomCards(3, S.offerRare || 0);
+  return true;
+}
+// 放逐：把翻牌里的一张卡永久移出这局的牌堆（Slay the Spire / Hades 的标配），原位补一张新的；放逐诅咒卡不补
+function banishCard(id) {
+  if (!S.offer || S.over || S.banishLeft <= 0) return false;
+  const i = S.offer.findIndex(x => x.id === id); if (i < 0) return false;
+  const gone = S.offer[i];
+  S.banishLeft--; S.banished.push(id); S.banishedN = (S.banishedN || 0) + 1;
+  S.offer.splice(i, 1);
+  if (!gone.curse) {
+    const have = new Set(S.offer.map(x => x.id));
+    let pool = cardPool(S.offerRare || 0).filter(x => !have.has(x.id));
+    if (!pool.length && S.offerRare) pool = cardPool().filter(x => !have.has(x.id));
+    if (pool.length) {
+      let r = roll("card") * pool.reduce((t, x) => t + x.w, 0), pick = pool[pool.length - 1];
+      for (const x of pool) { r -= x.w; if (r <= 0) { pick = x; break; } }
+      S.offer.splice(Math.min(i, S.offer.length), 0, pick);
+    }
+  }
+  if (!S.offer.length) { S.offer = null; S.pending = Math.max(0, S.pending - 1); }
   return true;
 }
 function openOffer(minRare, noCharge) {

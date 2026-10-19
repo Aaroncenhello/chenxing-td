@@ -24,6 +24,8 @@ function resize() {
       k = Math.min((vw - padH) / PW, Math.max(0.2, room / PHt));
     } else k = Math.min(vw / PW, vh / PHt);
   }
+  // 像素完美：按「设备像素」取整倍数缩放，像素粗细均匀（可能留一圈黑边）
+  if (OPT.pix) { const dpr = window.devicePixelRatio || 1, kp = Math.floor(k * dpr) / dpr; if (kp >= k * 0.65) k = kp; }   // 取整后缩得太小（比如 1280 宽的普通屏）就不生效
   const scr = document.getElementById("screen");
   scr.style.width = Math.floor(PW * k) + "px"; scr.style.height = Math.floor(PHt * k) + "px";
   document.body.style.setProperty("--fw", Math.floor(PW * k) + "px");   // 横屏全屏时左右黑边的宽度靠它算（羁绊看板）

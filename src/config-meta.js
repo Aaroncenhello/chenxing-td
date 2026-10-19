@@ -193,6 +193,7 @@ const RARITY = [
 // 抽到各稀有度的基础权重，随等级提高
 const RARE_W = lv => [100, 26 + lv * 2.4, 3 + lv * 1.5];
 const REROLLS = 3;
+const BANISH_N = 2;   // 每局可以放逐几次卡牌
 
 // 羁绊：满足条件就一直生效。prog() 返回 [已有, 需要]，选牌时用它提示「再拿这张就凑齐」
 const synCount = f => S.units.filter(u => !u.dead && !u.summon && f(u)).length;
