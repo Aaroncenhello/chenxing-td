@@ -227,6 +227,14 @@ function drawFx(f, now) {
     ctx.globalAlpha = 0.55 * (1 - k); rect(ctx, x - (w >> 1), y - 80, w, 100, f.color); ctx.globalAlpha = 1;
     rect(ctx, x - 1, y - 80 + R0(k * 40), 2, 100 - R0(k * 40), "#ffffff");
     addGlow(x, y - 10, 34, f.color || "#ffe38a", 0.5 * (1 - k));
+  } else if (f.kind === "cardfly") {
+    const [x0, y0] = tpx(f.x, f.y), [x1, y1] = tpx(f.x2, f.y2), e = 1 - (1 - k) ** 2;
+    const x = x0 + (x1 - x0) * e, y = y0 + (y1 - y0) * e - Math.sin(e * Math.PI) * 46, s = 26 * (1 - e * 0.35);
+    ctx.globalAlpha = Math.min(1, (1 - k) * 4);
+    rect(ctx, R0(x - s / 2 - 2), R0(y - s / 2 - 2), R0(s + 4), R0(s + 4), f.color);
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(f.icon, R0(x - s / 2), R0(y - s / 2), R0(s), R0(s));
+    for (let i = 1; i <= 3; i++) { const ee = Math.max(0, e - i * 0.07); dot(ctx, x0 + (x1 - x0) * ee, y0 + (y1 - y0) * ee - Math.sin(ee * Math.PI) * 46, f.color); }
+    ctx.globalAlpha = 1;
   } else if (f.kind === "burstlines") {
     const [x, y] = tpx(f.x, f.y), r0 = 10 + k * 34, r1 = r0 + 10 * (1 - k);
     ctx.globalAlpha = 1 - k;

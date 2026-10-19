@@ -199,6 +199,10 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .cardbar .cb{position:relative;width:30px;height:30px}
 .cardbar canvas{width:30px;height:30px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12}
 .cardbar .cu canvas{box-shadow:0 0 0 2px #a01838}
+.cardbar .cb{margin-bottom:6px}
+.cardbar .pips{position:absolute;left:0;right:0;bottom:-8px;text-align:center;font-style:normal;font-size:6px;letter-spacing:-1px;color:#ffd860;line-height:1}
+.cardbar .maxed canvas{box-shadow:0 0 0 2px #ffd860,0 0 8px rgba(255,216,96,.6);animation:maxg 2s ease-in-out infinite}
+@keyframes maxg{50%{box-shadow:0 0 0 2px #fff0b0,0 0 12px rgba(255,216,96,.9)}}
 .cardbar i{position:absolute;right:-2px;bottom:-3px;font-style:normal;font-family:var(--pix);font-size:8px;color:#1a1408;background:var(--gold);padding:1px 2px}
 .cardbar .none{color:var(--muted);font-size:12px;align-self:center}
 .info{background:var(--panel);border:2px solid #0a0c12;box-shadow:var(--bevel);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:180px}
@@ -553,6 +557,7 @@ body.imm .hud-syn{max-height:44%}
     <div class="stats">
       <div class="stat hp">晨星碑 <b id="s-hp">1000</b></div>
       <div class="stat lv">等级 <b id="s-lv">1</b></div>
+      <div class="stat pw" title="全队攻击和生命相对开局的倍数">战力 <b id="s-pw">×1.0</b></div>
       <div class="stat">波次 <b id="s-wave">0/10</b></div>
       <div class="stat">击杀 <b id="s-kills">0</b></div>
       <div class="stat dust">星尘 <b id="s-dust">0</b></div>
@@ -2760,6 +2765,14 @@ function pickCard(id, silent) {
     addFx({ kind: "pillar", x: u.x, y: u.y, color: col, life: 0.9 });
     addFx({ kind: "text", x: u.x, y: u.y - 0.7, text: u.lv === 4 ? "转职 · " + u.def.branches[u.branch === "A" ? 0 : 1].name : u.lv + " 阶", color: col, life: 1.3, big: true });
     burst(u.x, u.y, col, u.lv === 4 ? 28 : 16, 2.4, 0.8, 0.07);
+    // 升阶越高，场面越大：2 阶一圈光，3 阶光圈 + 闪光，4 阶（转职）光柱连发 + 横幅 + 顿一下
+    addFx({ kind: "ring", x: u.x, y: u.y, color: col, life: 0.6, r0: 0.2, r1: u.lv === 2 ? 1.6 : u.lv === 3 ? 2.6 : 3.8, fill: u.lv >= 3 });
+    if (u.lv >= 3) { addFx({ kind: "flash", life: 0.25, color: col }); S.shake = Math.max(S.shake, 0.18); }
+    if (u.lv === 4) {
+      queueFx(0.18, { kind: "pillar", x: u.x, y: u.y, color: col, life: 0.9, burst: 30 });
+      addFx({ kind: "banner", text: `${u.def.name} · 转职「${u.def.branches[u.branch === "A" ? 0 : 1].name}」`, life: 2 });
+      S.hitStop = Math.max(S.hitStop || 0, 0.1); S.zoomK = Math.max(S.zoomK || 0, 0.04);
+    }
     if (u.lv === 4 && S.units.filter(x => x.lv >= 4).length >= 3) S.events.push({ type: "achv", id: "branch3" });
   }
   S.picks.push(id);
@@ -6353,6 +6366,14 @@ function drawFx(f, now) {
     ctx.globalAlpha = 0.55 * (1 - k); rect(ctx, x - (w >> 1), y - 80, w, 100, f.color); ctx.globalAlpha = 1;
     rect(ctx, x - 1, y - 80 + R0(k * 40), 2, 100 - R0(k * 40), "#ffffff");
     addGlow(x, y - 10, 34, f.color || "#ffe38a", 0.5 * (1 - k));
+  } else if (f.kind === "cardfly") {
+    const [x0, y0] = tpx(f.x, f.y), [x1, y1] = tpx(f.x2, f.y2), e = 1 - (1 - k) ** 2;
+    const x = x0 + (x1 - x0) * e, y = y0 + (y1 - y0) * e - Math.sin(e * Math.PI) * 46, s = 26 * (1 - e * 0.35);
+    ctx.globalAlpha = Math.min(1, (1 - k) * 4);
+    rect(ctx, R0(x - s / 2 - 2), R0(y - s / 2 - 2), R0(s + 4), R0(s + 4), f.color);
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(f.icon, R0(x - s / 2), R0(y - s / 2), R0(s), R0(s));
+    for (let i = 1; i <= 3; i++) { const ee = Math.max(0, e - i * 0.07); dot(ctx, x0 + (x1 - x0) * ee, y0 + (y1 - y0) * ee - Math.sin(ee * Math.PI) * 46, f.color); }
+    ctx.globalAlpha = 1;
   } else if (f.kind === "burstlines") {
     const [x, y] = tpx(f.x, f.y), r0 = 10 + k * 34, r1 = r0 + 10 * (1 - k);
     ctx.globalAlpha = 1 - k;
@@ -7054,10 +7075,25 @@ function handleEvents() {
 }
 
 // ---------- 顶栏 ----------
+// 本局成长：全队总攻击（按攻速折算）和总生命相对开局的倍数。基准取开局第一次读到的值（只有英雄一个人）
+function teamGrowth() {
+  let atk = 0, hp = 0;
+  for (const u of S.units) if (!u.summon) { atk += uAtk(u) / uInterval(u); hp += u.maxHp; }
+  if (!S.baseP && atk > 0) S.baseP = { atk, hp };
+  const b = S.baseP || { atk: atk || 1, hp: hp || 1 };
+  return { atk: atk / b.atk, hp: hp / b.hp, k: Math.sqrt(atk / b.atk * (hp / b.hp)), n: S.units.filter(u => !u.summon).length };
+}
+// 下一步目标：离凑齐最近的羁绊（还差一张就提示）
+function nextGoal() {
+  let best = null;
+  for (const g of SYNERGY) { const [a, b] = g.prog(); if (a > 0 && a < b && (!best || b - a < best.gap)) best = { g, a, b, gap: b - a }; }
+  return best ? `凑齐「${best.g.name}」${best.a}/${best.b}（${best.g.need}）` : "";
+}
 function updateStats() {
   setText("s-level", (S.daily ? "每日挑战 · " : S.vigil ? "守望之战 · " : S.endless ? "无尽 · " : `第 ${S.stage + 1} 关 · `) + ST.name + (S.diff && !S.daily ? " · " + DIFFS[S.diff].name : ""));
   setText("s-hp", Math.ceil(S.crystal.hp));
   setText("s-lv", S.level);
+  setText("s-pw", "×" + teamGrowth().k.toFixed(1));
   setText("s-wave", S.endless ? `${S.wave}/∞` : `${S.wave}/${ST.waves}`);
   setText("s-kills", S.kills);
   setText("s-dust", S.dust);
@@ -7070,7 +7106,8 @@ function updateStats() {
   setText("btn-call", S.spawnQueue.length || S.enemies.length ? "叠加下一波" : "立即出击");
   setText("btn-auto", S.autoWave ? "自动开波：开" : "自动开波：关");
   $("xp-fill").style.width = Math.min(100, S.xp / S.xpNeed * 100).toFixed(1) + "%";
-  setText("xp-txt", `Lv ${S.level} · 经验 ${Math.floor(S.xp)}/${S.xpNeed}` + (S.pending > 0 ? "（可以翻牌！）" : ""));
+  if (!S.goalT || S.t - S.goalT > 1) { S.goalT = S.t; S.goalTxt = nextGoal(); }
+  setText("xp-txt", `Lv ${S.level} · 经验 ${Math.floor(S.xp)}/${S.xpNeed}` + (S.pending > 0 ? "（可以翻牌！）" : "") + (S.goalTxt ? ` · 目标：${S.goalTxt}` : ""));
   const wb = $("wavebar"), key = S.stage + ":" + S.wave + ":" + (waiting ? 1 : 0) + ":" + (S.daily ? 1 : 0);
   if (wb.dataset.k !== key) {
     wb.dataset.k = key;
@@ -7111,7 +7148,7 @@ function updateCardbar() {
   const ids = Object.keys(S.cards);
   const all = ids.concat(Object.keys(S.curses || {}));
   const rels = (S.relics || []).map(id => `<span class="cb rl" title="${RELIC_BY[id].name}：${RELIC_BY[id].desc}"><canvas id="rl-${id}"></canvas></span>`).join("");
-  cardbarEl.innerHTML = rels + (all.length ? all.map(id => { const n = (S.cards[id] || S.curses[id]); const c = ANY_CARD(id); return `<span class="cb${CURSE_BY[id] ? " cu" : ""}" title="${c ? c.name : id}"><canvas id="cb-${id}"></canvas>${n > 1 ? `<i>${n}</i>` : ""}</span>`; }).join("")
+  cardbarEl.innerHTML = rels + (all.length ? all.map(id => { const n = (S.cards[id] || S.curses[id]); const c = ANY_CARD(id); const mx = (c && c.max) || 1; return `<span class="cb${CURSE_BY[id] ? " cu" : ""}${mx > 1 && n >= mx ? " maxed" : ""}" title="${c ? c.name : id}${mx > 1 ? `（${n}/${mx} 级）` : ""}"><canvas id="cb-${id}"></canvas>${mx > 1 && mx <= 5 ? `<em class="pips">${"●".repeat(n)}${"○".repeat(Math.max(0, mx - n))}</em>` : n > 1 ? `<i>${n}</i>` : ""}</span>`; }).join("")
     : '<span class="none">升级翻到的卡牌会显示在这里</span>');
   for (const id of all) cardIconTo($("cb-" + id), id);
   for (const id of S.relics || []) drawRelicIcon($("rl-" + id), id, 30);
@@ -7366,7 +7403,8 @@ function synGuideHtml(live) {
 }
 // 本局规则：契约、深渊、每日规则、天气、本关首领特性，都在这一页看
 function rulesHtml() {
-  const rows = [];
+  const rows = [], gr = teamGrowth();
+  rows.push(["本局成长", `全队总攻击 ×${gr.atk.toFixed(1)}，总生命 ×${gr.hp.toFixed(1)}（相对开局，${gr.n} 名队员）`]);
   if (S.contracts && S.contracts.length) rows.push(["自选契约", S.contracts.map(id => { const c = CONTRACTS.find(x => x.id === id); return c ? `${c.name}（${c.desc}）` : ""; }).join("、")]);
   if (S.abyss) rows.push(["深渊", `${S.abyss} 层：敌人更强，奖励更多`]);
   if (S.daily) { const m = DAILY_MODS.find(x => x.id === S.mod); if (m) rows.push(["每日规则", `${m.name}：${m.desc}`]); }
@@ -7394,11 +7432,33 @@ function celebratePick(p) {
     burst(CRYSTAL.x, CRYSTAL.y, "#ffe38a", 40, 4, 0.9, 0.09); S.shake = Math.max(S.shake, 0.3);
   }
 }
+// 选中的牌从场地下方飞到「受益的人」身上（新伙伴 / 升阶的角色 / 专属卡给英雄 / 其余给晨星碑），落地时闪一圈
+const FLY_CACHE = {};
+function flyIcon(p) {
+  const key = p.join ? "j:" + p.def.id : p.unit && p.unit.def ? "u:" + p.unit.def.id : p.id;
+  if (FLY_CACHE[key]) return FLY_CACHE[key];
+  const c = document.createElement("canvas");
+  if (p.join) drawPortrait(p.def, c, 1); else if (p.unit && p.unit.def) drawPortrait(p.unit.def, c, 1); else if (p.sig) drawPortrait(UNITS.find(u => u.id === p.card.hero), c, 3); else drawCardIcon(c, p.id, 32);
+  return FLY_CACHE[key] = c;
+}
+function flyCardTo(p, before) {
+  if (p.curse || OPT.calm) return;
+  let tgt = { x: CRYSTAL.x, y: CRYSTAL.y };
+  if (p.join) { const nu = S.units[S.units.length - 1]; if (S.units.length > before && nu) tgt = nu; }
+  else if (p.unit && p.unit.x != null) tgt = p.unit;
+  else if (p.sig && heroOf()) tgt = heroOf();
+  const col = (p.card && p.card.rare === 2) || p.join || p.branch ? "#ffd860" : "#9ad4ff";
+  const tx = tgt.x, ty = tgt.y;
+  addFx({ kind: "cardfly", x: COLS / 2 - 0.5, y: ROWS - 0.6, x2: tx, y2: ty, life: 0.6, color: col, icon: flyIcon(p) });
+  queueFx(0.55, { kind: "ring", x: tx, y: ty, color: col, life: 0.5, r0: 0.2, r1: 1.4, burst: 12 });
+}
 function takeCard(id) {
   if (!S.offer) return;
   const p = S.offer.find(x => x.id === id); if (!p) return;
   celebratePick(p);
+  const before = S.units.length;
   pickCard(id);
+  flyCardTo(p, before);
   $("levelup").hidden = true; $("levelup").dataset.k = "";
   openOffer();
 }

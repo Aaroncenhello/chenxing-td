@@ -200,7 +200,8 @@ function synGuideHtml(live) {
 }
 // 本局规则：契约、深渊、每日规则、天气、本关首领特性，都在这一页看
 function rulesHtml() {
-  const rows = [];
+  const rows = [], gr = teamGrowth();
+  rows.push(["本局成长", `全队总攻击 ×${gr.atk.toFixed(1)}，总生命 ×${gr.hp.toFixed(1)}（相对开局，${gr.n} 名队员）`]);
   if (S.contracts && S.contracts.length) rows.push(["自选契约", S.contracts.map(id => { const c = CONTRACTS.find(x => x.id === id); return c ? `${c.name}（${c.desc}）` : ""; }).join("、")]);
   if (S.abyss) rows.push(["深渊", `${S.abyss} 层：敌人更强，奖励更多`]);
   if (S.daily) { const m = DAILY_MODS.find(x => x.id === S.mod); if (m) rows.push(["每日规则", `${m.name}：${m.desc}`]); }
@@ -228,11 +229,33 @@ function celebratePick(p) {
     burst(CRYSTAL.x, CRYSTAL.y, "#ffe38a", 40, 4, 0.9, 0.09); S.shake = Math.max(S.shake, 0.3);
   }
 }
+// 选中的牌从场地下方飞到「受益的人」身上（新伙伴 / 升阶的角色 / 专属卡给英雄 / 其余给晨星碑），落地时闪一圈
+const FLY_CACHE = {};
+function flyIcon(p) {
+  const key = p.join ? "j:" + p.def.id : p.unit && p.unit.def ? "u:" + p.unit.def.id : p.id;
+  if (FLY_CACHE[key]) return FLY_CACHE[key];
+  const c = document.createElement("canvas");
+  if (p.join) drawPortrait(p.def, c, 1); else if (p.unit && p.unit.def) drawPortrait(p.unit.def, c, 1); else if (p.sig) drawPortrait(UNITS.find(u => u.id === p.card.hero), c, 3); else drawCardIcon(c, p.id, 32);
+  return FLY_CACHE[key] = c;
+}
+function flyCardTo(p, before) {
+  if (p.curse || OPT.calm) return;
+  let tgt = { x: CRYSTAL.x, y: CRYSTAL.y };
+  if (p.join) { const nu = S.units[S.units.length - 1]; if (S.units.length > before && nu) tgt = nu; }
+  else if (p.unit && p.unit.x != null) tgt = p.unit;
+  else if (p.sig && heroOf()) tgt = heroOf();
+  const col = (p.card && p.card.rare === 2) || p.join || p.branch ? "#ffd860" : "#9ad4ff";
+  const tx = tgt.x, ty = tgt.y;
+  addFx({ kind: "cardfly", x: COLS / 2 - 0.5, y: ROWS - 0.6, x2: tx, y2: ty, life: 0.6, color: col, icon: flyIcon(p) });
+  queueFx(0.55, { kind: "ring", x: tx, y: ty, color: col, life: 0.5, r0: 0.2, r1: 1.4, burst: 12 });
+}
 function takeCard(id) {
   if (!S.offer) return;
   const p = S.offer.find(x => x.id === id); if (!p) return;
   celebratePick(p);
+  const before = S.units.length;
   pickCard(id);
+  flyCardTo(p, before);
   $("levelup").hidden = true; $("levelup").dataset.k = "";
   openOffer();
 }

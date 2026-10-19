@@ -199,6 +199,10 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .cardbar .cb{position:relative;width:30px;height:30px}
 .cardbar canvas{width:30px;height:30px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12}
 .cardbar .cu canvas{box-shadow:0 0 0 2px #a01838}
+.cardbar .cb{margin-bottom:6px}
+.cardbar .pips{position:absolute;left:0;right:0;bottom:-8px;text-align:center;font-style:normal;font-size:6px;letter-spacing:-1px;color:#ffd860;line-height:1}
+.cardbar .maxed canvas{box-shadow:0 0 0 2px #ffd860,0 0 8px rgba(255,216,96,.6);animation:maxg 2s ease-in-out infinite}
+@keyframes maxg{50%{box-shadow:0 0 0 2px #fff0b0,0 0 12px rgba(255,216,96,.9)}}
 .cardbar i{position:absolute;right:-2px;bottom:-3px;font-style:normal;font-family:var(--pix);font-size:8px;color:#1a1408;background:var(--gold);padding:1px 2px}
 .cardbar .none{color:var(--muted);font-size:12px;align-self:center}
 .info{background:var(--panel);border:2px solid #0a0c12;box-shadow:var(--bevel);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:180px}
@@ -553,6 +557,7 @@ body.imm .hud-syn{max-height:44%}
     <div class="stats">
       <div class="stat hp">晨星碑 <b id="s-hp">1000</b></div>
       <div class="stat lv">等级 <b id="s-lv">1</b></div>
+      <div class="stat pw" title="全队攻击和生命相对开局的倍数">战力 <b id="s-pw">×1.0</b></div>
       <div class="stat">波次 <b id="s-wave">0/10</b></div>
       <div class="stat">击杀 <b id="s-kills">0</b></div>
       <div class="stat dust">星尘 <b id="s-dust">0</b></div>

@@ -493,6 +493,14 @@ function pickCard(id, silent) {
     addFx({ kind: "pillar", x: u.x, y: u.y, color: col, life: 0.9 });
     addFx({ kind: "text", x: u.x, y: u.y - 0.7, text: u.lv === 4 ? "转职 · " + u.def.branches[u.branch === "A" ? 0 : 1].name : u.lv + " 阶", color: col, life: 1.3, big: true });
     burst(u.x, u.y, col, u.lv === 4 ? 28 : 16, 2.4, 0.8, 0.07);
+    // 升阶越高，场面越大：2 阶一圈光，3 阶光圈 + 闪光，4 阶（转职）光柱连发 + 横幅 + 顿一下
+    addFx({ kind: "ring", x: u.x, y: u.y, color: col, life: 0.6, r0: 0.2, r1: u.lv === 2 ? 1.6 : u.lv === 3 ? 2.6 : 3.8, fill: u.lv >= 3 });
+    if (u.lv >= 3) { addFx({ kind: "flash", life: 0.25, color: col }); S.shake = Math.max(S.shake, 0.18); }
+    if (u.lv === 4) {
+      queueFx(0.18, { kind: "pillar", x: u.x, y: u.y, color: col, life: 0.9, burst: 30 });
+      addFx({ kind: "banner", text: `${u.def.name} · 转职「${u.def.branches[u.branch === "A" ? 0 : 1].name}」`, life: 2 });
+      S.hitStop = Math.max(S.hitStop || 0, 0.1); S.zoomK = Math.max(S.zoomK || 0, 0.04);
+    }
     if (u.lv === 4 && S.units.filter(x => x.lv >= 4).length >= 3) S.events.push({ type: "achv", id: "branch3" });
   }
   S.picks.push(id);
