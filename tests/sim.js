@@ -56,7 +56,7 @@ const SEED = +(process.env.SEED || 0);
         const clv = Object.fromEntries(T.UNITS.map(u => [u.id, CLV]));
         if (SEED) Math.random = seeded(SEED + st * 1000 + r);
         const open = T.UNITS.filter(u => ALLCHARS || (u.joinAt || 0) <= st).map(u => u.id);
-        T.newRun(st, { hero, diff: DIFF, charLv: clv, charAwk: {}, perks: PERKS, charOpen: open, vigil: !!VIG, disk: STARS ? DISK_disk : DISK_in, abyss: ABY });
+        T.newRun(st, { hero, diff: DIFF, charLv: clv, charAwk: {}, assist: 0, perks: PERKS, charOpen: open, vigil: !!VIG, disk: STARS ? DISK_disk : DISK_in, abyss: ABY });
         const S = T.S;
         let guard = 0, picks = [];
         while (!S.over && guard < 60 * 30 * 25) {

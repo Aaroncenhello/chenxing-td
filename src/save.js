@@ -4,7 +4,7 @@
 const SAVE_KEY = "chenxing-td-v2", BACKUP_KEY = SAVE_KEY + "-backup";
 // 存档版本：改存档结构时 +1，并在 SAVE_MIGRATE 末尾加一步升级。旧存档读进来会按顺序补跑还没跑过的步骤。
 // 新加存档字段还要在 loadSave 的白名单里声明（带类型清洗），否则下次写存档就被丢掉。
-const SAVE_VER = 12;
+const SAVE_VER = 13;
 const SAVE_MIGRATE = [
   // 5.0：角色等级上线，按已通关关卡数补发初始角色经验
   [5, d => { const cleared = d.stars.filter(x => x > 0).length; for (const u of UNITS) if (!u.joinAt) { const c = d.chars[u.id] || (d.chars[u.id] = { exp: 0 }); c.exp = Math.max(c.exp || 0, cleared * 150); } }],
@@ -12,6 +12,8 @@ const SAVE_MIGRATE = [
   [11, d => { d.refunded = d.perks.length; d.perks = []; }],
   // 12：存档带上版本号 ver，数据结构不变
   [12, () => { }],
+  // 13：连败辅助计数 lose（各主线关卡连续失败次数）
+  [13, () => { }],
 ];
 // 清洗用的小工具：数字夹在范围内、只留认识的 id，这样导入被改坏的存档也不会让页面出错
 const isObj = x => !!x && typeof x === "object" && !Array.isArray(x);
@@ -38,6 +40,7 @@ function loadSave(noBackup) {
     vigil: isObj(v.vigil) ? { best: Math.floor(clampN(v.vigil.best, 0)), clear: !!v.vigil.clear, runs: Math.floor(clampN(v.vigil.runs, 0)) } : {},
     tal: objMap(v.tal, t => Object.fromEntries(Object.entries(t).filter(([, n]) => typeof n === "string" || n === null))),
     form: Number.isInteger(v.form) && v.form >= 0 && v.form < FORMS.length ? v.form : 1, autoWave: v.autoWave !== false,
+    lose: Object.fromEntries(Object.entries(numMap(v.lose, 0, 99)).map(([k, n]) => [k, Math.floor(n)])),
     foeKill: numMap(v.foeKill, 0), use: objMap(v.use, u => numMap(u, 0)),
     afxSeen: idList(v.afxSeen, id => !!AFFIX_BY[id]), evSeen: idList(v.evSeen, id => EVENTS.some(e => e.id === id)),
     disk: Object.fromEntries(Object.entries(numMap(v.disk, 0)).filter(([k]) => k in diskMax).map(([k, n]) => [k, Math.min(diskMax[k], Math.floor(n))])),
@@ -88,6 +91,8 @@ function awkOf(exp) { const L = levelOf(exp); return L.lv >= PROG.max ? Math.min
 function awkInfo(exp) { const L = levelOf(exp), a = awkOf(exp); return { a, into: L.lv >= PROG.max && a < AWK.max ? L.into - a * AWK.need : 0, full: a >= AWK.max }; }
 function joinExp(D) { let e = 0; for (let l = 1; l < (D.joinAt || 0); l++) e += expNeed(l); return e; }
 const charExp = (d, id) => Math.max((d.chars[id] && d.chars[id].exp) || 0, joinExp(UNITS.find(u => u.id === id) || {}));
+function masteryOf(d, id) { const w = (d.use[id] && d.use[id].win) || 0; let m = 0; MASTERY.forEach((t, i) => { if (w >= t.win) m = i + 1; }); return m; }
+function charMasts(d) { d = d || loadSave(); const o = {}; for (const u of UNITS) o[u.id] = masteryOf(d, u.id); return o; }
 function charAwks(d) { d = d || loadSave(); const o = {}; for (const u of UNITS) o[u.id] = awkOf(charExp(d, u.id)); return o; }
 function charLevels(d) { d = d || loadSave(); const o = {}; for (const u of UNITS) o[u.id] = levelOf(charExp(d, u.id)).lv; return o; }
 const charOpen = u => unlocked(u.joinAt || 0);

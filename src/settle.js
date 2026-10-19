@@ -24,6 +24,8 @@ function settleRun() {
     const st = STORY[S.stage], key = "post" + S.stage;
     if (st && st.post && !loadSave().story.includes(key)) { editSave(d => { d.story.push(key); }); R.story = st.post; }
   }
+  // 连败辅助：主线同一关连续失败计数，赢一次清零
+  if (mode === "main") editSave(d => { if (win) delete d.lose[S.stage]; else { d.lose[S.stage] = (d.lose[S.stage] || 0) + 1; R.lose = d.lose[S.stage]; } });
   if (mode === "vigil") {
     const old = loadSave().vigil || {};
     R.best = Math.max(old.best || 0, R.reached); R.clear = !!old.clear || win;

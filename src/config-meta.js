@@ -28,6 +28,11 @@ const COMBO = { window: 2.5, marks: [10, 25, 50, 80, 120, 200], xp: [10, 20, 35,
 // 角色等级 1–10：每级生命、攻击 +4%；5 级解锁天赋
 const PROG = { max: 10, perLv: 0.04, talentLv: 5, startLv: 3, reviveLv: 7, spLv: 10 };
 // 觉醒：10 级以后继续拿到的经验攒成觉醒等级（每级要 need 经验，最多 max 级）；每级攻击、生命 +perLv，3 级起脚下有金色光环，5 级技力回复 +20%
+// 角色精通：这名角色参与通关的局数，只换外观（徽章 + 战场上脚下的小标），不加数值
+const MASTERY = [{ win: 3, name: "熟练", c: "#d08c58" }, { win: 10, name: "精通", c: "#d8e0f0" }, { win: 25, name: "宗师", c: "#ffd860" }];
+// 连败辅助：主线同一关连续失败达到次数后，下一局晨星碑生命加成（赢一次清零）
+const ASSIST = [{ lose: 2, hp: 0.08 }, { lose: 4, hp: 0.16 }];
+const assistOf = n => ASSIST.reduce((a, t, i) => (n >= t.lose ? i + 1 : a), 0);
 const AWK = { max: 5, need: 600, perLv: 0.03, auraLv: 3, spLv: 5 };
 const expNeed = n => 60 * n;
 

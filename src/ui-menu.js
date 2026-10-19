@@ -252,6 +252,9 @@ $("ovbox").addEventListener("click", ev => {
     if (navigator.clipboard) navigator.clipboard.writeText(ta.value).then(() => toast("<b>已复制</b>存档代码在剪贴板里了。"), () => {});
     else toast(ok ? "<b>已复制</b>存档代码在剪贴板里了。" : "<b>请手动复制</b>长按或 Ctrl+C 复制选中的代码。");
   }
+  else if (b.id === "btn-share") { const R = settleRun(); if (!R) return; const txt = shareText(R); const done = () => toast("<b>已复制战绩</b>可以直接贴给朋友。");
+    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, () => { prompt("复制下面这段文字：", txt); });
+    else { const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (e) { } ta.remove(); ok ? done() : prompt("复制下面这段文字：", txt); } }
   else if (b.id === "btn-svdl") saveFile();
   else if (b.id === "btn-svin") {
     const err = importSave($("sv-in").value);
@@ -305,7 +308,7 @@ function beginStage(i, opts) {
   } else go();
 }
 function previewStage(i) {
-  newRun(i, { perks: loadSave().perks, charLv: charLevels(), charAwk: charAwks(), charTal: loadSave().tal, hero: loadSave().hero, charOpen: openChars().map(u => u.id) });
+  newRun(i, { perks: loadSave().perks, charLv: charLevels(), charAwk: charAwks(), mast: charMasts(), charTal: loadSave().tal, hero: loadSave().hero, charOpen: openChars().map(u => u.id) });
   mapFor = -1; infoKey = ""; teamKey = ""; cardKey = "";
   closeOverlay();
   for (const el of document.querySelectorAll("[data-k]")) el.dataset.k = "";
@@ -323,9 +326,12 @@ function replayStory(i) {
 }
 function startRun(i, opts) {
   opts = opts || {}; lastOpts = opts;
-  newRun(i, { ...opts, perks: opts.perks || loadSave().perks, charLv: opts.charLv || charLevels(), charAwk: opts.charAwk || charAwks(), charTal: opts.charTal || loadSave().tal, charOpen: opts.charOpen || openChars().map(u => u.id), formIdx: opts.formIdx == null ? loadSave().form : opts.formIdx, disk: opts.disk || loadSave().disk, autoWave: opts.autoWave == null ? loadSave().autoWave : opts.autoWave });
+  const plain = !opts.endless && !opts.daily && !opts.vigil && !opts.week && !opts.exped && !opts.gen;
+  if (plain && opts.assist == null) opts = lastOpts = { ...opts, assist: assistOf(loadSave().lose[i] || 0) };
+  newRun(i, { ...opts, perks: opts.perks || loadSave().perks, charLv: opts.charLv || charLevels(), charAwk: opts.charAwk || charAwks(), mast: opts.mast || charMasts(), charTal: opts.charTal || loadSave().tal, charOpen: opts.charOpen || openChars().map(u => u.id), formIdx: opts.formIdx == null ? loadSave().form : opts.formIdx, disk: opts.disk || loadSave().disk, autoWave: opts.autoWave == null ? loadSave().autoWave : opts.autoWave });
   acc = 0; shownOver = null; mapFor = -1; infoKey = ""; teamKey = ""; cardKey = "";
   setText("btn-speed", "1×"); setText("btn-pause", "暂停"); cycleForm(true);
+  if (S.assist) setTimeout(() => toast(`<b>连败辅助</b>晨星碑生命 +${Math.round(ASSIST[S.assist - 1].hp * 100)}%，加油！`), 600);
   for (const el of document.querySelectorAll("[data-k]")) el.dataset.k = "";
   $("levelup").hidden = true; $("levelup").dataset.k = "";
   $("shopbox").hidden = true; $("shopbox").dataset.k = ""; $("eventbox").hidden = true; $("eventbox").dataset.k = ""; synKey = "";
@@ -454,9 +460,27 @@ function checkOver() {
   if (R.story) playStory(R.story, () => showResult(R));
   else showResult(R);
 }
+// 战绩分享码：一段能直接贴给朋友的文字（每日挑战带日期和规则，别人可以打同一局）
+function shareText(R) {
+  const modeName = { main: "主线", daily: "每日挑战", week: "每周挑战", endless: "无尽", vigil: "守望之战", exped: "远征" }[R.mode] || "主线";
+  const hero = S.heroId ? UNITS.find(u => u.id === S.heroId) : null;
+  const tag = R.mode === "daily" && S.daily ? ` ${S.daily.date}·${DAILY_MODS.find(m => m.id === S.mod).name}` : R.mode === "week" ? " " + S.week.key : S.diff ? " " + DIFFS[S.diff].name : "";
+  const ab_ = S.abyss ? ` · 深渊${S.abyss}层` : "";
+  const ct_ = S.contracts && S.contracts.length ? ` · 契约${S.contracts.length}项` : "";
+  return `【晨星守望】${modeName}${tag} · 第${S.stage + 1}关「${ST.name}」${R.win ? "通关 ✓" : "撑到第 " + R.reached + " 波"}${ab_}${ct_}\n英雄 ${hero ? hero.name : "?"} · 击败 ${S.kills} · Lv${S.level} · 卡牌 ${Object.keys(S.cards).length} · 遗物 ${S.relics.length}${S.endless ? " · 无尽第 " + R.reached + " 波" : ""}\nhttps://aaroncenhello.github.io/chenxing-td/`;
+}
+// 连败辅助：输了之后，指出离凑齐最近的两个羁绊，下一局会有什么补贴
+function lossTip(R) {
+  if (!R.lose) return "";
+  const near = SYNERGY.map(g => { const [a, b] = g.prog(); return { g, a, b, gap: b - a }; }).filter(x => x.gap > 0 && x.a > 0).sort((x, y) => x.gap - y.gap).slice(0, 2);
+  const nx = ASSIST.find(t => t.lose > R.lose), cur = assistOf(R.lose);
+  const bits = [cur ? `<b>连败辅助</b>已生效：下一局晨星碑生命 +${Math.round(ASSIST[cur - 1].hp * 100)}%` : `这一关已连败 ${R.lose} 次`];
+  if (nx) bits.push(`再败到 ${nx.lose} 次，晨星碑生命加成升到 +${Math.round(nx.hp * 100)}%`);
+  return `<p style="color:#9ed0ff">${bits.join(" · ")}（赢一次清零）</p>` + (near.length ? `<p>这局差一点的羁绊：${near.map(x => `<b>${x.g.name}</b>（${x.a}/${x.b}）`).join("、")}，下局可以优先凑。</p>` : "");
+}
 function showResult(R) {
   R = R || settleRun();
-  const win = R.win, exp = expHtml(R.exp), tail = (R.bounty && R.bounty.length ? `<p class="stars bgot">悬赏完成：${R.bounty.join("、")} · +${R.bountyStars}★</p>` : "") + battleReport() + cardsHtml() + statsTable() + exp;
+  const win = R.win, exp = expHtml(R.exp), tail = `<p class="shr"><button id="btn-share">复制战绩（贴给朋友）</button></p>` + (R.bounty && R.bounty.length ? `<p class="stars bgot">悬赏完成：${R.bounty.join("、")} · +${R.bountyStars}★</p>` : "") + battleReport() + cardsHtml() + statsTable() + exp;
   if (R.mode === "exped") {
     const rl_ = R.expRelic ? `<p style="color:#ffd860">精英战利品：遗物「${RELIC_BY[R.expRelic].name}」</p>` : "";
     if (R.expDone) openOverlay(`<h2>远征完成！</h2><p class="stars">首领击破 +${R.expStars}★ · 本次远征共 ${R.expTotal}★</p>${rl_}${tail}<div class="btns"><button class="primary" id="btn-exped">再来一次远征</button><button id="btn-menu">选关</button></div>`);
@@ -487,7 +511,7 @@ function showResult(R) {
       <div class="btns">${hasNext ? '<button class="primary" id="btn-next">下一关</button>' : ""}<button id="btn-retry">再玩一次</button><button id="btn-menu">选关</button></div>`);
   } else {
     openOverlay(`<h2>晨星碑碎了</h2><p>坚持到第 ${S.wave} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。换个英雄、或者优先翻伙伴和范围技能，再试一次吧。</p>
-      ${tail}<div class="btns"><button class="primary" id="btn-retry">再试一次</button><button id="btn-menu">选关</button></div>`);
+      ${lossTip(R)}${tail}<div class="btns"><button class="primary" id="btn-retry">再试一次</button><button id="btn-menu">选关</button></div>`);
   }
   drawExpPortraits(); drawReport(); animResult();
 }

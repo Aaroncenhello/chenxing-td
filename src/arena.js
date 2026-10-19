@@ -258,7 +258,7 @@ function newRun(stage, opts) {
   const disk = opts.disk || {}, dkk = id => disk[id] || 0;
   const heroDef = UNITS.find(u => u.id === (opts.hero || "knight")) || UNITS[0];
   S = {
-    stage, disk, abyss, week, relics: [], phoenixUsed: false, endless: !!opts.endless, vigil: !!opts.vigil, gen: !!gen, seed: seedN, daily, mod: daily ? daily.mod : contracts.includes("seal") ? "noSpell" : null, contracts, diff: opts.diff || 0, diffK, perks, charLv: opts.charLv || {}, charAwk: opts.charAwk || {}, charTal: opts.charTal || {},
+    stage, disk, abyss, week, relics: [], phoenixUsed: false, endless: !!opts.endless, vigil: !!opts.vigil, gen: !!gen, seed: seedN, daily, mod: daily ? daily.mod : contracts.includes("seal") ? "noSpell" : null, contracts, diff: opts.diff || 0, diffK, perks, charLv: opts.charLv || {}, assist: opts.assist || 0, charAwk: opts.charAwk || {}, mast: opts.mast || {}, charTal: opts.charTal || {},
     charOpen: (opts.charOpen || UNITS.map(u => u.id)).filter(id => !week || weekAllows(UNITS.find(u => u.id === id) || {}, week.rules)),
     rng: daily ? seeded(daily.seed) : week ? seeded(week.seed) : Math.random,
     rngs: makeRngs(daily ? daily.seed : week ? week.seed : 0),
@@ -281,7 +281,7 @@ function newRun(stage, opts) {
   if (week && week.rules.includes("nospell")) S.mod = "noSpell";
   initHaz(ST.haz);
   genWaves();
-  S.crystal.maxHp = Math.round(ST.crystalHp * (1 + 0.06 * dk("walls")) * (S.mod === "rich" ? 0.5 : 1) * (ab(10) ? 0.8 : 1));
+  S.crystal.maxHp = Math.round(ST.crystalHp * (1 + 0.06 * dk("walls")) * (S.mod === "rich" ? 0.5 : 1) * (ab(10) ? 0.8 : 1) * (1 + (opts.assist ? ASSIST[opts.assist - 1].hp : 0)));
   S.xpNeed = xpNeedOf(1);
   S.crystal.hp = S.crystal.maxHp;
   addUnit(heroDef, true);
