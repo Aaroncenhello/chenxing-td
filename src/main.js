@@ -23,6 +23,7 @@ function frame(now) {
 
 applyGfx(loadSave().gfx);
 newRun(0, { perks: loadSave().perks, charLv: charLevels(), charTal: loadSave().tal, hero: loadSave().hero, charOpen: openChars().map(u => u.id) });
+applySpell2(OPT.sp2);
 buildSpells();
 resize();
 window.addEventListener("resize", resize);

@@ -44,6 +44,8 @@ function step(dt) {
   if (S.synT <= 0) { S.synT = 0.5; updateSyn(); }
   for (const k in S.spells) S.spells[k] = Math.max(0, S.spells[k] - dt);
   S.hitFlash = Math.max(0, S.hitFlash - dt);
+  if (S.shieldT > 0) S.shieldT -= dt;
+  if (S.rallyT > 0) S.rallyT -= dt;
   S.crystal.hitT = Math.max(0, S.crystal.hitT - dt);
   if (S.comboT > 0) { S.comboT -= dt; if (S.comboT <= 0) S.combo = 0; }
   if (S.ultPending > 0) { S.ultPending -= dt; if (S.ultPending <= 0) ultHit(); }

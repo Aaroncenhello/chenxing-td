@@ -79,6 +79,7 @@ function drawUnit(u, now) {
   const kb = -R0(u.kb * 2) * u.face + (ph === "wind" ? -2 * u.face : ph === "strike" || ph === "release" ? 3 * u.face : 0), drop = R0((1 - pop) * 30) + (ph === "strike" || ph === "release" ? 1 : 0);
   ctx.drawImage(big, fx - HOX * 2 + kb, fy - 80 - drop);
   if (u.skillT > 0) addGlow(fx, fy - 22, 30, D.color, 0.4);
+  if (S.shieldT > 0) { ctx.globalAlpha = Math.min(1, S.shieldT); ring(ctx, fx, fy - 18, 16, 8, "#8fd0ff", (t * 8 | 0) % 2); ctx.globalAlpha = 1; }
   if (u.frozenT > 0) {
     ctx.fillStyle = "rgba(170,230,255,.45)"; ctx.fillRect(fx - 12, fy - 40, 24, 41);
     rect(ctx, fx - 12, fy - 40, 24, 1, "#e8fbff"); rect(ctx, fx - 12, fy - 40, 1, 41, "#e8fbff");

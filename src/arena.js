@@ -168,6 +168,7 @@ function uInterval(u) {
   if (u.hero) { if (sg("sg_sw1")) i /= 1 + 0.15 * sg("sg_sw1"); if (sg("sg_ar1")) i /= 1 + 0.1 * sg("sg_ar1"); if (sg("sg_gu1")) i *= Math.max(0.5, 1 - 0.08 * sg("sg_gu1")); }
   i /= 1 + 0.35 * cu("cu_brittle");
   i /= 1 + 0.4 * cu("cu_haste");
+  if (S.rallyT > 0) i /= 1.4;
   if (hasTal(u, "mech") && u.hp < u.maxHp * 0.5) i *= 0.67;
   if (tal(u, "t_spd")) i *= 0.9;
   i /= S.buff.aspd || 1;

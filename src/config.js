@@ -271,6 +271,17 @@ const ENEMIES = {
               crystal: 6, weight: 6, unstoppable: true, ranged: 3.6, aoe: { every: 7.5, radius: 2.4, mult: 1.15 }, phases: [0.8, 0.6, 0.4, 0.2],
               skin: "sovereign", pal: { P: "#d0ccdc", p: "#9c98ac", L: "#ffffff", D: "#3a3648", d: "#4a4658", G: "#ffe060", E: "#ff4a8a", V: "#ffffff", S: "#f0eef6", s: "#b8b4c4", H: "#2a2632", h: "#8a86a0" } },
 };
+// 前半段关卡也有机关（比后半段弱一档，第 1 关是教学关不加）：[关卡序号, 机关表]
+const EARLY_HAZ = {
+  1: [["field", 8, 4, { r: 3, slow: 0.2, color: "#8fe0f0" }]],
+  2: [["vent", 4, 2, { every: 7, r: 1.4, dmg: 520, color: "#ff8a3a", kind: "fire" }], ["vent", 11, 6, { every: 7, r: 1.4, dmg: 520, color: "#ff8a3a", kind: "fire" }]],
+  3: [["spikes", 8, 4, { r: 2.6, every: 2.8, dmg: 260, color: "#b8b0c8" }]],
+  4: [["beam", 8, 4, { n: 1, speed: 0.5, len: 4.6, dps: 200, color: "#ffd860" }]],
+  5: [["field", 8, 4, { r: 3, slow: 0.18, color: "#c8f0ff" }]],
+  6: [["beam", 8, 4, { n: 2, speed: 0.4, len: 5, dps: 220, color: "#a0d8ff" }]],
+  7: [["vent", 4, 2, { every: 7, r: 1.4, dmg: 600, color: "#c890ff", kind: "void" }], ["vent", 11, 6, { every: 7, r: 1.4, dmg: 600, color: "#c890ff", kind: "void" }]],
+};
+for (const [i, list] of Object.entries(EARLY_HAZ)) if (!STAGES[i].haz) STAGES[i].haz = list;
 // 新敌人加进几个关卡的敌人池：[关卡序号, 权重, 第几波起]
 const NEW_FOE_POOLS = { warden: [[4, 3, 5], [7, 3, 6], [9, 3, 4], [11, 3, 5], [14, 3, 5]], pilferer: [[2, 1.6, 3], [5, 1.6, 3], [8, 1.6, 3], [10, 1.6, 3], [13, 1.6, 3]], hexer: [[3, 2.4, 6], [6, 2.4, 5], [9, 2.4, 5], [12, 2.4, 4], [15, 2.4, 5]] };
 for (const [type, list] of Object.entries(NEW_FOE_POOLS)) for (const [si, w, from] of list) STAGES[si].pool.push([type, w, from]);

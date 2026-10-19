@@ -5,8 +5,8 @@
 const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true, lit: true }];
 // 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
 const OPT_KEY = "chenxing-td-opts";
-const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix }; } catch (e) { return { eco: false, calm: false, pix: false }; } })();
-function setOpt(k, v) { OPT[k] = !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
+const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, sp2: Math.max(0, Math.min(3, v.sp2 | 0)) }; } catch (e) { return { eco: false, calm: false, pix: false, sp2: 0 }; } })();
+function setOpt(k, v) { OPT[k] = typeof v === "number" ? v : !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
   gfxSel = sel == null ? -1 : sel;
@@ -257,6 +257,7 @@ function phaseShift(e, idx) {
 }
 function hurtUnit(u, amt, type, from) {
   if (u.dead || u.down > 0) return;
+  if (S.shieldT > 0) amt *= 0.3;
   if (cl("dodge") && type !== "poison" && roll("fight") < 0.07 * cl("dodge")) { addFx({ kind: "text", x: u.x, y: u.y - 0.6, text: "闪避", color: "#a8d848", life: 0.7 }); return; }
   if (u.def.id === "knight" && u.lv >= 3) amt *= 0.85;
   if (u.hero && sg("sg_kn1")) amt *= Math.max(0.4, 1 - 0.12 * sg("sg_kn1"));
@@ -290,6 +291,7 @@ function heal(u, amt, quiet, src) {
 }
 function hurtCrystal(amt, e) {
   if (S.over) return;
+  if (S.shieldT > 0) amt *= 0.3;
   if (syn("wall")) amt *= 0.85;
   if (cl("lg_ward")) amt *= 0.8;
   if (ab(20)) amt *= 1.3;
@@ -579,14 +581,32 @@ function autoWant(u) {
 }
 
 // ---------- 主动法术 ----------
+// 第二个法术槽可以换：都是点一下就放、不用瞄准的（陨星术才需要点场地）
+const SPELL2 = [
+  { fx: "heal", name: "圣愈之光", desc: "全体角色立即回复 40% 生命，倒下的角色立刻站起来", cd: 45 },
+  { fx: "shield", name: "星盾", desc: "全队和晨星碑 5 秒内受到的伤害 −70%", cd: 40 },
+  { fx: "rally", name: "号令", desc: "全队攻击速度 +40%，持续 8 秒", cd: 50 },
+  { fx: "stasis", name: "时停", desc: "全场敌人被定住 1.8 秒（首领不吃这一招）", cd: 55 },
+];
+function applySpell2(i) {
+  const v = SPELL2[i] || SPELL2[0];
+  Object.assign(SPELLS[1], { name: v.name, desc: v.desc, cd: v.cd, fx: v.fx });
+  const b = typeof document !== "undefined" && document.querySelector("#h-heal b"); if (b) b.textContent = v.name.slice(0, 2);
+}
 function castSpell(id, x, y) {
   const sp = SPELLS.find(s => s.id === id);
   if (!sp || S.over || S.spells[id] > 0 || S.mod === "noSpell") return false;
   S.spells[id] = sp.cd * (1 - 0.05 * dk("arcane")) * (ab(17) ? 1.3 : 1); S.usedSpell = true;
   if (id === "meteor") { S.meteors.push({ x, y, t: 0.6 }); addFx({ kind: "meteor", x, y, life: 0.6 }); }
-  if (id === "heal") for (const u of S.units) {
-    if (u.down > 0) reviveUnit(u); else heal(u, u.maxHp * 0.4, false, { key: "heal" });
-    addFx({ kind: "pillar", x: u.x, y: u.y, color: "#ffe080", life: 0.7 });
+  if (id === "heal") {
+    const fx = SPELLS[1].fx || "heal";
+    if (fx === "heal") for (const u of S.units) {
+      if (u.down > 0) reviveUnit(u); else heal(u, u.maxHp * 0.4, false, { key: "heal" });
+      addFx({ kind: "pillar", x: u.x, y: u.y, color: "#ffe080", life: 0.7 });
+    }
+    else if (fx === "shield") { S.shieldT = 5; for (const u of S.units) addFx({ kind: "pillar", x: u.x, y: u.y, color: "#8fd0ff", life: 0.7 }); addFx({ kind: "banner", text: "星盾", life: 1.2 }); }
+    else if (fx === "rally") { S.rallyT = 8; for (const u of S.units) addFx({ kind: "pillar", x: u.x, y: u.y, color: "#ffb040", life: 0.7 }); addFx({ kind: "banner", text: "号令", life: 1.2 }); }
+    else if (fx === "stasis") { for (const e of S.enemies) if (hittable(e) && !e.d.unstoppable && !isBoss(e)) e.freezeT = Math.max(e.freezeT, 1.8); addFx({ kind: "flash", life: 0.35, color: "#c8d8ff" }); addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#c8d8ff", life: 0.8, r0: 0.5, r1: 9 }); addFx({ kind: "banner", text: "时停", life: 1.2 }); }
   }
   return true;
 }
