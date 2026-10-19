@@ -551,6 +551,7 @@ body.imm .hud-syn{max-height:44%}
   body.imm .overlay{padding:12px 10px}
   /* 竖屏大画面：战场转成 9:16，占满中间；顶栏一行、信息条只留队员和羁绊、按钮缩成两排矮条 */
   body.imm.big .stage{gap:5px;padding-top:4px;padding-bottom:6px}
+  body.imm.big .hud-unit:not([hidden]){display:block;width:160px}
   body.imm.big .hud-top{margin-top:2px;padding:3px 10px 4px;gap:1px 10px}
   body.imm.big .hud-top .cbar{height:12px;margin:1px 0 0}body.imm.big .hud-top .cbar span{line-height:12px;font-size:9px}
   body.imm.big .hud-l{margin-top:0;gap:4px}
@@ -5015,7 +5016,7 @@ cv.width = PW; cv.height = PHt;
 const mapCv = document.createElement("canvas"); mapCv.width = LW; mapCv.height = LH;
 const mctx = mapCv.getContext("2d");
 let DPR = 1, mapFor = -1;
-const mapKey = () => (S ? S.stage + ":" + ST.theme + ":" + (S.seed || 0) + ":" + (S.gen ? 1 : 0) : -1);
+const mapKey = () => (S ? S.stage + ":" + ST.theme + ":" + (S.seed || 0) + ":" + (S.gen ? 1 : 0) + (ROT ? ":r" : "") : -1);   // 竖屏大画面的底图要把树、石头、墓碑单独转回直立，所以和横版是两份
 const OUT = "#1c1424";
 
 // 开 / 关竖屏大画面：换画布尺寸，重生成屏幕空间的环境粒子，暗角缓存作废
@@ -5284,9 +5285,12 @@ function drawMap() {
     const n = rnd() < 0.55 ? 2 : 1;
     for (let k = 0; k < n; k++) props.push({ x: c * T + 8 + rnd() * 24, y: r * T + 16 + rnd() * 20, r: 9 + Math.floor(rnd() * 5), rock: rnd() < 0.18 });
   }
-  props.sort((a, b) => a.y - b.y);
+  props.sort((a, b) => (ROT ? a.x - b.x : a.y - b.y));
   const PROP = { tree: drawTree, pine: drawPine, grave: drawGraveProp, spire: drawSpire, cactus: drawCactus, crystal: drawCrystal, abyss: drawAbyssProp, ice: drawIceProp, mech: drawMechProp, blood: drawBloodProp, star: drawStarProp };
-  for (const p of props) p.rock ? drawRock(g, p, th) : (PROP[th.prop] || drawTree)(g, p);
+  for (const p of props) {
+    const draw = () => (p.rock ? drawRock(g, p, th) : (PROP[th.prop] || drawTree)(g, p));
+    if (ROT) { g.save(); g.translate(p.x, p.y); g.rotate(-Math.PI / 2); g.translate(-p.x, -p.y); draw(); g.restore(); } else draw();   // 底图整体转 90° 贴上去，所以这里先反转一次，贴上去就是直立的
+  }
 }
 // 地面小细节：按主题撒裂纹 / 落叶 / 碎石 / 霜点 / 水洼，让大片空地有点东西（画进静态地图，不花每帧的钱）
 const THEME_DECAL = { forest: ["leaf", "puddle"], snow: ["frost"], lava: ["crack"], grave: ["crack", "bone"], desert: ["pebble"], sky: ["leaf"], cave: ["pebble"], abyss: ["crack"], ice: ["frost"], mech: ["bolt", "crack"], blood: ["crack"], star: ["frost"], ash: ["crack", "pebble"], ruin: ["crack", "pebble"], storm: ["puddle"], dawn: ["leaf"], tide: ["pebble", "puddle"], sunken: ["puddle", "bubble"], mirror: ["frost"], silent: ["frost"] };
@@ -8154,7 +8158,7 @@ function showLevels() {
     <p class="chaprog">${ch.name} · 本章星级 ${chStars}/${ids.length * 3}</p><div class="chbar" style="--cc:${CH_COL[chapSel] || "#8fb3e0"}"><i style="width:${Math.round(chStars / (ids.length * 3) * 100)}%"></i></div><p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
     ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
     ${contractHtml()}
-    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="最多 30 帧，手机更省电、更不烫">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-sp2" title="${SPELL2[OPT.sp2].desc}。第二个法术槽（W）用哪个，点一下换">第二法术 · ${SPELL2[OPT.sp2].name}</button><button id="btn-pix" title="整数倍缩放，像素粗细均匀。窗口放不下合适的整数倍时自动不生效">像素完美 · ${OPT.pix ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button><button id="btn-fps" title="左上角显示帧率和当前画质，卡顿时截图反馈给我很有用">显示帧率 · ${OPT.fps ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
+    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="最多 30 帧，手机更省电、更不烫">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-sp2" title="${SPELL2[OPT.sp2].desc}。第二个法术槽（W）用哪个，点一下换">第二法术 · ${SPELL2[OPT.sp2].name}</button><button id="btn-pix" title="整数倍缩放，像素粗细均匀。窗口放不下合适的整数倍时自动不生效">像素完美 · ${OPT.pix ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button><button id="btn-fps" title="左上角显示帧率和当前画质，卡顿时截图反馈给我很有用">显示帧率 · ${OPT.fps ? "开" : "关"}</button><button id="btn-big" title="手机竖屏时把战场转成竖版，画面更大；关掉就是原来的横版画面">竖屏大画面 · ${OPT.big ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
     <div class="levels">` +
     ids.map(i => { const st = STAGES[i];
       const open = unlocked(i), cleared = (save.stars[i] || 0) > 0, dc = save.diffClear[i] || [];
@@ -8303,6 +8307,7 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-pix") { setOpt("pix", !OPT.pix); resize(); showLevels(); }
   else if (b.id === "btn-calm") { setOpt("calm", !OPT.calm); showLevels(); }
   else if (b.id === "btn-fps") { setOpt("fps", !OPT.fps); showLevels(); }
+  else if (b.id === "btn-big") { setOpt("big", !OPT.big); resize(); showLevels(); }
   else if (b.id === "btn-gfx") { const next = gfxSel >= 2 ? -1 : gfxSel + 1; editSave(d => { d.gfx = next; }); applyGfx(next); showLevels(); }
   else if (b.id === "btn-svcopy") {
     const ta = $("sv-out"); ta.select(); ta.setSelectionRange(0, 99999);

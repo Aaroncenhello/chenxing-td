@@ -14,7 +14,7 @@ cv.width = PW; cv.height = PHt;
 const mapCv = document.createElement("canvas"); mapCv.width = LW; mapCv.height = LH;
 const mctx = mapCv.getContext("2d");
 let DPR = 1, mapFor = -1;
-const mapKey = () => (S ? S.stage + ":" + ST.theme + ":" + (S.seed || 0) + ":" + (S.gen ? 1 : 0) : -1);
+const mapKey = () => (S ? S.stage + ":" + ST.theme + ":" + (S.seed || 0) + ":" + (S.gen ? 1 : 0) + (ROT ? ":r" : "") : -1);   // 竖屏大画面的底图要把树、石头、墓碑单独转回直立，所以和横版是两份
 const OUT = "#1c1424";
 
 // 开 / 关竖屏大画面：换画布尺寸，重生成屏幕空间的环境粒子，暗角缓存作废
@@ -283,9 +283,12 @@ function drawMap() {
     const n = rnd() < 0.55 ? 2 : 1;
     for (let k = 0; k < n; k++) props.push({ x: c * T + 8 + rnd() * 24, y: r * T + 16 + rnd() * 20, r: 9 + Math.floor(rnd() * 5), rock: rnd() < 0.18 });
   }
-  props.sort((a, b) => a.y - b.y);
+  props.sort((a, b) => (ROT ? a.x - b.x : a.y - b.y));
   const PROP = { tree: drawTree, pine: drawPine, grave: drawGraveProp, spire: drawSpire, cactus: drawCactus, crystal: drawCrystal, abyss: drawAbyssProp, ice: drawIceProp, mech: drawMechProp, blood: drawBloodProp, star: drawStarProp };
-  for (const p of props) p.rock ? drawRock(g, p, th) : (PROP[th.prop] || drawTree)(g, p);
+  for (const p of props) {
+    const draw = () => (p.rock ? drawRock(g, p, th) : (PROP[th.prop] || drawTree)(g, p));
+    if (ROT) { g.save(); g.translate(p.x, p.y); g.rotate(-Math.PI / 2); g.translate(-p.x, -p.y); draw(); g.restore(); } else draw();   // 底图整体转 90° 贴上去，所以这里先反转一次，贴上去就是直立的
+  }
 }
 // 地面小细节：按主题撒裂纹 / 落叶 / 碎石 / 霜点 / 水洼，让大片空地有点东西（画进静态地图，不花每帧的钱）
 const THEME_DECAL = { forest: ["leaf", "puddle"], snow: ["frost"], lava: ["crack"], grave: ["crack", "bone"], desert: ["pebble"], sky: ["leaf"], cave: ["pebble"], abyss: ["crack"], ice: ["frost"], mech: ["bolt", "crack"], blood: ["crack"], star: ["frost"], ash: ["crack", "pebble"], ruin: ["crack", "pebble"], storm: ["puddle"], dawn: ["leaf"], tide: ["pebble", "puddle"], sunken: ["puddle", "bubble"], mirror: ["frost"], silent: ["frost"] };
