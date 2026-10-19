@@ -1,7 +1,8 @@
 
 // ================= 战斗：伤害、出手、技能、每一步 =================
 // 画质档位：粒子数量倍率 k、同屏特效上限 cap、抖屏强度 shake、背景飘落物 amb。-1 = 自动（手机用中，电脑用高，再按实际帧率动态调）
-const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true }];
+// lit：发光、暗角、地面痕迹、光斑这类光影效果（低档关掉，保持轻量）
+const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true, lit: true }];
 // 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
 const OPT_KEY = "chenxing-td-opts";
 const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix }; } catch (e) { return { eco: false, calm: false, pix: false }; } })();
@@ -26,7 +27,7 @@ function adaptGfx(dt) {
 }
 // 特效满了就先丢掉装饰性的（粒子、伤害数字），横幅、演出、环这类关键反馈照常加
 const fxCheap = f => f.kind === "parts" || (f.kind === "text" && !f.big);
-function addFx(f) { f.t = 0; if (S.fx.length >= GFX.cap && fxCheap(f)) return; S.fx.push(f); }
+function addFx(f) { f.t = 0; if (S.fx.length >= GFX.cap && fxCheap(f)) return; S.fx.push(f); if (f.kind === "boom" && f.r >= 0.9 && GFX.lit) stampDecal(f.x, f.y, f.r, f.color); }
 function burst(x, y, color, n, spd, life, size) {
   const parts = [];
   n = Math.max(1, Math.round(n * GFX.k));
@@ -110,6 +111,7 @@ function killEnemy(e, src) {
   if (src && tal(src, "t_spark") && !src.dead && src.down <= 0) { heal(src, src.maxHp * 0.03, true, src); if (src.skillT <= 0) src.sp = Math.min(src.def.sp, src.sp + 2); }
   burst(e.x, e.y, e.d.color, 16, 2.6, 0.6, 0.08);
   // 普通/精英：身体碎成像素块飞散（低画质和首领仍用原来的倒地）
+  deathFlavor(e);
   if (GFX.k >= 0.6 && !isBoss(e)) addFx(shatterFx(e)); else addFx({ kind: "corpse", type: e.type, elite: e.elite, x: e.x, y: e.y, face: e.face, life: 0.6 });
   // 顿帧：精英、首领被打死时画面停一下，配一圈白色冲击环
   if (e.elite || isBoss(e)) { S.hitStop = Math.max(S.hitStop || 0, isBoss(e) ? 0.16 : 0.07); addFx({ kind: "ring", x: e.x, y: e.y, color: "#ffffff", life: 0.35, r0: 0.2, r1: isBoss(e) ? 2.6 : 1.5 }); }
@@ -135,6 +137,20 @@ function killEnemy(e, src) {
     addFx({ kind: "boom", x: e.x, y: e.y, r: 1, color: "#a8d848", life: 0.4 });
     for (const o of S.enemies) if (hittable(o) && dist(o, e) <= 1) hurt(o, calc(dmg, "magic", eDef(o), eRes(o)), "magic", false, c.src);
   }
+}
+// 命中火花按属性换颜色：火焰橙、冰霜浅蓝、圣光金、雷电白蓝、毒绿
+const SPARK_BY_KEY = { sk_fire: "#ffa050", sk_meteor: "#ffa050", meteor: "#ffa050", boom: "#ffa050", sk_nova: "#c4f0ff", sk_holy: "#fff0a0", lg_judge: "#fff0a0", sk_chain: "#e0f0ff", rl_horn: "#e0f0ff", sk_toxic: "#9cf07a", sk_spear: "#fff6a0", sk_gale: "#d8f8b0" };
+function sparkColor(type, src, e) {
+  const k = src && src.key;
+  if (k && SPARK_BY_KEY[k]) return SPARK_BY_KEY[k];
+  if (e && (e.freezeT > 0 || e.slowT > 0) && type === "magic") return "#c4f0ff";
+  return type === "magic" ? "#d4b4ff" : "#ffe7a8";
+}
+// 不同敌人死的时候溅出不一样的东西（碎裂特效之外再补一层）
+const DEATH_COL = { slime: "#58d848", bigslime: "#58d848", skeleton: "#e8e0c8", necro: "#e8e0c8", ghost: "#c8d8ff", golem: "#9a9a8a", imp: "#e060c0", dmage: "#c080ff", treasure: "#ffe040" };
+function deathFlavor(e) {
+  const c = DEATH_COL[foeSkin(e.type)] || DEATH_COL[e.type]; if (!c || e.summoned && GFX.k < 0.6) return;
+  burst(e.x, e.y - 0.25, c, foeSkin(e.type) === "ghost" ? 12 : 18, foeSkin(e.type) === "ghost" ? 1.2 : 2.6, 0.7, 0.07);
 }
 function hurt(e, amt, type, crit, src) {
   if (e.dead) return 0;
@@ -181,7 +197,7 @@ function hurt(e, amt, type, crit, src) {
     for (const x of S.enemies) if (x !== e && hittable(x)) { const d = dist(x, e); if (d < bd) { bd = d; o = x; } }
     if (o) { addFx({ kind: "bolt", x: e.x, y: e.y, x2: o.x, y2: o.y, life: 0.25, color: "#ffe040" }); hurt(o, amt * 0.5, type, false, src); }
   }
-  if (type !== "poison") burst(e.x, e.y - 0.1, type === "magic" ? "#d4b4ff" : "#ffe7a8", crit ? 8 : 4, 2.2, 0.3, 0.045);
+  if (type !== "poison") burst(e.x, e.y - 0.1, sparkColor(type, src, e), crit ? 8 : 4, 2.2, 0.3, 0.045);
   if (e.type === "boss" && !e.enraged && e.hp > 0 && e.hp <= e.maxHp * 0.5) enrage(e);
   if (e.d.phases && e.hp > 0) while (e.phase < e.d.phases.length && e.hp <= e.maxHp * e.d.phases[e.phase]) phaseShift(e, e.phase++);
   if (e.hp <= 0) { if (crit && S.slowCd <= 0) { S.slowmo = Math.max(S.slowmo, 0.12); S.slowCd = 1.2; } killEnemy(e, src); }

@@ -179,6 +179,7 @@ const THEMES = {
 const TH = () => THEMES[ST.theme];
 const isPath = (c, r) => ".SRB=".includes(tileAt(c, r));
 const LAVA = new Set();
+let LAVAPOS = [];   // 熔岩格坐标，画发光用
 
 function drawMap() {
   const g = mctx, th = TH(), rnd = rng(9173 + S.stage * 101);
@@ -223,6 +224,7 @@ function drawMap() {
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (MAP[r][c] === "H") drawPlatform(g, c * T, r * T, rnd, th);
   // 树、松树、尖石、岩石
   const props = [];
+  LAVAPOS = [...LAVA].map(k => k.split(",").map(Number));
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (MAP[r][c] === "#" && !LAVA.has(c + "," + r)) {
     const n = rnd() < 0.55 ? 2 : 1;
     for (let k = 0; k < n; k++) props.push({ x: c * T + 8 + rnd() * 24, y: r * T + 16 + rnd() * 20, r: 9 + Math.floor(rnd() * 5), rock: rnd() < 0.18 });
@@ -503,6 +505,7 @@ function drawAmbient(now) {
       if ((t * 3 + c) % 2 < 0.3) { disc(ctx, c * T + 14 + (c * 7 % 12), r * T + 18, 2, "#ffe080"); }
     }
     if (ch === "S" || ch === "R") {
+      addGlow(x, y - 2, 30, "#ff3a9a", 0.3 + Math.sin(t * 3 + c) * 0.08);
       for (let yy = -14; yy <= 14; yy++) { const hw = R0(Math.sqrt(1 - (yy / 15) ** 2) * 10); rect(ctx, x - hw, y + yy - 2, hw * 2 + 1, 1, Math.abs(yy) > 11 ? "#3a0f2a" : "#12040e"); }
       for (let i = 0; i < 14; i++) { const a = t * 3 + i / 14 * 6.283; rect(ctx, x + Math.cos(a) * 10, y - 2 + Math.sin(a) * 14, 2, 2, i % 2 ? "#ff5a9a" : "#ffc0e0"); }
       for (let i = 0; i < 6; i++) { const a = -t * 5 + i / 6 * 6.283; dot(ctx, x + Math.cos(a) * 4, y - 2 + Math.sin(a) * 6, "#e060c0"); }

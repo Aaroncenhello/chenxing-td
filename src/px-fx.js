@@ -75,8 +75,10 @@ function drawUnit(u, now) {
   let ph = heroPhase(D, u.atkT); if (ph === "idle" && u.hitT > 0.05) ph = "hurt";
   const bob = ph === "idle" ? Math.floor(now / 420 + u.id * 0.5) % 2 : ph === "hurt" ? 1 : 0;
   const big = renderHero(D, { phase: ph, bob, flash: u.hitT > 0.05, face: u.face, skill: u.skillT > 0, lv: u.lv, branch: u.branch, t });
-  const kb = -R0(u.kb * 2) * u.face, drop = R0((1 - pop) * 30);
+  // 出手前蓄力后撤、出手瞬间前冲一小步（按整像素挪，不拉伸，保持像素风）
+  const kb = -R0(u.kb * 2) * u.face + (ph === "wind" ? -2 * u.face : ph === "strike" || ph === "release" ? 3 * u.face : 0), drop = R0((1 - pop) * 30) + (ph === "strike" || ph === "release" ? 1 : 0);
   ctx.drawImage(big, fx - HOX * 2 + kb, fy - 80 - drop);
+  if (u.skillT > 0) addGlow(fx, fy - 22, 30, D.color, 0.4);
   if (u.frozenT > 0) {
     ctx.fillStyle = "rgba(170,230,255,.45)"; ctx.fillRect(fx - 12, fy - 40, 24, 41);
     rect(ctx, fx - 12, fy - 40, 24, 1, "#e8fbff"); rect(ctx, fx - 12, fy - 40, 1, 41, "#e8fbff");
@@ -111,8 +113,13 @@ function drawEnemy(e, now) {
   const kb = -R0(e.kb * (isBoss(e) ? 1 : 3)) * e.face, lunge = e.target && ph === "hit" ? 4 * e.face : 0;
   if (e.type === "ghost") ctx.globalAlpha = 0.62 + Math.sin(t * 6 + e.id) * 0.12;
   if (e.d.stealth && !e.revealed) ctx.globalAlpha = 0.22 + ((t * 8 + e.id) % 2 < 0.4 ? 0.12 : 0);
-  ctx.drawImage(big, fx - FOE_FOOT[0] + kb + lunge, fy - FOE_FOOT[1] - lift);
+  // 从传送门走出来：淡入 + 从地里升起一点，脚下闪一下紫光
+  const born = Math.min(1, (S.t - (e.bornT == null ? -9 : e.bornT)) / 0.45);
+  if (born < 1) { ctx.globalAlpha *= born; addGlow(fx, fy - 2, 20, "#c060ff", 0.6 * (1 - born)); }
+  ctx.drawImage(big, fx - FOE_FOOT[0] + kb + lunge, fy - FOE_FOOT[1] - lift + R0((1 - born) * 8));
   ctx.globalAlpha = 1;
+  if (isBoss(e)) addGlow(fx, fy - 30 - lift, 46, e.enraged ? "#ff4a3a" : "#b070ff", 0.22 + Math.sin(t * 3) * 0.05);
+  else if (e.elite) addGlow(fx, fy - 14 - lift, 22, "#ffc830", 0.2);
   const top = fy - hh - lift;
   if (e.stunT > 0) for (let i = 0; i < 3; i++) { const a = t * 6 + i * 2.1; rect(ctx, fx + Math.cos(a) * 9, top - 4 + Math.sin(a) * 3, 2, 2, "#ffe060"); }
   if (e.corrode && e.corrode.t > 0) for (let i = 0; i < 2; i++) { const k = (t * 1.2 + i * 0.5 + e.id * 0.17) % 1; rect(ctx, fx - 7 + i * 12, top + 4 + k * 14, 2, 2, k < 0.7 ? "#a8d848" : "#e0ff9a"); }
@@ -207,6 +214,7 @@ function drawFx(f, now) {
     const [x, y] = tpx(f.x, f.y), w = Math.max(2, R0(12 * (1 - k)));
     ctx.globalAlpha = 0.55 * (1 - k); rect(ctx, x - (w >> 1), y - 80, w, 100, f.color); ctx.globalAlpha = 1;
     rect(ctx, x - 1, y - 80 + R0(k * 40), 2, 100 - R0(k * 40), "#ffffff");
+    addGlow(x, y - 10, 34, f.color || "#ffe38a", 0.5 * (1 - k));
   } else if (f.kind === "cast") {
     const [x, y] = tpx(f.x, f.y), r = 8 + k * 28;
     ring(ctx, x, y + 14, r, r * 0.45, f.color, (t * 12 | 0) % 2); ring(ctx, x, y + 14, r * 0.6, r * 0.27, "#ffffff", true);
@@ -217,6 +225,7 @@ function drawFx(f, now) {
       ctx.globalAlpha = Math.max(0, 0.35 * (1 - k)); disc(ctx, x, y + 6, R * (0.6 + k * 0.4), f.color); ctx.globalAlpha = 1;
       ring(ctx, x, y + 6, R * (0.6 + k * 0.4), R * (0.6 + k * 0.4) * 0.8, f.color, k > 0.6);
     }
+    addGlow(x, y + 6, R * 1.25, f.color || "#ffb040", 0.6 * (1 - k));
   } else if (f.kind === "bolt") {
     const [x1, y1] = tpx(f.x, f.y), [x2, y2] = tpx(f.x2, f.y2);
     let px_ = x1, py_ = y1 - 6; const n = 6;
@@ -224,12 +233,14 @@ function drawFx(f, now) {
       const nx = x1 + (x2 - x1) * i / n + (i < n ? (Math.random() - 0.5) * 8 : 0), ny = y1 - 6 + (y2 - y1) * i / n + (i < n ? (Math.random() - 0.5) * 8 : 0);
       line(ctx, px_, py_, nx, ny, f.color || "#b8e0ff", f.color ? 3 : 2); line(ctx, px_, py_, nx, ny, "#ffffff"); px_ = nx; py_ = ny;
     }
+    addGlow(x2, y2 - 4, 16, f.color || "#b8e0ff", 0.55 * (1 - k));
   } else if (f.kind === "meteor") {
     const [x, y] = tpx(f.x, f.y), sx = x + 120 * (1 - k), sy = y - 200 * (1 - k);
     const mc = f.color || "#ff6a2a";
     if ((t * 10 | 0) % 2) ring(ctx, x, y + 8, 1.4 * T, 1.4 * T * 0.8, "#ff8a3a", true);
     for (let i = 1; i < 6; i++) rect(ctx, sx + i * 8 - 2, sy - i * 13 - 2, 5 - (i >> 1), 5 - (i >> 1), i < 3 ? "#ffb040" : "#ff6a2a");
     disc(ctx, sx, sy, 7, "#ff6a2a"); disc(ctx, sx - 1, sy + 1, 4, "#ffd060"); rect(ctx, sx - 2, sy, 3, 3, "#ffffff");
+    addGlow(sx, sy, 30, mc, 0.8);
   } else if (f.kind === "corpse") {
     const F = foeOf(f.type), [fx, fy] = foeFeet(f), flash = k < 0.3 && (f.t * 24 | 0) % 2 === 0;
     const big = renderFoe(f.type, { step: 0, ph: "", flash, face: f.face, elite: f.elite, t: 0 });
@@ -563,6 +574,59 @@ function drawComboGlow(t) {
   }
 }
 
+// ---------- 光影：发光 / 暗角 / 地面痕迹 / 光斑 ----------
+const hexA = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+const GLOW_CACHE = {};
+function glowSprite(color) {   // 预渲染好的径向渐变光斑，用的时候缩放再叠加（lighter），不每帧建渐变
+  let c = GLOW_CACHE[color]; if (c) return c;
+  c = GLOW_CACHE[color] = document.createElement("canvas"); c.width = c.height = 96;
+  const g = c.getContext("2d"), grad = g.createRadialGradient(48, 48, 0, 48, 48, 48);
+  grad.addColorStop(0, hexA(color, 1)); grad.addColorStop(0.35, hexA(color, 0.45)); grad.addColorStop(1, hexA(color, 0));
+  g.fillStyle = grad; g.fillRect(0, 0, 96, 96); return c;
+}
+function addGlow(x, y, r, color, a) {
+  if (!GFX.lit || a <= 0.01) return;
+  ctx.globalAlpha = Math.min(1, a); ctx.globalCompositeOperation = "lighter";
+  ctx.drawImage(glowSprite(color), x - r, y - r, r * 2, r * 2);
+  ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
+}
+// 暗角 + 每章色调：地图换了才重建，平时就是一次 drawImage
+let vigCv = null, vigFor = null;
+function drawVignette() {
+  const key = mapKey();
+  if (vigFor !== key) {
+    vigFor = key; vigCv = vigCv || document.createElement("canvas"); vigCv.width = PW; vigCv.height = PHt;
+    const g = vigCv.getContext("2d"), grad = g.createRadialGradient(PW / 2, PHt / 2, PHt * 0.38, PW / 2, PHt / 2, PW * 0.62);
+    grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(4,3,10,.5)");
+    g.fillStyle = grad; g.fillRect(0, 0, PW, PHt);
+    const base = TH().g[0]; g.fillStyle = hexA(/^#[0-9a-f]{6}$/i.test(base) ? base : "#40a040", 0.1); g.fillRect(0, 0, PW, PHt);
+  }
+  ctx.drawImage(vigCv, 0, 0);
+}
+// 地面痕迹：大爆炸落点留一块焦痕/冰痕/毒渍，几秒内慢慢淡掉
+let decalCv = null, decalFor = null, decalFadeAt = 0;
+function decalCtx() {
+  const key = mapKey();
+  if (!decalCv) { decalCv = document.createElement("canvas"); decalCv.width = PW; decalCv.height = PHt; }
+  if (decalFor !== key) { decalFor = key; decalCv.getContext("2d").clearRect(0, 0, PW, PHt); }
+  return decalCv.getContext("2d");
+}
+function stampDecal(x, y, r, color) {
+  const g = decalCtx(), [px_, py_] = tpx(x, y), c = (color || "#ff8a3a").toLowerCase();
+  const rgb = parseInt(c.slice(1), 16) || 0, R_ = rgb >> 16, G_ = (rgb >> 8) & 255, B_ = rgb & 255;
+  const col = B_ > R_ + 20 && B_ > 180 ? "rgba(225,245,255,.32)" : G_ > R_ + 20 && G_ > B_ ? "rgba(70,100,35,.4)" : R_ > 180 ? "rgba(26,12,6,.5)" : "rgba(10,8,16,.4)";
+  for (let i = 0; i < 5; i++) { const a = Math.random() * 6.283, d = Math.random() * r * T * 0.5; disc(g, px_ + Math.cos(a) * d, py_ + 8 + Math.sin(a) * d * 0.6, (0.35 + Math.random() * 0.4) * r * T * 0.5, col); }
+}
+function drawDecals(now) {
+  if (!decalCv || decalFor !== mapKey()) return;
+  if (now - decalFadeAt > 500) { decalFadeAt = now; const g = decalCv.getContext("2d"); g.globalCompositeOperation = "destination-out"; g.fillStyle = "rgba(0,0,0,.05)"; g.fillRect(0, 0, PW, PHt); g.globalCompositeOperation = "source-over"; }
+  ctx.drawImage(decalCv, 0, 0);
+}
+// 光斑：几块缓慢飘过的暖光，给地面一点光照变化
+function drawDapples(t) {
+  for (let i = 0; i < 2; i++) addGlow((t * (6 + i * 3) + i * 330) % (PW + 160) - 80, 100 + i * 140 + Math.sin(t * 0.3 + i) * 18, 80, "#fff2c0", 0.07);
+}
+
 // ---------- 每帧绘制 ----------
 const renderSortBuf = [];
 function render(now) {
@@ -576,6 +640,7 @@ function render(now) {
   ctx.setTransform(1, 0, 0, 1, 0, 0); rect(ctx, 0, 0, PW, PHt, TH().bg);
   ctx.setTransform(zoom, 0, 0, zoom, PW / 2 * (1 - zoom) + ox, PHt / 2 * (1 - zoom) + oy);
   ctx.drawImage(mapCv, 0, 0);
+  if (GFX.lit) { drawDecals(now); drawDapples(t); }
   drawAmbient(now);
   drawHazGround(t);
   drawGates(t);
@@ -598,6 +663,11 @@ function render(now) {
   drawStations(t);
   drawWavePreview(t);
   drawCrystalHp();
+  if (GFX.lit) {
+    const [cx_, cy_] = tpx(CRYSTAL.x, CRYSTAL.y), low = S.crystal.hp < S.crystal.maxHp * 0.3;
+    addGlow(cx_, cy_ - 4, 52, low ? "#ff6a5a" : "#62b4ff", 0.34 + Math.sin(t * 2.2) * 0.08);
+    for (const [c, r] of LAVAPOS) addGlow(c * T + 20, r * T + 20, 34, "#ff7a30", 0.22 + Math.sin(t * 2 + c) * 0.06);
+  }
   // 复用同一个数组装「按脚下 y 排序画」的列表，别每帧都 filter+map+spread 出一堆临时数组
   renderSortBuf.length = 0;
   for (const u of S.units) if (!u.dead) renderSortBuf.push({ y: unitFeet(u)[1], u, e: null });
@@ -612,6 +682,7 @@ function render(now) {
   for (const s of S.shots) drawShot(s);
   for (const f of S.fx) if (f.kind !== "corpse" && f.kind !== "ucorpse" && f.kind !== "shatter") drawFx(f, now);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
+  if (GFX.lit) drawVignette();
   if (S.hitFlash > 0 && !OPT.calm) { ctx.fillStyle = `rgba(255,40,40,${(S.hitFlash * 0.5).toFixed(3)})`; ctx.fillRect(0, 0, PW, 6); ctx.fillRect(0, PHt - 6, PW, 6); ctx.fillRect(0, 0, 6, PHt); ctx.fillRect(PW - 6, 0, 6, PHt); }
   if (S.slowmo > 0) { ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fillRect(0, 0, PW, PHt); }
   if (!OPT.calm) for (const f of S.fx) if (f.kind === "flash") { ctx.globalAlpha = 0.75 * (1 - f.t / f.life); ctx.fillStyle = f.color || "#fff8d2"; ctx.fillRect(0, 0, PW, PHt); ctx.globalAlpha = 1; }   // 以前忽略 color，诅咒的红闪也是米白

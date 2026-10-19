@@ -651,7 +651,7 @@ function spawnAt(type, x, y, elite, summoned) {
     shield: d.shield ? Math.round(d.shield * scale * (elite ? 1.5 : 1)) : 0, revealed: !d.stealth, under: false, bT: d.burrow ? d.burrow.up * (0.4 + roll("spawn") * 0.6) : 0, phase: 0,
     target: null, atkCd: d.interval * 0.5, slowT: 0, slowK: 0.6, freezeT: 0, stunT: 0, poison: null, corrode: null,
     aoeCd: d.aoe ? d.aoe.every * 0.6 : 0, healCd: d.heal ? d.heal.every * 0.5 : 0, summonCd: d.summon ? d.summon.every * 0.5 : 0,
-    fuse: -1, hitT: 0, dead: false, atkT: 9, walk: Math.random() * 3, stop: 0, kb: 0, pend: 0, hitCd: 0,
+    fuse: -1, hitT: 0, dead: false, bornT: S.t, atkT: 9, walk: Math.random() * 3, stop: 0, kb: 0, pend: 0, hitCd: 0,
   };
   e.maxShield = e.shield;
   S.enemies.push(e);
