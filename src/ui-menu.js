@@ -98,7 +98,8 @@ function showLevels() {
     <div class="diffs">${DIFFS.map((d, i) => `<button data-diff="${i}" class="${i === diffSel ? "on" : ""}">${d.name}</button>`).join("")}</div>
     <p class="chaprog">${ch.name} · 本章星级 ${chStars}/${ids.length * 3}</p><p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
     ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
-    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="最多 30 帧，手机更省电、更不烫">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
+    ${contractHtml()}
+    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="最多 30 帧，手机更省电、更不烫">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-sp2" title="${SPELL2[OPT.sp2].desc}。第二个法术槽（W）用哪个，点一下换">第二法术 · ${SPELL2[OPT.sp2].name}</button><button id="btn-pix" title="整数倍缩放，像素粗细均匀。窗口放不下合适的整数倍时自动不生效">像素完美 · ${OPT.pix ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
     <div class="levels">` +
     ids.map(i => { const st = STAGES[i];
       const open = unlocked(i), cleared = (save.stars[i] || 0) > 0, dc = save.diffClear[i] || [];
@@ -146,6 +147,11 @@ function abyssHtml(save) {
   return `<div class="abyss"><div class="abrow"><button data-abyss="-1" ${abyssSel ? "" : "disabled"}>−</button><b>${abyssSel ? `深渊 ${abyssSel} 层` : "深渊：关闭"}</b><button data-abyss="1" ${abyssSel < open ? "" : "disabled"}>＋</button><small>已解锁到第 ${open} 层</small></div>
     <p>${a ? `本层新增<b>「${a.name}」</b>：${a.desc}。前面各层的规则同时生效。首次通关这一层 +${abyssStars(abyssSel)}★。` : "在任意一关通关深渊第 N 层，就能解锁第 N+1 层（最高 20 层）。每层都会叠一条新的敌方加成，星星奖励也越来越多。"}</p>
     ${abyssSel > 1 ? `<p class="abl">${ABYSS.slice(0, abyssSel).map((x, i) => `<span title="${x.desc}">${i + 1}·${x.name}</span>`).join("")}</p>` : ""}</div>`;
+}
+function contractHtml() {
+  const on = OPT.ct, pts = contractPts(on);
+  return `<div class="abyss ctr"><div class="abrow"><b>自选契约${on.length ? ` · ${pts} 点` : ""}</b><span class="ctrbonus">${on.length ? `通关额外 +${contractStars(on)}★` : "可选，换更高难度和额外星星"}</span></div>
+    <div class="ctrs">${CONTRACTS.map(c => `<button data-ct="${c.id}" class="${on.includes(c.id) ? "on" : ""}" title="${c.desc}">${c.name} <small>${c.pts}点</small><em>${c.desc}</em></button>`).join("")}</div></div>`;
 }
 function bountyHtml(save) {
   const B = todayBounties(), done = save.bounty.date === B.date ? save.bounty.done : [], n = B.list.filter(b => done.includes(b.key)).length;
@@ -227,6 +233,7 @@ function showAchv() {
 $("ovbox").addEventListener("click", ev => {
   const b = ev.target.closest("button"); if (!b) return;
   if (b.dataset.diff != null) { diffSel = +b.dataset.diff; showLevels(); }
+  else if (b.dataset.ct) { const id = b.dataset.ct; setOpt("ct", OPT.ct.includes(id) ? OPT.ct.filter(x => x !== id) : OPT.ct.concat(id)); showLevels(); }
   else if (b.dataset.abyss != null) { abyssSel = Math.max(0, Math.min(abyssOpen(), abyssSel + +b.dataset.abyss)); showLevels(); }
   else if (b.dataset.disk) { buyDisk(b.dataset.disk); }
   else if (b.id === "btn-diskreset") { if (b.dataset.sure) { editSave(d => { d.disk = {}; }); showPerks(); } else { b.dataset.sure = "1"; b.textContent = "再点一次确认重置"; } }
@@ -234,6 +241,8 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.dataset.chap != null) { chapSel = +b.dataset.chap; showLevels(); }
   else if (b.id === "btn-save") showSaveBox();
   else if (b.id === "btn-eco") { setOpt("eco", !OPT.eco); showLevels(); }
+  else if (b.id === "btn-sp2") { setOpt("sp2", (OPT.sp2 + 1) % SPELL2.length); applySpell2(OPT.sp2); buildSpells(); showLevels(); }
+  else if (b.id === "btn-pix") { setOpt("pix", !OPT.pix); resize(); showLevels(); }
   else if (b.id === "btn-calm") { setOpt("calm", !OPT.calm); showLevels(); }
   else if (b.id === "btn-gfx") { const next = gfxSel >= 2 ? -1 : gfxSel + 1; editSave(d => { d.gfx = next; }); applyGfx(next); showLevels(); }
   else if (b.id === "btn-svcopy") {
@@ -243,6 +252,9 @@ $("ovbox").addEventListener("click", ev => {
     if (navigator.clipboard) navigator.clipboard.writeText(ta.value).then(() => toast("<b>已复制</b>存档代码在剪贴板里了。"), () => {});
     else toast(ok ? "<b>已复制</b>存档代码在剪贴板里了。" : "<b>请手动复制</b>长按或 Ctrl+C 复制选中的代码。");
   }
+  else if (b.id === "btn-share") { const R = settleRun(); if (!R) return; const txt = shareText(R); const done = () => toast("<b>已复制战绩</b>可以直接贴给朋友。");
+    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, () => { prompt("复制下面这段文字：", txt); });
+    else { const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (e) { } ta.remove(); ok ? done() : prompt("复制下面这段文字：", txt); } }
   else if (b.id === "btn-svdl") saveFile();
   else if (b.id === "btn-svin") {
     const err = importSave($("sv-in").value);
@@ -258,7 +270,7 @@ $("ovbox").addEventListener("click", ev => {
     editSave(dd => { dd.tal = dd.tal || {}; dd.tal[cid] = dd.tal[cid] || {}; dd.tal[cid][tier] = dd.tal[cid][tier] === node ? null : node; });
     showRoster(cid);
   }
-  else if (b.dataset.lv != null) beginStage(+b.dataset.lv, { diff: diffSel, abyss: abyssSel });
+  else if (b.dataset.lv != null) beginStage(+b.dataset.lv, { diff: diffSel, abyss: abyssSel, contracts: OPT.ct.slice() });
   else if (b.dataset.endless != null) beginStage(+b.dataset.endless, { endless: true });
   else if (b.dataset.story != null) replayStory(+b.dataset.story);
   else if (b.dataset.hero && heroCtx) { const { stage, opts } = heroCtx; heroCtx = null; editSave(d => { d.hero = b.dataset.hero; }); if (opts.expedStart) expStart(b.dataset.hero); else startRun(stage, { ...opts, hero: b.dataset.hero }); }
@@ -296,7 +308,7 @@ function beginStage(i, opts) {
   } else go();
 }
 function previewStage(i) {
-  newRun(i, { perks: loadSave().perks, charLv: charLevels(), charAwk: charAwks(), charTal: loadSave().tal, hero: loadSave().hero, charOpen: openChars().map(u => u.id) });
+  newRun(i, { perks: loadSave().perks, charLv: charLevels(), charAwk: charAwks(), mast: charMasts(), charTal: loadSave().tal, hero: loadSave().hero, charOpen: openChars().map(u => u.id) });
   mapFor = -1; infoKey = ""; teamKey = ""; cardKey = "";
   closeOverlay();
   for (const el of document.querySelectorAll("[data-k]")) el.dataset.k = "";
@@ -314,9 +326,12 @@ function replayStory(i) {
 }
 function startRun(i, opts) {
   opts = opts || {}; lastOpts = opts;
-  newRun(i, { ...opts, perks: opts.perks || loadSave().perks, charLv: opts.charLv || charLevels(), charAwk: opts.charAwk || charAwks(), charTal: opts.charTal || loadSave().tal, charOpen: opts.charOpen || openChars().map(u => u.id), formIdx: opts.formIdx == null ? loadSave().form : opts.formIdx, disk: opts.disk || loadSave().disk, autoWave: opts.autoWave == null ? loadSave().autoWave : opts.autoWave });
+  const plain = !opts.endless && !opts.daily && !opts.vigil && !opts.week && !opts.exped && !opts.gen;
+  if (plain && opts.assist == null) opts = lastOpts = { ...opts, assist: assistOf(loadSave().lose[i] || 0) };
+  newRun(i, { ...opts, perks: opts.perks || loadSave().perks, charLv: opts.charLv || charLevels(), charAwk: opts.charAwk || charAwks(), mast: opts.mast || charMasts(), charTal: opts.charTal || loadSave().tal, charOpen: opts.charOpen || openChars().map(u => u.id), formIdx: opts.formIdx == null ? loadSave().form : opts.formIdx, disk: opts.disk || loadSave().disk, autoWave: opts.autoWave == null ? loadSave().autoWave : opts.autoWave });
   acc = 0; shownOver = null; mapFor = -1; infoKey = ""; teamKey = ""; cardKey = "";
   setText("btn-speed", "1×"); setText("btn-pause", "暂停"); cycleForm(true);
+  if (S.assist) setTimeout(() => toast(`<b>连败辅助</b>晨星碑生命 +${Math.round(ASSIST[S.assist - 1].hp * 100)}%，加油！`), 600);
   for (const el of document.querySelectorAll("[data-k]")) el.dataset.k = "";
   $("levelup").hidden = true; $("levelup").dataset.k = "";
   $("shopbox").hidden = true; $("shopbox").dataset.k = ""; $("eventbox").hidden = true; $("eventbox").dataset.k = ""; synKey = "";
@@ -445,9 +460,27 @@ function checkOver() {
   if (R.story) playStory(R.story, () => showResult(R));
   else showResult(R);
 }
+// 战绩分享码：一段能直接贴给朋友的文字（每日挑战带日期和规则，别人可以打同一局）
+function shareText(R) {
+  const modeName = { main: "主线", daily: "每日挑战", week: "每周挑战", endless: "无尽", vigil: "守望之战", exped: "远征" }[R.mode] || "主线";
+  const hero = S.heroId ? UNITS.find(u => u.id === S.heroId) : null;
+  const tag = R.mode === "daily" && S.daily ? ` ${S.daily.date}·${DAILY_MODS.find(m => m.id === S.mod).name}` : R.mode === "week" ? " " + S.week.key : S.diff ? " " + DIFFS[S.diff].name : "";
+  const ab_ = S.abyss ? ` · 深渊${S.abyss}层` : "";
+  const ct_ = S.contracts && S.contracts.length ? ` · 契约${S.contracts.length}项` : "";
+  return `【晨星守望】${modeName}${tag} · 第${S.stage + 1}关「${ST.name}」${R.win ? "通关 ✓" : "撑到第 " + R.reached + " 波"}${ab_}${ct_}\n英雄 ${hero ? hero.name : "?"} · 击败 ${S.kills} · Lv${S.level} · 卡牌 ${Object.keys(S.cards).length} · 遗物 ${S.relics.length}${S.endless ? " · 无尽第 " + R.reached + " 波" : ""}\nhttps://aaroncenhello.github.io/chenxing-td/`;
+}
+// 连败辅助：输了之后，指出离凑齐最近的两个羁绊，下一局会有什么补贴
+function lossTip(R) {
+  if (!R.lose) return "";
+  const near = SYNERGY.map(g => { const [a, b] = g.prog(); return { g, a, b, gap: b - a }; }).filter(x => x.gap > 0 && x.a > 0).sort((x, y) => x.gap - y.gap).slice(0, 2);
+  const nx = ASSIST.find(t => t.lose > R.lose), cur = assistOf(R.lose);
+  const bits = [cur ? `<b>连败辅助</b>已生效：下一局晨星碑生命 +${Math.round(ASSIST[cur - 1].hp * 100)}%` : `这一关已连败 ${R.lose} 次`];
+  if (nx) bits.push(`再败到 ${nx.lose} 次，晨星碑生命加成升到 +${Math.round(nx.hp * 100)}%`);
+  return `<p style="color:#9ed0ff">${bits.join(" · ")}（赢一次清零）</p>` + (near.length ? `<p>这局差一点的羁绊：${near.map(x => `<b>${x.g.name}</b>（${x.a}/${x.b}）`).join("、")}，下局可以优先凑。</p>` : "");
+}
 function showResult(R) {
   R = R || settleRun();
-  const win = R.win, exp = expHtml(R.exp), tail = (R.bounty && R.bounty.length ? `<p class="stars bgot">悬赏完成：${R.bounty.join("、")} · +${R.bountyStars}★</p>` : "") + battleReport() + cardsHtml() + statsTable() + exp;
+  const win = R.win, exp = expHtml(R.exp), tail = `<p class="shr"><button id="btn-share">复制战绩（贴给朋友）</button></p>` + (R.bounty && R.bounty.length ? `<p class="stars bgot">悬赏完成：${R.bounty.join("、")} · +${R.bountyStars}★</p>` : "") + battleReport() + cardsHtml() + statsTable() + exp;
   if (R.mode === "exped") {
     const rl_ = R.expRelic ? `<p style="color:#ffd860">精英战利品：遗物「${RELIC_BY[R.expRelic].name}」</p>` : "";
     if (R.expDone) openOverlay(`<h2>远征完成！</h2><p class="stars">首领击破 +${R.expStars}★ · 本次远征共 ${R.expTotal}★</p>${rl_}${tail}<div class="btns"><button class="primary" id="btn-exped">再来一次远征</button><button id="btn-menu">选关</button></div>`);
@@ -478,7 +511,7 @@ function showResult(R) {
       <div class="btns">${hasNext ? '<button class="primary" id="btn-next">下一关</button>' : ""}<button id="btn-retry">再玩一次</button><button id="btn-menu">选关</button></div>`);
   } else {
     openOverlay(`<h2>晨星碑碎了</h2><p>坚持到第 ${S.wave} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。换个英雄、或者优先翻伙伴和范围技能，再试一次吧。</p>
-      ${tail}<div class="btns"><button class="primary" id="btn-retry">再试一次</button><button id="btn-menu">选关</button></div>`);
+      ${lossTip(R)}${tail}<div class="btns"><button class="primary" id="btn-retry">再试一次</button><button id="btn-menu">选关</button></div>`);
   }
   drawExpPortraits(); drawReport(); animResult();
 }

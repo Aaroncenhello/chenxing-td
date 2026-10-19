@@ -92,7 +92,7 @@ const STAGE_ACHV = ['first', 'perfect', 'solo', 'chapter1', 'chapter2', 'chapter
     return { ver: d.ver, savedVer: again.ver, week: again.week, bk: bk && bk.why, bkStars: bk && JSON.parse(bk.data).stars };
   });
   console.log('旧存档升级:', JSON.stringify(legacy));
-  check(legacy.ver === 12 && legacy.savedVer === 12, '旧存档读进来升到当前版本并写回', legacy);
+  check(legacy.ver === 13 && legacy.savedVer === 13, '旧存档读进来升到当前版本并写回', legacy);
   check(legacy.week.W3 && legacy.week.W3.clear, '升级不丢数据', legacy.week);
   check(!!legacy.bk && legacy.bkStars.join() === '3,2', '升级前自动备份了原来的存档', legacy);
 
@@ -108,7 +108,7 @@ const STAGE_ACHV = ['first', 'perfect', 'solo', 'chapter1', 'chapter2', 'chapter
   const bad = await p.evaluate(() => {
     const raw = { stars: ['3', 'x', 9, null], best: ['12'], hero: '<img src=x onerror=alert(1)>', seen: ['slime', 'nope'], achv: ['first', 'fake'],
       disk: { atk: 999, zzz: 3, star: 'a' }, abyss: { 0: 99 }, week: { W1: { clear: 'yes', best: '8' }, W2: 5 }, bonusStars: '7', form: 99, chars: { knight: { exp: '100' } },
-      use: { knight: { runs: '2', dmg: 'lots' } }, daily: { '2026-01-01': { wave: '4' } }, tal: { knight: { 0: 't_atk', 1: 5 } }, ver: 12 };   // 标成当前版本，只测清洗（不触发按通关数补经验的旧升级）
+      use: { knight: { runs: '2', dmg: 'lots' } }, daily: { '2026-01-01': { wave: '4' } }, tal: { knight: { 0: 't_atk', 1: 5 } }, ver: 13 };   // 标成当前版本，只测清洗（不触发按通关数补经验的旧升级）
     const err = importSave('CX9-' + btoa(unescape(encodeURIComponent(JSON.stringify(raw)))));
     const d = loadSave(), bank = starBank();
     let menu = null; try { showLevels(); showSaveBox(); showPerks(); showCodex(); showAchv(); showRoster('knight'); closeOverlay(); } catch (e) { menu = e.message; }
@@ -126,7 +126,7 @@ const STAGE_ACHV = ['first', 'perfect', 'solo', 'chapter1', 'chapter2', 'chapter
 
   // 7) 导入前自动备份，能恢复，恢复后还能换回来；更新版本的存档拒绝导入
   const swap = await p.evaluate(() => {
-    localStorage.setItem('chenxing-td-v2', JSON.stringify({ stars: [3, 3, 3, 3, 3], ver: 12, tutorial: true }));
+    localStorage.setItem('chenxing-td-v2', JSON.stringify({ stars: [3, 3, 3, 3, 3], ver: 13, tutorial: true }));
     const mine = starBank().earned;
     const err = importSave(exportSaveOf({ stars: [1], ver: 12 }));
     const imported = starBank().earned, why = readBackup().why;

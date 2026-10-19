@@ -56,7 +56,7 @@ const SEED = +(process.env.SEED || 0);
         const clv = Object.fromEntries(T.UNITS.map(u => [u.id, CLV]));
         if (SEED) Math.random = seeded(SEED + st * 1000 + r);
         const open = T.UNITS.filter(u => ALLCHARS || (u.joinAt || 0) <= st).map(u => u.id);
-        T.newRun(st, { hero, diff: DIFF, charLv: clv, charAwk: {}, perks: PERKS, charOpen: open, vigil: !!VIG, disk: STARS ? DISK_disk : DISK_in, abyss: ABY });
+        T.newRun(st, { hero, diff: DIFF, charLv: clv, charAwk: {}, assist: 0, perks: PERKS, charOpen: open, vigil: !!VIG, disk: STARS ? DISK_disk : DISK_in, abyss: ABY });
         const S = T.S;
         let guard = 0, picks = [];
         while (!S.over && guard < 60 * 30 * 25) {
@@ -69,10 +69,28 @@ const SEED = +(process.env.SEED || 0);
           if (S.event) { T.takeEvent(Math.floor(Math.random() * S.event.opts.length)); continue; }
           if (S.pending > 0 && !S.offer) T.openOffer();
           if (S.offer) {
-            // greedy-ish AI: prefer ally cards, then skill, then stat
+            // 按需选牌：缺人先招人、已有的技能优先升级、能凑齐羁绊加分、不碰诅咒
+            // （以前只看稀有度，而且诅咒卡的稀有度最高，机器人几乎每次都吃诅咒，比真人悲观得多）
             const o = S.offer;
-            if (S.rerolls > 0 && !o.some(c => (c.rare || 0) >= 1) && Math.random() < 0.5) { T.rerollOffer(); continue; }
-            const score = c2 => ((c2.rare || 0) * 2.2) + (c2.kind === 'unit' ? 3 : c2.kind === 'skill' ? 2 : c2.kind === 'special' ? 1.5 : 1) + Math.random() * 0.6;
+            if (S.rerolls > 0 && !o.some(c => (c.rare || 0) >= 1 && !c.curse) && Math.random() < 0.5) { T.rerollOffer(); continue; }
+            const CORE = { atk: 4.6, aspd: 4.4, hp: 4.2, armor: 3.6, crit: 3.8, shield: 3.4, regen: 3.2 };
+            const score = c2 => {
+              let v = Math.random() * 0.6;
+              if (c2.curse) return -9 + v;
+              if (c2.join) v += S.allies < 3 ? 9 : S.allies < 5 ? 5 : 2;
+              else if (c2.branch) v += 6.5;
+              else if (c2.unit) v += 3.5;
+              else if (c2.card) {
+                const k = c2.card, own = (S.cards && S.cards[c2.id]) || 0;
+                if (k.evo) v += 10;
+                else if (k.rare === 2) v += 7;
+                else if (k.kind === 'skill') v += 4.2 + (own ? 1.2 : 0);
+                else if (k.kind === 'stat') v += CORE[c2.id] || 2.6;
+                else v += 3;
+              }
+              if (typeof synHint === 'function') { const h = synHint(c2); if (h) v += h.done ? 6 : 1.5; }
+              return v;
+            };
             const best = o.slice().sort((a, b) => score(b) - score(a))[0];
             picks.push(best.id);
             T.pickCard(best.id);
@@ -91,7 +109,7 @@ const SEED = +(process.env.SEED || 0);
         }
         res.push({ st, hero, breaks: S.breaks||0, ults: S.ultsFired||0, win: S.over === 'win', dust: S.dust, syn: Object.keys(S.syn||{}).length, chest: S.chest, stars: S.stars || 0, lv: S.level, wave: S.wave, waves: S.genWaves.length,
           crystal: Math.round(S.crystal.hp / S.crystal.maxHp * 100), kills: S.kills, sec: Math.round(guard / 30),
-          units: S.units.filter(u => !u.summon).length, picks: picks.length });
+          units: S.units.filter(u => !u.summon).length, picks: picks.length, pickIds: picks });
       }
     }
     return { res, disk: STARS ? DISK_disk : DISK_in };

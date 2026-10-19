@@ -24,6 +24,8 @@ function settleRun() {
     const st = STORY[S.stage], key = "post" + S.stage;
     if (st && st.post && !loadSave().story.includes(key)) { editSave(d => { d.story.push(key); }); R.story = st.post; }
   }
+  // 连败辅助：主线同一关连续失败计数，赢一次清零
+  if (mode === "main") editSave(d => { if (win) delete d.lose[S.stage]; else { d.lose[S.stage] = (d.lose[S.stage] || 0) + 1; R.lose = d.lose[S.stage]; } });
   if (mode === "vigil") {
     const old = loadSave().vigil || {};
     R.best = Math.max(old.best || 0, R.reached); R.clear = !!old.clear || win;
@@ -95,10 +97,10 @@ function checkBounties(R) {
 // 通关奖励：每次都给 1★，困难再 +2、噩梦再 +3，深渊每 5 层 +1；深渊新层首通另算
 function runReward() {
   const prev = loadSave().abyss[S.stage] || 0, lay = S.abyss || 0;
-  const bonus = 1 + (DIFF_BONUS[S.diff] || 0) + Math.floor(lay / 5);
+  const cts = contractStars(S.contracts), bonus = 1 + (DIFF_BONUS[S.diff] || 0) + Math.floor(lay / 5) + cts;
   let first = 0; for (let l = prev + 1; l <= lay; l++) first += abyssStars(l);
   editSave(d => { d.bonusStars += bonus; if (lay > prev) d.abyss[S.stage] = lay; });
-  return `通关奖励 +${bonus}★` + (first ? ` · 深渊 ${lay} 层首通 +${first}★` : "") + (S.relics.length ? ` · 本局带了 ${S.relics.length} 件遗物` : "");
+  return `通关奖励 +${bonus}★` + (cts ? `（含契约 +${cts}★）` : "") + (first ? ` · 深渊 ${lay} 层首通 +${first}★` : "") + (S.relics.length ? ` · 本局带了 ${S.relics.length} 件遗物` : "");
 }
 
 // ---------- 结算：战绩入档（图鉴和角色页要用）----------

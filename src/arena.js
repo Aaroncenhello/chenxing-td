@@ -38,11 +38,15 @@ function tal(u, node) {
 const lvK = (u, k) => UPGRADE[k][Math.min(3, u.lv - 1)];
 const perk = id => S.perks.includes(id);
 const syn = id => !!(S.syn && S.syn[id]);
+const ct = id => !!(S && S.contracts && S.contracts.includes(id));   // 自选契约
+const syn2 = id => !!(S.syn2 && S.syn2[id]);   // 羁绊第二档
 function updateSyn() {
   const o = {}; let n = 0;
   for (const g of SYNERGY) { try { if (g.on()) { o[g.id] = 1; n++; } } catch (e) {} }
-  const was = S.syn || {};
-  S.syn = o; S.synN = n;
+  const was = S.syn || {}, was2 = S.syn2 || {}, o2 = {};
+  for (const g of SYNERGY) if (o[g.id] && g.t2 && g.t2.cards.every(id => cl(id) >= 3)) o2[g.id] = 1;
+  S.syn = o; S.syn2 = o2; S.synN = n;
+  for (const g of SYNERGY) if (o2[g.id] && !was2[g.id]) addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.8, text: "羁绊 Ⅱ · " + g.name, color: g.color, life: 1.8, big: true });
   for (const g of SYNERGY) if (o[g.id] && !was[g.id]) {
     addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.4, text: "羁绊 · " + g.name, color: g.color, life: 1.6, big: true });
     S.events.push({ type: "syn", id: g.id, name: g.name, desc: g.desc, color: g.color });
@@ -153,7 +157,7 @@ function uDef(u) {
   if (u.hero && sg("sg_me1")) d *= 1 + 0.2 * sg("sg_me1");
   return d;
 }
-const uRes = u => u.def.res + 8 * cl("armor") + 10 * cl("res") + (syn("wardguard") ? 10 : 0);
+const uRes = u => u.def.res + 8 * cl("armor") + 10 * cl("res") + (syn("wardguard") ? (syn2("wardguard") ? 20 : 10) : 0);
 function uInterval(u) {
   let i = u.def.interval / (skillOn(u, "archer") ? 2 : skillOn(u, "gunner") ? 3 : 1);
   if (br(u, "sword", "A")) i *= 0.7;
@@ -161,10 +165,12 @@ function uInterval(u) {
   if (br(u, "summoner", "B") && golemOf(u)) i *= 0.5;
   if (syn("volley") && u.def.place === "high") i *= 0.8;
   if (u.chill && !rl("rl_stoneheart")) i *= 1 + u.chill;
+  if (S.wx === "blizzard") i *= 1.05;
   if (rl("rl_frenzy")) i /= 1 + Math.min(0.4, Math.floor((S.combo || 0) / 10) * 0.04);
   if (u.hero) { if (sg("sg_sw1")) i /= 1 + 0.15 * sg("sg_sw1"); if (sg("sg_ar1")) i /= 1 + 0.1 * sg("sg_ar1"); if (sg("sg_gu1")) i *= Math.max(0.5, 1 - 0.08 * sg("sg_gu1")); }
   i /= 1 + 0.35 * cu("cu_brittle");
   i /= 1 + 0.4 * cu("cu_haste");
+  if (S.rallyT > 0) i /= 1.4;
   if (hasTal(u, "mech") && u.hp < u.maxHp * 0.5) i *= 0.67;
   if (tal(u, "t_spd")) i *= 0.9;
   i /= S.buff.aspd || 1;
@@ -188,14 +194,14 @@ const uTaunt = u => (u.def.taunt || 0) + (u.def.place === "ground" ? 0.1 * cl("r
 const uBlock = u => (u.def.block || 0) + (u.def.id === "knight" && u.lv >= 3 ? 1 : 0) + (br(u, "lancer", "B") ? 1 : 0) + (br(u, "marshal", "A") ? 1 : 0) + (tal(u, "t_block") ? 1 : 0) + (u.hero ? sg("sg_kn1") + sg("sg_ma1") : 0);
 const uSplash = u => ((br(u, "mage", "A") ? 2 : br(u, "frost", "B") ? 1.2 : u.def.id === "mage" && u.lv >= 3 ? 1.4 : br(u, "alchemist", "B") ? 1.3 : u.def.splash || 0)
   + (u.hero ? 0.35 * sg("sg_mg1") + 0.3 * sg("sg_st1") + 0.25 * sg("sg_al1") : 0)) * (u.hero && sg("sg_gu2") ? 2 : 1);
-const eAtk = e => e.d.atk * (e.warcry ? 1.25 : 1) * (e.elite ? ELITE.atk : 1) * Math.sqrt(e.hpK) * S.diffK.atk * (e.enraged ? 1.3 : 1);
+const eAtk = e => e.d.atk * (e.warcry ? 1.25 : 1) * (e.elite ? ELITE.atk : 1) * Math.sqrt(e.hpK) * S.diffK.atk * (e.enraged ? 1.3 : 1) * (e.howlUntil > S.t ? 1.2 : 1);
 const slowAura = e => (toCrystal(e) <= 3.5 ? 1 - Math.min(0.5, 0.12 * cl("slow")) : 1);
 const chillOf = e => 1;
-const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e);
+const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (e.howlUntil > S.t ? 1.12 : 1) * (S.wx === "blizzard" ? 0.92 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ct("swift") ? 1.15 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e);
 const corrodeK = e => (e.corrode && e.corrode.t > 0 ? e.corrode.k : 0);
-const eDef = e => (e.d.def + (S.mod === "tough" ? 150 : 0)) * (ab(19) ? 1.2 : 1) * (1 - corrodeK(e)) * (1 - 0.15 * cl("pierce")) * (syn("inferno") && e.burn > 0 ? 0.8 : 1) * (syn("corrosive") && corrodeK(e) > 0 ? 0.85 : 1);
+const eDef = e => (e.d.def + (S.mod === "tough" ? 150 : 0)) * (ab(19) ? 1.2 : 1) * (1 - corrodeK(e)) * (1 - 0.15 * cl("pierce")) * (syn("inferno") && e.burn > 0 ? (syn2("inferno") ? 0.7 : 0.8) : 1) * (syn("corrosive") && corrodeK(e) > 0 ? (syn2("corrosive") ? 0.75 : 0.85) : 1);
 const corrodeOf = u => (br(u, "alchemist", "A") ? 0.55 : u.lv >= 3 ? 0.4 : 0.25) + (u.hero ? 0.1 * sg("sg_al1") : 0);
-const maxAllies = () => RULES.maxAllies + 2 * cl("lg_army");
+const maxAllies = () => RULES.maxAllies + 2 * cl("lg_army") - (ct("fewer") ? 1 : 0);
 const reviveT = () => cl("lg_phoenix") ? 3 : RULES.revive * (1 - 0.06 * dk("rally")) * (1 - 0.25 * cl("revive")) * (ab(15) ? 1.5 : 1);
 // 关卡强度在前 6 波内逐渐拉满，避免后期关卡一开局就压死人
 const stageHp = () => 1 + (ST.hp - 1) * Math.min(1, (S.wave || 1) / 6);
@@ -206,7 +212,7 @@ function calc(atk, type, def, res) {
 }
 function burnEnemy(e, dps, t, src) {
   if (e.dead) return;
-  e.burn = Math.max(e.burn || 0, t); e.burnDps = Math.max(e.burnDps || 0, dps * (syn("inferno") ? 1.5 : 1)); e.burnSrc = src || null; e.burnAcc = e.burnAcc || 0;
+  e.burn = Math.max(e.burn || 0, t); e.burnDps = Math.max(e.burnDps || 0, dps * (syn("inferno") ? (syn2("inferno") ? 2 : 1.5) : 1)); e.burnSrc = src || null; e.burnAcc = e.burnAcc || 0;
 }
 function markEnemy(e, t) { if (!e.dead) e.mark = Math.max(e.mark || 0, t); }
 function applyCorrode(e, k, t, src) {
@@ -243,6 +249,9 @@ function newRun(stage, opts) {
   // 难度 × 深渊层数 × 每周规则 合成一个敌人强度系数
   const d0 = DIFFS[opts.diff || 0], ak = abyssK(abyss);
   const diffK = { ...d0, hp: d0.hp * ak.hp, atk: d0.atk * ak.atk, elite: d0.elite + ak.elite };
+  const contracts = !daily && !week && !opts.vigil && !opts.exped ? (opts.contracts || []).filter(id => CONTRACT_BY[id]) : [];
+  if (contracts.includes("ironhide")) diffK.hp *= 1.25;
+  if (contracts.includes("elite")) diffK.elite += 0.22;
   if (opts.exped) { diffK.hp *= opts.exped.hpK || 1; diffK.atk *= opts.exped.atkK || 1; diffK.elite += opts.exped.elite || 0; }
   if (week && week.rules.includes("giants")) diffK.hp *= 1.7;
   if (week && week.rules.includes("swarm")) diffK.hp *= 0.65;
@@ -250,7 +259,7 @@ function newRun(stage, opts) {
   const disk = opts.disk || {}, dkk = id => disk[id] || 0;
   const heroDef = UNITS.find(u => u.id === (opts.hero || "knight")) || UNITS[0];
   S = {
-    stage, disk, abyss, week, relics: [], phoenixUsed: false, endless: !!opts.endless, vigil: !!opts.vigil, gen: !!gen, seed: seedN, daily, mod: daily ? daily.mod : null, diff: opts.diff || 0, diffK, perks, charLv: opts.charLv || {}, charAwk: opts.charAwk || {}, charTal: opts.charTal || {},
+    stage, disk, abyss, week, relics: [], phoenixUsed: false, endless: !!opts.endless, vigil: !!opts.vigil, gen: !!gen, seed: seedN, daily, mod: daily ? daily.mod : contracts.includes("seal") ? "noSpell" : null, contracts, diff: opts.diff || 0, diffK, perks, charLv: opts.charLv || {}, assist: opts.assist || 0, charAwk: opts.charAwk || {}, mast: opts.mast || {}, charTal: opts.charTal || {},
     charOpen: (opts.charOpen || UNITS.map(u => u.id)).filter(id => !week || weekAllows(UNITS.find(u => u.id === id) || {}, week.rules)),
     rng: daily ? seeded(daily.seed) : week ? seeded(week.seed) : Math.random,
     rngs: makeRngs(daily ? daily.seed : week ? week.seed : 0),
@@ -262,17 +271,18 @@ function newRun(stage, opts) {
     uid: 1, kills: 0, leaked: 0, stats: {}, foeKill: {}, afxSeen: [], events: [], boss: null, spawned: {},
     star: 0, ultPending: 0, ultKills: 0, combo: 0, comboT: 0, comboBest: 0, usedSpell: false, usedUlt: false,
     speed: 1, paused: false, over: null, stars: 0, selUnit: null, selSpell: null, spellMode: null, hover: null, shake: 0, slowmo: 0, slowCd: 0, hitFlash: 0,
+    banishLeft: BANISH_N, banished: [],
     dust: SHOP.start + 10 * dkk("merchant"), rerolls: Math.max(0, REROLLS + dkk("reroll") - (abyss >= 12 ? 2 : 0)),
     shop: null, shopDone: 0, shopWave: 0, syn: {}, synN: 0, chest: 0, haz: [], gate: null, legends: 0, curses: {},
     cine: null, cineWave: -1, breaks: 0, ultsFired: 0, log: [], t0: Date.now(), maxHit: 0, bestSyn: 0,
     formIdx: opts.formIdx == null ? 1 : opts.formIdx, drag: null, autoWave: opts.autoWave !== false, earlyCalls: 0,
     exped: opts.exped ? { node: opts.exped.node, floor: opts.exped.floor } : null, waveScale: opts.exped ? STAGES[stage].waves / opts.exped.waves : 0,
-    event: null, eventWave: -1, eventsDone: [], buff: {}, nextWaveK: 1, slowWaves: 0, weakWaves: 0, hazK: 1, hazSlow: false, ultK: 1, forceRare: 0, riftDust: 0,
+    event: null, eventWave: -1, eventsDone: [], evFlags: [], buff: {}, nextWaveK: 1, slowWaves: 0, weakWaves: 0, hazK: 1, hazSlow: false, ultK: 1, forceRare: 0, riftDust: 0,
   };
   if (week && week.rules.includes("nospell")) S.mod = "noSpell";
   initHaz(ST.haz);
   genWaves();
-  S.crystal.maxHp = Math.round(ST.crystalHp * (1 + 0.06 * dk("walls")) * (S.mod === "rich" ? 0.5 : 1) * (ab(10) ? 0.8 : 1));
+  S.crystal.maxHp = Math.round(ST.crystalHp * (1 + 0.06 * dk("walls")) * (S.mod === "rich" ? 0.5 : 1) * (ab(10) ? 0.8 : 1) * (1 + (opts.assist ? ASSIST[opts.assist - 1].hp : 0)));
   S.xpNeed = xpNeedOf(1);
   S.crystal.hp = S.crystal.maxHp;
   addUnit(heroDef, true);
@@ -394,10 +404,10 @@ function cardPool(minRare) {
   }
   // 牌堆快见底了：补上可以无限叠加的补充卡，永远有牌可翻
   if (!minRare && out.length < 6) for (const c of CARDS) if (c.filler) out.push({ id: c.id, w: c.w, card: c, rare: 0 });
-  return out;
+  return S.banished && S.banished.length ? out.filter(p => !S.banished.includes(p.id)) : out;
 }
 function cursePool() {
-  return CURSES.filter(c => cu(c.id) < c.max && !(c.id === "cu_pact" && S.allies < 2)).map(c => ({ id: c.id, w: c.w, curse: c, rare: 3 }));
+  return CURSES.filter(c => cu(c.id) < c.max && !(c.id === "cu_pact" && S.allies < 2) && !(S.banished || []).includes(c.id)).map(c => ({ id: c.id, w: c.w, curse: c, rare: 3 }));
 }
 function randomCards(n, minRare) {
   let pool = cardPool(minRare);
@@ -486,6 +496,26 @@ function pickCard(id, silent) {
 function rerollOffer() {
   if (!S.offer || S.rerolls <= 0 || S.over) return false;
   S.rerolls--; S.rerollsUsed = (S.rerollsUsed || 0) + 1; S.offer = randomCards(3, S.offerRare || 0);
+  return true;
+}
+// 放逐：把翻牌里的一张卡永久移出这局的牌堆（Slay the Spire / Hades 的标配），原位补一张新的；放逐诅咒卡不补
+function banishCard(id) {
+  if (!S.offer || S.over || S.banishLeft <= 0) return false;
+  const i = S.offer.findIndex(x => x.id === id); if (i < 0) return false;
+  const gone = S.offer[i];
+  S.banishLeft--; S.banished.push(id); S.banishedN = (S.banishedN || 0) + 1;
+  S.offer.splice(i, 1);
+  if (!gone.curse) {
+    const have = new Set(S.offer.map(x => x.id));
+    let pool = cardPool(S.offerRare || 0).filter(x => !have.has(x.id));
+    if (!pool.length && S.offerRare) pool = cardPool().filter(x => !have.has(x.id));
+    if (pool.length) {
+      let r = roll("card") * pool.reduce((t, x) => t + x.w, 0), pick = pool[pool.length - 1];
+      for (const x of pool) { r -= x.w; if (r <= 0) { pick = x; break; } }
+      S.offer.splice(Math.min(i, S.offer.length), 0, pick);
+    }
+  }
+  if (!S.offer.length) { S.offer = null; S.pending = Math.max(0, S.pending - 1); }
   return true;
 }
 function openOffer(minRare, noCharge) {
@@ -630,7 +660,7 @@ function spawnAt(type, x, y, elite, summoned) {
     shield: d.shield ? Math.round(d.shield * scale * (elite ? 1.5 : 1)) : 0, revealed: !d.stealth, under: false, bT: d.burrow ? d.burrow.up * (0.4 + roll("spawn") * 0.6) : 0, phase: 0,
     target: null, atkCd: d.interval * 0.5, slowT: 0, slowK: 0.6, freezeT: 0, stunT: 0, poison: null, corrode: null,
     aoeCd: d.aoe ? d.aoe.every * 0.6 : 0, healCd: d.heal ? d.heal.every * 0.5 : 0, summonCd: d.summon ? d.summon.every * 0.5 : 0,
-    fuse: -1, hitT: 0, dead: false, atkT: 9, walk: Math.random() * 3, stop: 0, kb: 0, pend: 0, hitCd: 0,
+    fuse: -1, hitT: 0, dead: false, bornT: S.t, atkT: 9, walk: Math.random() * 3, stop: 0, kb: 0, pend: 0, hitCd: 0,
   };
   e.maxShield = e.shield;
   S.enemies.push(e);
@@ -678,7 +708,8 @@ function takeCurse(id) {
 function shopCost(it) { return Math.round(it.cost * (1 - 0.04 * dk("merchant")) * (ab(7) ? 1.25 : 1) * (cu("cu_greed") ? 0.7 : 1) * (1 + S.shopDone * 0.12)); }
 function openShop() {
   if (S.over || S.shop) return;
-  const pool = SHOP.items.filter(it => !(it.id === "revive" && S.units.every(u => u.down <= 0 && u.hp >= u.maxHp)) && !(it.id === "ult" && S.star >= ULT.max));
+  const pool = SHOP.items.filter(it => !(it.id === "revive" && S.units.every(u => u.down <= 0 && u.hp >= u.maxHp)) && !(it.id === "ult" && S.star >= ULT.max)
+    && !(it.id === "relicbox" && (S.relics.length >= RELIC_MAX || RELICS.every(r => S.relics.includes(r.id)))) && !(it.id === "recycle" && !Object.keys(S.cards).some(id => CARD_BY[id])));
   const out = [];
   const bag = pool.slice();
   while (out.length < 3 && bag.length) out.push(bag.splice(Math.floor(roll("shop") * bag.length), 1)[0]);
@@ -696,6 +727,10 @@ function buyShop(id) {
   if (it.id === "revive") for (const u of S.units) { if (u.down > 0) reviveUnit(u); u.hp = u.maxHp; addFx({ kind: "pillar", x: u.x, y: u.y, color: "#7ee89c", life: 0.7 }); }
   if (it.id === "reroll") S.rerolls += 2;
   if (it.id === "ult") S.star = ULT.max;
+  if (it.id === "banish") S.banishLeft++;
+  if (it.id === "relicbox") gainRelic();
+  if (it.id === "recycle") { forgetCard(); S.pending++; }
+  if (it.id === "tonic") { buffAll({ atk: 1.08 }); addFx({ kind: "pillar", x: CRYSTAL.x, y: CRYSTAL.y, color: "#ffb040", life: 0.8 }); }
   return true;
 }
 function closeShop() { S.shop = null; S.nextWaveIn = Math.min(S.nextWaveIn, 3); }

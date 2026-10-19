@@ -1,11 +1,12 @@
 
 // ================= 战斗：伤害、出手、技能、每一步 =================
 // 画质档位：粒子数量倍率 k、同屏特效上限 cap、抖屏强度 shake、背景飘落物 amb。-1 = 自动（手机用中，电脑用高，再按实际帧率动态调）
-const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true }];
+// lit：发光、暗角、地面痕迹、光斑这类光影效果（低档关掉，保持轻量）
+const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true, lit: true }];
 // 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
 const OPT_KEY = "chenxing-td-opts";
-const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm }; } catch (e) { return { eco: false, calm: false }; } })();
-function setOpt(k, v) { OPT[k] = !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
+const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, sp2: 0, ct: [] }; } })();
+function setOpt(k, v) { OPT[k] = typeof v === "number" || Array.isArray(v) ? v : !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
   gfxSel = sel == null ? -1 : sel;
@@ -26,7 +27,7 @@ function adaptGfx(dt) {
 }
 // 特效满了就先丢掉装饰性的（粒子、伤害数字），横幅、演出、环这类关键反馈照常加
 const fxCheap = f => f.kind === "parts" || (f.kind === "text" && !f.big);
-function addFx(f) { f.t = 0; if (S.fx.length >= GFX.cap && fxCheap(f)) return; S.fx.push(f); }
+function addFx(f) { f.t = 0; if (S.fx.length >= GFX.cap && fxCheap(f)) return; S.fx.push(f); if (f.kind === "boom" && f.r >= 0.9 && GFX.lit) stampDecal(f.x, f.y, f.r, f.color); }
 function burst(x, y, color, n, spd, life, size) {
   const parts = [];
   n = Math.max(1, Math.round(n * GFX.k));
@@ -77,6 +78,7 @@ function killEnemy(e, src) {
   if (e.elite || isBoss(e)) S.eliteKills = (S.eliteKills || 0) + 1;
   if (e === S.focus) S.focusKills = (S.focusKills || 0) + 1;
   addStat(src, "kills", 1);
+  if (e.stolen) { const back = Math.round(e.stolen * 1.5); S.dust += back; addFx({ kind: "text", x: e.x, y: e.y - 0.8, text: "+" + back + " 星尘（追回）", color: "#ffd860", life: 1.2, big: true }); }
   gainXp(e.d.reward * RULES.xpKill * (e.elite ? 2 : 1));
   if (rl("rl_slayer") && (e.elite || isBoss(e))) gainXp(e.d.reward * RULES.xpKill * 0.8);
   gainStar(e); addCombo();
@@ -85,7 +87,8 @@ function killEnemy(e, src) {
   if (rl("rl_fang") && src && src.def && !src.dead && src.down <= 0) heal(src, src.maxHp * 0.08, true, src);
   if (S.riftDust > 0 && e.elite) { const g = Math.round(S.riftDust / 4); S.dust += g; S.riftDust -= g; addFx({ kind: "text", x: e.x, y: e.y - 0.8, text: "+" + g + " 星尘", color: "#ffd860", life: 1.1, big: true }); }
   // 星尘
-  const dust = Math.round((isBoss(e) ? SHOP.dustBoss : e.elite ? SHOP.dustElite : SHOP.dustPerKill * Math.max(1, Math.round(e.d.reward * 0.7))) * (cl("lg_greed") ? 2 : 1) * (1 + 0.15 * cl("loot")) * (cu("cu_greed") ? 2 : 1) * (rl("rl_compass") ? 1.35 : 1) * (wk("poor") ? 0.5 : 1));
+  let dust = Math.round((isBoss(e) ? SHOP.dustBoss : e.elite ? SHOP.dustElite : SHOP.dustPerKill * Math.max(1, Math.round(e.d.reward * 0.7))) * (cl("lg_greed") ? 2 : 1) * (1 + 0.15 * cl("loot")) * (cu("cu_greed") ? 2 : 1) * (rl("rl_compass") ? 1.35 : 1) * (wk("poor") ? 0.5 : 1));
+  if (ct("drought")) dust = Math.floor(dust * 0.6 + roll("shop"));   // 随机进位：平均正好 −40%，不会被四舍五入吃掉
   if (!e.summoned) { S.dust += dust; if (dust >= 4) addFx({ kind: "text", x: e.x + 0.2, y: e.y - 0.5, text: "+" + dust + " 星尘", color: "#ffd860", life: 1 }); }
   // 宝箱怪：额外翻一次牌
   if (e.type === "treasure") {
@@ -110,6 +113,7 @@ function killEnemy(e, src) {
   if (src && tal(src, "t_spark") && !src.dead && src.down <= 0) { heal(src, src.maxHp * 0.03, true, src); if (src.skillT <= 0) src.sp = Math.min(src.def.sp, src.sp + 2); }
   burst(e.x, e.y, e.d.color, 16, 2.6, 0.6, 0.08);
   // 普通/精英：身体碎成像素块飞散（低画质和首领仍用原来的倒地）
+  deathFlavor(e);
   if (GFX.k >= 0.6 && !isBoss(e)) addFx(shatterFx(e)); else addFx({ kind: "corpse", type: e.type, elite: e.elite, x: e.x, y: e.y, face: e.face, life: 0.6 });
   // 顿帧：精英、首领被打死时画面停一下，配一圈白色冲击环
   if (e.elite || isBoss(e)) { S.hitStop = Math.max(S.hitStop || 0, isBoss(e) ? 0.16 : 0.07); addFx({ kind: "ring", x: e.x, y: e.y, color: "#ffffff", life: 0.35, r0: 0.2, r1: isBoss(e) ? 2.6 : 1.5 }); }
@@ -118,10 +122,10 @@ function killEnemy(e, src) {
   if (e.d.split) for (let i = 0; i < e.d.split; i++) { const s = spawnNear("slime", e, false, true); s.stop = 0.2; s.hitT = 0.1; }
   // 殉爆
   if (cl("boom") && roll("fight") < 0.18 * cl("boom") * (syn("bloodlust") ? 1.5 : 1)) {
-    const dmg = 500 * cl("boom") * powerK() * (syn("bloodlust") ? 1.5 : 1);
+    const dmg = 500 * cl("boom") * powerK() * (syn("bloodlust") ? (syn2("bloodlust") ? 1.8 : 1.5) : 1);
     addFx({ kind: "boom", x: e.x, y: e.y, r: 1.3, color: "#ff8a3a", life: 0.45 });
     burst(e.x, e.y, "#ffb040", 18, 2.8, 0.6, 0.07);
-    const br0 = syn("bloodlust") ? 1.9 : 1.3;
+    const br0 = syn("bloodlust") ? (syn2("bloodlust") ? 2.2 : 1.9) : 1.3;
     for (const o of S.enemies) if (hittable(o) && dist(o, e) <= br0) hurt(o, dmg, "magic", false, { key: "boom" });
   }
   const c = e.corrode;
@@ -136,30 +140,49 @@ function killEnemy(e, src) {
     for (const o of S.enemies) if (hittable(o) && dist(o, e) <= 1) hurt(o, calc(dmg, "magic", eDef(o), eRes(o)), "magic", false, c.src);
   }
 }
+// 命中火花按属性换颜色：火焰橙、冰霜浅蓝、圣光金、雷电白蓝、毒绿
+const SPARK_BY_KEY = { sk_fire: "#ffa050", sk_meteor: "#ffa050", meteor: "#ffa050", boom: "#ffa050", sk_nova: "#c4f0ff", sk_holy: "#fff0a0", lg_judge: "#fff0a0", sk_chain: "#e0f0ff", rl_horn: "#e0f0ff", sk_toxic: "#9cf07a", sk_spear: "#fff6a0", sk_gale: "#d8f8b0" };
+function sparkColor(type, src, e) {
+  const k = src && src.key;
+  if (k && SPARK_BY_KEY[k]) return SPARK_BY_KEY[k];
+  if (e && (e.freezeT > 0 || e.slowT > 0) && type === "magic") return "#c4f0ff";
+  return type === "magic" ? "#d4b4ff" : "#ffe7a8";
+}
+// 不同敌人死的时候溅出不一样的东西（碎裂特效之外再补一层）
+const DEATH_COL = { slime: "#58d848", bigslime: "#58d848", skeleton: "#e8e0c8", necro: "#e8e0c8", ghost: "#c8d8ff", golem: "#9a9a8a", imp: "#e060c0", dmage: "#c080ff", treasure: "#ffe040" };
+function deathFlavor(e) {
+  const c = DEATH_COL[foeSkin(e.type)] || DEATH_COL[e.type]; if (!c || e.summoned && GFX.k < 0.6) return;
+  burst(e.x, e.y - 0.25, c, foeSkin(e.type) === "ghost" ? 12 : 18, foeSkin(e.type) === "ghost" ? 1.2 : 2.6, 0.7, 0.07);
+}
 function hurt(e, amt, type, crit, src) {
   if (e.dead) return 0;
   if (type === "phys" && e.d.physRes) amt *= 1 - e.d.physRes;
   if (type === "phys" && hasAfx(e, "harden")) amt *= 0.75;
+  if (e.guarded && src && src.def && src.def.place === "high") amt *= 0.6;
+  if (type === "phys" && e.type === "golem" && mechOf(e)) amt *= 0.7;
+  if (S.auraBoss && !S.auraBoss.dead && e !== S.auraBoss && !isBoss(e) && dist(S.auraBoss, e) <= 3.2) amt *= 0.8;
   if (e.brokenT > 0) amt *= BREAK_BONUS;
   if (e.mark > 0) amt *= 1.25;
   if (S.weakWaves > 0) amt *= 1.1;
   if (rl("rl_shard") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1.35;
   if (src && src.hero && sg("sg_fr1") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1 + 0.2 * sg("sg_fr1");
   if (src && src.hero && sg("sg_ch1") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1 + 0.18 * sg("sg_ch1");
-  if (syn("frostbite") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1.4;
-  if (syn("shockwave") && e.stunT > 0) amt *= 1.3;
+  if (syn("frostbite") && (e.freezeT > 0 || e.slowT > 0)) amt *= syn2("frostbite") ? 1.6 : 1.4;
+  if (syn("shockwave") && e.stunT > 0) amt *= syn2("shockwave") ? 1.5 : 1.3;
   if (e.burn > 0 && syn("inferno")) amt *= 1.1;
   if (e === S.focus && src && src.def) amt *= FOCUS_BONUS * (cl("lg_focus") ? 1.25 : 1) * (rl("rl_hawkeye") ? 1.2 : 1);
   if (rl("rl_rot") && (e.burn > 0 || (e.poison && e.poison.t > 0) || corrodeK(e) > 0)) amt *= 1.2;
   const byUnit = src && src.def && type !== "poison";
   if (byUnit) {
+    if (type === "magic" && S.wx === "rain") amt *= 1.08;
     if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1);
     if (rl("rl_berserk") && !crit) { src.hitN = (src.hitN || 0) + 1; if (src.hitN % 8 === 0) { amt *= 3; crit = true; } }
     if ((cl("crit") || cu("cu_moon") || dk("crit")) && !crit && roll("fight") < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon")) { amt *= 2 + 0.15 * cl("critdmg"); crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
     if (src.hero && sg("sg_as2") && !isBoss(e) && e.hp <= e.maxHp * 0.25 && e.hp > 0) { amt = e.hp + e.shield + 1; addFx({ kind: "text", x: e.x, y: e.y - 0.6, text: "处决", color: "#4fc0b0", life: 0.9, big: true }); }
     if (cl("freeze") && !e.d.unstoppable && roll("fight") < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
-    if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? 2 : 1), true, src);
+    if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? (syn2("bloodlust") ? 3 : 2) : 1), true, src);
     if (hasAfx(e, "thorns") && src.def.place === "ground" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.18, "magic", null);
+    if (e.type === "monolith" && mechOf(e) && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.1, "magic", null);
     if (hasAfx(e, "warp") && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.15, "magic", null);
     if (tal(src, "t_pierce") && !e.dead) applyCorrode(e, 0.25, 4, src);
   }
@@ -181,7 +204,7 @@ function hurt(e, amt, type, crit, src) {
     for (const x of S.enemies) if (x !== e && hittable(x)) { const d = dist(x, e); if (d < bd) { bd = d; o = x; } }
     if (o) { addFx({ kind: "bolt", x: e.x, y: e.y, x2: o.x, y2: o.y, life: 0.25, color: "#ffe040" }); hurt(o, amt * 0.5, type, false, src); }
   }
-  if (type !== "poison") burst(e.x, e.y - 0.1, type === "magic" ? "#d4b4ff" : "#ffe7a8", crit ? 8 : 4, 2.2, 0.3, 0.045);
+  if (type !== "poison") burst(e.x, e.y - 0.1, sparkColor(type, src, e), crit ? 8 : 4, 2.2, 0.3, 0.045);
   if (e.type === "boss" && !e.enraged && e.hp > 0 && e.hp <= e.maxHp * 0.5) enrage(e);
   if (e.d.phases && e.hp > 0) while (e.phase < e.d.phases.length && e.hp <= e.maxHp * e.d.phases[e.phase]) phaseShift(e, e.phase++);
   if (e.hp <= 0) { if (crit && S.slowCd <= 0) { S.slowmo = Math.max(S.slowmo, 0.12); S.slowCd = 1.2; } killEnemy(e, src); }
@@ -239,6 +262,7 @@ function phaseShift(e, idx) {
 }
 function hurtUnit(u, amt, type, from) {
   if (u.dead || u.down > 0) return;
+  if (S.shieldT > 0) amt *= 0.3;
   if (cl("dodge") && type !== "poison" && roll("fight") < 0.07 * cl("dodge")) { addFx({ kind: "text", x: u.x, y: u.y - 0.6, text: "闪避", color: "#a8d848", life: 0.7 }); return; }
   if (u.def.id === "knight" && u.lv >= 3) amt *= 0.85;
   if (u.hero && sg("sg_kn1")) amt *= Math.max(0.4, 1 - 0.12 * sg("sg_kn1"));
@@ -250,7 +274,7 @@ function hurtUnit(u, amt, type, from) {
   amt *= 1 + 0.2 * cu("cu_blood");
   if (type === "magic" && hasTal(u, "lancer")) amt *= 0.6;
   if (type === "magic" && cl("wardmind")) amt *= Math.max(0.3, 1 - 0.08 * cl("wardmind"));
-  if (type === "magic" && syn("wardguard")) amt *= 0.9;
+  if (type === "magic" && syn("wardguard")) amt *= syn2("wardguard") ? 0.85 : 0.9;
   if (from && from.d && hasAfx(from, "vampiric") && !from.dead) from.hp = Math.min(from.maxHp, from.hp + amt * 0.4);
   u.hp -= amt; u.hitT = type === "poison" ? Math.max(u.hitT, 0.06) : 0.14; if (type !== "poison") u.kb = 1;
   addStat(u, "taken", amt);
@@ -265,6 +289,7 @@ function hurtUnit(u, amt, type, from) {
 function heal(u, amt, quiet, src) {
   if (u.dead || u.down > 0) return;
   if (src && src.hero && sg("sg_pr2")) u.blessT = 6;
+  if (S.wx === "heat") amt *= 0.9;
   const got = Math.min(amt, u.maxHp - u.hp);
   u.hp += got;
   if (src) addStat(src, "heal", got);
@@ -272,6 +297,7 @@ function heal(u, amt, quiet, src) {
 }
 function hurtCrystal(amt, e) {
   if (S.over) return;
+  if (S.shieldT > 0) amt *= 0.3;
   if (syn("wall")) amt *= 0.85;
   if (cl("lg_ward")) amt *= 0.8;
   if (ab(20)) amt *= 1.3;
@@ -561,14 +587,32 @@ function autoWant(u) {
 }
 
 // ---------- 主动法术 ----------
+// 第二个法术槽可以换：都是点一下就放、不用瞄准的（陨星术才需要点场地）
+const SPELL2 = [
+  { fx: "heal", name: "圣愈之光", desc: "全体角色立即回复 40% 生命，倒下的角色立刻站起来", cd: 45 },
+  { fx: "shield", name: "星盾", desc: "全队和晨星碑 5 秒内受到的伤害 −70%", cd: 40 },
+  { fx: "rally", name: "号令", desc: "全队攻击速度 +40%，持续 8 秒", cd: 50 },
+  { fx: "stasis", name: "时停", desc: "全场敌人被定住 1.8 秒（首领不吃这一招）", cd: 55 },
+];
+function applySpell2(i) {
+  const v = SPELL2[i] || SPELL2[0];
+  Object.assign(SPELLS[1], { name: v.name, desc: v.desc, cd: v.cd, fx: v.fx });
+  const b = typeof document !== "undefined" && document.querySelector("#h-heal b"); if (b) b.textContent = v.name.slice(0, 2);
+}
 function castSpell(id, x, y) {
   const sp = SPELLS.find(s => s.id === id);
   if (!sp || S.over || S.spells[id] > 0 || S.mod === "noSpell") return false;
   S.spells[id] = sp.cd * (1 - 0.05 * dk("arcane")) * (ab(17) ? 1.3 : 1); S.usedSpell = true;
   if (id === "meteor") { S.meteors.push({ x, y, t: 0.6 }); addFx({ kind: "meteor", x, y, life: 0.6 }); }
-  if (id === "heal") for (const u of S.units) {
-    if (u.down > 0) reviveUnit(u); else heal(u, u.maxHp * 0.4, false, { key: "heal" });
-    addFx({ kind: "pillar", x: u.x, y: u.y, color: "#ffe080", life: 0.7 });
+  if (id === "heal") {
+    const fx = SPELLS[1].fx || "heal";
+    if (fx === "heal") for (const u of S.units) {
+      if (u.down > 0) reviveUnit(u); else heal(u, u.maxHp * 0.4, false, { key: "heal" });
+      addFx({ kind: "pillar", x: u.x, y: u.y, color: "#ffe080", life: 0.7 });
+    }
+    else if (fx === "shield") { S.shieldT = 5; for (const u of S.units) addFx({ kind: "pillar", x: u.x, y: u.y, color: "#8fd0ff", life: 0.7 }); addFx({ kind: "banner", text: "星盾", life: 1.2 }); }
+    else if (fx === "rally") { S.rallyT = 8; for (const u of S.units) addFx({ kind: "pillar", x: u.x, y: u.y, color: "#ffb040", life: 0.7 }); addFx({ kind: "banner", text: "号令", life: 1.2 }); }
+    else if (fx === "stasis") { for (const e of S.enemies) if (hittable(e) && !e.d.unstoppable && !isBoss(e)) e.freezeT = Math.max(e.freezeT, 1.8); addFx({ kind: "flash", life: 0.35, color: "#c8d8ff" }); addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#c8d8ff", life: 0.8, r0: 0.5, r1: 9 }); addFx({ kind: "banner", text: "时停", life: 1.2 }); }
   }
   return true;
 }
@@ -723,28 +767,31 @@ function autoCast(id, lv) {
       if (undead || ev) hurt(e, calc(dmg * (undead ? (ev ? 3 : 1.5) : 1), "magic", eDef(e), eRes(e)), "magic", false, { key: "sk_holy" });
     }
   } else if (id === "sk_spear") {
-    const t = S.enemies.filter(hittable).sort((a, b) => toCrystal(a) - toCrystal(b))[0];
-    if (!t) { S.skillCd[id] = 0.6; return; }
-    const dmg = SKILL_DMG.sk_spear * lv * P;
-    addFx({ kind: "bolt", x: CRYSTAL.x, y: CRYSTAL.y, x2: t.x, y2: t.y, life: 0.3, color: "#ffe860" });
-    hurt(t, calc(dmg, "phys", eDef(t), eRes(t)), "phys", false, { key: "sk_spear" });
-    if (!t.d.unstoppable) t.stunT = Math.max(t.stunT || 0, 0.8 + lv * 0.15);
-    burst(t.x, t.y, "#ffe860", 10, 2.6, 0.5, 0.06);
+    const near = S.enemies.filter(hittable).sort((a, b) => toCrystal(a) - toCrystal(b));
+    if (!near.length) { S.skillCd[id] = 0.6; return; }
+    const ev = evo("sk_spear"), dmg = SKILL_DMG.sk_spear * lv * P * (ev ? 1.3 : 1);
+    for (const t of near.slice(0, ev ? 3 : 1)) {
+      addFx({ kind: "bolt", x: CRYSTAL.x, y: CRYSTAL.y, x2: t.x, y2: t.y, life: 0.3, color: ev ? "#fff6a0" : "#ffe860" });
+      hurt(t, calc(dmg, "phys", eDef(t), eRes(t)), "phys", false, { key: "sk_spear" });
+      if (!t.d.unstoppable) t.stunT = Math.max(t.stunT || 0, (0.8 + lv * 0.15) * (ev ? 2 : 1));
+      burst(t.x, t.y, "#ffe860", ev ? 16 : 10, 2.6, 0.5, 0.06);
+    }
   } else if (id === "sk_toxic") {
-    const R = 3.4, dps = SKILL_DMG.sk_toxic * lv * P * 0.25;
-    addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#a8d848", life: 0.7, r0: 0.4, r1: R, fill: true });
+    const ev = evo("sk_toxic"), R = ev ? 5 : 3.4, dps = SKILL_DMG.sk_toxic * lv * P * 0.25 * (ev ? 1.6 : 1);
+    addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#a8d848", life: ev ? 0.9 : 0.7, r0: 0.4, r1: R, fill: true });
     for (const e of S.enemies) if (hittable(e) && toCrystal(e) <= R) {
-      burnEnemy(e, dps, 3.5, { key: "sk_toxic" });
-      applyCorrode(e, 0.12 + 0.02 * lv, 3.5, { key: "sk_toxic" });
+      burnEnemy(e, dps, ev ? 5.5 : 3.5, { key: "sk_toxic" });
+      applyCorrode(e, (0.12 + 0.02 * lv) * (ev ? 2 : 1), ev ? 5.5 : 3.5, { key: "sk_toxic" });
     }
   } else if (id === "sk_gale") {
     const pool = S.enemies.filter(hittable);
     if (!pool.length) { S.skillCd[id] = 0.6; return; }
-    const n = Math.min(pool.length, 2 + Math.floor(lv / 2)), dmg = SKILL_DMG.sk_gale * lv * P, picked = [], left = pool.slice();
+    const ev = evo("sk_gale"), n = Math.min(pool.length, (2 + Math.floor(lv / 2)) * (ev ? 2 : 1)), dmg = SKILL_DMG.sk_gale * lv * P * (ev ? 1.2 : 1), picked = [], left = pool.slice();
     for (let i = 0; i < n; i++) { const idx = Math.floor(roll("fight") * left.length); picked.push(left[idx]); left.splice(idx, 1); }
     for (const t of picked) {
       addFx({ kind: "bolt", x: CRYSTAL.x, y: CRYSTAL.y, x2: t.x, y2: t.y, life: 0.25, color: "#c8f0a0" });
       hurt(t, calc(dmg, "phys", eDef(t), eRes(t)), "phys", false, { key: "sk_gale" });
+      if (ev && !t.dead && !t.d.unstoppable) { t.slowT = Math.max(t.slowT, 1.5); t.slowK = Math.min(t.slowK || 1, 0.6); }
     }
   }
 }

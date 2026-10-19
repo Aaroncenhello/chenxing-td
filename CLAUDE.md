@@ -56,8 +56,8 @@ npm run sim            # 平衡模拟，见下
 | sig.js | 英雄专属卡 `SIG`（本局英雄才会出现） |
 | story.js | 剧情对话、章节 |
 | arena.js | 核心状态 `S`、`newRun()` 开局、单位属性公式 `uAtk/uMaxHp/uDef/...`、敌人属性 `eAtk/eDef/eSpeed`、牌池 `cardPool/randomCards/pickCard`、波次生成 `genWaves/genWave/startWave`、`callWaveEarly`、站位 `arrange/setSlot`、商店 |
-| haz.js | 地图机关（喷发口、光束、地刺、力场、开合传送门） |
-| boss.js | 首领入场演出、读条大招 `ULT_DEF`、打断/破防 |
+| haz.js | 地图机关（喷发口、光束、地刺、力场、开合传送门）、**天气** `WEATHER/wxNow/wxStep` |
+| boss.js | 首领入场演出、读条大招 `ULT_DEF`、打断/破防、**首领专属特性 `BOSS_MECH/mechStep`** |
 | event.js | 局内事件（每 5 波三选一） |
 | affix.js | 精英词缀 `AFFIX`、`eRes`、`eInt` |
 | fight.js | 伤害结算 `hurt/hurtUnit/hurtCrystal`、`killEnemy`、弹道、主动法术、晨星爆发 |
@@ -112,6 +112,13 @@ npm run sim            # 平衡模拟，见下
   - **远征**：exped.js。6 层，每层普通战 / 精英战二选一或三选一，第 2、4 场后休整（五选一），最后一层首领。战斗用原关卡地图、波数 ×0.6（首领 ×0.75），敌人血量每层 +38%、攻击 +12%（`EXPED.hpStep/atkStep`），精英战再 ×1.3 并必掉遗物。进行中的进度存在单独的 localStorage 键 `chenxing-td-exp`（不进主存档），主存档只记 `exped: { best, clears, runs }`。结算模式 `R.mode === "exped"`。机器人（每层都挑普通战）完成率：四章进度约 17%，满级 + 400★ 约 50%。
   - 远程敌人 8 秒没挨打就不再站桩放风筝（`e.hurtAt`），修了全队近战时打不到虚无术士、整局卡住的问题。
   - `tests/balance.js` 开跑前会删掉上次的 `bal-*.json`，某一格没跑出来会直接报错，不会悄悄读旧数据；sim 在旧构建（没有 `diskCanBuy`）上会退回老的买法。
+- **阶段 7**（玩法/画质扩充，测试：`ct6 c3 bossmech weather` 等）：
+  - **自选契约** `CONTRACTS`（config-meta.js）：选关页可勾的 6 种加难条件，点数越多通关额外星星越多（`contractStars`，进 `runReward`）；`S.contracts`，用 `ct(id)` 判断。
+  - **连败辅助**：存档字段 `lose`（主线每关连续失败次数，`SAVE_VER` 13），2 次起晨星碑生命 +8%、4 次起 +16%（`ASSIST`/`assistOf`，在 `startRun` 里加；**sim 要传 `assist: 0`**，否则同进程里连败会让后面的局变简单）。结算页输了会提示差一点的羁绊。
+  - **角色精通**：按该角色的通关胜场（`use[id].win`）3/10/25 局分「熟练/精通/宗师」（`MASTERY`、`masteryOf`），只换外观（角色页称号、战场脚下小菱形 `S.mast`），不加数值，不进存档。
+  - **战绩分享码**：结算页「复制战绩」，文字由 `shareText(R)` 生成。
+  - **首领专属特性**：boss.js 的 `BOSS_MECH`，每位首领一条（号角召狼、分裂、汲魔回血、护佑光环、饕餮、震地、俯冲、岩肤、冰甲、自动维修、嚎叫、余烬、碑文反噬、落雷、抹除），入场演出里会显示；带「预警」的先在目标脚下画一圈、1 秒后结算。只对 `isBoss(e) || e.lead` 生效。
+  - **天气**：haz.js，`WEATHER_OF[主题]`，每 5 波里有 2 波（`(wave + stage) % 5 >= 3`）；骤雨/暴风雪/热浪/雷暴只带轻微数值（见 `WEATHER[id].tip`），画面在 px-fx.js `drawWeather`；户外关还有昼夜色调 `drawTod`（纯画面）。
 - **viewport**：`head.html` 里的 `<meta name="viewport">` 不能删——没有它手机会按 980px 宽的电脑网页排版再整体缩小。
 
 ## 踩过的坑

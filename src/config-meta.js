@@ -28,6 +28,11 @@ const COMBO = { window: 2.5, marks: [10, 25, 50, 80, 120, 200], xp: [10, 20, 35,
 // 角色等级 1–10：每级生命、攻击 +4%；5 级解锁天赋
 const PROG = { max: 10, perLv: 0.04, talentLv: 5, startLv: 3, reviveLv: 7, spLv: 10 };
 // 觉醒：10 级以后继续拿到的经验攒成觉醒等级（每级要 need 经验，最多 max 级）；每级攻击、生命 +perLv，3 级起脚下有金色光环，5 级技力回复 +20%
+// 角色精通：这名角色参与通关的局数，只换外观（徽章 + 战场上脚下的小标），不加数值
+const MASTERY = [{ win: 3, name: "熟练", c: "#d08c58" }, { win: 10, name: "精通", c: "#d8e0f0" }, { win: 25, name: "宗师", c: "#ffd860" }];
+// 连败辅助：主线同一关连续失败达到次数后，下一局晨星碑生命加成（赢一次清零）
+const ASSIST = [{ lose: 2, hp: 0.08 }, { lose: 4, hp: 0.16 }];
+const assistOf = n => ASSIST.reduce((a, t, i) => (n >= t.lose ? i + 1 : a), 0);
 const AWK = { max: 5, need: 600, perLv: 0.03, auraLv: 3, spLv: 5 };
 const expNeed = n => 60 * n;
 
@@ -139,6 +144,9 @@ const ACHV = [
 ];
 
 const ENEMY_DESC = {
+  warden: "举着巨盾站在队伍里，附近的敌人受到的远程伤害 −40%，先近身解决它。",
+  pilferer: "跑得快，每打中一次就偷走你一点星尘；杀掉它能拿回偷走的（多还一半）。",
+  hexer: "每次命中会抽走目标一部分技力，还会打断正在释放的技能。",
   ashwalker: "灰里走出来的旧兵，忘了自己叫什么，血厚、走得稳。",
   emberling: "还没烧完的一点火，跑得极快，数量很多。",
   monolith: "醒过来的旧晨星碑，物理伤害对它效果很差，要用法术。",
@@ -183,6 +191,10 @@ const SHOP = { everyWaves: 4, dustPerKill: 1, dustElite: 4, dustBoss: 25, start:
     { id: "revive", name: "全员急救", desc: "倒下的角色立刻站起，全队回满生命", cost: 35 },
     { id: "reroll", name: "占卜罗盘", desc: "重抽次数 +2", cost: 30 },
     { id: "ult", name: "晨星充能", desc: "晨星之力立刻充满", cost: 55 },
+    { id: "banish", name: "放逐许可", desc: "放逐次数 +1（翻牌时把一张卡永久移出牌堆）", cost: 35 },
+    { id: "relicbox", name: "遗物宝匣", desc: "随机获得一件遗物", cost: 150 },
+    { id: "recycle", name: "回炉重造", desc: "随机一张卡降 1 级，换一次翻牌", cost: 25 },
+    { id: "tonic", name: "战地补给", desc: "全队攻击永久 +8%", cost: 60 },
   ] };
 // 卡牌稀有度
 const RARITY = [
@@ -193,6 +205,19 @@ const RARITY = [
 // 抽到各稀有度的基础权重，随等级提高
 const RARE_W = lv => [100, 26 + lv * 2.4, 3 + lv * 1.5];
 const REROLLS = 3;
+// 自选契约：开局前自己选几条，换更高难度和额外星星（只在主线关卡 / 无尽生效；每日、每周、远征、守望不用）
+const CONTRACTS = [
+  { id: "ironhide", name: "铁壁", pts: 1, desc: "敌人生命 +25%" },
+  { id: "swift", name: "疾袭", pts: 1, desc: "敌人移动速度 +15%" },
+  { id: "fewer", name: "寡兵", pts: 1, desc: "伙伴上限 −1" },
+  { id: "drought", name: "枯竭", pts: 1, desc: "击杀得到的星尘 −40%" },
+  { id: "elite", name: "精英潮", pts: 2, desc: "精英出现的几率大幅提高" },
+  { id: "seal", name: "封印", pts: 2, desc: "不能使用主动法术（陨星术和第二法术）" },
+];
+const CONTRACT_BY = Object.fromEntries(CONTRACTS.map(c => [c.id, c]));
+const contractPts = ids => (ids || []).reduce((n, id) => n + (CONTRACT_BY[id] ? CONTRACT_BY[id].pts : 0), 0);
+const contractStars = ids => Math.min(5, Math.ceil(contractPts(ids) * 0.75));   // 1 点 1★、2 点 2★、3 点 3★、5 点 4★、全选 5★
+const BANISH_N = 2;   // 每局可以放逐几次卡牌
 
 // 羁绊：满足条件就一直生效。prog() 返回 [已有, 需要]，选牌时用它提示「再拿这张就凑齐」
 const synCount = f => S.units.filter(u => !u.dead && !u.summon && f(u)).length;
@@ -220,6 +245,17 @@ const SYNERGY = [
   { id: "corrosive", name: "锈蚀猎手", need: "剧毒喷雾 + 破甲", desc: "中毒/被腐蚀的敌人防御再 −15%", color: "#a8d848",
     prog: () => [(cl("sk_toxic") > 0) + (cl("pierce") > 0), 2] },
 ];
+// 羁绊第二档：两张卡都升到 3 级时，原来的效果再加强一档
+const SYN_T2 = {
+  inferno: { cards: ["sk_fire", "sk_meteor"], desc: "灼烧伤害 ×2（原 ×1.5），被烧的敌人防御 −30%（原 −20%）" },
+  frostbite: { cards: ["sk_nova", "freeze"], desc: "对冻结、减速的敌人伤害 +60%（原 +40%）" },
+  bloodlust: { cards: ["vamp", "boom"], desc: "吸血 ×3（原 ×2），殉爆伤害 +80%、范围更大（原 +50%）" },
+  shockwave: { cards: ["sk_spear", "sk_gale"], desc: "被眩晕的敌人受到的伤害 +50%（原 +30%）" },
+  wardguard: { cards: ["res", "wardmind"], desc: "法术伤害 −15%（原 −10%），全队法抗 +20（原 +10）" },
+  corrosive: { cards: ["sk_toxic", "pierce"], desc: "中毒/被腐蚀的敌人防御 −25%（原 −15%）" },
+};
+for (const g of SYNERGY) if (SYN_T2[g.id]) g.t2 = SYN_T2[g.id];
+const syn2Need = g => g.t2.cards.map(id => "「" + CARD_BY[id].name + "」").join(" 和 ") + " 都升到 3 级";
 for (const g of SYNERGY) g.on = () => { const [a, b] = g.prog(); return a >= b; };
 // 羁绊说明页用：怎么凑（角色名、卡名都从配置里现取，改了配置这里跟着变）
 const synNames = f => UNITS.filter(f).map(u => u.name).join("、");

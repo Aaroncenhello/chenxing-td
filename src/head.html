@@ -85,12 +85,16 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 @keyframes xpfill{from{width:0}}
 @keyframes lvpop{50%{transform:scale(1.06)}}
 @media (prefers-reduced-motion:reduce){.ovbox.res *,.ovbox.res *::after{animation:none!important}}
+.shr{text-align:center;margin:6px 0}
 .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 /* 升级翻牌 */
 .levelup{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(8,10,16,.78);padding:10px}
 .levelup h3{margin:0;font-family:var(--serif);font-size:clamp(17px,2.6vw,26px);color:var(--gold);text-shadow:2px 2px 0 #000;letter-spacing:.1em}
 .levelup .tip{margin:0;font-size:12px;color:var(--muted)}
 .cards3{display:grid;grid-template-columns:repeat(3,minmax(0,240px));gap:10px;width:100%;max-width:760px}
+.cards3.banishing .pcard{outline:2px dashed #e0486a;outline-offset:-3px;cursor:crosshair}
+.cards3.banishing .pcard:hover{background:#2a1218}
+#btn-banish.on{background:#e0486a;color:#fff}
 .cards3.n4{grid-template-columns:repeat(2,minmax(0,240px));max-width:510px}
 @media (max-width:700px){.cards3{grid-template-columns:1fr;gap:6px;max-width:100%}.cards3.n4{grid-template-columns:1fr}}
 .pcard{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px;border-top:4px solid var(--c);background:var(--panel);animation:flipin .34s cubic-bezier(.2,.8,.3,1.15) backwards}
@@ -226,6 +230,8 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .cgrp.sys{padding-left:14px;border-left:2px solid #0a0c12;box-shadow:-1px 0 0 rgba(255,255,255,.06)}
 @media (max-width:760px){.cgrp.sys{padding-left:0;border-left:0;box-shadow:none}}
 .diffs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.eff.t2{color:#8fe0a0;opacity:.75}.eff.t2.on{opacity:1;font-weight:700}.eff.t2 small{color:var(--muted);font-weight:400}
+.ctrs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.ctrs button{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:104px;padding:6px 8px}.ctrs button em{font-style:normal;font-size:10px;color:var(--muted);max-width:130px;line-height:1.3}.ctrs button.on{background:var(--gold);color:#1a1408}.ctrs button.on em{color:#4a3a14}.ctrbonus{font-size:12px;color:#ffd860}
 .chaprog{font-family:var(--pix);font-size:10px;color:#ffd860;letter-spacing:.06em}
 .events{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:min(928px,100%)}
 .events .daily{width:auto;align-self:stretch}
@@ -572,7 +578,7 @@ body.imm .hud-syn{max-height:44%}
     <div class="levelup" id="levelup" hidden>
       <h3 id="lu-title">升级！选一张卡</h3>
       <div class="cards3" id="cards3"></div>
-      <div class="lubar"><button id="btn-reroll">重抽（剩 3 次）</button><span class="tip" id="lu-tip">按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 选卡，<kbd>R</kbd> 重抽</span></div>
+      <div class="lubar"><button id="btn-reroll">重抽（剩 3 次）</button><button id="btn-banish" title="点一下，再点一张卡：这张卡这局不会再出现（快捷键 X）">放逐（剩 2 次）</button><span class="tip" id="lu-tip">按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 选卡，<kbd>R</kbd> 重抽</span></div>
     </div>
     <div class="shopbox eventbox" id="eventbox" hidden>
       <h3 id="ev-title">事件</h3>

@@ -131,6 +131,7 @@ function recHtml(d, D) {
   if (!u || !u.runs) return `<div class="tree"><b>战绩</b><small>他还没上过场，打一局就会开始记录</small></div>`;
   const cell = (n, v) => `<div><span>${n}</span><b>${v}</b></div>`;
   return `<div class="tree"><b>战绩</b><small>出战 ${u.runs} 局 · 胜 ${u.win || 0} 局${u.hero ? ` · 当英雄 ${u.hero} 次` : ""}</small>
+    <small>${(() => { const m = masteryOf(d, D.id), nx = MASTERY[m]; return (m ? `称号：<b style="color:${MASTERY[m - 1].c}">${MASTERY[m - 1].name}</b>（战场上脚下有 ${m} 个小标）` : "称号：暂无") + (nx ? ` · 再通关 ${nx.win - (u.win || 0)} 局升「${nx.name}」` : " · 已达最高"); })()}</small>
     <div class="rrec">${cell("累计伤害", bigN(u.dmg || 0))}${D.dmg === "heal" || u.heal ? cell("累计治疗", bigN(u.heal || 0)) : cell("场均伤害", bigN((u.dmg || 0) / u.runs))}${cell("累计击杀", bigN(u.kills || 0))}${cell("承受伤害", bigN(u.taken || 0))}</div></div>`;
 }
 function expBar(exp) { const L = levelOf(exp); return { L, pct: L.lv >= PROG.max ? 100 : Math.round(L.into / L.need * 100) }; }
@@ -141,7 +142,7 @@ function showRoster(id) {
     openOverlay(`<h2>角色</h2><p>角色上场会获得经验，最高 ${PROG.max} 级：每级生命、攻击 +4%，3 级出场生命 +10%，5 级解锁天赋，7 级复活更快，10 级出场自带 50% 技力。<br>满级后继续拿到的经验会让角色<b>觉醒</b>（最多 ${AWK.max} 级，每级 ${AWK.need} 经验）：每级攻击、生命 +${AWK.perLv * 100}%，觉醒 ${AWK.auraLv} 级起脚下有金色光环，觉醒 ${AWK.spLv} 级技力回复 +20%。</p>
       <div class="roster">${UNITS.map(D => { const open = charOpen(D), { L, pct } = expBar(charExp(d, D.id));
         return `<button class="card rc${open ? "" : " locked"}" ${open ? `data-ros="${D.id}"` : "disabled"} style="--c:${D.color}"><canvas class="pt" id="rs-${D.id}" aria-hidden="true"></canvas>
-          <span class="nm">${open ? D.name : "？？？"}</span><span class="meta">${open ? `${D.cls} · Lv${L.lv}${awkOf(charExp(d, D.id)) ? " · 觉醒" + awkOf(charExp(d, D.id)) : ""}` : `第 ${D.joinAt + 1} 关加入`}</span>
+          <span class="nm">${open ? D.name : "？？？"}</span><span class="meta">${open ? `${D.cls} · Lv${L.lv}${awkOf(charExp(d, D.id)) ? " · 觉醒" + awkOf(charExp(d, D.id)) : ""}${masteryOf(d, D.id) ? ` · <b style="color:${MASTERY[masteryOf(d, D.id) - 1].c}">${MASTERY[masteryOf(d, D.id) - 1].name}</b>` : ""}` : `第 ${D.joinAt + 1} 关加入`}</span>
           ${open ? `<span class="xp"><i style="width:${pct}%"></i></span>` : ""}</button>`; }).join("")}</div>
       <div class="btns"><button id="btn-menu">返回选关</button></div>`);
     for (const D of UNITS) { const c = $("rs-" + D.id); if (charOpen(D)) drawPortrait(D, c, 1); else { c.width = 40; c.height = 40; const g = c.getContext("2d"); g.fillStyle = "#1a1f2e"; g.fillRect(0, 0, 40, 40); } }

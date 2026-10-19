@@ -68,7 +68,7 @@ const GFXcap = () => 800;   // 高画质上限 700，加上横幅等关键特效
     const T = __td, out = {};
     const probe = (st, w) => { T.newRun(st, {}); const S = T.S; S.pending = 0; S.offer = null; S.wave = w; S.shopWave = 99; S.eventWave = 99; S.spawnQueue = []; S.enemies = []; S.nextWaveIn = 3.02; S.fx = [];
       const info = nextWaveInfo(); T.step(1 / 30); const banner = S.fx.filter(f => f.kind === 'banner').map(f => f.text);
-      T.step(1 / 30); const again = S.fx.filter(f => f.kind === 'banner').length;
+      T.step(1 / 30); const again = S.fx.filter(f => f.kind === 'banner' && !/天气/.test(f.text)).length;
       const ports = [...info.ports.keys()].every(i => PORTALS[i]);
       return { kind: info.kind, banner, again, ports }; };
     out.tide = probe(11, 4); out.boss = probe(3, 11);

@@ -64,6 +64,68 @@ const EVENTS = [
       { name: "捂住耳朵", desc: "全队回满生命，损失 60 星尘", on: () => { S.dust = Math.max(0, S.dust - 60); for (const u of S.units) { if (u.down > 0) reviveUnit(u); u.hp = u.maxHp; } } },
       { name: "念出自己的名字", desc: "洗掉身上一道诅咒；没有诅咒就 +140 星尘", on: () => { const ids = Object.keys(S.curses || {}); if (ids.length) { const id = ids[Math.floor(roll("ev") * ids.length)]; delete S.curses[id]; for (const u of S.units) { u.maxHp = uMaxHp(u); u.hp = Math.min(u.hp, u.maxHp); } addFx({ kind: "banner", text: "洗掉了 · " + CURSE_BY[id].name, life: 1.8 }); } else S.dust += 140; } },
     ] },
+  // ---- 第二批事件（含两组连锁：前一个事件里的选择会决定后面出现什么）----
+  { id: "stranger", name: "蒙面的商人", text: "他没有摆摊，只是把一张发黄的地图在你们面前抖了抖。",
+    opts: [
+      { name: "买下地图", cost: 80, desc: "花 80 星尘。之后会遇到一处藏宝点（连锁事件）", on: () => { S.dust -= 80; S.evFlags.push("map"); } },
+      { name: "赊账换护符", desc: "全队防御 +20%，但损失 60 星尘", on: () => { S.dust = Math.max(0, S.dust - 60); buffAll({ def: 1.2 }); } },
+      { name: "赶走他", desc: "得到 60 星尘", on: () => { S.dust += 60; } },
+    ] },
+  { id: "treasure_map", name: "藏宝点", requires: "map", text: "地图上画着叉的地方，土是新翻过的。",
+    opts: [
+      { name: "全力挖掘", desc: "得到一件遗物，但下一波敌人 +25%", on: () => { gainRelic(); S.nextWaveK = 1.25; } },
+      { name: "只挖浅层", desc: "得到 150 星尘", on: () => { S.dust += 150; } },
+      { name: "留给后人", desc: "全队生命上限 +10%", on: () => { buffAll({ hp: 1.1 }); } },
+    ] },
+  { id: "orphan", name: "迷路的孩子", text: "她抱着一只破布娃娃，看见你们就不哭了。",
+    opts: [
+      { name: "带在身边", desc: "晨星碑回复 20% 生命。之后会有人来道谢（连锁事件）", on: () => { healCrystal(0.2); S.evFlags.push("grateful"); } },
+      { name: "给她些吃的", desc: "花 40 星尘，立刻获得一大笔经验", cost: 40, on: () => { S.dust -= 40; gainXp(S.xpNeed * 0.6); } },
+      { name: "没时间管", desc: "得到 30 星尘", on: () => { S.dust += 30; } },
+    ] },
+  { id: "grateful", name: "村民的谢礼", requires: "grateful", text: "一队村民找到了防线，领头的老人把一只布包放在地上。",
+    opts: [
+      { name: "收下行囊", desc: "立刻翻一张稀有卡", on: () => { S.forceRare = 1; S.pending++; } },
+      { name: "收下传家宝", desc: "得到一件遗物", on: () => { gainRelic(); } },
+      { name: "请他们留下帮忙", desc: "全队回满生命，所有伙伴升一阶（最多到 3 阶）", on: () => { for (const u of S.units) { if (u.down > 0) reviveUnit(u); u.hp = u.maxHp; } levelUpSome(u => u.lv < 3); } },
+    ] },
+  { id: "campfire", name: "篝火", text: "有人在废墟里生了火，火堆旁还留着几张空位。",
+    opts: [
+      { name: "好好休息", desc: "全队回满生命并立刻站起", on: () => { for (const u of S.units) { if (u.down > 0) reviveUnit(u); u.hp = u.maxHp; } } },
+      { name: "围着磨刀", desc: "全队攻击 +12%", on: () => { buffAll({ atk: 1.12 }); } },
+      { name: "轮流守夜", desc: "下一波敌人 −20%，得到一点经验", on: () => { S.nextWaveK = 0.8; gainXp(S.xpNeed * 0.3); } },
+    ] },
+  { id: "mirror", name: "破碎的镜子", text: "每一块碎片里，你们都站在稍微不同的位置。",
+    opts: [
+      { name: "凝视倒影", desc: "随机一张还没满级的卡再升一级", need: () => Object.keys(S.cards).some(id => CARD_BY[id] && !CARD_BY[id].filler && S.cards[id] < CARD_BY[id].max),
+        on: () => { const ids = Object.keys(S.cards).filter(id => CARD_BY[id] && !CARD_BY[id].filler && S.cards[id] < CARD_BY[id].max); pickCard(ids[Math.floor(roll("ev") * ids.length)], true); } },
+      { name: "打碎它", desc: "得到 110 星尘", on: () => { S.dust += 110; } },
+      { name: "收起碎片", desc: "全队攻击速度 +10%", on: () => { buffAll({ aspd: 1.1 }); } },
+    ] },
+  { id: "smith", name: "流浪铁匠", text: "他的炉子在板车上，煤还没灭。",
+    opts: [
+      { name: "重锻武器", cost: 100, desc: "花 100 星尘，全队攻击 +22%", on: () => { S.dust -= 100; buffAll({ atk: 1.22 }); } },
+      { name: "加固护甲", cost: 60, desc: "花 60 星尘，全队防御 +30%", on: () => { S.dust -= 60; buffAll({ def: 1.3 }); } },
+      { name: "帮忙拉风箱", desc: "得到 40 星尘，全队攻击速度 +6%", on: () => { S.dust += 40; buffAll({ aspd: 1.06 }); } },
+    ] },
+  { id: "storm", name: "暴风雨前夕", text: "天压得很低，远处的云里一直在闪。",
+    opts: [
+      { name: "趁乱布防", desc: "接下来 2 波敌人移动变慢", on: () => { S.slowWaves = Math.max(S.slowWaves || 0, 2); } },
+      { name: "顶风推进", desc: "全队攻击 +15%，下一波敌人 +15%", on: () => { buffAll({ atk: 1.15 }); S.nextWaveK = 1.15; } },
+      { name: "躲进地窖", desc: "晨星碑回复 30% 生命", on: () => { healCrystal(0.3); } },
+    ] },
+  { id: "duel", name: "拦路的挑战者", text: "一个披着残甲的身影站在路中间，没有拔剑，只是等着。",
+    opts: [
+      { name: "接受挑战", desc: "一只精英从传送门冲来，击杀它额外得 150 星尘", on: () => { const p = PORTALS[Math.floor(roll("ev") * Math.max(1, PORTALS.length))] || { x: 1, y: 1 }; const pool = ST.pool.filter(q => S.wave >= q[2]).sort((a, b) => b[1] - a[1]); spawnAt((pool[0] || ["orc"])[0], p.x, p.y, true).hitT = 0.2; S.riftDust = 150; addFx({ kind: "banner", text: "挑战者来了！", life: 1.8, danger: true }); } },
+      { name: "出钱让他让路", cost: 70, desc: "花 70 星尘，得到一次翻牌", on: () => { S.dust -= 70; S.pending++; } },
+      { name: "绕过去", desc: "什么也没发生", on: () => { } },
+    ] },
+  { id: "library", name: "失落的图书馆", text: "书架塌了一半，剩下的纸页还在缓缓翻动。",
+    opts: [
+      { name: "通读典籍", desc: "立刻获得一整级经验", on: () => { gainXp(S.xpNeed); } },
+      { name: "抄录秘法", desc: "自动技能冷却 −15%", on: () => { buffAll({ cd: 0.85 }); } },
+      { name: "拆书换钱", desc: "得到 120 星尘", on: () => { S.dust += 120; } },
+    ] },
 ];
 const EVENT_BY = Object.fromEntries(EVENTS.map(e => [e.id, e]));
 
@@ -119,8 +181,11 @@ function eventDue(w) {
 }
 function openEvent() {
   if (S.over || S.event || S.shop) return;
-  const pool = EVENTS.filter(e => !S.eventsDone.includes(e.id));
-  const src = pool.length ? pool : EVENTS;
+  // 连锁事件：前面选过带标记的选项，后续事件才会进池；有待触发的后续事件就优先来
+  const flags = S.evFlags || [];
+  const pool = EVENTS.filter(e => !S.eventsDone.includes(e.id) && (!e.requires || flags.includes(e.requires)));
+  const follow = pool.filter(e => e.requires);
+  const src = follow.length ? follow : pool.length ? pool : EVENTS.filter(e => !e.requires);
   const def = src[Math.floor(roll("ev") * src.length)];
   const opts = def.opts.filter(o => (!o.need || o.need()) && (!o.cost || S.dust >= o.cost));
   if (opts.length < 2) { S.eventWave = eventAt(S.wave); return; }   // 选项不够就跳过
