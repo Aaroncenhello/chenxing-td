@@ -1257,6 +1257,10 @@ const SYNERGY = [
     prog: () => [(cl("res") > 0) + (cl("wardmind") > 0), 2] },
   { id: "corrosive", name: "锈蚀猎手", need: "剧毒喷雾 + 破甲", desc: "中毒/被腐蚀的敌人防御再 −15%", color: "#a8d848",
     prog: () => [(cl("sk_toxic") > 0) + (cl("pierce") > 0), 2] },
+  { id: "tidebell", name: "潮钟共鸣", need: "潮汐涌动 + 钟鸣", desc: "潮水减速时间 +50%，钟鸣眩晕时间 +50%", color: "#5ab8e8",
+    prog: () => [(cl("sk_tide") > 0) + (cl("sk_bell") > 0), 2] },
+  { id: "silentecho", name: "静默回响", need: "静默领域 + 回声", desc: "正在读条的敌人受到的伤害 +30%", color: "#c8d4ff",
+    prog: () => [(cl("silence") > 0) + (cl("echo") > 0), 2] },
 ];
 // 羁绊第二档：两张卡都升到 3 级时，原来的效果再加强一档
 const SYN_T2 = {
@@ -1265,6 +1269,8 @@ const SYN_T2 = {
   bloodlust: { cards: ["vamp", "boom"], desc: "吸血 ×3（原 ×2），殉爆伤害 +80%、范围更大（原 +50%）" },
   shockwave: { cards: ["sk_spear", "sk_gale"], desc: "被眩晕的敌人受到的伤害 +50%（原 +30%）" },
   wardguard: { cards: ["res", "wardmind"], desc: "法术伤害 −15%（原 −10%），全队法抗 +20（原 +10）" },
+  tidebell: { cards: ["sk_tide", "sk_bell"], desc: "潮水击退 +50%（1.4 → 2.1 格），钟鸣伤害 +50%（原效果保留）" },
+  silentecho: { cards: ["silence", "echo"], desc: "正在读条的敌人受到的伤害 +50%（原 +30%）" },
   corrosive: { cards: ["sk_toxic", "pierce"], desc: "中毒/被腐蚀的敌人防御 −25%（原 −15%）" },
 };
 for (const g of SYNERGY) if (SYN_T2[g.id]) g.t2 = SYN_T2[g.id];
@@ -1283,6 +1289,8 @@ const SYN_HOW = {
   scholar: () => `同一局拿到 5 种不同的属性卡（同一张升级多次只算 1 种），例如 ${CARDS.filter(c => c.kind === "stat" && !c.filler && !c.rare).slice(0, 4).map(c => "「" + c.name + "」").join("")}`,
   legendary: () => "同一局拿到 2 种传说卡（金色边框的卡）",
   shockwave: () => `同一局拿到技能卡 ${synCards("sk_spear", "sk_gale")}`,
+  tidebell: () => `同一局拿到技能卡 ${synCards("sk_tide", "sk_bell")}`,
+  silentecho: () => `同一局拿到 ${synCards("silence", "echo")}（回声要先有暴击来源）`,
   wardguard: () => `同一局拿到 ${synCards("res", "wardmind")}`,
   corrosive: () => `同一局拿到 ${synCards("sk_toxic", "pierce")}`,
 };
@@ -1339,6 +1347,14 @@ const CARDS = [
   { id: "lg_army", rare: 2, kind: "ally", name: "万军之阵", max: 1, w: 5, desc: () => "伙伴上限 +2，场上所有伙伴立刻升 1 阶" },
   { id: "lg_aegis", rare: 2, kind: "stat", name: "永恒壁垒", max: 2, w: 5, desc: lv => `晨星碑生命上限 +${40 * lv}%，每波结束回复 ${8 * lv}%` },
   { id: "lg_greed", rare: 2, kind: "stat", name: "星尘洪流", max: 1, w: 5, desc: () => "经验和星尘获得翻倍" },
+  { id: "sk_tide", rare: 1, kind: "skill", name: "潮汐涌动", max: 5, w: 6, desc: lv => `每 ${(11 - lv * 0.8).toFixed(1)} 秒涌起一道潮水：地面敌人被推回 1.4 格，减速 ${(1.8 + lv * 0.2).toFixed(1)} 秒，并受到法术伤害` },
+  { id: "sk_bell", rare: 1, kind: "skill", name: "钟鸣", max: 5, w: 6, desc: lv => `每 ${(13 - lv).toFixed(0)} 秒敲响一次钟：晨星碑 ${(3 + lv * 0.2).toFixed(1)} 格内的敌人眩晕 ${(0.8 + lv * 0.15).toFixed(2)} 秒并受到法术伤害` },
+  { id: "echo", rare: 1, kind: "special", name: "回声", max: 3, w: 6, need: () => cl("crit") > 0 || dk("crit") > 0 || cu("cu_moon") > 0, desc: lv => `暴击时有 ${25 * lv}% 几率再回响一次，造成 50% 的伤害` },
+  { id: "silence", rare: 1, kind: "special", name: "静默领域", max: 3, w: 6, desc: lv => `首领和精英读条大招所需的打断伤害 −${20 * lv}%` },
+  { id: "salvage", rare: 0, kind: "special", name: "打捞", max: 4, w: 6, desc: lv => `每波开始获得 ${3 * lv} 星尘，每过 4 波再多 ${lv} 星尘` },
+  { id: "mirrorarmor", rare: 1, kind: "stat", name: "镜面护甲", max: 3, w: 6, desc: lv => `队员受到远程敌人的伤害 −${10 * lv}%` },
+  { id: "lg_tide", rare: 2, kind: "special", name: "潮汐之心", max: 1, w: 5, desc: () => "任何队员释放技能后，全队回复 6% 生命，其他队员技力 +8" },
+  { id: "lg_hunt", rare: 2, kind: "special", name: "猎手之誓", max: 1, w: 5, desc: () => "对精英和首领伤害 +30%；击杀精英或首领后，全队攻击 +8%，持续 12 秒" },
   { id: "lg_bond", rare: 2, kind: "stat", name: "誓约之环", max: 1, w: 5, need: () => S.mod !== "solo", desc: () => "全队攻击和生命上限随伙伴数量提升：每有一名伙伴在场 +8%，没有上限" },
   { id: "lg_ward", rare: 2, kind: "stat", name: "圣域壁垒", max: 1, w: 5, desc: () => "晨星碑受到的伤害 −20%" },
   { id: "lg_focus", rare: 2, kind: "special", name: "焚天之力", max: 1, w: 5, desc: () => "对集火目标的伤害额外 +25%" },
@@ -1361,8 +1377,8 @@ const CARDS = [
 const CARD_BY = Object.fromEntries(CARDS.map(c => [c.id, c]));
 const ANY_CARD = id => CARD_BY[id] || (typeof SIG_BY !== "undefined" && SIG_BY[id]) || (typeof CURSE_BY !== "undefined" && CURSE_BY[id]);
 // 自动技能的冷却和威力（威力会跟着关卡强度一起涨）
-const SKILL_CD = { sk_meteor: lv => 9 - lv * 0.8, sk_chain: lv => 6 - lv * 0.5, sk_nova: lv => 7 - lv * 0.5, sk_fire: lv => 8 - lv * 0.6, sk_holy: lv => 12 - lv, sk_spear: lv => 7 - lv * 0.5, sk_toxic: lv => 8 - lv * 0.5, sk_gale: lv => 5.5 - lv * 0.3, lg_time: lv => 22 - lv * 4 };
-const SKILL_DMG = { sk_meteor: 1200, sk_chain: 700, sk_nova: 500, sk_fire: 610, sk_holy: 560, sk_blade: 350, sk_spike: 200, sk_spear: 1050, sk_toxic: 420, sk_gale: 380, lg_judge: 3400 };
+const SKILL_CD = { sk_meteor: lv => 9 - lv * 0.8, sk_chain: lv => 6 - lv * 0.5, sk_nova: lv => 7 - lv * 0.5, sk_fire: lv => 8 - lv * 0.6, sk_holy: lv => 12 - lv, sk_spear: lv => 7 - lv * 0.5, sk_toxic: lv => 8 - lv * 0.5, sk_gale: lv => 5.5 - lv * 0.3, sk_tide: lv => 11 - lv * 0.8, sk_bell: lv => 13 - lv, lg_time: lv => 22 - lv * 4 };
+const SKILL_DMG = { sk_meteor: 1200, sk_chain: 700, sk_nova: 500, sk_fire: 610, sk_holy: 560, sk_blade: 350, sk_spike: 200, sk_spear: 1050, sk_toxic: 420, sk_gale: 380, sk_tide: 260, sk_bell: 300, lg_judge: 3400 };
 
 // 卡牌小图标（16×16）
 function drawCardIcon(cvs, id, size) {
@@ -1422,6 +1438,14 @@ function drawCardIcon(cvs, id, size) {
     case "lg_army": for (const x of [2, 6, 10]) { px(x, 6, 3, 6, "#8fb3e0"); px(x, 4, 3, 2, "#e3b75c"); } px(2, 12, 12, 2, "#3a4460"); break;
     case "lg_aegis": px(3, 2, 10, 7, "#62b4ff"); px(4, 9, 8, 3, "#62b4ff"); px(7, 12, 2, 2, "#62b4ff"); px(5, 4, 6, 4, "#e8f8ff"); px(7, 5, 2, 6, "#ffd860"); break;
     case "lg_greed": for (const [x, y] of [[3, 3], [11, 4], [6, 11], [12, 11], [8, 7]]) px(x, y, 2, 2, "#ffe040"); dsc(8, 8, 5, "rgba(255,224,64,.25)"); px(7, 6, 2, 4, "#fff6c0"); break;
+    case "sk_tide": px(2, 9, 12, 2, "#5ab8e8"); px(1, 6, 4, 3, "#8ad8ff"); px(5, 5, 4, 3, "#8ad8ff"); px(9, 6, 4, 3, "#8ad8ff"); px(3, 12, 10, 2, "#2a78b0"); px(2, 5, 1, 1, "#ffffff"); px(6, 4, 1, 1, "#ffffff"); break;
+    case "sk_bell": px(7, 2, 2, 2, "#c8a030"); px(5, 4, 6, 6, "#ffd860"); px(4, 9, 8, 2, "#ffd860"); px(5, 4, 2, 6, "#fff6c0"); px(7, 12, 2, 2, "#8a6a10"); px(2, 5, 1, 4, "#a0e0ff"); px(13, 5, 1, 4, "#a0e0ff"); break;
+    case "echo": px(3, 5, 3, 6, "#ffe040"); px(7, 4, 2, 8, "#ffd860"); px(10, 3, 1, 10, "#c8a030"); px(12, 2, 1, 12, "#8a6a10"); break;
+    case "silence": dsc(8, 8, 6, "#2a3a6a"); px(4, 7, 8, 2, "#c8d4ff"); px(5, 4, 1, 8, "#12141f"); px(10, 4, 1, 8, "#12141f"); px(7, 5, 2, 6, "#e0e8ff"); break;
+    case "salvage": px(3, 8, 10, 6, "#8a5a30"); px(4, 9, 8, 1, "#b07840"); px(6, 4, 4, 4, "#8a5a30"); px(7, 2, 2, 3, "#7ad8e8"); px(5, 11, 6, 1, "#ffd860"); px(7, 10, 2, 3, "#fff6c0"); break;
+    case "mirrorarmor": px(3, 3, 10, 9, "#c8d4ec"); px(4, 4, 8, 7, "#a8b8d8"); px(4, 4, 3, 3, "#ffffff"); px(8, 8, 3, 2, "#ffffff"); px(6, 12, 4, 2, "#7a86a0"); break;
+    case "lg_tide": dsc(8, 8, 6, "#2a78b0"); dsc(8, 8, 4, "#5ab8e8"); dsc(8, 8, 2, "#e8fbff"); px(2, 12, 12, 2, "#ffd860"); px(7, 1, 2, 3, "#ffd860"); break;
+    case "lg_hunt": px(3, 12, 10, 2, "#8a5a30"); px(7, 2, 2, 11, "#dfe6f2"); px(5, 4, 6, 2, "#c83a4a"); px(4, 7, 8, 1, "#c83a4a"); px(7, 1, 2, 1, "#ffd860"); px(12, 2, 2, 2, "#ffd860"); break;
     case "lg_bond": dsc(5, 8, 3, "#8fb3e0"); dsc(11, 8, 3, "#e3b75c"); px(7, 7, 2, 2, "#fff6c0"); px(4, 3, 8, 1, "#ffd860"); px(4, 3, 1, 3, "#ffd860"); px(11, 3, 1, 3, "#ffd860"); break;
     case "lg_ward": px(4, 2, 8, 7, "#ffd860"); px(5, 9, 6, 3, "#ffd860"); px(7, 12, 2, 2, "#ffd860"); px(6, 4, 4, 5, "#fff6c0"); px(7, 6, 2, 2, "#12141f"); break;
     case "lg_focus": dsc(8, 8, 6, "rgba(255,90,42,.22)"); px(7, 1, 2, 14, "#ff5a2a"); px(1, 7, 14, 2, "#ff5a2a"); dsc(8, 8, 3, "#ffe040"); break;
@@ -2335,6 +2359,7 @@ function uAtk(u) {
   if (tal(u, "t_last") && u.hp < u.maxHp * 0.35) a *= 1.4;
   a *= 1 + marshalBanner(u);
   if (rallyOn()) a *= 1.3;
+  if (S.huntT > 0) a *= 1.08;
   a *= 1 + 0.45 * cu("cu_blood") + 0.6 * cu("cu_frenzy");
   if (cl("lg_bond")) a *= 1 + 0.08 * S.allies;
   if (syn("scholar")) a *= 1.15;
@@ -2800,6 +2825,7 @@ function startWave(append) {
   if (append) S.spawnQueue = S.spawnQueue.concat(q).sort((a, b) => a.at - b.at);
   else { S.spawnQueue = q; S.waveClock = 0; }
   S.wave++;
+  if (cl("salvage")) { const g = cl("salvage") * (3 + Math.floor(S.wave / 4)); S.dust += g; addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.2, text: `打捞 +${g} 星尘`, color: "#7ad8e8", life: 1.2 }); }
   S.waveK = S.nextWaveK || 1; S.nextWaveK = S.nextWaveK2 || 1; S.nextWaveK2 = 1;
   if (S.slowWaves > 0) S.slowWaves--;
   if (S.weakWaves > 0) S.weakWaves--;
@@ -3094,7 +3120,7 @@ const ultOf = e => ((isBoss(e) || e.lead) && ULT_DEF[ULT_OF[e.type]]) || null;
 const BREAK_BONUS = 1.6;   // 破防期间受到的伤害倍率
 
 function startCast(e, U) {
-  e.cast = { u: U, t: 0, dur: U.cast * (e.enraged ? 0.82 : 1), need: e.maxHp * U.need, got: 0 };
+  e.cast = { u: U, t: 0, dur: U.cast * (e.enraged ? 0.82 : 1), need: e.maxHp * U.need * Math.max(0.3, 1 - 0.2 * cl("silence")), got: 0 };
   e.pend = 0; e.target = null;
   addFx({ kind: "banner", text: `${e.d.name} 正在吟唱 · ${U.name}`, life: 1.6, danger: true });
   addFx({ kind: "ring", x: e.x, y: e.y, color: U.color, life: 0.8, r0: 0.2, r1: 2.2 });
@@ -3732,7 +3758,7 @@ function addNum(x, y, v, color, big, key, maxHp) {
 function killEnemy(e, src) {
   e.dead = true; S.kills++;
   S.foeKill[e.type] = (S.foeKill[e.type] || 0) + 1;
-  if (e.elite || isBoss(e)) S.eliteKills = (S.eliteKills || 0) + 1;
+  if (e.elite || isBoss(e)) { S.eliteKills = (S.eliteKills || 0) + 1; if (cl("lg_hunt")) { S.huntT = 12; addFx({ kind: "text", x: e.x, y: e.y - 1, text: "猎手之誓 · 攻击 +8%", color: "#ffd860", life: 1.1, big: true }); } }
   if (e === S.focus) S.focusKills = (S.focusKills || 0) + 1;
   addStat(src, "kills", 1);
   if (e.stolen) { const back = Math.round(e.stolen * 1.5); S.dust += back; addFx({ kind: "text", x: e.x, y: e.y - 0.8, text: "+" + back + " 星尘（追回）", color: "#ffd860", life: 1.2, big: true }); }
@@ -3820,6 +3846,7 @@ function hurt(e, amt, type, crit, src) {
   if (S.auraBoss && !S.auraBoss.dead && e !== S.auraBoss && !isBoss(e) && dist(S.auraBoss, e) <= 3.2) amt *= 0.8;
   if (e.brokenT > 0) amt *= BREAK_BONUS;
   if (e.mark > 0) amt *= 1.25;
+  if (e.cast && syn("silentecho")) amt *= syn2("silentecho") ? 1.5 : 1.3;
   if (S.weakWaves > 0) amt *= 1.1;
   if (rl("rl_shard") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1.35;
   if (src && src.hero && sg("sg_fr1") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1 + 0.2 * sg("sg_fr1");
@@ -3832,7 +3859,7 @@ function hurt(e, amt, type, crit, src) {
   const byUnit = src && src.def && type !== "poison";
   if (byUnit) {
     if (type === "magic" && S.wx === "rain") amt *= 1.08;
-    if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1);
+    if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1) * (cl("lg_hunt") ? 1.3 : 1);
     if (rl("rl_berserk") && !crit) { src.hitN = (src.hitN || 0) + 1; if (src.hitN % 8 === 0) { amt *= 3; crit = true; } }
     if ((cl("crit") || cu("cu_moon") || dk("crit")) && !crit && roll("fight") < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon")) { amt *= 2 + 0.15 * cl("critdmg"); crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
     if (src.hero && sg("sg_as2") && !isBoss(e) && e.hp <= e.maxHp * 0.25 && e.hp > 0) { amt = e.hp + e.shield + 1; addFx({ kind: "text", x: e.x, y: e.y - 0.6, text: "处决", color: "#4fc0b0", life: 0.9, big: true }); }
@@ -3856,6 +3883,7 @@ function hurt(e, amt, type, crit, src) {
   addStat(src, "dmg", real);
   addNum(e.x, e.y, amt, type === "true" ? "#fff0a0" : crit ? "#ffe040" : type === "magic" ? "#d4b4ff" : type === "poison" ? "#9cf07a" : "#ffffff", crit, e.id, e.maxHp);
   // 核心天赋「连锁星芒」：暴击弹一下给附近另一个敌人（弹出去的这一下不再暴击，不会连环）
+  if (crit && byUnit && cl("echo") && !S.inEcho && !e.dead && roll("fight") < 0.25 * cl("echo")) { S.inEcho = true; addFx({ kind: "text", x: e.x, y: e.y - 0.5, text: "回声", color: "#ffd860", life: 0.6 }); hurt(e, amt * 0.5, type, false, src); S.inEcho = false; }
   if (crit && src && src.def && dk("ks_atk")) {
     let o = null, bd = 2.2;
     for (const x of S.enemies) if (x !== e && hittable(x)) { const d = dist(x, e); if (d < bd) { bd = d; o = x; } }
@@ -3920,6 +3948,7 @@ function phaseShift(e, idx) {
 function hurtUnit(u, amt, type, from) {
   if (u.dead || u.down > 0) return;
   if (S.shieldT > 0) amt *= 0.3;
+  if (from && from.d && from.d.ranged && cl("mirrorarmor")) amt *= 1 - 0.1 * cl("mirrorarmor");
   if (cl("dodge") && type !== "poison" && roll("fight") < 0.07 * cl("dodge")) { addFx({ kind: "text", x: u.x, y: u.y - 0.6, text: "闪避", color: "#a8d848", life: 0.7 }); return; }
   if (u.def.id === "knight" && u.lv >= 3) amt *= 0.85;
   if (u.hero && sg("sg_kn1")) amt *= Math.max(0.4, 1 - 0.12 * sg("sg_kn1"));
@@ -4221,6 +4250,7 @@ function useSkill(u) {
   S.fx = S.fx.filter(f => f.kind !== "skillcut");
   addFx({ kind: "skillcut", id: D.id, lv: u.lv, branch: u.branch, name: D.name, skill: D.skill.name, color: D.color, hero: !!u.hero, life: 1.1 });
   if (u.hero) addFx({ kind: "flash", life: 0.18, color: D.color });
+  if (cl("lg_tide")) for (const a of S.units) if (alive(a)) { heal(a, a.maxHp * 0.06, true, null); if (a !== u) a.sp = Math.min(a.def.sp, a.sp + 8); }
 }
 function autoWant(u) {
   const D = u.def, R = uRange(u), big = e => e.elite || isBoss(e);
@@ -4324,7 +4354,7 @@ function autoSkills(dt) {
     S.sigStar = (S.sigStar || 4) - dt;
     if (S.sigStar <= 0) { S.sigStar = 14; const h = heroOf(); if (h) { const pool = S.enemies.filter(hittable); for (let k = 0; k < 3 && pool.length; k++) { let best = pool[0], bn = -1; for (const e of pool) { const n = pool.filter(o => dist(o, e) <= 1.6).length; if (n > bn) { bn = n; best = e; } } S.meteors.push({ x: best.x, y: best.y, t: 0.5, dmg: uAtk(h) * 2.2, r: uSplash(h) + 0.8, src: h, color: "#a0b8ff" }); addFx({ kind: "meteor", x: best.x, y: best.y, life: 0.5, color: "#a0b8ff" }); const i2 = pool.indexOf(best); if (i2 >= 0) pool.splice(i2, 1); } } }
   }
-  for (const id of ["sk_meteor", "sk_chain", "sk_nova", "sk_fire", "sk_holy", "sk_spear", "sk_toxic", "sk_gale", "lg_time"]) {
+  for (const id of ["sk_meteor", "sk_chain", "sk_nova", "sk_fire", "sk_holy", "sk_spear", "sk_toxic", "sk_gale", "sk_tide", "sk_bell", "lg_time"]) {
     const lv = cl(id); if (!lv) continue;
     if (S.skillCd[id] == null) S.skillCd[id] = SKILL_CD[id](lv) * twinCd() * 0.4;
     S.skillCd[id] -= dt * (S.resoT > 0 ? 1.5 : 1);
@@ -4440,6 +4470,21 @@ function autoCast(id, lv) {
       burnEnemy(e, dps, ev ? 5.5 : 3.5, { key: "sk_toxic" });
       applyCorrode(e, (0.12 + 0.02 * lv) * (ev ? 2 : 1), ev ? 5.5 : 3.5, { key: "sk_toxic" });
     }
+  } else if (id === "sk_tide") {
+    const tideBell = syn("tidebell"), dmg = SKILL_DMG.sk_tide * lv * P, slowT = (1.8 + lv * 0.2) * (tideBell ? 1.5 : 1);
+    addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#5ab8e8", life: 0.9, r0: 0.5, r1: 7, fill: true });
+    for (const e of S.enemies) if (hittable(e) && !e.d.flying && toCrystal(e) <= 7) {
+      hurt(e, calc(dmg, "magic", eDef(e), eRes(e)), "magic", false, { key: "sk_tide" });
+      if (!e.dead && !e.d.unstoppable) { knock(e, syn2("tidebell") ? 2.1 : 1.4); e.slowT = Math.max(e.slowT, slowT); e.slowK = Math.min(e.slowK || 1, 0.55); }
+    }
+  } else if (id === "sk_bell") {
+    const R = 3 + lv * 0.2, dmg = SKILL_DMG.sk_bell * lv * P * (syn2("tidebell") ? 1.5 : 1), st = (0.8 + lv * 0.15) * (syn("tidebell") ? 1.5 : 1);
+    addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#ffd860", life: 0.8, r0: 0.3, r1: R, fill: true });
+    S.shake = Math.max(S.shake, 0.2);
+    for (const e of S.enemies) if (hittable(e) && toCrystal(e) <= R) {
+      hurt(e, calc(dmg, "magic", eDef(e), eRes(e)), "magic", false, { key: "sk_bell" });
+      if (!e.dead && !e.d.unstoppable) e.stunT = Math.max(e.stunT || 0, st);
+    }
   } else if (id === "sk_gale") {
     const pool = S.enemies.filter(hittable);
     if (!pool.length) { S.skillCd[id] = 0.6; return; }
@@ -4499,6 +4544,7 @@ function step(dt) {
   for (const k in S.spells) S.spells[k] = Math.max(0, S.spells[k] - dt);
   S.hitFlash = Math.max(0, S.hitFlash - dt);
   if (S.shieldT > 0) S.shieldT -= dt;
+  if (S.huntT > 0) S.huntT -= dt;
   if (S.rallyT > 0) S.rallyT -= dt;
   S.crystal.hitT = Math.max(0, S.crystal.hitT - dt);
   if (S.comboT > 0) { S.comboT -= dt; if (S.comboT <= 0) S.combo = 0; }

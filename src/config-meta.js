@@ -252,6 +252,10 @@ const SYNERGY = [
     prog: () => [(cl("res") > 0) + (cl("wardmind") > 0), 2] },
   { id: "corrosive", name: "锈蚀猎手", need: "剧毒喷雾 + 破甲", desc: "中毒/被腐蚀的敌人防御再 −15%", color: "#a8d848",
     prog: () => [(cl("sk_toxic") > 0) + (cl("pierce") > 0), 2] },
+  { id: "tidebell", name: "潮钟共鸣", need: "潮汐涌动 + 钟鸣", desc: "潮水减速时间 +50%，钟鸣眩晕时间 +50%", color: "#5ab8e8",
+    prog: () => [(cl("sk_tide") > 0) + (cl("sk_bell") > 0), 2] },
+  { id: "silentecho", name: "静默回响", need: "静默领域 + 回声", desc: "正在读条的敌人受到的伤害 +30%", color: "#c8d4ff",
+    prog: () => [(cl("silence") > 0) + (cl("echo") > 0), 2] },
 ];
 // 羁绊第二档：两张卡都升到 3 级时，原来的效果再加强一档
 const SYN_T2 = {
@@ -260,6 +264,8 @@ const SYN_T2 = {
   bloodlust: { cards: ["vamp", "boom"], desc: "吸血 ×3（原 ×2），殉爆伤害 +80%、范围更大（原 +50%）" },
   shockwave: { cards: ["sk_spear", "sk_gale"], desc: "被眩晕的敌人受到的伤害 +50%（原 +30%）" },
   wardguard: { cards: ["res", "wardmind"], desc: "法术伤害 −15%（原 −10%），全队法抗 +20（原 +10）" },
+  tidebell: { cards: ["sk_tide", "sk_bell"], desc: "潮水击退 +50%（1.4 → 2.1 格），钟鸣伤害 +50%（原效果保留）" },
+  silentecho: { cards: ["silence", "echo"], desc: "正在读条的敌人受到的伤害 +50%（原 +30%）" },
   corrosive: { cards: ["sk_toxic", "pierce"], desc: "中毒/被腐蚀的敌人防御 −25%（原 −15%）" },
 };
 for (const g of SYNERGY) if (SYN_T2[g.id]) g.t2 = SYN_T2[g.id];
@@ -278,6 +284,8 @@ const SYN_HOW = {
   scholar: () => `同一局拿到 5 种不同的属性卡（同一张升级多次只算 1 种），例如 ${CARDS.filter(c => c.kind === "stat" && !c.filler && !c.rare).slice(0, 4).map(c => "「" + c.name + "」").join("")}`,
   legendary: () => "同一局拿到 2 种传说卡（金色边框的卡）",
   shockwave: () => `同一局拿到技能卡 ${synCards("sk_spear", "sk_gale")}`,
+  tidebell: () => `同一局拿到技能卡 ${synCards("sk_tide", "sk_bell")}`,
+  silentecho: () => `同一局拿到 ${synCards("silence", "echo")}（回声要先有暴击来源）`,
   wardguard: () => `同一局拿到 ${synCards("res", "wardmind")}`,
   corrosive: () => `同一局拿到 ${synCards("sk_toxic", "pierce")}`,
 };

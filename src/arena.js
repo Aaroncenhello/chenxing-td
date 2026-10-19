@@ -138,6 +138,7 @@ function uAtk(u) {
   if (tal(u, "t_last") && u.hp < u.maxHp * 0.35) a *= 1.4;
   a *= 1 + marshalBanner(u);
   if (rallyOn()) a *= 1.3;
+  if (S.huntT > 0) a *= 1.08;
   a *= 1 + 0.45 * cu("cu_blood") + 0.6 * cu("cu_frenzy");
   if (cl("lg_bond")) a *= 1 + 0.08 * S.allies;
   if (syn("scholar")) a *= 1.15;
@@ -603,6 +604,7 @@ function startWave(append) {
   if (append) S.spawnQueue = S.spawnQueue.concat(q).sort((a, b) => a.at - b.at);
   else { S.spawnQueue = q; S.waveClock = 0; }
   S.wave++;
+  if (cl("salvage")) { const g = cl("salvage") * (3 + Math.floor(S.wave / 4)); S.dust += g; addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.2, text: `打捞 +${g} 星尘`, color: "#7ad8e8", life: 1.2 }); }
   S.waveK = S.nextWaveK || 1; S.nextWaveK = S.nextWaveK2 || 1; S.nextWaveK2 = 1;
   if (S.slowWaves > 0) S.slowWaves--;
   if (S.weakWaves > 0) S.weakWaves--;

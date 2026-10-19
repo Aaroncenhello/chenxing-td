@@ -28,7 +28,7 @@ const ultOf = e => ((isBoss(e) || e.lead) && ULT_DEF[ULT_OF[e.type]]) || null;
 const BREAK_BONUS = 1.6;   // 破防期间受到的伤害倍率
 
 function startCast(e, U) {
-  e.cast = { u: U, t: 0, dur: U.cast * (e.enraged ? 0.82 : 1), need: e.maxHp * U.need, got: 0 };
+  e.cast = { u: U, t: 0, dur: U.cast * (e.enraged ? 0.82 : 1), need: e.maxHp * U.need * Math.max(0.3, 1 - 0.2 * cl("silence")), got: 0 };
   e.pend = 0; e.target = null;
   addFx({ kind: "banner", text: `${e.d.name} 正在吟唱 · ${U.name}`, life: 1.6, danger: true });
   addFx({ kind: "ring", x: e.x, y: e.y, color: U.color, life: 0.8, r0: 0.2, r1: 2.2 });
