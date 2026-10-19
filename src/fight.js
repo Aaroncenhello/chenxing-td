@@ -190,6 +190,11 @@ function hurt(e, amt, type, crit, src) {
     if (hasAfx(e, "warp") && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.15, "magic", null);
     if (tal(src, "t_pierce") && !e.dead) applyCorrode(e, 0.25, 4, src);
   }
+  if (crit && byUnit && !OPT.calm) {
+    // 分级顿帧：暴击打在精英/首领身上轻轻一顿；普通怪暴击的小击退
+    if ((e.elite || isBoss(e)) && (S.hitStopCd || 0) <= 0) { S.hitStop = Math.max(S.hitStop || 0, 0.035); S.hitStopCd = 0.35; }
+    else if (!e.elite && !isBoss(e) && !e.d.flying && !e.d.unstoppable && (e.knockCd || 0) <= S.t) { knock(e, 0.18); e.knockCd = S.t + 0.7; }
+  }
   if (e.shield > 0) {
     const m = type === "magic" ? 1.5 : 1, eff = amt * m;
     if (eff <= e.shield) { e.shield -= eff; addNum(e.x, e.y, eff, "#8ac8ff", crit, e.id, e.maxHp); e.hitT = 0.1; addStat(src, "dmg", eff); return eff; }
@@ -203,11 +208,6 @@ function hurt(e, amt, type, crit, src) {
   addStat(src, "dmg", real);
   addNum(e.x, e.y, amt, type === "true" ? "#fff0a0" : crit ? "#ffe040" : type === "magic" ? "#d4b4ff" : type === "poison" ? "#9cf07a" : "#ffffff", crit, e.id, e.maxHp);
   // 核心天赋「连锁星芒」：暴击弹一下给附近另一个敌人（弹出去的这一下不再暴击，不会连环）
-  if (crit && byUnit && !OPT.calm) {
-    // 分级顿帧：暴击打在精英/首领身上轻轻一顿；普通怪暴击的小击退
-    if ((e.elite || isBoss(e)) && (S.hitStopCd || 0) <= 0) { S.hitStop = Math.max(S.hitStop || 0, 0.035); S.hitStopCd = 0.35; }
-    else if (!e.elite && !isBoss(e) && !e.d.flying && !e.d.unstoppable && (e.knockCd || 0) <= S.t) { knock(e, 0.18); e.knockCd = S.t + 0.7; }
-  }
   if (crit && byUnit && cl("echo") && !S.inEcho && !e.dead && roll("fight") < 0.25 * cl("echo")) { S.inEcho = true; addFx({ kind: "text", x: e.x, y: e.y - 0.5, text: "回声", color: "#ffd860", life: 0.6 }); hurt(e, amt * 0.5, type, false, src); S.inEcho = false; }
   if (crit && src && src.def && dk("ks_atk")) {
     let o = null, bd = 2.2;

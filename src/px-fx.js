@@ -47,6 +47,17 @@ function bar(x, y, w, frac, col, sub, subCol, gold) {
   if (sub != null) { rect(ctx, x - w / 2, y + 2, w, 2, "#1c2a3a"); rect(ctx, x - w / 2, y + 2, Math.max(0, R0(w * sub)), 2, subCol); }
 }
 
+// 4 阶转职的外观：A 系（蓝）背后一对光翼，B 系（红）肩头跳动的火焰
+function drawBranchBack(u, fx, fy, t) {
+  if (u.branch !== "A") return;
+  const w = Math.sin(t * 3 + u.id) * 2;
+  for (const s of [-1, 1]) for (let i = 0; i < 5; i++) { const len = 9 - i, x = fx + s * (7 + i * 2), y = fy - 38 + i * 3 + w * (i / 4); ctx.globalAlpha = 0.5 - i * 0.05; rect(ctx, x - (s < 0 ? len - 1 : 0), y, len, 2, i % 2 ? "#8ac8ff" : "#d8f0ff"); }
+  ctx.globalAlpha = 1;
+}
+function drawBranchFront(u, fx, fy, t) {
+  if (u.branch === "A") return;
+  for (const s of [-1, 1]) for (let i = 0; i < 3; i++) { const k = (t * 2.4 + i / 3 + (s > 0 ? 0.4 : 0)) % 1; rect(ctx, fx + s * 9 + Math.sin(t * 5 + i) * 1, fy - 40 - k * 12, 2, 2 + (k < 0.5 ? 1 : 0), k < 0.4 ? "#ffb040" : k < 0.75 ? "#ff6a3a" : "#c02a20"); }
+}
 // ---------- 角色 ----------
 function drawUnit(u, now) {
   const D = u.def, [fx, fy] = unitFeet(u), t = now / 1000, pop = Math.min(1, u.age / 0.25);
@@ -78,11 +89,14 @@ function drawUnit(u, now) {
   if (u.lv >= 4) { const c = u.branch === "A" ? "#8ac8ff" : "#ff8a7a"; for (let i = 0; i < 4; i++) { const k = (t * 0.9 + i / 4) % 1; rect(ctx, fx - 14 + i * 9 + Math.sin(t * 3 + i) * 2, fy - 4 - k * 48, 2, 2, k < 0.6 ? c : "#ffffff"); } }
   else if (u.lv >= 3) for (let i = 0; i < 3; i++) { const k = (t * 0.7 + i / 3) % 1; dot(ctx, fx - 12 + i * 12 + Math.sin(t * 3 + i) * 2, fy - 6 - k * 40, k < 0.6 ? "#ffd860" : "#fff6c0"); }
   let ph = heroPhase(D, u.atkT); if (ph === "idle" && u.hitT > 0.05) ph = "hurt";
-  const bob = ph === "idle" ? Math.floor(now / 420 + u.id * 0.5) % 2 : ph === "hurt" ? 1 : 0;
+  const walking = ph === "idle" && Math.hypot(u.x - u.tx, u.y - u.ty) > 0.08;
+  const bob = walking ? Math.floor(now / 110 + u.id) % 2 : ph === "idle" ? Math.floor(now / 420 + u.id * 0.5) % 2 : ph === "hurt" ? 1 : 0;
   const big = renderHero(D, { phase: ph, bob, flash: u.hitT > 0.05, face: u.face, skill: u.skillT > 0, lv: u.lv, branch: u.branch, t });
   // 出手前蓄力后撤、出手瞬间前冲一小步（按整像素挪，不拉伸，保持像素风）
   const kb = -R0(u.kb * 2) * u.face + (ph === "wind" ? -2 * u.face : ph === "strike" || ph === "release" ? 3 * u.face : 0), drop = R0((1 - pop) * 30) + (ph === "strike" || ph === "release" ? 1 : 0);
-  ctx.drawImage(big, fx - HOX * 2 + kb, fy - 80 - drop);
+  if (u.lv >= 4) drawBranchBack(u, fx, fy, t);
+  ctx.drawImage(big, fx - HOX * 2 + kb, fy - 80 - drop - (walking && bob ? 1 : 0));
+  if (u.lv >= 4) drawBranchFront(u, fx, fy, t);
   if (u.skillT > 0) addGlow(fx, fy - 22, 30, D.color, 0.4);
   if (S.shieldT > 0) { ctx.globalAlpha = Math.min(1, S.shieldT); ring(ctx, fx, fy - 18, 16, 8, "#8fd0ff", (t * 8 | 0) % 2); ctx.globalAlpha = 1; }
   if (u.frozenT > 0) {
@@ -126,6 +140,7 @@ function drawEnemy(e, now) {
   if (e.hitT > 0.08 && !OPT.calm) { const q = e.kb > 1.2 ? 0.88 : 0.93, dw = R0(120 / q * 0.97), dh = R0(120 * q); ctx.drawImage(big, 0, 0, 120, 120, fx - FOE_FOOT[0] + kb + lunge - R0((dw - 120) / 2), fy - FOE_FOOT[1] - lift + R0((1 - born) * 8) + (120 - dh), dw, dh); }
   else ctx.drawImage(big, fx - FOE_FOOT[0] + kb + lunge, fy - FOE_FOOT[1] - lift + R0((1 - born) * 8));
   ctx.globalAlpha = 1;
+  if (!F.fly && (e.elite || isBoss(e))) { const rr = isBoss(e) ? 22 : 14, c1 = isBoss(e) ? (e.enraged ? "#ff4a3a" : "#c890ff") : "#ffc830"; ring(ctx, fx, fy, rr, rr * 0.4, c1, (t * 6 | 0) % 2); if (isBoss(e)) ring(ctx, fx, fy, rr + 5, (rr + 5) * 0.4, c1, (t * 4 | 0) % 2 === 0); }
   if (isBoss(e)) addGlow(fx, fy - 30 - lift, 46, e.enraged ? "#ff4a3a" : "#b070ff", 0.22 + Math.sin(t * 3) * 0.05);
   else if (e.elite) addGlow(fx, fy - 14 - lift, 22, "#ffc830", 0.2);
   const top = fy - hh - lift;
