@@ -56,7 +56,7 @@ function addNum(x, y, v, color, big, key, maxHp) {
     for (let i = S.fx.length - 1, n = 0; i >= 0 && n < 60; i--, n++) {
       const f = S.fx[i];
       if (f.kind !== "text" || f.key !== key || f.color !== color || f.t > 0.35) continue;
-      f.val += v; f.text = String(Math.round(f.val)); f.t = Math.min(f.t, 0.06);
+      f.val += v; f.text = (color === "#7ee89c" ? "+" : "") + String(Math.round(f.val)); f.t = Math.min(f.t, 0.06);
       const sz = Math.max(f.sz, numSize(maxHp ? f.val / maxHp : 0, big)); if (sz === 4 && f.sz < 4) S.shake = Math.max(S.shake, 0.12);
       f.sz = sz; f.crit = f.crit || !!big;
       return;
@@ -68,7 +68,7 @@ function addNum(x, y, v, color, big, key, maxHp) {
   let stack = 0;
   for (let i = S.fx.length - 1, n = 0; i >= 0 && n < 24; i--, n++) { const f = S.fx[i]; if (f.kind === "text" && f.val != null && f.t < 0.4 && Math.abs(f.x - x) < 0.6 && Math.abs(f.y - (y - 0.35)) < 0.9) stack++; }
   y -= Math.min(stack, 3) * 0.22;
-  addFx({ kind: "text", x: x + (Math.random() - 0.5) * 0.3, y: y - 0.35, text: String(Math.round(v)), val: v, color, life: sz >= 3 ? 0.95 : 0.8, crit: !!big, sz, key, big: sz === 4 });
+  addFx({ kind: "text", x: x + (Math.random() - 0.5) * 0.3, y: y - 0.35, text: (color === "#7ee89c" ? "+" : "") + String(Math.round(v)), val: v, color, life: sz >= 3 ? 0.95 : 0.8, crit: !!big, sz, key, big: sz === 4 });
 }
 
 // ---------- 伤害 ----------
@@ -203,6 +203,11 @@ function hurt(e, amt, type, crit, src) {
   addStat(src, "dmg", real);
   addNum(e.x, e.y, amt, type === "true" ? "#fff0a0" : crit ? "#ffe040" : type === "magic" ? "#d4b4ff" : type === "poison" ? "#9cf07a" : "#ffffff", crit, e.id, e.maxHp);
   // 核心天赋「连锁星芒」：暴击弹一下给附近另一个敌人（弹出去的这一下不再暴击，不会连环）
+  if (crit && byUnit && !OPT.calm) {
+    // 分级顿帧：暴击打在精英/首领身上轻轻一顿；普通怪暴击的小击退
+    if ((e.elite || isBoss(e)) && (S.hitStopCd || 0) <= 0) { S.hitStop = Math.max(S.hitStop || 0, 0.035); S.hitStopCd = 0.35; }
+    else if (!e.elite && !isBoss(e) && !e.d.flying && !e.d.unstoppable && (e.knockCd || 0) <= S.t) { knock(e, 0.18); e.knockCd = S.t + 0.7; }
+  }
   if (crit && byUnit && cl("echo") && !S.inEcho && !e.dead && roll("fight") < 0.25 * cl("echo")) { S.inEcho = true; addFx({ kind: "text", x: e.x, y: e.y - 0.5, text: "回声", color: "#ffd860", life: 0.6 }); hurt(e, amt * 0.5, type, false, src); S.inEcho = false; }
   if (crit && src && src.def && dk("ks_atk")) {
     let o = null, bd = 2.2;
@@ -223,6 +228,7 @@ function bossFanfare(e, kind) {
   addFx({ kind: "flash", life: death ? 0.5 : 0.35, color: death ? "#ffffff" : col });
   addFx({ kind: "ring", x: e.x, y: e.y, color: col, life: 0.9, r0: 0.4, r1: death ? 9 : 6 });
   S.shake = Math.max(S.shake, death ? 0.9 : 0.6); S.zoomK = Math.max(S.zoomK || 0, death ? 0.05 : 0.03);
+  if (!death) S.hitStop = Math.max(S.hitStop || 0, 0.12);
   if (!death) return;
   // 连环爆炸 → 光柱 → 金色碎片雨 → 击破横幅
   for (let i = 0; i < 8; i++) {
@@ -606,6 +612,9 @@ function useSkill(u) {
   S.fx = S.fx.filter(f => f.kind !== "skillcut");
   addFx({ kind: "skillcut", id: D.id, lv: u.lv, branch: u.branch, name: D.name, skill: D.skill.name, color: D.color, hero: !!u.hero, life: 1.1 });
   if (u.hero) addFx({ kind: "flash", life: 0.18, color: D.color });
+  // 出手强调：定格一小下 + 镜头往里推一点 + 一圈向外的冲击线
+  if (!OPT.calm) { S.hitStop = Math.max(S.hitStop || 0, u.hero ? 0.06 : 0.03); S.zoomK = Math.max(S.zoomK || 0, u.hero ? 0.025 : 0.012); }
+  addFx({ kind: "burstlines", x: u.x, y: u.y, color: D.color, life: 0.35 });
   if (cl("lg_tide")) for (const a of S.units) if (alive(a)) { heal(a, a.maxHp * 0.06, true, null); if (a !== u) a.sp = Math.min(a.def.sp, a.sp + 8); }
 }
 function autoWant(u) {

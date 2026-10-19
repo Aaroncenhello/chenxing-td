@@ -122,7 +122,9 @@ function drawEnemy(e, now) {
   // 从传送门走出来：淡入 + 从地里升起一点，脚下闪一下紫光
   const born = Math.min(1, (S.t - (e.bornT == null ? -9 : e.bornT)) / 0.45);
   if (born < 1) { ctx.globalAlpha *= born; addGlow(fx, fy - 2, 20, "#c060ff", 0.6 * (1 - born)); }
-  ctx.drawImage(big, fx - FOE_FOOT[0] + kb + lunge, fy - FOE_FOOT[1] - lift + R0((1 - born) * 8));
+  // 挨打瞬间压扁一点（横向略宽、纵向略扁，脚底不动），暴击更明显
+  if (e.hitT > 0.08 && !OPT.calm) { const q = e.kb > 1.2 ? 0.88 : 0.93, dw = R0(120 / q * 0.97), dh = R0(120 * q); ctx.drawImage(big, 0, 0, 120, 120, fx - FOE_FOOT[0] + kb + lunge - R0((dw - 120) / 2), fy - FOE_FOOT[1] - lift + R0((1 - born) * 8) + (120 - dh), dw, dh); }
+  else ctx.drawImage(big, fx - FOE_FOOT[0] + kb + lunge, fy - FOE_FOOT[1] - lift + R0((1 - born) * 8));
   ctx.globalAlpha = 1;
   if (isBoss(e)) addGlow(fx, fy - 30 - lift, 46, e.enraged ? "#ff4a3a" : "#b070ff", 0.22 + Math.sin(t * 3) * 0.05);
   else if (e.elite) addGlow(fx, fy - 14 - lift, 22, "#ffc830", 0.2);
@@ -182,7 +184,11 @@ function drawFx(f, now) {
     if (/^\+?\d+$/.test(f.text)) {
       const [x, y] = tpx(f.x, f.y), pop = f.t < 0.08 ? -4 : 0;
       const sz = f.sz || (f.crit ? 3 : 2), pop2 = sz === 4 && f.t < 0.12 ? -6 : pop;   // 最大号刚出现时往上弹一下
-      if (k < 0.85 || (t * 20 | 0) % 2) pixNum(ctx, f.text, x, y - 10 - R0(k * 18) + pop2, sz === 4 ? "#ffe040" : f.color, sz);
+      const heal = f.color === "#7ee89c", yy = y - 10 - R0(k * (heal ? 11 : 18)) + pop2;
+      if (k < 0.85 || (t * 20 | 0) % 2) {
+        if (f.crit && sz < 4) pixNum(ctx, f.text, x + 1, yy + 1, "#a02810", sz);   // 暴击数字多一层深橙描边
+        pixNum(ctx, f.text, x, yy, sz === 4 ? "#ffe040" : f.crit ? "#ffd860" : f.color, sz);
+      }
     } else overlayTexts.push(f);
     return;
   }
@@ -221,6 +227,11 @@ function drawFx(f, now) {
     ctx.globalAlpha = 0.55 * (1 - k); rect(ctx, x - (w >> 1), y - 80, w, 100, f.color); ctx.globalAlpha = 1;
     rect(ctx, x - 1, y - 80 + R0(k * 40), 2, 100 - R0(k * 40), "#ffffff");
     addGlow(x, y - 10, 34, f.color || "#ffe38a", 0.5 * (1 - k));
+  } else if (f.kind === "burstlines") {
+    const [x, y] = tpx(f.x, f.y), r0 = 10 + k * 34, r1 = r0 + 10 * (1 - k);
+    ctx.globalAlpha = 1 - k;
+    for (let i = 0; i < 14; i++) { const a = i / 14 * 6.283 + 0.2; line(ctx, x + Math.cos(a) * r0, y - 4 + Math.sin(a) * r0 * 0.75, x + Math.cos(a) * r1, y - 4 + Math.sin(a) * r1 * 0.75, i % 2 ? f.color : "#ffffff", 1); }
+    ctx.globalAlpha = 1;
   } else if (f.kind === "cast") {
     const [x, y] = tpx(f.x, f.y), r = 8 + k * 28;
     ring(ctx, x, y + 14, r, r * 0.45, f.color, (t * 12 | 0) % 2); ring(ctx, x, y + 14, r * 0.6, r * 0.27, "#ffffff", true);

@@ -3,7 +3,7 @@ const { spawnSync } = require('child_process'), fs = require('fs'), path = requi
 const OUT = path.resolve(__dirname, 'out');
 fs.mkdirSync(OUT, { recursive: true });
 const only = process.argv.slice(2);
-const ALL = ['smoke-full', 'events', 'affix', 'boss', 'formation', 'codex', 'waves-endless', 'meta', 'rewards', 'save', 'seeded', 'juice', 'help', 'phase5', 'phase6', 'banish', 'syn2', 'evchain', 'shop2', 'foe3', 'haz8', 'sp2', 'ct6', 'c3', 'bossmech', 'weather', 'vis', 'ch5', 'cards5', 'heroes5', 'soak-heroes'];
+const ALL = ['smoke-full', 'events', 'affix', 'boss', 'formation', 'codex', 'waves-endless', 'meta', 'rewards', 'save', 'seeded', 'juice', 'help', 'phase5', 'phase6', 'banish', 'syn2', 'evchain', 'shop2', 'foe3', 'haz8', 'sp2', 'ct6', 'c3', 'bossmech', 'weather', 'vis', 'ch5', 'cards5', 'heroes5', 'feel', 'soak-heroes'];
 const list = only.length ? only : ALL;
 const failed = [];
 for (const name of list) {

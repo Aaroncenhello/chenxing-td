@@ -3792,7 +3792,7 @@ function addNum(x, y, v, color, big, key, maxHp) {
     for (let i = S.fx.length - 1, n = 0; i >= 0 && n < 60; i--, n++) {
       const f = S.fx[i];
       if (f.kind !== "text" || f.key !== key || f.color !== color || f.t > 0.35) continue;
-      f.val += v; f.text = String(Math.round(f.val)); f.t = Math.min(f.t, 0.06);
+      f.val += v; f.text = (color === "#7ee89c" ? "+" : "") + String(Math.round(f.val)); f.t = Math.min(f.t, 0.06);
       const sz = Math.max(f.sz, numSize(maxHp ? f.val / maxHp : 0, big)); if (sz === 4 && f.sz < 4) S.shake = Math.max(S.shake, 0.12);
       f.sz = sz; f.crit = f.crit || !!big;
       return;
@@ -3804,7 +3804,7 @@ function addNum(x, y, v, color, big, key, maxHp) {
   let stack = 0;
   for (let i = S.fx.length - 1, n = 0; i >= 0 && n < 24; i--, n++) { const f = S.fx[i]; if (f.kind === "text" && f.val != null && f.t < 0.4 && Math.abs(f.x - x) < 0.6 && Math.abs(f.y - (y - 0.35)) < 0.9) stack++; }
   y -= Math.min(stack, 3) * 0.22;
-  addFx({ kind: "text", x: x + (Math.random() - 0.5) * 0.3, y: y - 0.35, text: String(Math.round(v)), val: v, color, life: sz >= 3 ? 0.95 : 0.8, crit: !!big, sz, key, big: sz === 4 });
+  addFx({ kind: "text", x: x + (Math.random() - 0.5) * 0.3, y: y - 0.35, text: (color === "#7ee89c" ? "+" : "") + String(Math.round(v)), val: v, color, life: sz >= 3 ? 0.95 : 0.8, crit: !!big, sz, key, big: sz === 4 });
 }
 
 // ---------- 伤害 ----------
@@ -3939,6 +3939,11 @@ function hurt(e, amt, type, crit, src) {
   addStat(src, "dmg", real);
   addNum(e.x, e.y, amt, type === "true" ? "#fff0a0" : crit ? "#ffe040" : type === "magic" ? "#d4b4ff" : type === "poison" ? "#9cf07a" : "#ffffff", crit, e.id, e.maxHp);
   // 核心天赋「连锁星芒」：暴击弹一下给附近另一个敌人（弹出去的这一下不再暴击，不会连环）
+  if (crit && byUnit && !OPT.calm) {
+    // 分级顿帧：暴击打在精英/首领身上轻轻一顿；普通怪暴击的小击退
+    if ((e.elite || isBoss(e)) && (S.hitStopCd || 0) <= 0) { S.hitStop = Math.max(S.hitStop || 0, 0.035); S.hitStopCd = 0.35; }
+    else if (!e.elite && !isBoss(e) && !e.d.flying && !e.d.unstoppable && (e.knockCd || 0) <= S.t) { knock(e, 0.18); e.knockCd = S.t + 0.7; }
+  }
   if (crit && byUnit && cl("echo") && !S.inEcho && !e.dead && roll("fight") < 0.25 * cl("echo")) { S.inEcho = true; addFx({ kind: "text", x: e.x, y: e.y - 0.5, text: "回声", color: "#ffd860", life: 0.6 }); hurt(e, amt * 0.5, type, false, src); S.inEcho = false; }
   if (crit && src && src.def && dk("ks_atk")) {
     let o = null, bd = 2.2;
@@ -3959,6 +3964,7 @@ function bossFanfare(e, kind) {
   addFx({ kind: "flash", life: death ? 0.5 : 0.35, color: death ? "#ffffff" : col });
   addFx({ kind: "ring", x: e.x, y: e.y, color: col, life: 0.9, r0: 0.4, r1: death ? 9 : 6 });
   S.shake = Math.max(S.shake, death ? 0.9 : 0.6); S.zoomK = Math.max(S.zoomK || 0, death ? 0.05 : 0.03);
+  if (!death) S.hitStop = Math.max(S.hitStop || 0, 0.12);
   if (!death) return;
   // 连环爆炸 → 光柱 → 金色碎片雨 → 击破横幅
   for (let i = 0; i < 8; i++) {
@@ -4342,6 +4348,9 @@ function useSkill(u) {
   S.fx = S.fx.filter(f => f.kind !== "skillcut");
   addFx({ kind: "skillcut", id: D.id, lv: u.lv, branch: u.branch, name: D.name, skill: D.skill.name, color: D.color, hero: !!u.hero, life: 1.1 });
   if (u.hero) addFx({ kind: "flash", life: 0.18, color: D.color });
+  // 出手强调：定格一小下 + 镜头往里推一点 + 一圈向外的冲击线
+  if (!OPT.calm) { S.hitStop = Math.max(S.hitStop || 0, u.hero ? 0.06 : 0.03); S.zoomK = Math.max(S.zoomK || 0, u.hero ? 0.025 : 0.012); }
+  addFx({ kind: "burstlines", x: u.x, y: u.y, color: D.color, life: 0.35 });
   if (cl("lg_tide")) for (const a of S.units) if (alive(a)) { heal(a, a.maxHp * 0.06, true, null); if (a !== u) a.sp = Math.min(a.def.sp, a.sp + 8); }
 }
 function autoWant(u) {
@@ -6239,7 +6248,9 @@ function drawEnemy(e, now) {
   // 从传送门走出来：淡入 + 从地里升起一点，脚下闪一下紫光
   const born = Math.min(1, (S.t - (e.bornT == null ? -9 : e.bornT)) / 0.45);
   if (born < 1) { ctx.globalAlpha *= born; addGlow(fx, fy - 2, 20, "#c060ff", 0.6 * (1 - born)); }
-  ctx.drawImage(big, fx - FOE_FOOT[0] + kb + lunge, fy - FOE_FOOT[1] - lift + R0((1 - born) * 8));
+  // 挨打瞬间压扁一点（横向略宽、纵向略扁，脚底不动），暴击更明显
+  if (e.hitT > 0.08 && !OPT.calm) { const q = e.kb > 1.2 ? 0.88 : 0.93, dw = R0(120 / q * 0.97), dh = R0(120 * q); ctx.drawImage(big, 0, 0, 120, 120, fx - FOE_FOOT[0] + kb + lunge - R0((dw - 120) / 2), fy - FOE_FOOT[1] - lift + R0((1 - born) * 8) + (120 - dh), dw, dh); }
+  else ctx.drawImage(big, fx - FOE_FOOT[0] + kb + lunge, fy - FOE_FOOT[1] - lift + R0((1 - born) * 8));
   ctx.globalAlpha = 1;
   if (isBoss(e)) addGlow(fx, fy - 30 - lift, 46, e.enraged ? "#ff4a3a" : "#b070ff", 0.22 + Math.sin(t * 3) * 0.05);
   else if (e.elite) addGlow(fx, fy - 14 - lift, 22, "#ffc830", 0.2);
@@ -6299,7 +6310,11 @@ function drawFx(f, now) {
     if (/^\+?\d+$/.test(f.text)) {
       const [x, y] = tpx(f.x, f.y), pop = f.t < 0.08 ? -4 : 0;
       const sz = f.sz || (f.crit ? 3 : 2), pop2 = sz === 4 && f.t < 0.12 ? -6 : pop;   // 最大号刚出现时往上弹一下
-      if (k < 0.85 || (t * 20 | 0) % 2) pixNum(ctx, f.text, x, y - 10 - R0(k * 18) + pop2, sz === 4 ? "#ffe040" : f.color, sz);
+      const heal = f.color === "#7ee89c", yy = y - 10 - R0(k * (heal ? 11 : 18)) + pop2;
+      if (k < 0.85 || (t * 20 | 0) % 2) {
+        if (f.crit && sz < 4) pixNum(ctx, f.text, x + 1, yy + 1, "#a02810", sz);   // 暴击数字多一层深橙描边
+        pixNum(ctx, f.text, x, yy, sz === 4 ? "#ffe040" : f.crit ? "#ffd860" : f.color, sz);
+      }
     } else overlayTexts.push(f);
     return;
   }
@@ -6338,6 +6353,11 @@ function drawFx(f, now) {
     ctx.globalAlpha = 0.55 * (1 - k); rect(ctx, x - (w >> 1), y - 80, w, 100, f.color); ctx.globalAlpha = 1;
     rect(ctx, x - 1, y - 80 + R0(k * 40), 2, 100 - R0(k * 40), "#ffffff");
     addGlow(x, y - 10, 34, f.color || "#ffe38a", 0.5 * (1 - k));
+  } else if (f.kind === "burstlines") {
+    const [x, y] = tpx(f.x, f.y), r0 = 10 + k * 34, r1 = r0 + 10 * (1 - k);
+    ctx.globalAlpha = 1 - k;
+    for (let i = 0; i < 14; i++) { const a = i / 14 * 6.283 + 0.2; line(ctx, x + Math.cos(a) * r0, y - 4 + Math.sin(a) * r0 * 0.75, x + Math.cos(a) * r1, y - 4 + Math.sin(a) * r1 * 0.75, i % 2 ? f.color : "#ffffff", 1); }
+    ctx.globalAlpha = 1;
   } else if (f.kind === "cast") {
     const [x, y] = tpx(f.x, f.y), r = 8 + k * 28;
     ring(ctx, x, y + 14, r, r * 0.45, f.color, (t * 12 | 0) % 2); ring(ctx, x, y + 14, r * 0.6, r * 0.27, "#ffffff", true);
@@ -8670,6 +8690,7 @@ function frame(now) {
   adaptGfx(dt);
   if (S.slowCd > 0) S.slowCd -= dt;
   let k = 1; if (S.slowmo > 0) { S.slowmo -= dt; k = 0.3; }
+  if (S.hitStopCd > 0) S.hitStopCd -= dt;
   if (S.hitStop > 0) { S.hitStop -= dt; k = 0; }   // 顿帧：精英/首领被打死的一瞬间画面停住
   if (!menuOpen && !dlg && !S.paused && !S.over && !S.offer && !S.shop && !S.event) {
     acc += dt * S.speed * k;
