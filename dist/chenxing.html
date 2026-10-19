@@ -85,6 +85,7 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 @keyframes xpfill{from{width:0}}
 @keyframes lvpop{50%{transform:scale(1.06)}}
 @media (prefers-reduced-motion:reduce){.ovbox.res *,.ovbox.res *::after{animation:none!important}}
+.cxprog{font-size:12px;color:#aab4c8;margin:2px 0 6px}.rulebox{text-align:left}.rulebox small{display:block;margin:3px 0;text-align:left;line-height:1.5}
 .rdet{margin:8px 0}.rdet>summary{cursor:pointer;font-size:12px;color:#8ac8ff;padding:6px 0;text-align:center}
 .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 /* 升级翻牌 */
@@ -6580,12 +6581,23 @@ function editSave(fn) { const d = loadSave(); fn(d); writeSave(d); return d; }
 const saveStars = (i, s) => editSave(d => { d.stars[i] = Math.max(d.stars[i] || 0, s); });
 const saveBest = (i, w) => editSave(d => { d.best[i] = Math.max(d.best[i] || 0, w); });
 const endlessStars = (d, i) => Math.min(3, Math.floor((d.best[i] || 0) / 10));
+// 图鉴总完成度：敌人 + 卡牌 + 遗物 + 词缀 + 事件。到了档位给称号和星星（直接按当前进度算，不额外存档）
+const CODEX_TIERS = [{ pct: 25, title: "见习记录者", stars: 2 }, { pct: 50, title: "资深记录者", stars: 3 }, { pct: 75, title: "守望典藏家", stars: 5 }, { pct: 100, title: "晨星全书", stars: 10 }];
+function codexProgress(d) {
+  d = d || loadSave();
+  const allCards = CODEX_CARDS().concat(EVO_CARDS, SIG, CURSES);
+  const have = d.seen.length + allCards.filter(c => d.cardSeen.includes(c.id)).length + d.relicSeen.length + d.afxSeen.length + d.evSeen.length;
+  const all = Object.keys(ENEMIES).length + allCards.length + RELICS.length + AFFIX.length + EVENTS.length;
+  const pct = Math.floor(have / all * 100);
+  const reached = CODEX_TIERS.filter(t => pct >= t.pct);
+  return { have, all, pct, tier: reached[reached.length - 1] || null, next: CODEX_TIERS.find(t => pct < t.pct) || null, stars: reached.reduce((n, t) => n + t.stars, 0) };
+}
 function starBank() {
   const d = loadSave();
   const earned = STAGES.reduce((n, _, i) => n + (d.stars[i] || 0) + endlessStars(d, i) + ((d.diffClear[i] || []).length), 0) + d.achv.length;
   const abyssEarned = Object.values(d.abyss).reduce((n, top) => { for (let l = 1; l <= top; l++) n += abyssStars(l); return n; }, 0);
   const weekEarned = Object.keys(d.week).filter(k => d.week[k] && d.week[k].clear).length * WEEK_STARS;
-  const total = earned + abyssEarned + weekEarned + d.bonusStars;
+  const total = earned + abyssEarned + weekEarned + d.bonusStars + codexProgress(d).stars;
   const spent = diskSpent(d.disk);
   return { earned: total, spent, left: total - spent, perks: d.perks, disk: d.disk };
 }
@@ -6996,7 +7008,7 @@ function rulesHtml() {
   if (wid) rows.push(["天气", `${WEATHER[wid].name}（${WEATHER[wid].tip}）· 每 5 波里有 2 波${S.wx ? "，现在正在下" : ""}`]);
   const ms = [...new Set((ST.boss || []).map(b => b[0]))].filter(t => BOSS_MECH[t]).map(t => `${ENEMIES[t].name}：${BOSS_MECH[t].name}（${BOSS_MECH[t].tip}）`);
   if (ms.length) rows.push(["首领特性", ms.join("；")]);
-  return rows.length ? `<div class="tree"><b>本局规则</b>${rows.map(([k, v]) => `<small><b>${k}</b>　${v}</small>`).join("")}</div>` : "";
+  return rows.length ? `<div class="tree rulebox"><b>本局规则</b>${rows.map(([k, v]) => `<small><b>${k}</b>　${v}</small>`).join("")}</div>` : "";
 }
 function showSynGuide() {
   if (!S || S.over || S.offer || S.shop || S.event || S.cine) return;
@@ -7693,9 +7705,11 @@ function showCodex(tab) {
           <b>${seen ? d.name : "？？？"}${seen && BOSS_TYPES.includes(k) ? " · 首领" : ""}</b>
           <p>${seen ? `生命 ${d.hp} · 攻击 ${d.atk} · 防御 ${d.def} · 法抗 ${d.res}${d.flying ? " · 飞行" : ""}` : "还没遇到"}</p><p>${seen ? ENEMY_DESC[k] || "" : ""}</p>
           ${seen && ult ? `<p class="mech"><b>大招 · ${ult.name}</b>：${ult.tip}</p>` : ""}
+          ${seen && BOSS_MECH[k] ? `<p class="mech"><b>首领特性 · ${BOSS_MECH[k].name}</b>：${BOSS_MECH[k].tip}</p>` : ""}
           ${seen ? `<p class="kn">累计击杀 <b>${n}</b></p>` : ""}</div></div>`; }).join("")}</div>`;
   }
-  openOverlay(`<h2>图鉴</h2>${head}${body}
+  const cp = codexProgress(save);
+  openOverlay(`<h2>图鉴</h2><p class="cxprog">完成度 <b>${cp.pct}%</b>（${cp.have}/${cp.all}）${cp.tier ? ` · 称号：<b style="color:#ffd860">${cp.tier.title}</b>` : ""}${cp.next ? ` · 到 ${cp.next.pct}% 得「${cp.next.title}」+${cp.next.stars}★` : " · 已集齐"}</p>${head}${body}
     <div class="btns"><button id="btn-menu">返回选关</button></div>`);
   for (const c of $("ovbox").querySelectorAll("canvas[data-foe]")) { if (c.dataset.foe) drawFoeIcon(c, c.dataset.foe); else { c.width = 52; c.height = 52; } }
   for (const c of $("ovbox").querySelectorAll("canvas[data-cxc]")) {
@@ -8327,7 +8341,7 @@ showNews();
 window.__td = {
   get S() { return S; }, step, settle: settleRun, newRun: (i, o) => startRun(i, o || {}), beginStage, castUlt, castSpell, useSkill, pickCard, openOffer, randomCards, cardInfo,
   UNITS, STAGES, CARDS, awardExp, levelOf, buyShop, closeShop, rerollOffer, SYNERGY, VIGIL, EVENTS, takeEvent, openEvent,
-  FORMS, AFFIX, cycleForm, setSlot, clearSlot, arrange, formOf, callWaveEarly, toggleAutoWave, cardPool,
+  setFocus, FORMS, AFFIX, cycleForm, setSlot, clearSlot, arrange, formOf, callWaveEarly, toggleAutoWave, cardPool,
 };
 // 切到别的标签页或后台时自动暂停，回来不会被偷袭
 document.addEventListener("visibilitychange", () => { if (document.hidden && S && !S.over && !S.paused && !menuOpen && !dlg && (S.wave > 0 || S.kills > 0)) togglePause(); });

@@ -230,9 +230,11 @@ function showCodex(tab) {
           <b>${seen ? d.name : "？？？"}${seen && BOSS_TYPES.includes(k) ? " · 首领" : ""}</b>
           <p>${seen ? `生命 ${d.hp} · 攻击 ${d.atk} · 防御 ${d.def} · 法抗 ${d.res}${d.flying ? " · 飞行" : ""}` : "还没遇到"}</p><p>${seen ? ENEMY_DESC[k] || "" : ""}</p>
           ${seen && ult ? `<p class="mech"><b>大招 · ${ult.name}</b>：${ult.tip}</p>` : ""}
+          ${seen && BOSS_MECH[k] ? `<p class="mech"><b>首领特性 · ${BOSS_MECH[k].name}</b>：${BOSS_MECH[k].tip}</p>` : ""}
           ${seen ? `<p class="kn">累计击杀 <b>${n}</b></p>` : ""}</div></div>`; }).join("")}</div>`;
   }
-  openOverlay(`<h2>图鉴</h2>${head}${body}
+  const cp = codexProgress(save);
+  openOverlay(`<h2>图鉴</h2><p class="cxprog">完成度 <b>${cp.pct}%</b>（${cp.have}/${cp.all}）${cp.tier ? ` · 称号：<b style="color:#ffd860">${cp.tier.title}</b>` : ""}${cp.next ? ` · 到 ${cp.next.pct}% 得「${cp.next.title}」+${cp.next.stars}★` : " · 已集齐"}</p>${head}${body}
     <div class="btns"><button id="btn-menu">返回选关</button></div>`);
   for (const c of $("ovbox").querySelectorAll("canvas[data-foe]")) { if (c.dataset.foe) drawFoeIcon(c, c.dataset.foe); else { c.width = 52; c.height = 52; } }
   for (const c of $("ovbox").querySelectorAll("canvas[data-cxc]")) {

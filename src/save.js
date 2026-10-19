@@ -73,12 +73,23 @@ function editSave(fn) { const d = loadSave(); fn(d); writeSave(d); return d; }
 const saveStars = (i, s) => editSave(d => { d.stars[i] = Math.max(d.stars[i] || 0, s); });
 const saveBest = (i, w) => editSave(d => { d.best[i] = Math.max(d.best[i] || 0, w); });
 const endlessStars = (d, i) => Math.min(3, Math.floor((d.best[i] || 0) / 10));
+// 图鉴总完成度：敌人 + 卡牌 + 遗物 + 词缀 + 事件。到了档位给称号和星星（直接按当前进度算，不额外存档）
+const CODEX_TIERS = [{ pct: 25, title: "见习记录者", stars: 2 }, { pct: 50, title: "资深记录者", stars: 3 }, { pct: 75, title: "守望典藏家", stars: 5 }, { pct: 100, title: "晨星全书", stars: 10 }];
+function codexProgress(d) {
+  d = d || loadSave();
+  const allCards = CODEX_CARDS().concat(EVO_CARDS, SIG, CURSES);
+  const have = d.seen.length + allCards.filter(c => d.cardSeen.includes(c.id)).length + d.relicSeen.length + d.afxSeen.length + d.evSeen.length;
+  const all = Object.keys(ENEMIES).length + allCards.length + RELICS.length + AFFIX.length + EVENTS.length;
+  const pct = Math.floor(have / all * 100);
+  const reached = CODEX_TIERS.filter(t => pct >= t.pct);
+  return { have, all, pct, tier: reached[reached.length - 1] || null, next: CODEX_TIERS.find(t => pct < t.pct) || null, stars: reached.reduce((n, t) => n + t.stars, 0) };
+}
 function starBank() {
   const d = loadSave();
   const earned = STAGES.reduce((n, _, i) => n + (d.stars[i] || 0) + endlessStars(d, i) + ((d.diffClear[i] || []).length), 0) + d.achv.length;
   const abyssEarned = Object.values(d.abyss).reduce((n, top) => { for (let l = 1; l <= top; l++) n += abyssStars(l); return n; }, 0);
   const weekEarned = Object.keys(d.week).filter(k => d.week[k] && d.week[k].clear).length * WEEK_STARS;
-  const total = earned + abyssEarned + weekEarned + d.bonusStars;
+  const total = earned + abyssEarned + weekEarned + d.bonusStars + codexProgress(d).stars;
   const spent = diskSpent(d.disk);
   return { earned: total, spent, left: total - spent, perks: d.perks, disk: d.disk };
 }

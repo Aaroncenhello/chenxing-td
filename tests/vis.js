@@ -33,6 +33,15 @@ const path = require("path");
   check(t.wx === "rain", "第 4 波森林下雨", t);
   const hints = await p.evaluate(() => JSON.parse(localStorage.getItem("chenxing-td-hints") || "[]"));
   check(hints.includes("wx"), "第一次下雨弹过一次性提示", hints);
+  // 图鉴总完成度：空存档 0%，敏感档位给称号和星星
+  const cp = await p.evaluate(() => {
+    const d0 = loadSave(); const a = codexProgress(d0);
+    const d = loadSave(); d.seen = Object.keys(ENEMIES); d.relicSeen = RELICS.map(r => r.id); d.afxSeen = AFFIX.map(x => x.id); d.evSeen = EVENTS.map(e => e.id);
+    d.cardSeen = CODEX_CARDS().concat(EVO_CARDS, SIG, CURSES).map(c => c.id);
+    return { a, b: codexProgress(d) };
+  });
+  check(cp.a.pct < 25 && cp.a.stars === 0, "空档图鉴没有称号和星星", cp.a);
+  check(cp.b.pct === 100 && cp.b.tier.title === "晨星全书" && cp.b.stars === 20, "全收集 100% 得「晨星全书」，累计 +20★", cp.b);
   noErrors(errs);
   await b.close(); report("vis");
 })();
