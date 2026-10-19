@@ -120,10 +120,10 @@ function killEnemy(e, src) {
   if (e.d.split) for (let i = 0; i < e.d.split; i++) { const s = spawnNear("slime", e, false, true); s.stop = 0.2; s.hitT = 0.1; }
   // 殉爆
   if (cl("boom") && roll("fight") < 0.18 * cl("boom") * (syn("bloodlust") ? 1.5 : 1)) {
-    const dmg = 500 * cl("boom") * powerK() * (syn("bloodlust") ? 1.5 : 1);
+    const dmg = 500 * cl("boom") * powerK() * (syn("bloodlust") ? (syn2("bloodlust") ? 1.8 : 1.5) : 1);
     addFx({ kind: "boom", x: e.x, y: e.y, r: 1.3, color: "#ff8a3a", life: 0.45 });
     burst(e.x, e.y, "#ffb040", 18, 2.8, 0.6, 0.07);
-    const br0 = syn("bloodlust") ? 1.9 : 1.3;
+    const br0 = syn("bloodlust") ? (syn2("bloodlust") ? 2.2 : 1.9) : 1.3;
     for (const o of S.enemies) if (hittable(o) && dist(o, e) <= br0) hurt(o, dmg, "magic", false, { key: "boom" });
   }
   const c = e.corrode;
@@ -162,8 +162,8 @@ function hurt(e, amt, type, crit, src) {
   if (rl("rl_shard") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1.35;
   if (src && src.hero && sg("sg_fr1") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1 + 0.2 * sg("sg_fr1");
   if (src && src.hero && sg("sg_ch1") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1 + 0.18 * sg("sg_ch1");
-  if (syn("frostbite") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1.4;
-  if (syn("shockwave") && e.stunT > 0) amt *= 1.3;
+  if (syn("frostbite") && (e.freezeT > 0 || e.slowT > 0)) amt *= syn2("frostbite") ? 1.6 : 1.4;
+  if (syn("shockwave") && e.stunT > 0) amt *= syn2("shockwave") ? 1.5 : 1.3;
   if (e.burn > 0 && syn("inferno")) amt *= 1.1;
   if (e === S.focus && src && src.def) amt *= FOCUS_BONUS * (cl("lg_focus") ? 1.25 : 1) * (rl("rl_hawkeye") ? 1.2 : 1);
   if (rl("rl_rot") && (e.burn > 0 || (e.poison && e.poison.t > 0) || corrodeK(e) > 0)) amt *= 1.2;
@@ -174,7 +174,7 @@ function hurt(e, amt, type, crit, src) {
     if ((cl("crit") || cu("cu_moon") || dk("crit")) && !crit && roll("fight") < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon")) { amt *= 2 + 0.15 * cl("critdmg"); crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
     if (src.hero && sg("sg_as2") && !isBoss(e) && e.hp <= e.maxHp * 0.25 && e.hp > 0) { amt = e.hp + e.shield + 1; addFx({ kind: "text", x: e.x, y: e.y - 0.6, text: "处决", color: "#4fc0b0", life: 0.9, big: true }); }
     if (cl("freeze") && !e.d.unstoppable && roll("fight") < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
-    if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? 2 : 1), true, src);
+    if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? (syn2("bloodlust") ? 3 : 2) : 1), true, src);
     if (hasAfx(e, "thorns") && src.def.place === "ground" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.18, "magic", null);
     if (hasAfx(e, "warp") && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.15, "magic", null);
     if (tal(src, "t_pierce") && !e.dead) applyCorrode(e, 0.25, 4, src);
@@ -266,7 +266,7 @@ function hurtUnit(u, amt, type, from) {
   amt *= 1 + 0.2 * cu("cu_blood");
   if (type === "magic" && hasTal(u, "lancer")) amt *= 0.6;
   if (type === "magic" && cl("wardmind")) amt *= Math.max(0.3, 1 - 0.08 * cl("wardmind"));
-  if (type === "magic" && syn("wardguard")) amt *= 0.9;
+  if (type === "magic" && syn("wardguard")) amt *= syn2("wardguard") ? 0.85 : 0.9;
   if (from && from.d && hasAfx(from, "vampiric") && !from.dead) from.hp = Math.min(from.maxHp, from.hp + amt * 0.4);
   u.hp -= amt; u.hitT = type === "poison" ? Math.max(u.hitT, 0.06) : 0.14; if (type !== "poison") u.kb = 1;
   addStat(u, "taken", amt);

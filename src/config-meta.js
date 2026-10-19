@@ -221,6 +221,17 @@ const SYNERGY = [
   { id: "corrosive", name: "锈蚀猎手", need: "剧毒喷雾 + 破甲", desc: "中毒/被腐蚀的敌人防御再 −15%", color: "#a8d848",
     prog: () => [(cl("sk_toxic") > 0) + (cl("pierce") > 0), 2] },
 ];
+// 羁绊第二档：两张卡都升到 3 级时，原来的效果再加强一档
+const SYN_T2 = {
+  inferno: { cards: ["sk_fire", "sk_meteor"], desc: "灼烧伤害 ×2（原 ×1.5），被烧的敌人防御 −30%（原 −20%）" },
+  frostbite: { cards: ["sk_nova", "freeze"], desc: "对冻结、减速的敌人伤害 +60%（原 +40%）" },
+  bloodlust: { cards: ["vamp", "boom"], desc: "吸血 ×3（原 ×2），殉爆伤害 +80%、范围更大（原 +50%）" },
+  shockwave: { cards: ["sk_spear", "sk_gale"], desc: "被眩晕的敌人受到的伤害 +50%（原 +30%）" },
+  wardguard: { cards: ["res", "wardmind"], desc: "法术伤害 −15%（原 −10%），全队法抗 +20（原 +10）" },
+  corrosive: { cards: ["sk_toxic", "pierce"], desc: "中毒/被腐蚀的敌人防御 −25%（原 −15%）" },
+};
+for (const g of SYNERGY) if (SYN_T2[g.id]) g.t2 = SYN_T2[g.id];
+const syn2Need = g => g.t2.cards.map(id => "「" + CARD_BY[id].name + "」").join(" 和 ") + " 都升到 3 级";
 for (const g of SYNERGY) g.on = () => { const [a, b] = g.prog(); return a >= b; };
 // 羁绊说明页用：怎么凑（角色名、卡名都从配置里现取，改了配置这里跟着变）
 const synNames = f => UNITS.filter(f).map(u => u.name).join("、");

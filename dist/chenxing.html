@@ -229,6 +229,7 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .cgrp.sys{padding-left:14px;border-left:2px solid #0a0c12;box-shadow:-1px 0 0 rgba(255,255,255,.06)}
 @media (max-width:760px){.cgrp.sys{padding-left:0;border-left:0;box-shadow:none}}
 .diffs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.eff.t2{color:#8fe0a0;opacity:.75}.eff.t2.on{opacity:1;font-weight:700}.eff.t2 small{color:var(--muted);font-weight:400}
 .chaprog{font-family:var(--pix);font-size:10px;color:#ffd860;letter-spacing:.06em}
 .events{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:min(928px,100%)}
 .events .daily{width:auto;align-self:stretch}
@@ -1154,6 +1155,17 @@ const SYNERGY = [
   { id: "corrosive", name: "锈蚀猎手", need: "剧毒喷雾 + 破甲", desc: "中毒/被腐蚀的敌人防御再 −15%", color: "#a8d848",
     prog: () => [(cl("sk_toxic") > 0) + (cl("pierce") > 0), 2] },
 ];
+// 羁绊第二档：两张卡都升到 3 级时，原来的效果再加强一档
+const SYN_T2 = {
+  inferno: { cards: ["sk_fire", "sk_meteor"], desc: "灼烧伤害 ×2（原 ×1.5），被烧的敌人防御 −30%（原 −20%）" },
+  frostbite: { cards: ["sk_nova", "freeze"], desc: "对冻结、减速的敌人伤害 +60%（原 +40%）" },
+  bloodlust: { cards: ["vamp", "boom"], desc: "吸血 ×3（原 ×2），殉爆伤害 +80%、范围更大（原 +50%）" },
+  shockwave: { cards: ["sk_spear", "sk_gale"], desc: "被眩晕的敌人受到的伤害 +50%（原 +30%）" },
+  wardguard: { cards: ["res", "wardmind"], desc: "法术伤害 −15%（原 −10%），全队法抗 +20（原 +10）" },
+  corrosive: { cards: ["sk_toxic", "pierce"], desc: "中毒/被腐蚀的敌人防御 −25%（原 −15%）" },
+};
+for (const g of SYNERGY) if (SYN_T2[g.id]) g.t2 = SYN_T2[g.id];
+const syn2Need = g => g.t2.cards.map(id => "「" + CARD_BY[id].name + "」").join(" 和 ") + " 都升到 3 级";
 for (const g of SYNERGY) g.on = () => { const [a, b] = g.prog(); return a >= b; };
 // 羁绊说明页用：怎么凑（角色名、卡名都从配置里现取，改了配置这里跟着变）
 const synNames = f => UNITS.filter(f).map(u => u.name).join("、");
@@ -2025,11 +2037,14 @@ function tal(u, node) {
 const lvK = (u, k) => UPGRADE[k][Math.min(3, u.lv - 1)];
 const perk = id => S.perks.includes(id);
 const syn = id => !!(S.syn && S.syn[id]);
+const syn2 = id => !!(S.syn2 && S.syn2[id]);   // 羁绊第二档
 function updateSyn() {
   const o = {}; let n = 0;
   for (const g of SYNERGY) { try { if (g.on()) { o[g.id] = 1; n++; } } catch (e) {} }
-  const was = S.syn || {};
-  S.syn = o; S.synN = n;
+  const was = S.syn || {}, was2 = S.syn2 || {}, o2 = {};
+  for (const g of SYNERGY) if (o[g.id] && g.t2 && g.t2.cards.every(id => cl(id) >= 3)) o2[g.id] = 1;
+  S.syn = o; S.syn2 = o2; S.synN = n;
+  for (const g of SYNERGY) if (o2[g.id] && !was2[g.id]) addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.8, text: "羁绊 Ⅱ · " + g.name, color: g.color, life: 1.8, big: true });
   for (const g of SYNERGY) if (o[g.id] && !was[g.id]) {
     addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.4, text: "羁绊 · " + g.name, color: g.color, life: 1.6, big: true });
     S.events.push({ type: "syn", id: g.id, name: g.name, desc: g.desc, color: g.color });
@@ -2140,7 +2155,7 @@ function uDef(u) {
   if (u.hero && sg("sg_me1")) d *= 1 + 0.2 * sg("sg_me1");
   return d;
 }
-const uRes = u => u.def.res + 8 * cl("armor") + 10 * cl("res") + (syn("wardguard") ? 10 : 0);
+const uRes = u => u.def.res + 8 * cl("armor") + 10 * cl("res") + (syn("wardguard") ? (syn2("wardguard") ? 20 : 10) : 0);
 function uInterval(u) {
   let i = u.def.interval / (skillOn(u, "archer") ? 2 : skillOn(u, "gunner") ? 3 : 1);
   if (br(u, "sword", "A")) i *= 0.7;
@@ -2180,7 +2195,7 @@ const slowAura = e => (toCrystal(e) <= 3.5 ? 1 - Math.min(0.5, 0.12 * cl("slow")
 const chillOf = e => 1;
 const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e);
 const corrodeK = e => (e.corrode && e.corrode.t > 0 ? e.corrode.k : 0);
-const eDef = e => (e.d.def + (S.mod === "tough" ? 150 : 0)) * (ab(19) ? 1.2 : 1) * (1 - corrodeK(e)) * (1 - 0.15 * cl("pierce")) * (syn("inferno") && e.burn > 0 ? 0.8 : 1) * (syn("corrosive") && corrodeK(e) > 0 ? 0.85 : 1);
+const eDef = e => (e.d.def + (S.mod === "tough" ? 150 : 0)) * (ab(19) ? 1.2 : 1) * (1 - corrodeK(e)) * (1 - 0.15 * cl("pierce")) * (syn("inferno") && e.burn > 0 ? (syn2("inferno") ? 0.7 : 0.8) : 1) * (syn("corrosive") && corrodeK(e) > 0 ? (syn2("corrosive") ? 0.75 : 0.85) : 1);
 const corrodeOf = u => (br(u, "alchemist", "A") ? 0.55 : u.lv >= 3 ? 0.4 : 0.25) + (u.hero ? 0.1 * sg("sg_al1") : 0);
 const maxAllies = () => RULES.maxAllies + 2 * cl("lg_army");
 const reviveT = () => cl("lg_phoenix") ? 3 : RULES.revive * (1 - 0.06 * dk("rally")) * (1 - 0.25 * cl("revive")) * (ab(15) ? 1.5 : 1);
@@ -2193,7 +2208,7 @@ function calc(atk, type, def, res) {
 }
 function burnEnemy(e, dps, t, src) {
   if (e.dead) return;
-  e.burn = Math.max(e.burn || 0, t); e.burnDps = Math.max(e.burnDps || 0, dps * (syn("inferno") ? 1.5 : 1)); e.burnSrc = src || null; e.burnAcc = e.burnAcc || 0;
+  e.burn = Math.max(e.burn || 0, t); e.burnDps = Math.max(e.burnDps || 0, dps * (syn("inferno") ? (syn2("inferno") ? 2 : 1.5) : 1)); e.burnSrc = src || null; e.burnAcc = e.burnAcc || 0;
 }
 function markEnemy(e, t) { if (!e.dead) e.mark = Math.max(e.mark || 0, t); }
 function applyCorrode(e, k, t, src) {
@@ -2255,7 +2270,7 @@ function newRun(stage, opts) {
     cine: null, cineWave: -1, breaks: 0, ultsFired: 0, log: [], t0: Date.now(), maxHit: 0, bestSyn: 0,
     formIdx: opts.formIdx == null ? 1 : opts.formIdx, drag: null, autoWave: opts.autoWave !== false, earlyCalls: 0,
     exped: opts.exped ? { node: opts.exped.node, floor: opts.exped.floor } : null, waveScale: opts.exped ? STAGES[stage].waves / opts.exped.waves : 0,
-    event: null, eventWave: -1, eventsDone: [], buff: {}, nextWaveK: 1, slowWaves: 0, weakWaves: 0, hazK: 1, hazSlow: false, ultK: 1, forceRare: 0, riftDust: 0,
+    event: null, eventWave: -1, eventsDone: [], evFlags: [], buff: {}, nextWaveK: 1, slowWaves: 0, weakWaves: 0, hazK: 1, hazSlow: false, ultK: 1, forceRare: 0, riftDust: 0,
   };
   if (week && week.rules.includes("nospell")) S.mod = "noSpell";
   initHaz(ST.haz);
@@ -3096,6 +3111,68 @@ const EVENTS = [
       { name: "捂住耳朵", desc: "全队回满生命，损失 60 星尘", on: () => { S.dust = Math.max(0, S.dust - 60); for (const u of S.units) { if (u.down > 0) reviveUnit(u); u.hp = u.maxHp; } } },
       { name: "念出自己的名字", desc: "洗掉身上一道诅咒；没有诅咒就 +140 星尘", on: () => { const ids = Object.keys(S.curses || {}); if (ids.length) { const id = ids[Math.floor(roll("ev") * ids.length)]; delete S.curses[id]; for (const u of S.units) { u.maxHp = uMaxHp(u); u.hp = Math.min(u.hp, u.maxHp); } addFx({ kind: "banner", text: "洗掉了 · " + CURSE_BY[id].name, life: 1.8 }); } else S.dust += 140; } },
     ] },
+  // ---- 第二批事件（含两组连锁：前一个事件里的选择会决定后面出现什么）----
+  { id: "stranger", name: "蒙面的商人", text: "他没有摆摊，只是把一张发黄的地图在你们面前抖了抖。",
+    opts: [
+      { name: "买下地图", cost: 80, desc: "花 80 星尘。之后会遇到一处藏宝点（连锁事件）", on: () => { S.dust -= 80; S.evFlags.push("map"); } },
+      { name: "赊账换护符", desc: "全队防御 +20%，但损失 60 星尘", on: () => { S.dust = Math.max(0, S.dust - 60); buffAll({ def: 1.2 }); } },
+      { name: "赶走他", desc: "得到 60 星尘", on: () => { S.dust += 60; } },
+    ] },
+  { id: "treasure_map", name: "藏宝点", requires: "map", text: "地图上画着叉的地方，土是新翻过的。",
+    opts: [
+      { name: "全力挖掘", desc: "得到一件遗物，但下一波敌人 +25%", on: () => { gainRelic(); S.nextWaveK = 1.25; } },
+      { name: "只挖浅层", desc: "得到 150 星尘", on: () => { S.dust += 150; } },
+      { name: "留给后人", desc: "全队生命上限 +10%", on: () => { buffAll({ hp: 1.1 }); } },
+    ] },
+  { id: "orphan", name: "迷路的孩子", text: "她抱着一只破布娃娃，看见你们就不哭了。",
+    opts: [
+      { name: "带在身边", desc: "晨星碑回复 20% 生命。之后会有人来道谢（连锁事件）", on: () => { healCrystal(0.2); S.evFlags.push("grateful"); } },
+      { name: "给她些吃的", desc: "花 40 星尘，立刻获得一大笔经验", cost: 40, on: () => { S.dust -= 40; gainXp(S.xpNeed * 0.6); } },
+      { name: "没时间管", desc: "得到 30 星尘", on: () => { S.dust += 30; } },
+    ] },
+  { id: "grateful", name: "村民的谢礼", requires: "grateful", text: "一队村民找到了防线，领头的老人把一只布包放在地上。",
+    opts: [
+      { name: "收下行囊", desc: "立刻翻一张稀有卡", on: () => { S.forceRare = 1; S.pending++; } },
+      { name: "收下传家宝", desc: "得到一件遗物", on: () => { gainRelic(); } },
+      { name: "请他们留下帮忙", desc: "全队回满生命，所有伙伴升一阶（最多到 3 阶）", on: () => { for (const u of S.units) { if (u.down > 0) reviveUnit(u); u.hp = u.maxHp; } levelUpSome(u => u.lv < 3); } },
+    ] },
+  { id: "campfire", name: "篝火", text: "有人在废墟里生了火，火堆旁还留着几张空位。",
+    opts: [
+      { name: "好好休息", desc: "全队回满生命并立刻站起", on: () => { for (const u of S.units) { if (u.down > 0) reviveUnit(u); u.hp = u.maxHp; } } },
+      { name: "围着磨刀", desc: "全队攻击 +12%", on: () => { buffAll({ atk: 1.12 }); } },
+      { name: "轮流守夜", desc: "下一波敌人 −20%，得到一点经验", on: () => { S.nextWaveK = 0.8; gainXp(S.xpNeed * 0.3); } },
+    ] },
+  { id: "mirror", name: "破碎的镜子", text: "每一块碎片里，你们都站在稍微不同的位置。",
+    opts: [
+      { name: "凝视倒影", desc: "随机一张还没满级的卡再升一级", need: () => Object.keys(S.cards).some(id => CARD_BY[id] && !CARD_BY[id].filler && S.cards[id] < CARD_BY[id].max),
+        on: () => { const ids = Object.keys(S.cards).filter(id => CARD_BY[id] && !CARD_BY[id].filler && S.cards[id] < CARD_BY[id].max); pickCard(ids[Math.floor(roll("ev") * ids.length)], true); } },
+      { name: "打碎它", desc: "得到 110 星尘", on: () => { S.dust += 110; } },
+      { name: "收起碎片", desc: "全队攻击速度 +10%", on: () => { buffAll({ aspd: 1.1 }); } },
+    ] },
+  { id: "smith", name: "流浪铁匠", text: "他的炉子在板车上，煤还没灭。",
+    opts: [
+      { name: "重锻武器", cost: 100, desc: "花 100 星尘，全队攻击 +22%", on: () => { S.dust -= 100; buffAll({ atk: 1.22 }); } },
+      { name: "加固护甲", cost: 60, desc: "花 60 星尘，全队防御 +30%", on: () => { S.dust -= 60; buffAll({ def: 1.3 }); } },
+      { name: "帮忙拉风箱", desc: "得到 40 星尘，全队攻击速度 +6%", on: () => { S.dust += 40; buffAll({ aspd: 1.06 }); } },
+    ] },
+  { id: "storm", name: "暴风雨前夕", text: "天压得很低，远处的云里一直在闪。",
+    opts: [
+      { name: "趁乱布防", desc: "接下来 2 波敌人移动变慢", on: () => { S.slowWaves = Math.max(S.slowWaves || 0, 2); } },
+      { name: "顶风推进", desc: "全队攻击 +15%，下一波敌人 +15%", on: () => { buffAll({ atk: 1.15 }); S.nextWaveK = 1.15; } },
+      { name: "躲进地窖", desc: "晨星碑回复 30% 生命", on: () => { healCrystal(0.3); } },
+    ] },
+  { id: "duel", name: "拦路的挑战者", text: "一个披着残甲的身影站在路中间，没有拔剑，只是等着。",
+    opts: [
+      { name: "接受挑战", desc: "一只精英从传送门冲来，击杀它额外得 150 星尘", on: () => { const p = PORTALS[Math.floor(roll("ev") * Math.max(1, PORTALS.length))] || { x: 1, y: 1 }; const pool = ST.pool.filter(q => S.wave >= q[2]).sort((a, b) => b[1] - a[1]); spawnAt((pool[0] || ["orc"])[0], p.x, p.y, true).hitT = 0.2; S.riftDust = 150; addFx({ kind: "banner", text: "挑战者来了！", life: 1.8, danger: true }); } },
+      { name: "出钱让他让路", cost: 70, desc: "花 70 星尘，得到一次翻牌", on: () => { S.dust -= 70; S.pending++; } },
+      { name: "绕过去", desc: "什么也没发生", on: () => { } },
+    ] },
+  { id: "library", name: "失落的图书馆", text: "书架塌了一半，剩下的纸页还在缓缓翻动。",
+    opts: [
+      { name: "通读典籍", desc: "立刻获得一整级经验", on: () => { gainXp(S.xpNeed); } },
+      { name: "抄录秘法", desc: "自动技能冷却 −15%", on: () => { buffAll({ cd: 0.85 }); } },
+      { name: "拆书换钱", desc: "得到 120 星尘", on: () => { S.dust += 120; } },
+    ] },
 ];
 const EVENT_BY = Object.fromEntries(EVENTS.map(e => [e.id, e]));
 
@@ -3151,8 +3228,11 @@ function eventDue(w) {
 }
 function openEvent() {
   if (S.over || S.event || S.shop) return;
-  const pool = EVENTS.filter(e => !S.eventsDone.includes(e.id));
-  const src = pool.length ? pool : EVENTS;
+  // 连锁事件：前面选过带标记的选项，后续事件才会进池；有待触发的后续事件就优先来
+  const flags = S.evFlags || [];
+  const pool = EVENTS.filter(e => !S.eventsDone.includes(e.id) && (!e.requires || flags.includes(e.requires)));
+  const follow = pool.filter(e => e.requires);
+  const src = follow.length ? follow : pool.length ? pool : EVENTS.filter(e => !e.requires);
   const def = src[Math.floor(roll("ev") * src.length)];
   const opts = def.opts.filter(o => (!o.need || o.need()) && (!o.cost || S.dust >= o.cost));
   if (opts.length < 2) { S.eventWave = eventAt(S.wave); return; }   // 选项不够就跳过
@@ -3382,10 +3462,10 @@ function killEnemy(e, src) {
   if (e.d.split) for (let i = 0; i < e.d.split; i++) { const s = spawnNear("slime", e, false, true); s.stop = 0.2; s.hitT = 0.1; }
   // 殉爆
   if (cl("boom") && roll("fight") < 0.18 * cl("boom") * (syn("bloodlust") ? 1.5 : 1)) {
-    const dmg = 500 * cl("boom") * powerK() * (syn("bloodlust") ? 1.5 : 1);
+    const dmg = 500 * cl("boom") * powerK() * (syn("bloodlust") ? (syn2("bloodlust") ? 1.8 : 1.5) : 1);
     addFx({ kind: "boom", x: e.x, y: e.y, r: 1.3, color: "#ff8a3a", life: 0.45 });
     burst(e.x, e.y, "#ffb040", 18, 2.8, 0.6, 0.07);
-    const br0 = syn("bloodlust") ? 1.9 : 1.3;
+    const br0 = syn("bloodlust") ? (syn2("bloodlust") ? 2.2 : 1.9) : 1.3;
     for (const o of S.enemies) if (hittable(o) && dist(o, e) <= br0) hurt(o, dmg, "magic", false, { key: "boom" });
   }
   const c = e.corrode;
@@ -3424,8 +3504,8 @@ function hurt(e, amt, type, crit, src) {
   if (rl("rl_shard") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1.35;
   if (src && src.hero && sg("sg_fr1") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1 + 0.2 * sg("sg_fr1");
   if (src && src.hero && sg("sg_ch1") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1 + 0.18 * sg("sg_ch1");
-  if (syn("frostbite") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1.4;
-  if (syn("shockwave") && e.stunT > 0) amt *= 1.3;
+  if (syn("frostbite") && (e.freezeT > 0 || e.slowT > 0)) amt *= syn2("frostbite") ? 1.6 : 1.4;
+  if (syn("shockwave") && e.stunT > 0) amt *= syn2("shockwave") ? 1.5 : 1.3;
   if (e.burn > 0 && syn("inferno")) amt *= 1.1;
   if (e === S.focus && src && src.def) amt *= FOCUS_BONUS * (cl("lg_focus") ? 1.25 : 1) * (rl("rl_hawkeye") ? 1.2 : 1);
   if (rl("rl_rot") && (e.burn > 0 || (e.poison && e.poison.t > 0) || corrodeK(e) > 0)) amt *= 1.2;
@@ -3436,7 +3516,7 @@ function hurt(e, amt, type, crit, src) {
     if ((cl("crit") || cu("cu_moon") || dk("crit")) && !crit && roll("fight") < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon")) { amt *= 2 + 0.15 * cl("critdmg"); crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
     if (src.hero && sg("sg_as2") && !isBoss(e) && e.hp <= e.maxHp * 0.25 && e.hp > 0) { amt = e.hp + e.shield + 1; addFx({ kind: "text", x: e.x, y: e.y - 0.6, text: "处决", color: "#4fc0b0", life: 0.9, big: true }); }
     if (cl("freeze") && !e.d.unstoppable && roll("fight") < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
-    if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? 2 : 1), true, src);
+    if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? (syn2("bloodlust") ? 3 : 2) : 1), true, src);
     if (hasAfx(e, "thorns") && src.def.place === "ground" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.18, "magic", null);
     if (hasAfx(e, "warp") && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.15, "magic", null);
     if (tal(src, "t_pierce") && !e.dead) applyCorrode(e, 0.25, 4, src);
@@ -3528,7 +3608,7 @@ function hurtUnit(u, amt, type, from) {
   amt *= 1 + 0.2 * cu("cu_blood");
   if (type === "magic" && hasTal(u, "lancer")) amt *= 0.6;
   if (type === "magic" && cl("wardmind")) amt *= Math.max(0.3, 1 - 0.08 * cl("wardmind"));
-  if (type === "magic" && syn("wardguard")) amt *= 0.9;
+  if (type === "magic" && syn("wardguard")) amt *= syn2("wardguard") ? 0.85 : 0.9;
   if (from && from.d && hasAfx(from, "vampiric") && !from.dead) from.hp = Math.min(from.maxHp, from.hp + amt * 0.4);
   u.hp -= amt; u.hitT = type === "poison" ? Math.max(u.hitT, 0.06) : 0.14; if (type !== "poison") u.kb = 1;
   addStat(u, "taken", amt);
@@ -6644,17 +6724,17 @@ $("btn-shopgo").addEventListener("click", () => { closeShop(); $("shopbox").data
 
 // ---------- 羁绊看板：已经凑齐的 + 正在凑的，点一下看全部羁绊说明 ----------
 function synState() {
-  return SYNERGY.map(g => { let a = 0, b = 1; try { [a, b] = g.prog(); } catch (e) {} return { g, a: Math.min(a, b), b, on: !!(S.syn && S.syn[g.id]) }; });
+  return SYNERGY.map(g => { let a = 0, b = 1; try { [a, b] = g.prog(); } catch (e) {} return { g, a: Math.min(a, b), b, on: !!(S.syn && S.syn[g.id]), on2: !!(S.syn2 && S.syn2[g.id]) }; });
 }
 function synChips() {
   const list = synState().filter(x => x.on || x.a > 0).sort((x, y) => (y.on - x.on) || (x.b - x.a) - (y.b - y.a));
-  return list.map(x => `<span class="sc${x.on ? " on" : ""}" style="--c:${x.g.color}" title="${x.g.need}：${x.g.desc}">${x.on ? "✓" : ""}${x.g.name.slice(0, 2)}<u>${x.g.name.slice(2)}</u>${x.on ? "" : `<i>${x.a}/${x.b}</i>`}</span>`).join("")
+  return list.map(x => `<span class="sc${x.on ? " on" : ""}" style="--c:${x.g.color}" title="${x.g.need}：${x.g.desc}">${x.on ? "✓" : ""}${x.g.name.slice(0, 2)}<u>${x.g.name.slice(2)}</u>${x.on2 ? "Ⅱ" : ""}${x.on ? "" : `<i>${x.a}/${x.b}</i>`}</span>`).join("")
     || `<span class="sc none">还没有羁绊</span>`;
 }
 let synKey = "";
 function updateSynBar() {
   if (!S) return;
-  const st = synState(), key = st.map(x => x.a + (x.on ? "!" : "")).join(",");
+  const st = synState(), key = st.map(x => x.a + (x.on ? "!" : "") + (x.on2 ? "2" : "")).join(",");
   if (synKey === key) return;
   synKey = key;
   const html = `<b class="sch">羁绊<button class="sc help" data-synhelp aria-label="羁绊说明">?</button></b>${synChips()}`;
@@ -6664,7 +6744,7 @@ function synGuideHtml(live) {
   const st = live ? synState() : null;
   return `<div class="codex syng">${SYNERGY.map((g, i) => { const x = st && st[i];
     return `<div class="cx${x && x.on ? " on" : ""}" style="--c:${g.color}"><div><b style="color:${g.color}">${x && x.on ? "✓ " : ""}${g.name}${x ? `<span class="sp">${x.on ? "已生效" : `${x.a}/${x.b}`}</span>` : ""}</b>
-      <p class="need">条件：${g.need}</p><p class="eff">效果：${g.desc}</p><p>${SYN_HOW[g.id] ? SYN_HOW[g.id]() : ""}</p></div></div>`; }).join("")}</div>`;
+      <p class="need">条件：${g.need}</p><p class="eff">效果：${g.desc}</p>${g.t2 ? `<p class="eff t2${x && x.on2 ? " on" : ""}">${x && x.on2 ? "✓ " : ""}强化 Ⅱ：${g.t2.desc}<br><small>条件：${syn2Need(g)}</small></p>` : ""}<p>${SYN_HOW[g.id] ? SYN_HOW[g.id]() : ""}</p></div></div>`; }).join("")}</div>`;
 }
 function showSynGuide() {
   if (!S || S.over || S.offer || S.shop || S.event || S.cine) return;

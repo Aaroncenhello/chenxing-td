@@ -38,11 +38,14 @@ function tal(u, node) {
 const lvK = (u, k) => UPGRADE[k][Math.min(3, u.lv - 1)];
 const perk = id => S.perks.includes(id);
 const syn = id => !!(S.syn && S.syn[id]);
+const syn2 = id => !!(S.syn2 && S.syn2[id]);   // 羁绊第二档
 function updateSyn() {
   const o = {}; let n = 0;
   for (const g of SYNERGY) { try { if (g.on()) { o[g.id] = 1; n++; } } catch (e) {} }
-  const was = S.syn || {};
-  S.syn = o; S.synN = n;
+  const was = S.syn || {}, was2 = S.syn2 || {}, o2 = {};
+  for (const g of SYNERGY) if (o[g.id] && g.t2 && g.t2.cards.every(id => cl(id) >= 3)) o2[g.id] = 1;
+  S.syn = o; S.syn2 = o2; S.synN = n;
+  for (const g of SYNERGY) if (o2[g.id] && !was2[g.id]) addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.8, text: "羁绊 Ⅱ · " + g.name, color: g.color, life: 1.8, big: true });
   for (const g of SYNERGY) if (o[g.id] && !was[g.id]) {
     addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.4, text: "羁绊 · " + g.name, color: g.color, life: 1.6, big: true });
     S.events.push({ type: "syn", id: g.id, name: g.name, desc: g.desc, color: g.color });
@@ -153,7 +156,7 @@ function uDef(u) {
   if (u.hero && sg("sg_me1")) d *= 1 + 0.2 * sg("sg_me1");
   return d;
 }
-const uRes = u => u.def.res + 8 * cl("armor") + 10 * cl("res") + (syn("wardguard") ? 10 : 0);
+const uRes = u => u.def.res + 8 * cl("armor") + 10 * cl("res") + (syn("wardguard") ? (syn2("wardguard") ? 20 : 10) : 0);
 function uInterval(u) {
   let i = u.def.interval / (skillOn(u, "archer") ? 2 : skillOn(u, "gunner") ? 3 : 1);
   if (br(u, "sword", "A")) i *= 0.7;
@@ -193,7 +196,7 @@ const slowAura = e => (toCrystal(e) <= 3.5 ? 1 - Math.min(0.5, 0.12 * cl("slow")
 const chillOf = e => 1;
 const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e);
 const corrodeK = e => (e.corrode && e.corrode.t > 0 ? e.corrode.k : 0);
-const eDef = e => (e.d.def + (S.mod === "tough" ? 150 : 0)) * (ab(19) ? 1.2 : 1) * (1 - corrodeK(e)) * (1 - 0.15 * cl("pierce")) * (syn("inferno") && e.burn > 0 ? 0.8 : 1) * (syn("corrosive") && corrodeK(e) > 0 ? 0.85 : 1);
+const eDef = e => (e.d.def + (S.mod === "tough" ? 150 : 0)) * (ab(19) ? 1.2 : 1) * (1 - corrodeK(e)) * (1 - 0.15 * cl("pierce")) * (syn("inferno") && e.burn > 0 ? (syn2("inferno") ? 0.7 : 0.8) : 1) * (syn("corrosive") && corrodeK(e) > 0 ? (syn2("corrosive") ? 0.75 : 0.85) : 1);
 const corrodeOf = u => (br(u, "alchemist", "A") ? 0.55 : u.lv >= 3 ? 0.4 : 0.25) + (u.hero ? 0.1 * sg("sg_al1") : 0);
 const maxAllies = () => RULES.maxAllies + 2 * cl("lg_army");
 const reviveT = () => cl("lg_phoenix") ? 3 : RULES.revive * (1 - 0.06 * dk("rally")) * (1 - 0.25 * cl("revive")) * (ab(15) ? 1.5 : 1);
@@ -206,7 +209,7 @@ function calc(atk, type, def, res) {
 }
 function burnEnemy(e, dps, t, src) {
   if (e.dead) return;
-  e.burn = Math.max(e.burn || 0, t); e.burnDps = Math.max(e.burnDps || 0, dps * (syn("inferno") ? 1.5 : 1)); e.burnSrc = src || null; e.burnAcc = e.burnAcc || 0;
+  e.burn = Math.max(e.burn || 0, t); e.burnDps = Math.max(e.burnDps || 0, dps * (syn("inferno") ? (syn2("inferno") ? 2 : 1.5) : 1)); e.burnSrc = src || null; e.burnAcc = e.burnAcc || 0;
 }
 function markEnemy(e, t) { if (!e.dead) e.mark = Math.max(e.mark || 0, t); }
 function applyCorrode(e, k, t, src) {
@@ -268,7 +271,7 @@ function newRun(stage, opts) {
     cine: null, cineWave: -1, breaks: 0, ultsFired: 0, log: [], t0: Date.now(), maxHit: 0, bestSyn: 0,
     formIdx: opts.formIdx == null ? 1 : opts.formIdx, drag: null, autoWave: opts.autoWave !== false, earlyCalls: 0,
     exped: opts.exped ? { node: opts.exped.node, floor: opts.exped.floor } : null, waveScale: opts.exped ? STAGES[stage].waves / opts.exped.waves : 0,
-    event: null, eventWave: -1, eventsDone: [], buff: {}, nextWaveK: 1, slowWaves: 0, weakWaves: 0, hazK: 1, hazSlow: false, ultK: 1, forceRare: 0, riftDust: 0,
+    event: null, eventWave: -1, eventsDone: [], evFlags: [], buff: {}, nextWaveK: 1, slowWaves: 0, weakWaves: 0, hazK: 1, hazSlow: false, ultK: 1, forceRare: 0, riftDust: 0,
   };
   if (week && week.rules.includes("nospell")) S.mod = "noSpell";
   initHaz(ST.haz);
