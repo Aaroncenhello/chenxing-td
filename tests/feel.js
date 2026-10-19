@@ -12,7 +12,7 @@ const r = await p.evaluate(() => {
   // 技能出手：定格 + 冲击线
   S.hitStop = 0; u.sp = u.def.sp; useSkill(u); out.cast = { stop: S.hitStop, lines: S.fx.some(f => f.kind === 'burstlines') };
   // 治疗数字带 +
-  const a = S.units[0]; a.hp = 1; heal(a, 50, false, null); out.healTxt = S.fx.filter(f => f.kind === 'text' && f.color === '#7ee89c').map(f => f.text)[0];
+  const a = S.units[0]; a.hp = 1; heal(a, 50, false, null); out.healTxt = S.fx.filter(f => f.kind === 'text' && f.color === '#7ee89c').map(f => f.text).find(t => /\d/.test(t));
   // 画一帧：压扁、数字、冲击线都不报错
   hurt(w, 10, 'phys', false, u); w.hitT = 0.12; w.kb = 1.6; let err = null; try { for (let i = 0; i < 20; i++) { render(1000 + i * 33); __td.step(1 / 30); } } catch (e) { err = String(e); } out.err = err;
   // 减少闪光：不顿帧

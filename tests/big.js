@@ -34,4 +34,15 @@ for (const [w, h, wantRot] of [[390, 844, true], [844, 390, false]]) {
   check(met && Math.hypot(met[0] - 4, met[1] - 3) < 0.8, `${w}×${h} 陨星落点在点的位置`, met);
   await p.context().close();
 }
+// 压力：竖屏大画面下换几张有水 / 熔岩 / 机关 / 天气 / 首领演出的地图跑一会，每 10 步画一帧，不能报错
+{
+  const p = await prep(390, 844);
+  const r = await p.evaluate(() => { const bad = []; for (const st of [2, 3, 5, 10, 14, 16, 17, 18, 19]) { try {
+    startRun(st, { hero: 'mage', charOpen: UNITS.map(u => u.id) }); const S = __td.S; S.pending = 0; S.offer = null; S.autoWave = true; for (const id of ['knight', 'archer', 'priest']) pickCard('ally_' + id);
+    S.wave = Math.max(1, ST.waves - 1); S.cine = null; const e = spawnAt(ST.boss && ST.boss[0] ? ST.boss[0][0] : 'orc', 5, 4, true, false); if (isBoss(e)) { S.boss = e; startCine(e); }
+    for (let i = 0; i < 300; i++) { S.shop = null; S.event = null; S.offer = null; S.crystal.hp = S.crystal.maxHp; __td.step(1 / 30); if (i % 10 === 0) render(1000 + i * 33); }
+  } catch (ex) { bad.push(st + ':' + ex); } } return { bad, rot: ROT }; });
+  check(r.rot && r.bad.length === 0, '竖屏大画面下 9 张地图跑 10 秒 + 首领演出都能画', r);
+  await p.context().close();
+}
 noErrors(errs); report('big'); await b.close(); })();
