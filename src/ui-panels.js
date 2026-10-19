@@ -262,8 +262,10 @@ function takeCard(id) {
 
 // ---------- 场地操作 ----------
 function posFromEvent(ev) {
-  const r = cv.getBoundingClientRect();
-  return { x: (ev.clientX - r.left) / r.width * COLS - 0.5, y: (ev.clientY - r.top) / r.height * ROWS - 0.5 };
+  const r = cv.getBoundingClientRect(), fx = (ev.clientX - r.left) / r.width, fy = (ev.clientY - r.top) / r.height;
+  // 竖屏大画面：视图 (X',Y') = (LH − Y, X)，反过来 X = Y'，Y = LH − X'
+  if (ROT) return { x: fy * COLS - 0.5, y: (1 - fx) * ROWS - 0.5 };
+  return { x: fx * COLS - 0.5, y: fy * ROWS - 0.5 };
 }
 const fieldFree = () => S && !S.over && !menuOpen && !dlg && !S.offer && !S.event && !S.shop && !S.cine;
 function unitAt(p, rad) {
