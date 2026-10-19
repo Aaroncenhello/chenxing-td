@@ -285,6 +285,54 @@ for (const [i, list] of Object.entries(EARLY_HAZ)) if (!STAGES[i].haz) STAGES[i]
 // 新敌人加进几个关卡的敌人池：[关卡序号, 权重, 第几波起]
 const NEW_FOE_POOLS = { warden: [[4, 3, 5], [7, 3, 6], [9, 3, 4], [11, 3, 5], [14, 3, 5]], pilferer: [[2, 1.6, 3], [5, 1.6, 3], [8, 1.6, 3], [10, 1.6, 3], [13, 1.6, 3]], hexer: [[3, 2.4, 6], [6, 2.4, 5], [9, 2.4, 5], [12, 2.4, 4], [15, 2.4, 5]] };
 for (const [type, list] of Object.entries(NEW_FOE_POOLS)) for (const [si, w, from] of list) STAGES[si].pool.push([type, w, from]);
+
+// ================= 第五章 · 无声之海（第 17–20 关）=================
+Object.assign(ENEMIES, {
+  crab:       { name: "礁蟹", hp: 3400, atk: 420, def: 340, res: 20, speed: 0.7, interval: 1.5, color: "#3a9a98", reward: 4, weight: 2, physRes: 0.2,
+                skin: "scorpion", pal: { B: "#3a9a98", b: "#206a6a", L: "#7adad0", E: "#ffe040", S: "#e8f4f0", P: "#60e0d0" } },
+  siren:      { name: "海妖", hp: 1700, atk: 360, def: 60, res: 40, speed: 1.4, interval: 1.1, color: "#58b8e8", reward: 3, flying: true,
+                skin: "harpy", pal: { F: "#58b8e8", f: "#2a78b0", S: "#f2d8c8", H: "#2a5a98", E: "#80f0ff", Y: "#e0f0ff", W: "#d8f4ff" } },
+  drowned:    { name: "溺亡者", hp: 1500, atk: 300, def: 90, res: 10, speed: 1.0, interval: 1.2, color: "#7ab0a8", reward: 2,
+                skin: "skeleton", pal: { B: "#7ab0a8", b: "#46786f", E: "#80fff0", D: "#1c3a3a" } },
+  tidecaller: { name: "唤潮者", hp: 3000, atk: 280, def: 80, res: 60, speed: 0.5, interval: 1.6, color: "#58a8d8", reward: 4, summon: { every: 8, n: 2 },
+                skin: "necro", pal: { P: "#2a5a8a", p: "#143a5a", L: "#58a8d8", S: "#d8f0f0", E: "#80f0ff", G: "#2a4a5a" } },
+  bellkeeper: { name: "司钟人", hp: 9000, atk: 620, def: 400, res: 40, speed: 0.38, interval: 1.9, color: "#8a9aa8", reward: 6, weight: 3, unstoppable: true, physRes: 0.2,
+                skin: "golem", pal: { S: "#8a9aa8", s: "#566672", L: "#c4d4dc", C: "#ffe060", c: "#c8a030", E: "#80f0ff" } },
+  mirrorknight:{ name: "镜骑士", hp: 4200, atk: 520, def: 330, res: 50, speed: 0.66, interval: 1.4, color: "#c8d4ec", reward: 5, weight: 3, shield: 3000,
+                skin: "shield", pal: { A: "#b8c4dc", a: "#7a86a0", S: "#f4f8ff", s: "#c8d4ec", Y: "#a0e0ff", R: "#ffffff", N: "#5a6480", n: "#3a4258" } },
+  silencer:   { name: "静默者", hp: 230000, atk: 1180, def: 420, res: 55, speed: 0.24, interval: 1.4, color: "#9ab0ff", reward: 100,
+                crystal: 6, weight: 6, unstoppable: true, ranged: 3.6, aoe: { every: 7, radius: 2.4, mult: 1.15 }, phases: [0.8, 0.6, 0.4, 0.2],
+                skin: "sovereign", pal: { P: "#2a3a8a", p: "#161e4e", L: "#9ab0ff", D: "#0a0e24", d: "#1a2250", G: "#e0e8ff", E: "#ffffff", V: "#c8d4ff", S: "#3a4a9a", s: "#222c6a", H: "#080a1c", h: "#4a5aa8" } },
+});
+const POOL5 = [["drowned", 1.2, 1], ["siren", 2, 2], ["voidknight", 4, 3], ["stormhound", 1.9, 3], ["nullmage", 3.2, 4], ["monolith", 5.5, 6], ["emberling", 1.1, 1]];
+STAGES.push(
+  { name: "潮汐海岸", theme: "tide", chapter: 4, brief: "海水退得很远，露出一整片没人见过的滩涂。名字被抹掉的人排着队，走进海里。", hp: 3.0, crystalHp: 3200, waves: 14, budget: 1.64,
+    pool: [["drowned", 1.2, 1], ["siren", 2, 1], ["crab", 4, 3], ["tidecaller", 3.5, 4], ["stormhound", 1.9, 3], ["voidknight", 4, 5], ["nullmage", 3.2, 6], ["wyvern", 4, 7]],
+    boss: [["crab", 4, true], ["siren", 8, false], ["drowned", 14, false]],
+    midBoss: [["tidecaller", 2, false]],
+    haz: [["vent", 4, 2, { every: 6, r: 1.5, dmg: 900, color: "#80e8ff", kind: "ice" }], ["vent", 11, 6, { every: 6, r: 1.5, dmg: 900, color: "#80e8ff", kind: "ice" }],
+          ["field", 8, 4, { r: 3.2, slow: 0.2, color: "#a8f0ff" }]],
+    map: ["#S###S####S###S#", "#..~~......~~..#", "#.....~~~~.....#", "S..~........~..S", "S.......B......S", "#..~........~..#", "#.....~~~~.....#", "#..~~......~~..#", "#S###S####S###S#"] },
+  { name: "沉没钟楼", theme: "sunken", chapter: 4, brief: "海底立着一座钟楼，钟舌被人拆走了。每响一声，就有一个名字沉下去。", hp: 2.85, crystalHp: 3400, waves: 15, budget: 1.6,
+    pool: [["drowned", 1.2, 1], ["tidecaller", 3.5, 2], ["siren", 2, 2], ["bellkeeper", 7, 4], ["crab", 4, 3], ["ghost", 2.2, 3], ["voidknight", 4, 5], ["nullmage", 3.2, 6], ["frostgiant", 7.5, 9]],
+    boss: [["bellkeeper", 3, true], ["drowned", 16, false], ["tidecaller", 3, false]],
+    midBoss: [["crab", 3, false]],
+    haz: [["beam", 8, 4, { n: 2, speed: 0.5, len: 5.2, dps: 280, color: "#7af0e0" }], ["spikes", 8, 4, { r: 3, every: 2.5, dmg: 360, color: "#7af0e0" }]],
+    map: ["#S##S######S##S#", "#..............#", "#.#.#..##..#.#.#", "S..............S", "S.......B......S", "S..............S", "#.#.#..##..#.#.#", "#..............#", "#S##S######S##S#"] },
+  { name: "镜面回廊", theme: "mirror", chapter: 4, brief: "回廊里每一面镜子都映着另一个你。镜子里的骑士先学会了你的招式。", hp: 2.8, crystalHp: 3600, waves: 16, budget: 1.6,
+    pool: [["mirrorknight", 5, 4], ["drowned", 1.2, 1], ["siren", 2, 1], ["stormhound", 1.9, 2], ["voidknight", 4, 3], ["nullmage", 3.2, 3], ["monolith", 5.5, 5], ["bellkeeper", 7, 6], ["warmech", 9, 9], ["starguard", 6, 7]],
+    boss: [["mirrorknight", 4, true], ["nullmage", 4, false], ["siren", 8, false]],
+    midBoss: [["bellkeeper", 2, false]],
+    haz: [["beam", 8, 4, { n: 3, speed: 0.55, len: 5.6, dps: 300, color: "#a0e0ff" }], ["field", 3, 4, { r: 2.4, slow: 0.22, color: "#e0f4ff" }], ["field", 12, 4, { r: 2.4, slow: 0.22, color: "#e0f4ff" }]],
+    map: ["###S####S####S##", "#..............#", "#.~~.#....#.~~.#", "#.~~........~~.#", "S.......B......S", "#.~~........~~.#", "#.~~.#....#.~~.#", "#..............#", "###S####S####S##"] },
+  { name: "无声之海", clearAchv: ["chapter5"], theme: "silent", chapter: 4, brief: "所有被抹掉的名字都沉在这里。静默者站在海中央，把每一声呼喊都按了下去。", hp: 2.9, crystalHp: 4400, waves: 22, budget: 1.64,
+    pool: [["drowned", 1.2, 1], ["siren", 2, 1], ["mirrorknight", 6, 3], ["crab", 4, 3], ["bellkeeper", 7, 5], ["tidecaller", 3.5, 4], ["nullmage", 3.2, 4], ["monolith", 5.5, 7], ["starguard", 6, 8], ["warmech", 9, 10], ["frostgiant", 7.5, 12]],
+    boss: [["silencer", 1, false], ["mirrorknight", 6, false], ["bellkeeper", 3, false]],
+    midBoss: [["mirrorknight", 3, true]],
+    haz: [["beam", 8, 4, { n: 4, speed: 0.5, len: 6, dps: 330, color: "#e0e8ff" }], ["vent", 4, 2, { every: 5.5, r: 1.6, dmg: 980, color: "#9ab0ff", kind: "void" }], ["vent", 11, 6, { every: 5.5, r: 1.6, dmg: 980, color: "#9ab0ff", kind: "void" }],
+          ["field", 8, 4, { r: 3.6, slow: 0.24, color: "#c8d4ff" }]],
+    map: ["S#S##S####S##S#S", "#..~........~..#", "#.##..~~~~..##.#", "S..............S", "S.......B......S", "S..............S", "#.##..~~~~..##.#", "#..~........~..#", "S#S##S####S##S#S"] },
+);
 const ELITE = { hp: 2.4, atk: 1.3, reward: 3 };
 
 const SPELLS = [

@@ -171,6 +171,22 @@ const THEMES = {
     path: ["#48506a", "#404860", "#565e7a", "#384058"], edge: "#141828", tuft: "#6a78a8",
     st: { top: "#4a5470", hi: "#9aaad8", hi2: "#7280b0", lo: "#343c56", lo2: "#3e4662", fr: "#282e44", frLo: "#1c2234", seam: "#a0d8ff", out: "#0c1020" },
     moss: ["#a0d8ff", "#ffe040", "#6a90d8"], flowers: ["#a0d8ff", "#ffffff"], prop: "star", bg: "#0a0e1a" },
+  tide: { g: ["#c8bc90", "#bcb084", "#d4c89c", "#b0a478"], blade: "#e0d4a8", wall: ["#6c8c92", "#5e7e84"],
+    path: ["#8a7a5a", "#7c6c4e", "#9a8a68", "#6e5e44"], edge: "#4a3e2a", tuft: "#e8dcb0",
+    st: { top: "#8aa6a8", hi: "#c4dcdc", hi2: "#a4c0c0", lo: "#6a8688", lo2: "#74908e", fr: "#566e70", frLo: "#405456", seam: "#58c0b0", out: "#1e3034" },
+    moss: ["#58c0b0", "#88e0d0", "#3a8a80"], flowers: ["#ffffff", "#f0a0b0"], prop: "spire", bg: "#0e1c24" },
+  sunken: { g: ["#2a4a52", "#244048", "#32565e", "#1e383e"], blade: "#3e6a72", wall: ["#142a30", "#1a3238"],
+    path: ["#5a6a60", "#4e5e54", "#687870", "#44524a"], edge: "#142226", tuft: "#4a8a90",
+    st: { top: "#5a7a80", hi: "#9ac4c8", hi2: "#78a0a4", lo: "#3a5a60", lo2: "#446870", fr: "#2e464c", frLo: "#223438", seam: "#7af0e0", out: "#0c1a1e" },
+    moss: ["#58e0c8", "#a8fff0", "#2a9a88"], flowers: ["#7af0e0", "#ffffff"], prop: "grave", bg: "#08161a" },
+  mirror: { g: ["#9aa4b8", "#8e98ac", "#a8b2c6", "#828ca0"], blade: "#c8d2e6", wall: ["#5e6880", "#68728a"],
+    path: ["#d0d8e8", "#c4ccdc", "#dce4f2", "#b8c0d0"], edge: "#4a5268", tuft: "#d8e0f0",
+    st: { top: "#c0c8d8", hi: "#ffffff", hi2: "#e0e8f4", lo: "#9098ac", lo2: "#a0a8bc", fr: "#7a8298", frLo: "#5e667a", seam: "#a0e0ff", out: "#2c3244" },
+    moss: ["#a0e0ff", "#ffffff", "#c8b0ff"], flowers: ["#ffffff", "#a0e0ff"], prop: "crystal", bg: "#161a26" },
+  silent: { g: ["#1c2030", "#181c2a", "#242a3c", "#141824"], blade: "#323a54", wall: ["#0e1220", "#141828"],
+    path: ["#3a4258", "#323a4e", "#464e66", "#2c3346"], edge: "#0a0d18", tuft: "#4a5476",
+    st: { top: "#3a4258", hi: "#8a96c0", hi2: "#606a90", lo: "#262c40", lo2: "#2e344a", fr: "#1e2336", frLo: "#141828", seam: "#e0e8ff", out: "#080a14" },
+    moss: ["#e0e8ff", "#8a96c0", "#5a6aa0"], flowers: ["#ffffff", "#8a96c0"], prop: "star", bg: "#06080f" },
   dawn: { g: ["#c8b488", "#bca87c", "#d8c498", "#ac9870"], blade: "#e0d0a0", wall: ["#9a8660", "#a8946c"],
     path: ["#e8dcb8", "#dcd0ac", "#f4e8c8", "#cec2a0"], edge: "#8a7650", tuft: "#f0e0b0",
     st: { top: "#f0e4c0", hi: "#fffbe8", hi2: "#f8ecd0", lo: "#d0c49c", lo2: "#dcd0a8", fr: "#b0a480", frLo: "#8e8262", seam: "#ffd040", out: "#463a26" },
@@ -566,6 +582,10 @@ function drawAmbient(now) {
       const y = (f.y + t * 280 * f.s) % PHt, x = ((f.x - t * 50 * f.s + y * 0.2) % PW + PW) % PW;
       rect(ctx, x, y, 1, 5 + R0(f.s * 5), f.s > 0.6 ? "rgba(200,220,255,.55)" : "rgba(160,190,230,.32)");
     }
+    else if (theme === "tide") { const x = (f.x + t * 14 * f.s) % (PW + 30) - 15, y = f.y + Math.sin(t * 1.3 + f.p) * 4; if (f.s > 0.4) rect(ctx, x, y, 3 + R0(f.s * 5), 1, "rgba(255,255,255,.5)"); }
+    else if (theme === "sunken") { const y = PHt - ((PHt - f.y + t * 16 * f.s) % PHt), x = f.x + Math.sin(t * 1.1 + f.p) * 5; dot(ctx, x, y, f.s > 0.6 ? "#c8fff4" : "#7af0e0"); }
+    else if (theme === "mirror") { const a = Math.sin(t * 2 + f.p * 6); if (a > 0.5) { dot(ctx, f.x, f.y, "#ffffff"); if (a > 0.9) { dot(ctx, f.x + 1, f.y, "#a0e0ff"); dot(ctx, f.x - 1, f.y, "#a0e0ff"); } } }
+    else if (theme === "silent") { const y = (f.y + t * 4 * f.s) % PHt; ctx.globalAlpha = 0.5; dot(ctx, f.x, y, f.s > 0.6 ? "#e0e8ff" : "#8a96c0"); ctx.globalAlpha = 1; }
     else if (theme === "dawn") {
       const y = f.y - (t * 8 * f.s) % 70, x = f.x + Math.sin(t * 0.5 + f.p) * 12, a = 0.4 + Math.sin(t * 1.5 + f.p * 2) * 0.3;
       ctx.globalAlpha = Math.max(0, a); dot(ctx, x, y, f.s > 0.6 ? "#ffe8a0" : "#ffd040"); ctx.globalAlpha = 1;

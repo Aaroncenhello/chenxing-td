@@ -610,7 +610,7 @@ function drawWeather(t) {
   else if (id === "heat") for (let i = 0; i < 6; i++) { const y = (i * 61 + t * 12) % PHt, x = (i * 113) % PW; ctx.globalAlpha = 0.09; ctx.fillStyle = "#ffe0a0"; ctx.fillRect(x + Math.sin(t * 3 + i) * 6, y, 90, 1); ctx.globalAlpha = 1; }
 }
 // 昼夜：户外关随波数推进，从白天到黄昏再到夜里（纯画面，不影响数值）
-const TOD_THEMES = new Set(["forest", "snow", "desert", "sky", "ash", "storm"]);
+const TOD_THEMES = new Set(["forest", "snow", "desert", "sky", "ash", "storm", "tide"]);
 function drawTod() {
   if (!TOD_THEMES.has(ST.theme) || S.wave < 1) return;
   const f = Math.min(1, (S.wave - 1) / Math.max(1, totalWaves() - 1));

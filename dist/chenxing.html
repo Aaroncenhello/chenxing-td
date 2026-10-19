@@ -934,6 +934,54 @@ for (const [i, list] of Object.entries(EARLY_HAZ)) if (!STAGES[i].haz) STAGES[i]
 // 新敌人加进几个关卡的敌人池：[关卡序号, 权重, 第几波起]
 const NEW_FOE_POOLS = { warden: [[4, 3, 5], [7, 3, 6], [9, 3, 4], [11, 3, 5], [14, 3, 5]], pilferer: [[2, 1.6, 3], [5, 1.6, 3], [8, 1.6, 3], [10, 1.6, 3], [13, 1.6, 3]], hexer: [[3, 2.4, 6], [6, 2.4, 5], [9, 2.4, 5], [12, 2.4, 4], [15, 2.4, 5]] };
 for (const [type, list] of Object.entries(NEW_FOE_POOLS)) for (const [si, w, from] of list) STAGES[si].pool.push([type, w, from]);
+
+// ================= 第五章 · 无声之海（第 17–20 关）=================
+Object.assign(ENEMIES, {
+  crab:       { name: "礁蟹", hp: 3400, atk: 420, def: 340, res: 20, speed: 0.7, interval: 1.5, color: "#3a9a98", reward: 4, weight: 2, physRes: 0.2,
+                skin: "scorpion", pal: { B: "#3a9a98", b: "#206a6a", L: "#7adad0", E: "#ffe040", S: "#e8f4f0", P: "#60e0d0" } },
+  siren:      { name: "海妖", hp: 1700, atk: 360, def: 60, res: 40, speed: 1.4, interval: 1.1, color: "#58b8e8", reward: 3, flying: true,
+                skin: "harpy", pal: { F: "#58b8e8", f: "#2a78b0", S: "#f2d8c8", H: "#2a5a98", E: "#80f0ff", Y: "#e0f0ff", W: "#d8f4ff" } },
+  drowned:    { name: "溺亡者", hp: 1500, atk: 300, def: 90, res: 10, speed: 1.0, interval: 1.2, color: "#7ab0a8", reward: 2,
+                skin: "skeleton", pal: { B: "#7ab0a8", b: "#46786f", E: "#80fff0", D: "#1c3a3a" } },
+  tidecaller: { name: "唤潮者", hp: 3000, atk: 280, def: 80, res: 60, speed: 0.5, interval: 1.6, color: "#58a8d8", reward: 4, summon: { every: 8, n: 2 },
+                skin: "necro", pal: { P: "#2a5a8a", p: "#143a5a", L: "#58a8d8", S: "#d8f0f0", E: "#80f0ff", G: "#2a4a5a" } },
+  bellkeeper: { name: "司钟人", hp: 9000, atk: 620, def: 400, res: 40, speed: 0.38, interval: 1.9, color: "#8a9aa8", reward: 6, weight: 3, unstoppable: true, physRes: 0.2,
+                skin: "golem", pal: { S: "#8a9aa8", s: "#566672", L: "#c4d4dc", C: "#ffe060", c: "#c8a030", E: "#80f0ff" } },
+  mirrorknight:{ name: "镜骑士", hp: 4200, atk: 520, def: 330, res: 50, speed: 0.66, interval: 1.4, color: "#c8d4ec", reward: 5, weight: 3, shield: 3000,
+                skin: "shield", pal: { A: "#b8c4dc", a: "#7a86a0", S: "#f4f8ff", s: "#c8d4ec", Y: "#a0e0ff", R: "#ffffff", N: "#5a6480", n: "#3a4258" } },
+  silencer:   { name: "静默者", hp: 230000, atk: 1180, def: 420, res: 55, speed: 0.24, interval: 1.4, color: "#9ab0ff", reward: 100,
+                crystal: 6, weight: 6, unstoppable: true, ranged: 3.6, aoe: { every: 7, radius: 2.4, mult: 1.15 }, phases: [0.8, 0.6, 0.4, 0.2],
+                skin: "sovereign", pal: { P: "#2a3a8a", p: "#161e4e", L: "#9ab0ff", D: "#0a0e24", d: "#1a2250", G: "#e0e8ff", E: "#ffffff", V: "#c8d4ff", S: "#3a4a9a", s: "#222c6a", H: "#080a1c", h: "#4a5aa8" } },
+});
+const POOL5 = [["drowned", 1.2, 1], ["siren", 2, 2], ["voidknight", 4, 3], ["stormhound", 1.9, 3], ["nullmage", 3.2, 4], ["monolith", 5.5, 6], ["emberling", 1.1, 1]];
+STAGES.push(
+  { name: "潮汐海岸", theme: "tide", chapter: 4, brief: "海水退得很远，露出一整片没人见过的滩涂。名字被抹掉的人排着队，走进海里。", hp: 3.0, crystalHp: 3200, waves: 14, budget: 1.64,
+    pool: [["drowned", 1.2, 1], ["siren", 2, 1], ["crab", 4, 3], ["tidecaller", 3.5, 4], ["stormhound", 1.9, 3], ["voidknight", 4, 5], ["nullmage", 3.2, 6], ["wyvern", 4, 7]],
+    boss: [["crab", 4, true], ["siren", 8, false], ["drowned", 14, false]],
+    midBoss: [["tidecaller", 2, false]],
+    haz: [["vent", 4, 2, { every: 6, r: 1.5, dmg: 900, color: "#80e8ff", kind: "ice" }], ["vent", 11, 6, { every: 6, r: 1.5, dmg: 900, color: "#80e8ff", kind: "ice" }],
+          ["field", 8, 4, { r: 3.2, slow: 0.2, color: "#a8f0ff" }]],
+    map: ["#S###S####S###S#", "#..~~......~~..#", "#.....~~~~.....#", "S..~........~..S", "S.......B......S", "#..~........~..#", "#.....~~~~.....#", "#..~~......~~..#", "#S###S####S###S#"] },
+  { name: "沉没钟楼", theme: "sunken", chapter: 4, brief: "海底立着一座钟楼，钟舌被人拆走了。每响一声，就有一个名字沉下去。", hp: 2.85, crystalHp: 3400, waves: 15, budget: 1.6,
+    pool: [["drowned", 1.2, 1], ["tidecaller", 3.5, 2], ["siren", 2, 2], ["bellkeeper", 7, 4], ["crab", 4, 3], ["ghost", 2.2, 3], ["voidknight", 4, 5], ["nullmage", 3.2, 6], ["frostgiant", 7.5, 9]],
+    boss: [["bellkeeper", 3, true], ["drowned", 16, false], ["tidecaller", 3, false]],
+    midBoss: [["crab", 3, false]],
+    haz: [["beam", 8, 4, { n: 2, speed: 0.5, len: 5.2, dps: 280, color: "#7af0e0" }], ["spikes", 8, 4, { r: 3, every: 2.5, dmg: 360, color: "#7af0e0" }]],
+    map: ["#S##S######S##S#", "#..............#", "#.#.#..##..#.#.#", "S..............S", "S.......B......S", "S..............S", "#.#.#..##..#.#.#", "#..............#", "#S##S######S##S#"] },
+  { name: "镜面回廊", theme: "mirror", chapter: 4, brief: "回廊里每一面镜子都映着另一个你。镜子里的骑士先学会了你的招式。", hp: 2.8, crystalHp: 3600, waves: 16, budget: 1.6,
+    pool: [["mirrorknight", 5, 4], ["drowned", 1.2, 1], ["siren", 2, 1], ["stormhound", 1.9, 2], ["voidknight", 4, 3], ["nullmage", 3.2, 3], ["monolith", 5.5, 5], ["bellkeeper", 7, 6], ["warmech", 9, 9], ["starguard", 6, 7]],
+    boss: [["mirrorknight", 4, true], ["nullmage", 4, false], ["siren", 8, false]],
+    midBoss: [["bellkeeper", 2, false]],
+    haz: [["beam", 8, 4, { n: 3, speed: 0.55, len: 5.6, dps: 300, color: "#a0e0ff" }], ["field", 3, 4, { r: 2.4, slow: 0.22, color: "#e0f4ff" }], ["field", 12, 4, { r: 2.4, slow: 0.22, color: "#e0f4ff" }]],
+    map: ["###S####S####S##", "#..............#", "#.~~.#....#.~~.#", "#.~~........~~.#", "S.......B......S", "#.~~........~~.#", "#.~~.#....#.~~.#", "#..............#", "###S####S####S##"] },
+  { name: "无声之海", clearAchv: ["chapter5"], theme: "silent", chapter: 4, brief: "所有被抹掉的名字都沉在这里。静默者站在海中央，把每一声呼喊都按了下去。", hp: 2.9, crystalHp: 4400, waves: 22, budget: 1.64,
+    pool: [["drowned", 1.2, 1], ["siren", 2, 1], ["mirrorknight", 6, 3], ["crab", 4, 3], ["bellkeeper", 7, 5], ["tidecaller", 3.5, 4], ["nullmage", 3.2, 4], ["monolith", 5.5, 7], ["starguard", 6, 8], ["warmech", 9, 10], ["frostgiant", 7.5, 12]],
+    boss: [["silencer", 1, false], ["mirrorknight", 6, false], ["bellkeeper", 3, false]],
+    midBoss: [["mirrorknight", 3, true]],
+    haz: [["beam", 8, 4, { n: 4, speed: 0.5, len: 6, dps: 330, color: "#e0e8ff" }], ["vent", 4, 2, { every: 5.5, r: 1.6, dmg: 980, color: "#9ab0ff", kind: "void" }], ["vent", 11, 6, { every: 5.5, r: 1.6, dmg: 980, color: "#9ab0ff", kind: "void" }],
+          ["field", 8, 4, { r: 3.6, slow: 0.24, color: "#c8d4ff" }]],
+    map: ["S#S##S####S##S#S", "#..~........~..#", "#.##..~~~~..##.#", "S..............S", "S.......B......S", "S..............S", "#.##..~~~~..##.#", "#..~........~..#", "S#S##S####S##S#S"] },
+);
 const ELITE = { hp: 2.4, atk: 1.3, reward: 3 };
 
 const SPELLS = [
@@ -1094,6 +1142,7 @@ const ACHV = [
   { id: "interrupt5", name: "一句话也别想念完", desc: "一局内打断 5 次首领读条" },
   { id: "chapter3", name: "第三章完结", desc: "通关第 12 关" },
   { id: "nameless", name: "叫出它的名字", desc: "通关第 16 关，击败无名者" },
+  { id: "chapter5", name: "第五章完结", desc: "通关第 20 关，击败静默者" },
   { id: "allchars16", name: "十六人", desc: "解锁全部 16 名角色" },
   { id: "exped", name: "远征归来", desc: "完成一次远征（打赢最后一层的首领）" },
   { id: "relics", name: "遗物收藏家", desc: "图鉴里集齐全部遗物" },
@@ -1112,6 +1161,13 @@ const ENEMY_DESC = {
   voidknight: "把名字交出去换来的护盾，护盾破掉之后就只是个骑士。",
   stormlord: "雷云里的那个声音。会读条放「绝对零度」，读条时集火可以打断。",
   nameless: "没有名字，也不肯有。四个形态，会放「星海坍缩」——一定要打断。",
+  crab: "背着厚厚的贝壳甲，物理伤害打不动，用法术或持续输出；首领战时会周期性重新凝甲。",
+  siren: "会飞，歌声让队伍很难集火，需要能打飞行的角色。",
+  drowned: "成群结队的溺亡者，单个不强，数量多，靠范围伤害清理。",
+  tidecaller: "不断召唤溺亡者，法抗很高，要优先集火。",
+  bellkeeper: "体型庞大的守钟人，防御极高；首领战时会敲钟，让所有敌人加速加攻。",
+  mirrorknight: "举着镜盾，被法术打中会反弹一部分伤害；先打碎它的护盾。",
+  silencer: "把每一声呼喊都按下去。四个形态，会放「绝对零度」冻结全队，还会抹掉队员的技力——读条时一定要打断。",
   slime: "最基础的敌人。", bigslime: "血厚，死后分裂成两只史莱姆。", goblin: "数量多，速度中等。",
   wolf: "跑得很快，容易冲到晨星碑。", orc: "防御 300，物理攻击打不太动，用法术更好。",
   garg: "会飞，不会被近战拦住，直接飞向晨星碑。只有能打飞行的角色和技能能打到。",
@@ -1696,9 +1752,10 @@ function drawCurseIcon(cvs, id, size) {
 
 // ================= 5.0 剧情 =================
 // 每关：pre 开打前，on[敌人] 这种敌人第一次出场时，post 通关后。["!join", id] = 角色入队
-const CHAPTERS = [{ name: "第一章 · 晨星之誓", from: 0 }, { name: "第二章 · 深渊之门", from: 4 }, { name: "第三章 · 星海尽头", from: 8 }, { name: "第四章 · 无名之光", from: 12 }];
+const CHAPTERS = [{ name: "第一章 · 晨星之誓", from: 0 }, { name: "第二章 · 深渊之门", from: 4 }, { name: "第三章 · 星海尽头", from: 8 }, { name: "第四章 · 无名之光", from: 12 }, { name: "第五章 · 无声之海", from: 16 }];
 const SPEAKERS = { narr: { name: "" }, boss: { name: "深渊领主", foe: "boss" }, sovereign: { name: "深渊君主 · 厄瑞玻斯", foe: "sovereign" }, devourer: { name: "星界吞噬者", foe: "devourer" }, frostgiant: { name: "冰霜巨魔王", foe: "frostgiant" },
-  nameless: { name: "无名者", foe: "nameless" }, stormlord: { name: "雷霆领主", foe: "stormlord" }, monolith: { name: "碑灵", foe: "monolith" } };
+  nameless: { name: "无名者", foe: "nameless" }, stormlord: { name: "雷霆领主", foe: "stormlord" }, monolith: { name: "碑灵", foe: "monolith" },
+  silencer: { name: "静默者", foe: "silencer" }, bellkeeper: { name: "司钟人", foe: "bellkeeper" }, mirrorknight: { name: "镜骑士", foe: "mirrorknight" } };
 const STORY = [
   { // 1 翠林小径
     pre: [
@@ -2041,7 +2098,101 @@ const STORY = [
       ["knight", "可以。改成和我们一起守。"],
       ["marshal", "记录：第三百二十二支队伍，全员生还。"],
       ["star", "我要把今天的名字，念给所有回来的星星听。"],
-      ["narr", "（全篇完）感谢游玩！通关的关卡可以挑战困难、噩梦、无尽和守望之战，也可以把十六名角色都练到 10 级。"],
+      ["narr", "光落下去的时候，远处的海面上，有一声没有声音的钟响。"],
+      ["chrono", "……那不是源点的钟。九百年了，我从没听过这一声。"],
+      ["knight", "有人在海里。名字被抹掉的人，一个一个走进去了。"],
+      ["star", "那我们就去海里，把名字一个一个捞回来。"],
+    ] },
+  { // 17 潮汐海岸
+    pre: [
+      ["narr", "海水退得很远，露出一整片没人见过的滩涂。滩上排着长长的队，每个人都低着头，往海里走。"],
+      ["priest", "他们在叫我，可我听不见自己的名字。"],
+      ["sword", "别跟着走！喂——别跟着走！"],
+      ["marshal", "拉不回来。他们不是被带走的，是自己走的。"],
+      ["knight", "那就把路拦住。晨星碑立在滩上，一步都不退。"],
+    ],
+    on: {
+      crab: [
+        ["narr", "退潮的礁岩动了起来。它背着一整面贝壳，每一片上都刻着一个被抹掉的名字。"],
+        ["mage", "那些名字……还亮着。打碎它，名字就能回来。"],
+      ],
+    },
+    post: [
+      ["narr", "贝壳碎开的时候，滩上的人停了一下，有人抬起了头。"],
+      ["priest", "我听见了。他在叫我——玛丽安。"],
+      ["chrono", "海更深的地方，有座钟楼。钟声是从那里来的。"],
+    ] },
+  { // 18 沉没钟楼
+    pre: [
+      ["narr", "钟楼立在海底，塔身爬满了藤壶。钟舌被人拆走了，大钟却还在响。"],
+      ["chrono", "守钟人把钟舌换成了别的东西。每敲一下，就压下去一个名字。"],
+      ["star", "那就让它敲不下去。"],
+      ["knight", "全员，列阵。钟声一响，就扛住。"],
+    ],
+    on: {
+      bellkeeper: [
+        ["bellkeeper", "……敲。敲。敲。不敲，名字会吵。"],
+        ["sword", "吵才是活着！"],
+        ["bellkeeper", "活着，会疼。"],
+        ["priest", "疼，是因为被人记得。"],
+      ],
+    },
+    post: [
+      ["narr", "最后一声钟响，碎成了一片清亮的光。无数个名字从塔顶浮了上去。"],
+      ["marshal", "记录：钟楼夺回。幸存者……一个不少。"],
+      ["star", "下面，是一条长廊。镜子一直排到看不见的地方。"],
+    ] },
+  { // 19 镜面回廊
+    pre: [
+      ["narr", "回廊里每一面镜子都映着另一个你。镜子里的人没有名字，只会照着你的样子出手。"],
+      ["sword", "喂，那个镜子里的赛拉……学得还挺像。"],
+      ["marshal", "别和镜子里的自己打。看清是谁先出手。"],
+      ["chrono", "镜子里的是你们没有说出口的那一半。先听见它，再赢它。"],
+    ],
+    on: {
+      mirrorknight: [
+        ["mirrorknight", "你出剑，我也出剑。你退，我也退。"],
+        ["knight", "那这一次，我先不退。"],
+      ],
+    },
+    post: [
+      ["narr", "镜子一面一面碎了。每一块碎片里，都有一个人在笑。"],
+      ["star", "最后一面镜子后面，有一片海。海里没有一点声音。"],
+    ] },
+  { // 20 无声之海
+    pre: [
+      ["narr", "这片海里没有一点声音。浪拍上来，没有声响；钟摆动着，没有声响。"],
+      ["narr", "所有被抹掉的名字，都沉在这里。海中央站着一个人，用手按着整片海。"],
+      ["silencer", "安静。安静下来，就不会有人再疼了。"],
+      ["star", "可是也不会有人再被叫出名字了。"],
+      ["knight", "晨星骑士团，团长，伊莎贝拉。"],
+      ["sword", "赛拉。"],
+      ["marshal", "维罗妮卡。"],
+      ["chrono", "希尔薇。"],
+      ["priest", "玛丽安。"],
+      ["narr", "你们一个一个，大声报出了自己的名字。海面抖了一下。"],
+      ["knight", "全员，列阵！"],
+    ],
+    on: {
+      silencer: [
+        ["silencer", "……为什么还要出声。"],
+        ["star", "因为有人会听见。"],
+        ["silencer", "听见了，也会忘。"],
+        ["knight", "那我们就每天再说一遍。"],
+      ],
+      mirrorknight: [
+        ["mirrorknight", "我是你没说出口的那一句。"],
+        ["sword", "那今天，一起说出来！"],
+      ],
+    },
+    post: [
+      ["silencer", "……好吵。原来是这么吵。"],
+      ["narr", "静默者的手松开了。海里第一次有了声音：浪声，钟声，千万个名字一起被叫出来的声音。"],
+      ["priest", "他们都回来了。一个一个，叫着名字回来了。"],
+      ["chrono", "九百年的静，今天终于响了。"],
+      ["marshal", "记录：第三百二十三支队伍，全员生还。名字，一个不少。"],
+      ["star", "走吧。把这些名字，念给每一座晨星碑听。"],
+      ["narr", "（全篇完）感谢游玩！通关的关卡可以挑战困难、噩梦、无尽和守望之战，也可以把全部角色都练到 10 级。"],
     ] },
 ];
 
@@ -2117,7 +2268,7 @@ function synHint(p) {
   });
   return best;
 }
-const BOSS_TYPES = ["boss", "sovereign", "devourer", "nameless", "stormlord"];
+const BOSS_TYPES = ["boss", "sovereign", "devourer", "nameless", "stormlord", "silencer"];
 const isBossType = t => BOSS_TYPES.includes(t);
 const isBoss = e => isBossType(e.type);
 const hittable = e => !e.dead && !e.under;
@@ -2809,7 +2960,7 @@ const WEATHER = {
   heat:     { name: "热浪",   tip: "燃烧伤害 +30%，治疗效果 −10%", color: "#ffb060" },
   storm:    { name: "雷暴",   tip: "每 8 秒落雷劈一个敌人（造成其 5% 生命），偶尔也会劈到队员", color: "#c8d8ff" },
 };
-const WEATHER_OF = { forest: "rain", grave: "rain", snow: "blizzard", ice: "blizzard", desert: "heat", lava: "heat", ash: "heat", sky: "storm", storm: "storm" };
+const WEATHER_OF = { forest: "rain", grave: "rain", tide: "storm", snow: "blizzard", ice: "blizzard", desert: "heat", lava: "heat", ash: "heat", sky: "storm", storm: "storm" };
 const wxNow = () => (S.wave > 0 && !S.over && WEATHER_OF[ST.theme] && (S.wave + (S.stage | 0)) % 5 >= 3 ? WEATHER_OF[ST.theme] : null);
 function wxStep(dt) {
   const id = wxNow();
@@ -2920,6 +3071,7 @@ const BOSS_TITLE = {
   orc: "兽人前锋队长", bigslime: "沼泽之母", sandworm: "沙海底下的巨虫", wyvern: "天空的暴君",
   golem: "熔岩铸成的巨人", frostgiant: "永冬的看守", warmech: "旧世界留下的战争兵器",
   bloodwolf: "血月下的头狼", shaman: "腐沼祭司", necro: "白骨的主人",
+  silencer: "把每一声呼喊都按下去的人", crab: "退潮后露出来的礁岩", bellkeeper: "拆走了钟舌的守钟人", mirrorknight: "镜子里先出手的那个",
   nameless: "没有名字，也不肯有", stormlord: "雷云里的那个声音", monolith: "醒过来的第一座碑",
   ashwalker: "灰里走出来的旧兵", voidknight: "把名字交出去的骑士",
 };
@@ -2936,7 +3088,7 @@ const ULT_OF = {
   boss: "roar", sovereign: "call", devourer: "nova",
   orc: "roar", bigslime: "call", sandworm: "smash", wyvern: "roar", golem: "smash",
   frostgiant: "zero", warmech: "smash", bloodwolf: "roar", shaman: "mend", necro: "call",
-  nameless: "nova", stormlord: "zero", monolith: "smash", ashwalker: "roar", voidknight: "mend",
+  nameless: "nova", silencer: "zero", crab: "smash", bellkeeper: "roar", mirrorknight: "mend", stormlord: "zero", monolith: "smash", ashwalker: "roar", voidknight: "mend",
 };
 const ultOf = e => ((isBoss(e) || e.lead) && ULT_DEF[ULT_OF[e.type]]) || null;
 const BREAK_BONUS = 1.6;   // 破防期间受到的伤害倍率
@@ -3037,6 +3189,10 @@ const BOSS_MECH = {
   ashwalker: { id: "ember",     name: "余烬",     cd: 10, tip: "点燃两名队员（有预警）" },
   monolith:  { id: "reflect",   name: "碑文反噬", cd: 0,  tip: "被法术打中时，反弹 10% 伤害给攻击者" },
   stormlord: { id: "bolt",      name: "落雷",     cd: 8,  tip: "雷击两名队员（有预警）" },
+  crab:      { id: "glacier",   name: "贝壳甲",   cd: 15, tip: "周期性凝出贝壳甲，要先打碎" },
+  bellkeeper:{ id: "howl",      name: "钟鸣",     cd: 14, tip: "钟声响起，全体敌人 5 秒内攻击 +20%、移速 +12%" },
+  mirrorknight:{ id: "reflect", name: "镜面",     cd: 0,  tip: "被法术打中时，反弹 10% 伤害给攻击者" },
+  silencer:  { id: "erase",     name: "静默",     cd: 14, tip: "清空一名队员的技力并定身（有预警）" },
   nameless:  { id: "erase",     name: "抹除",     cd: 20, tip: "清空一名队员的技力并定身（有预警）" },
 };
 const mechOf = e => ((isBoss(e) || e.lead) && BOSS_MECH[e.type]) || null;
@@ -3683,7 +3839,7 @@ function hurt(e, amt, type, crit, src) {
     if (cl("freeze") && !e.d.unstoppable && roll("fight") < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
     if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? (syn2("bloodlust") ? 3 : 2) : 1), true, src);
     if (hasAfx(e, "thorns") && src.def.place === "ground" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.18, "magic", null);
-    if (e.type === "monolith" && mechOf(e) && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.1, "magic", null);
+    if ((e.type === "monolith" || e.type === "mirrorknight") && mechOf(e) && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.1, "magic", null);
     if (hasAfx(e, "warp") && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.15, "magic", null);
     if (tal(src, "t_pierce") && !e.dead) applyCorrode(e, 0.25, 4, src);
   }
@@ -4831,6 +4987,22 @@ const THEMES = {
     path: ["#48506a", "#404860", "#565e7a", "#384058"], edge: "#141828", tuft: "#6a78a8",
     st: { top: "#4a5470", hi: "#9aaad8", hi2: "#7280b0", lo: "#343c56", lo2: "#3e4662", fr: "#282e44", frLo: "#1c2234", seam: "#a0d8ff", out: "#0c1020" },
     moss: ["#a0d8ff", "#ffe040", "#6a90d8"], flowers: ["#a0d8ff", "#ffffff"], prop: "star", bg: "#0a0e1a" },
+  tide: { g: ["#c8bc90", "#bcb084", "#d4c89c", "#b0a478"], blade: "#e0d4a8", wall: ["#6c8c92", "#5e7e84"],
+    path: ["#8a7a5a", "#7c6c4e", "#9a8a68", "#6e5e44"], edge: "#4a3e2a", tuft: "#e8dcb0",
+    st: { top: "#8aa6a8", hi: "#c4dcdc", hi2: "#a4c0c0", lo: "#6a8688", lo2: "#74908e", fr: "#566e70", frLo: "#405456", seam: "#58c0b0", out: "#1e3034" },
+    moss: ["#58c0b0", "#88e0d0", "#3a8a80"], flowers: ["#ffffff", "#f0a0b0"], prop: "spire", bg: "#0e1c24" },
+  sunken: { g: ["#2a4a52", "#244048", "#32565e", "#1e383e"], blade: "#3e6a72", wall: ["#142a30", "#1a3238"],
+    path: ["#5a6a60", "#4e5e54", "#687870", "#44524a"], edge: "#142226", tuft: "#4a8a90",
+    st: { top: "#5a7a80", hi: "#9ac4c8", hi2: "#78a0a4", lo: "#3a5a60", lo2: "#446870", fr: "#2e464c", frLo: "#223438", seam: "#7af0e0", out: "#0c1a1e" },
+    moss: ["#58e0c8", "#a8fff0", "#2a9a88"], flowers: ["#7af0e0", "#ffffff"], prop: "grave", bg: "#08161a" },
+  mirror: { g: ["#9aa4b8", "#8e98ac", "#a8b2c6", "#828ca0"], blade: "#c8d2e6", wall: ["#5e6880", "#68728a"],
+    path: ["#d0d8e8", "#c4ccdc", "#dce4f2", "#b8c0d0"], edge: "#4a5268", tuft: "#d8e0f0",
+    st: { top: "#c0c8d8", hi: "#ffffff", hi2: "#e0e8f4", lo: "#9098ac", lo2: "#a0a8bc", fr: "#7a8298", frLo: "#5e667a", seam: "#a0e0ff", out: "#2c3244" },
+    moss: ["#a0e0ff", "#ffffff", "#c8b0ff"], flowers: ["#ffffff", "#a0e0ff"], prop: "crystal", bg: "#161a26" },
+  silent: { g: ["#1c2030", "#181c2a", "#242a3c", "#141824"], blade: "#323a54", wall: ["#0e1220", "#141828"],
+    path: ["#3a4258", "#323a4e", "#464e66", "#2c3346"], edge: "#0a0d18", tuft: "#4a5476",
+    st: { top: "#3a4258", hi: "#8a96c0", hi2: "#606a90", lo: "#262c40", lo2: "#2e344a", fr: "#1e2336", frLo: "#141828", seam: "#e0e8ff", out: "#080a14" },
+    moss: ["#e0e8ff", "#8a96c0", "#5a6aa0"], flowers: ["#ffffff", "#8a96c0"], prop: "star", bg: "#06080f" },
   dawn: { g: ["#c8b488", "#bca87c", "#d8c498", "#ac9870"], blade: "#e0d0a0", wall: ["#9a8660", "#a8946c"],
     path: ["#e8dcb8", "#dcd0ac", "#f4e8c8", "#cec2a0"], edge: "#8a7650", tuft: "#f0e0b0",
     st: { top: "#f0e4c0", hi: "#fffbe8", hi2: "#f8ecd0", lo: "#d0c49c", lo2: "#dcd0a8", fr: "#b0a480", frLo: "#8e8262", seam: "#ffd040", out: "#463a26" },
@@ -5226,6 +5398,10 @@ function drawAmbient(now) {
       const y = (f.y + t * 280 * f.s) % PHt, x = ((f.x - t * 50 * f.s + y * 0.2) % PW + PW) % PW;
       rect(ctx, x, y, 1, 5 + R0(f.s * 5), f.s > 0.6 ? "rgba(200,220,255,.55)" : "rgba(160,190,230,.32)");
     }
+    else if (theme === "tide") { const x = (f.x + t * 14 * f.s) % (PW + 30) - 15, y = f.y + Math.sin(t * 1.3 + f.p) * 4; if (f.s > 0.4) rect(ctx, x, y, 3 + R0(f.s * 5), 1, "rgba(255,255,255,.5)"); }
+    else if (theme === "sunken") { const y = PHt - ((PHt - f.y + t * 16 * f.s) % PHt), x = f.x + Math.sin(t * 1.1 + f.p) * 5; dot(ctx, x, y, f.s > 0.6 ? "#c8fff4" : "#7af0e0"); }
+    else if (theme === "mirror") { const a = Math.sin(t * 2 + f.p * 6); if (a > 0.5) { dot(ctx, f.x, f.y, "#ffffff"); if (a > 0.9) { dot(ctx, f.x + 1, f.y, "#a0e0ff"); dot(ctx, f.x - 1, f.y, "#a0e0ff"); } } }
+    else if (theme === "silent") { const y = (f.y + t * 4 * f.s) % PHt; ctx.globalAlpha = 0.5; dot(ctx, f.x, y, f.s > 0.6 ? "#e0e8ff" : "#8a96c0"); ctx.globalAlpha = 1; }
     else if (theme === "dawn") {
       const y = f.y - (t * 8 * f.s) % 70, x = f.x + Math.sin(t * 0.5 + f.p) * 12, a = 0.4 + Math.sin(t * 1.5 + f.p * 2) * 0.3;
       ctx.globalAlpha = Math.max(0, a); dot(ctx, x, y, f.s > 0.6 ? "#ffe8a0" : "#ffd040"); ctx.globalAlpha = 1;
@@ -6391,7 +6567,7 @@ function drawWeather(t) {
   else if (id === "heat") for (let i = 0; i < 6; i++) { const y = (i * 61 + t * 12) % PHt, x = (i * 113) % PW; ctx.globalAlpha = 0.09; ctx.fillStyle = "#ffe0a0"; ctx.fillRect(x + Math.sin(t * 3 + i) * 6, y, 90, 1); ctx.globalAlpha = 1; }
 }
 // 昼夜：户外关随波数推进，从白天到黄昏再到夜里（纯画面，不影响数值）
-const TOD_THEMES = new Set(["forest", "snow", "desert", "sky", "ash", "storm"]);
+const TOD_THEMES = new Set(["forest", "snow", "desert", "sky", "ash", "storm", "tide"]);
 function drawTod() {
   if (!TOD_THEMES.has(ST.theme) || S.wave < 1) return;
   const f = Math.min(1, (S.wave - 1) / Math.max(1, totalWaves() - 1));

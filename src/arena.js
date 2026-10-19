@@ -71,7 +71,7 @@ function synHint(p) {
   });
   return best;
 }
-const BOSS_TYPES = ["boss", "sovereign", "devourer", "nameless", "stormlord"];
+const BOSS_TYPES = ["boss", "sovereign", "devourer", "nameless", "stormlord", "silencer"];
 const isBossType = t => BOSS_TYPES.includes(t);
 const isBoss = e => isBossType(e.type);
 const hittable = e => !e.dead && !e.under;
