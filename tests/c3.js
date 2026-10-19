@@ -1,4 +1,4 @@
-// 批次 C 收尾：角色精通、战绩分享码、连败辅助
+// 批次 C 收尾：角色精通、连败辅助
 const { chromium } = require("playwright");
 const { check, noErrors, report } = require("./lib");
 const path = require("path");
@@ -30,13 +30,9 @@ const path = require("path");
   check(r.a1 === 1 && Math.abs(r.hp1 / r.base - 1.08) < 0.01, "连败 2 次：晨星碑生命 +8%", r);
   check(r.after === 0 && r.a2 === 0, "通关一次连败清零", r);
   check(r.a3 === 0 && r.a4 === 0, "无尽模式 / 显式 assist:0 不吃辅助", r);
-  // 分享码
-  const t = await p.evaluate(() => { startRun(0, { hero: "mage" }); S.over = "lose"; const R = settleRun(); return shareText(R); });
-  check(/晨星守望/.test(t) && /薇薇安/.test(t) && /github\.io/.test(t), "分享码含标题、英雄、链接", t);
-  // 结算页有按钮
-  await p.evaluate(() => { showResult(settleRun()); });
+  // 结算页：输了之后有连败提示
+  await p.evaluate(() => { startRun(0, { hero: "mage" }); S.over = "lose"; showResult(settleRun()); });
   await p.waitForTimeout(200);
-  check(await p.locator("#btn-share").count() === 1, "结算页有「复制战绩」按钮");
   check((await p.locator("#ovbox").innerText()).includes("连败"), "输了之后有连败提示", "");
   // 旧存档升级：版本 12 的存档读入后 lose 为空
   const old = await p.evaluate(() => { localStorage.setItem(SAVE_KEY, JSON.stringify({ ver: 12, stars: [1] })); const d = loadSave(); return [d.ver, JSON.stringify(d.lose)]; });

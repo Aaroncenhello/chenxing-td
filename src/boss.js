@@ -180,6 +180,7 @@ function startCine(e) {
     elite: !!e.elite, ult: (ultOf(e) || {}).name || "", mech: mechOf(e), t: 0, dur: 2.9,
   };
   S.cineWave = S.wave;
+  if (mechOf(e)) once("bossmech", "<b>首领特性</b>每位首领有一个专属机制，有「预警」的会先在目标脚下画圈。读条时集火可以打断大招。");
   S.shake = 0.8; S.hitFlash = 0.7;
   addFx({ kind: "ring", x: e.x, y: e.y, color: e.d.color, life: 1, r0: 0.2, r1: 3.6 });
   burst(e.x, e.y, e.d.color, 40, 4.4, 1.1, 0.1);

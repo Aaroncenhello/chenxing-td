@@ -522,6 +522,7 @@ function openOffer(minRare, noCharge) {
   if (S.offer || S.over) return;
   if (!minRare && S.pending <= 0) return;
   S.offerRare = minRare || 0;
+  if (S.banishLeft > 0) once("banish", "<b>放逐</b>每局 " + BANISH_N + " 次：翻牌时点「放逐」（或按 X）再点一张卡，它这局就不会再出现。");
   S.offer = randomCards(3, minRare);
   if (!S.offer.length) { S.pending = 0; S.offer = null; return; }
   if (minRare && !noCharge) S.pending++;

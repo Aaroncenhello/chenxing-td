@@ -165,8 +165,11 @@ $("ev3").addEventListener("click", ev => {
   const b = ev.target.closest("[data-ev]"); if (!b) return;
   if (takeEvent(+b.dataset.ev)) { $("eventbox").dataset.k = ""; $("levelup").dataset.k = ""; }
 });
+let shopArm = null;
 $("shop3").addEventListener("click", ev => {
   const b = ev.target.closest("[data-buy]"); if (!b) return;
+  if (b.dataset.buy === "recycle" && shopArm !== "recycle") { shopArm = "recycle"; toast("<b>回炉重造</b>会让你的一张卡降 1 级。再点一次确认。"); return; }
+  shopArm = null;
   if (buyShop(b.dataset.buy)) { $("shopbox").dataset.k = ""; $("levelup").dataset.k = ""; }
 });
 $("btn-shopgo").addEventListener("click", () => { closeShop(); $("shopbox").dataset.k = ""; });
@@ -195,9 +198,22 @@ function synGuideHtml(live) {
     return `<div class="cx${x && x.on ? " on" : ""}" style="--c:${g.color}"><div><b style="color:${g.color}">${x && x.on ? "✓ " : ""}${g.name}${x ? `<span class="sp">${x.on ? "已生效" : `${x.a}/${x.b}`}</span>` : ""}</b>
       <p class="need">条件：${g.need}</p><p class="eff">效果：${g.desc}</p>${g.t2 ? `<p class="eff t2${x && x.on2 ? " on" : ""}">${x && x.on2 ? "✓ " : ""}强化 Ⅱ：${g.t2.desc}<br><small>条件：${syn2Need(g)}</small></p>` : ""}<p>${SYN_HOW[g.id] ? SYN_HOW[g.id]() : ""}</p></div></div>`; }).join("")}</div>`;
 }
+// 本局规则：契约、深渊、每日规则、天气、本关首领特性，都在这一页看
+function rulesHtml() {
+  const rows = [];
+  if (S.contracts && S.contracts.length) rows.push(["自选契约", S.contracts.map(id => { const c = CONTRACTS.find(x => x.id === id); return c ? `${c.name}（${c.desc}）` : ""; }).join("、")]);
+  if (S.abyss) rows.push(["深渊", `${S.abyss} 层：敌人更强，奖励更多`]);
+  if (S.daily) { const m = DAILY_MODS.find(x => x.id === S.mod); if (m) rows.push(["每日规则", `${m.name}：${m.desc}`]); }
+  if (S.assist) rows.push(["连败辅助", `晨星碑生命 +${Math.round(ASSIST[S.assist - 1].hp * 100)}%`]);
+  const wid = WEATHER_OF[ST.theme];
+  if (wid) rows.push(["天气", `${WEATHER[wid].name}（${WEATHER[wid].tip}）· 每 5 波里有 2 波${S.wx ? "，现在正在下" : ""}`]);
+  const ms = [...new Set((ST.boss || []).map(b => b[0]))].filter(t => BOSS_MECH[t]).map(t => `${ENEMIES[t].name}：${BOSS_MECH[t].name}（${BOSS_MECH[t].tip}）`);
+  if (ms.length) rows.push(["首领特性", ms.join("；")]);
+  return rows.length ? `<div class="tree rulebox"><b>本局规则</b>${rows.map(([k, v]) => `<small><b>${k}</b>　${v}</small>`).join("")}</div>` : "";
+}
 function showSynGuide() {
   if (!S || S.over || S.offer || S.shop || S.event || S.cine) return;
-  openOverlay(`<h2>羁绊一览</h2><p>羁绊凑齐条件后自动生效，一直持续到条件不满足为止（例如前排倒下）。数字是这局现在的进度。</p>
+  openOverlay(`<h2>本局规则与羁绊</h2>${rulesHtml()}<p>羁绊凑齐条件后自动生效，一直持续到条件不满足为止（例如前排倒下）。数字是这局现在的进度。</p>
     ${synGuideHtml(true)}<div class="btns"><button class="primary" id="btn-synback">返回战斗</button></div>`);
 }
 document.addEventListener("click", ev => { if (ev.target.closest("[data-synhelp], .syns, #pi-syn, #h-syn")) showSynGuide(); });

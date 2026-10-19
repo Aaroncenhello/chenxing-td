@@ -28,6 +28,7 @@ buildSpells();
 resize();
 window.addEventListener("resize", resize);
 showLevels();
+showNews();
 window.__td = {
   get S() { return S; }, step, settle: settleRun, newRun: (i, o) => startRun(i, o || {}), beginStage, castUlt, castSpell, useSkill, pickCard, openOffer, randomCards, cardInfo,
   UNITS, STAGES, CARDS, awardExp, levelOf, buyShop, closeShop, rerollOffer, SYNERGY, VIGIL, EVENTS, takeEvent, openEvent,
