@@ -5,7 +5,7 @@
 const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true, lit: true }];
 // 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
 const OPT_KEY = "chenxing-td-opts";
-const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, sp2: 0, ct: [] }; } })();
+const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, fps: !!v.fps, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, fps: false, sp2: 0, ct: [] }; } })();
 function setOpt(k, v) { OPT[k] = typeof v === "number" || Array.isArray(v) ? v : !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
@@ -22,8 +22,10 @@ function adaptGfx(dt) {
   fpsEma = fpsEma == null ? fps : fpsEma * 0.9 + fps * 0.1;
   gfxAdaptCd -= dt;
   if (gfxAdaptCd > 0) return;
-  if (fpsEma < 42 && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
-  else if (fpsEma > 56 && autoIdx < GFX_LV.length - 1) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
+  // 预测式降档：场上怪多 / 特效多的时候（大波、首领战）门槛抬高到 50 帧，不用等真的卡了才降；这种时候也不急着升回去
+  const heavy = !!S && (S.enemies.length > 36 || S.fx.length > GFX.cap * 0.6);
+  if (fpsEma < (heavy ? 50 : 42) && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
+  else if (fpsEma > 56 && !heavy && autoIdx < GFX_LV.length - 1) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
 }
 // 特效满了就先丢掉装饰性的（粒子、伤害数字），横幅、演出、环这类关键反馈照常加
 const fxCheap = f => f.kind === "parts" || (f.kind === "text" && !f.big);
@@ -56,7 +58,7 @@ function addNum(x, y, v, color, big, key, maxHp) {
     for (let i = S.fx.length - 1, n = 0; i >= 0 && n < 60; i--, n++) {
       const f = S.fx[i];
       if (f.kind !== "text" || f.key !== key || f.color !== color || f.t > 0.35) continue;
-      f.val += v; f.text = String(Math.round(f.val)); f.t = Math.min(f.t, 0.06);
+      f.val += v; f.text = (color === "#7ee89c" ? "+" : "") + String(Math.round(f.val)); f.t = Math.min(f.t, 0.06);
       const sz = Math.max(f.sz, numSize(maxHp ? f.val / maxHp : 0, big)); if (sz === 4 && f.sz < 4) S.shake = Math.max(S.shake, 0.12);
       f.sz = sz; f.crit = f.crit || !!big;
       return;
@@ -68,7 +70,7 @@ function addNum(x, y, v, color, big, key, maxHp) {
   let stack = 0;
   for (let i = S.fx.length - 1, n = 0; i >= 0 && n < 24; i--, n++) { const f = S.fx[i]; if (f.kind === "text" && f.val != null && f.t < 0.4 && Math.abs(f.x - x) < 0.6 && Math.abs(f.y - (y - 0.35)) < 0.9) stack++; }
   y -= Math.min(stack, 3) * 0.22;
-  addFx({ kind: "text", x: x + (Math.random() - 0.5) * 0.3, y: y - 0.35, text: String(Math.round(v)), val: v, color, life: sz >= 3 ? 0.95 : 0.8, crit: !!big, sz, key, big: sz === 4 });
+  addFx({ kind: "text", x: x + (Math.random() - 0.5) * 0.3, y: y - 0.35, text: (color === "#7ee89c" ? "+" : "") + String(Math.round(v)), val: v, color, life: sz >= 3 ? 0.95 : 0.8, crit: !!big, sz, key, big: sz === 4 });
 }
 
 // ---------- 伤害 ----------
@@ -190,6 +192,11 @@ function hurt(e, amt, type, crit, src) {
     if (hasAfx(e, "warp") && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.15, "magic", null);
     if (tal(src, "t_pierce") && !e.dead) applyCorrode(e, 0.25, 4, src);
   }
+  if (crit && byUnit && !OPT.calm) {
+    // 分级顿帧：暴击打在精英/首领身上轻轻一顿；普通怪暴击的小击退
+    if ((e.elite || isBoss(e)) && (S.hitStopCd || 0) <= 0) { S.hitStop = Math.max(S.hitStop || 0, 0.035); S.hitStopCd = 0.35; }
+    else if (!e.elite && !isBoss(e) && !e.d.flying && !e.d.unstoppable && (e.knockCd || 0) <= S.t) { knock(e, 0.18); e.knockCd = S.t + 0.7; }
+  }
   if (e.shield > 0) {
     const m = type === "magic" ? 1.5 : 1, eff = amt * m;
     if (eff <= e.shield) { e.shield -= eff; addNum(e.x, e.y, eff, "#8ac8ff", crit, e.id, e.maxHp); e.hitT = 0.1; addStat(src, "dmg", eff); return eff; }
@@ -223,6 +230,7 @@ function bossFanfare(e, kind) {
   addFx({ kind: "flash", life: death ? 0.5 : 0.35, color: death ? "#ffffff" : col });
   addFx({ kind: "ring", x: e.x, y: e.y, color: col, life: 0.9, r0: 0.4, r1: death ? 9 : 6 });
   S.shake = Math.max(S.shake, death ? 0.9 : 0.6); S.zoomK = Math.max(S.zoomK || 0, death ? 0.05 : 0.03);
+  if (!death) S.hitStop = Math.max(S.hitStop || 0, 0.12);
   if (!death) return;
   // 连环爆炸 → 光柱 → 金色碎片雨 → 击破横幅
   for (let i = 0; i < 8; i++) {
@@ -606,6 +614,9 @@ function useSkill(u) {
   S.fx = S.fx.filter(f => f.kind !== "skillcut");
   addFx({ kind: "skillcut", id: D.id, lv: u.lv, branch: u.branch, name: D.name, skill: D.skill.name, color: D.color, hero: !!u.hero, life: 1.1 });
   if (u.hero) addFx({ kind: "flash", life: 0.18, color: D.color });
+  // 出手强调：定格一小下 + 镜头往里推一点 + 一圈向外的冲击线
+  if (!OPT.calm) { S.hitStop = Math.max(S.hitStop || 0, u.hero ? 0.06 : 0.03); S.zoomK = Math.max(S.zoomK || 0, u.hero ? 0.025 : 0.012); }
+  addFx({ kind: "burstlines", x: u.x, y: u.y, color: D.color, life: 0.35 });
   if (cl("lg_tide")) for (const a of S.units) if (alive(a)) { heal(a, a.maxHp * 0.06, true, null); if (a !== u) a.sp = Math.min(a.def.sp, a.sp + 8); }
 }
 function autoWant(u) {

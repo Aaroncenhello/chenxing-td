@@ -229,6 +229,7 @@ function drawMap() {
     if (!isPath(c - 1, r)) edge(x, y, 2, T, () => x + 1 + (rnd() * 2 | 0), () => y + rnd() * T);
     if (!isPath(c + 1, r)) edge(x + T - 2, y, 2, T, () => x + T - 3 + (rnd() * 2 | 0), () => y + rnd() * T);
   }
+  drawGroundDecals(g, th, rnd);
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (MAP[r][c] === "=") drawBridge(g, c * T, r * T, isPath(c - 1, r) || isPath(c + 1, r), c, r);
   // 出生点、基地法阵
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
@@ -248,6 +249,24 @@ function drawMap() {
   props.sort((a, b) => a.y - b.y);
   const PROP = { tree: drawTree, pine: drawPine, grave: drawGraveProp, spire: drawSpire, cactus: drawCactus, crystal: drawCrystal, abyss: drawAbyssProp, ice: drawIceProp, mech: drawMechProp, blood: drawBloodProp, star: drawStarProp };
   for (const p of props) p.rock ? drawRock(g, p, th) : (PROP[th.prop] || drawTree)(g, p);
+}
+// 地面小细节：按主题撒裂纹 / 落叶 / 碎石 / 霜点 / 水洼，让大片空地有点东西（画进静态地图，不花每帧的钱）
+const THEME_DECAL = { forest: ["leaf", "puddle"], snow: ["frost"], lava: ["crack"], grave: ["crack", "bone"], desert: ["pebble"], sky: ["leaf"], cave: ["pebble"], abyss: ["crack"], ice: ["frost"], mech: ["bolt", "crack"], blood: ["crack"], star: ["frost"], ash: ["crack", "pebble"], ruin: ["crack", "pebble"], storm: ["puddle"], dawn: ["leaf"], tide: ["pebble", "puddle"], sunken: ["puddle", "bubble"], mirror: ["frost"], silent: ["frost"] };
+function drawGroundDecals(g, th, rnd) {
+  const kinds = THEME_DECAL[ST.theme] || ["pebble"], lite = th.path[2], dark = th.path[3];
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const ch = MAP[r][c]; if (ch === "#" || ch === "~" || ch === "=" || ch === "B" || "SR".includes(ch)) continue;
+    if (rnd() > 0.42) continue;
+    const k = kinds[(rnd() * kinds.length) | 0], x = c * T + 4 + rnd() * 30, y = r * T + 5 + rnd() * 28;
+    if (k === "crack") { let cx = x, cy = y; for (let i = 0; i < 6; i++) { rect(g, cx, cy, 2, 1, dark); cx += 1 + (rnd() * 2 | 0); cy += (rnd() * 3 | 0) - 1; } }
+    else if (k === "leaf") { for (let i = 0; i < 3; i++) rect(g, x + rnd() * 8, y + rnd() * 5, 2, 1, ["#c8843a", "#a85a28", "#d8b04a", "#7a4a22"][(rnd() * 4) | 0]); }
+    else if (k === "pebble") { for (let i = 0; i < 3; i++) { const px_ = x + rnd() * 9, py_ = y + rnd() * 5; rect(g, px_, py_, 3, 2, dark); rect(g, px_, py_, 2, 1, lite); } }
+    else if (k === "frost") { for (let i = 0; i < 4; i++) { const px_ = x + rnd() * 10, py_ = y + rnd() * 6; rect(g, px_, py_, 2, 1, "#ffffff"); dot(g, px_ + 1, py_ - 1, "rgba(220,240,255,.8)"); } }
+    else if (k === "puddle") { const w = 8 + (rnd() * 7 | 0); rect(g, x, y + 1, w, 3, "rgba(30,60,100,.35)"); rect(g, x + 1, y, w - 2, 1, "rgba(30,60,100,.28)"); rect(g, x + 2, y + 1, 3, 1, "rgba(220,240,255,.5)"); }
+    else if (k === "bone") { rect(g, x, y, 6, 1, "#d8d0b8"); dot(g, x - 1, y - 1, "#d8d0b8"); dot(g, x - 1, y + 1, "#d8d0b8"); dot(g, x + 6, y - 1, "#d8d0b8"); dot(g, x + 6, y + 1, "#d8d0b8"); }
+    else if (k === "bolt") { for (const [dx, dy] of [[0, 0], [5, 2], [9, 0]]) { dot(g, x + dx, y + dy, "#8a8c9c"); dot(g, x + dx, y + dy - 1, "#c8ccd8"); } }
+    else if (k === "bubble") { for (let i = 0; i < 3; i++) { const px_ = x + rnd() * 9, py_ = y + rnd() * 5; ring(g, px_, py_, 2, 2, "rgba(200,255,244,.5)"); } }
+  }
 }
 const WATER = { base: "#2f6ea8", d: "#2a64a0", l: "#3a80b8", wave: "#5a9ad0", shore: "#c8b890", dk: "#1e4a78" };
 const wetAt = (cc, rr) => "~=".includes(tileAt(cc, rr)) || (rr >= ROWS || rr < 0 || cc < 0 || cc >= COLS) && ST.theme === "sky";
@@ -542,7 +561,21 @@ function drawAmbient(now) {
       for (let i = 1; i < H; i++) { const hw = (i <= 11 ? R0(i * W) : R0((H - i) * 0.85)) - 1; if (hw < 0) continue; rect(ctx, x - hw, cy - 22 + i, hw * 2 + 1, 1, A[1]); rect(ctx, x - hw, cy - 22 + i, 2, 1, A[0]); rect(ctx, x + hw - 1, cy - 22 + i, 2, 1, A[2]); }
       rect(ctx, x - 1, cy - 17, 1, 14, A[0]);
       if ((t * 2 | 0) % 3 === 0) { dot(ctx, x - 4, cy - 11, "#ffffff"); dot(ctx, x + 7, cy - 16, "#ffffff"); }
+      // 受伤的晨星碑：血量越低裂纹越多，挨打时整块闪白，快碎了还会掉火星
+      const hf = S.crystal.hp / S.crystal.maxHp;
+      if (hf < 0.6) { line(ctx, x - 2, cy - 14, x + 1, cy - 8, OUT, 1); line(ctx, x + 1, cy - 8, x - 1, cy - 3, OUT, 1); }
+      if (hf < 0.3) { line(ctx, x + 4, cy - 12, x + 2, cy - 5, OUT, 1); line(ctx, x - 4, cy - 6, x - 6, cy - 1, OUT, 1); if ((t * 6 | 0) % 2) dot(ctx, x + 6 - ((t * 20) % 8 | 0), cy + ((t * 14) % 16 | 0), "#ffb040"); }
+      if (S.crystal.hitT > 0 && !OPT.calm) { ctx.globalAlpha = Math.min(0.6, S.crystal.hitT * 2); rect(ctx, x - 9, cy - 22, 19, 26, "#ffffff"); ctx.globalAlpha = 1; }
     }
+  }
+  // 墙上的火把 / 灯笼：固定位置（按格子坐标算），火苗两帧闪动 + 一点光
+  const TORCH = { grave: ["#7af0c0", "#e0fff0"], abyss: ["#ff5a9a", "#ffc0e0"], sunken: ["#7af0e0", "#e0fff8"], ruin: ["#ffd060", "#fff6c0"], silent: ["#c8d4ff", "#ffffff"], mech: ["#ffb040", "#ffe880"], cave: ["#80d8ff", "#e0f8ff"], blood: ["#ff6a5a", "#ffd0c0"] }[theme];
+  if (TORCH) for (let r = 0; r < ROWS - 1; r++) for (let c = 0; c < COLS; c++) {
+    if (MAP[r][c] !== "#" || MAP[r + 1][c] === "#" || (c * 7 + r * 13) % 9 !== 0) continue;
+    const x = c * T + 20, y = r * T + 33, fl = (t * 7 + c) % 2 < 1;
+    rect(ctx, x - 1, y, 3, 5, "#3a2a1a"); rect(ctx, x - 2, y - 1, 5, 2, "#5a4a3a");
+    rect(ctx, x - 1, y - (fl ? 5 : 4), 3, fl ? 4 : 3, TORCH[0]); dot(ctx, x, y - (fl ? 4 : 3), TORCH[1]);
+    addGlow(x, y - 3, 24, TORCH[0], 0.22 + Math.sin(t * 9 + c) * 0.05);
   }
   // 雷暴天气：远处闪电，纯画面效果，用固定周期而非随机避免闪烁不受控
   if (theme === "storm") {

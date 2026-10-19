@@ -13,12 +13,17 @@ function once(key, html) {
   seen.push(key); try { localStorage.setItem("chenxing-td-hints", JSON.stringify(seen)); } catch (e) { }
   toast(html);
 }
+// 提示：战斗中缩成一行「角标」（只留标题），点一下展开看全文；菜单里仍是完整的卡片
 function toast(html, draw) {
-  const el = document.createElement("div"); el.className = "toast";
-  el.innerHTML = (draw ? '<canvas aria-hidden="true"></canvas>' : "") + `<div>${html}</div>`;
+  const el = document.createElement("div");
+  const mini = typeof S !== "undefined" && S && !S.over && (S.wave > 0 || S.kills > 0) && !menuOpen;
+  const m = /^\s*<b>([\s\S]*?)<\/b>([\s\S]*)$/.exec(html);
+  el.className = "toast" + (mini ? " mini" : "");
+  el.innerHTML = (draw ? '<canvas aria-hidden="true"></canvas>' : "") + (m ? `<div><b>${m[1]}</b><span class="tb">${m[2]}</span></div>` : `<div><span class="tb1">${html}</span></div>`);
+  if (mini) el.addEventListener("click", () => { el.classList.toggle("open"); clearTimeout(el._t); el._t = setTimeout(() => el.remove(), 7000); });
   $("toasts").appendChild(el);
   if (draw) draw(el.querySelector("canvas"));
-  setTimeout(() => el.remove(), 6000);
+  el._t = setTimeout(() => el.remove(), mini ? 4500 : 6000);
   while ($("toasts").children.length > 3) $("toasts").firstChild.remove();
 }
 function drawFoeIcon(cvs, type) {
@@ -49,10 +54,25 @@ function handleEvents() {
 }
 
 // ---------- 顶栏 ----------
+// 本局成长：全队总攻击（按攻速折算）和总生命相对开局的倍数。基准取开局第一次读到的值（只有英雄一个人）
+function teamGrowth() {
+  let atk = 0, hp = 0;
+  for (const u of S.units) if (!u.summon) { atk += uAtk(u) / uInterval(u); hp += u.maxHp; }
+  if (!S.baseP && atk > 0) S.baseP = { atk, hp };
+  const b = S.baseP || { atk: atk || 1, hp: hp || 1 };
+  return { atk: atk / b.atk, hp: hp / b.hp, k: Math.sqrt(atk / b.atk * (hp / b.hp)), n: S.units.filter(u => !u.summon).length };
+}
+// 下一步目标：离凑齐最近的羁绊（还差一张就提示）
+function nextGoal() {
+  let best = null;
+  for (const g of SYNERGY) { const [a, b] = g.prog(); if (a > 0 && a < b && (!best || b - a < best.gap)) best = { g, a, b, gap: b - a }; }
+  return best ? `凑齐「${best.g.name}」${best.a}/${best.b}（${best.g.need}）` : "";
+}
 function updateStats() {
   setText("s-level", (S.daily ? "每日挑战 · " : S.vigil ? "守望之战 · " : S.endless ? "无尽 · " : `第 ${S.stage + 1} 关 · `) + ST.name + (S.diff && !S.daily ? " · " + DIFFS[S.diff].name : ""));
   setText("s-hp", Math.ceil(S.crystal.hp));
   setText("s-lv", S.level);
+  setText("s-pw", "×" + teamGrowth().k.toFixed(1));
   setText("s-wave", S.endless ? `${S.wave}/∞` : `${S.wave}/${ST.waves}`);
   setText("s-kills", S.kills);
   setText("s-dust", S.dust);
@@ -65,7 +85,8 @@ function updateStats() {
   setText("btn-call", S.spawnQueue.length || S.enemies.length ? "叠加下一波" : "立即出击");
   setText("btn-auto", S.autoWave ? "自动开波：开" : "自动开波：关");
   $("xp-fill").style.width = Math.min(100, S.xp / S.xpNeed * 100).toFixed(1) + "%";
-  setText("xp-txt", `Lv ${S.level} · 经验 ${Math.floor(S.xp)}/${S.xpNeed}` + (S.pending > 0 ? "（可以翻牌！）" : ""));
+  if (!S.goalT || S.t - S.goalT > 1) { S.goalT = S.t; S.goalTxt = nextGoal(); }
+  setText("xp-txt", `Lv ${S.level} · 经验 ${Math.floor(S.xp)}/${S.xpNeed}` + (S.pending > 0 ? "（可以翻牌！）" : "") + (S.goalTxt ? ` · 目标：${S.goalTxt}` : ""));
   const wb = $("wavebar"), key = S.stage + ":" + S.wave + ":" + (waiting ? 1 : 0) + ":" + (S.daily ? 1 : 0);
   if (wb.dataset.k !== key) {
     wb.dataset.k = key;
@@ -106,7 +127,7 @@ function updateCardbar() {
   const ids = Object.keys(S.cards);
   const all = ids.concat(Object.keys(S.curses || {}));
   const rels = (S.relics || []).map(id => `<span class="cb rl" title="${RELIC_BY[id].name}：${RELIC_BY[id].desc}"><canvas id="rl-${id}"></canvas></span>`).join("");
-  cardbarEl.innerHTML = rels + (all.length ? all.map(id => { const n = (S.cards[id] || S.curses[id]); const c = ANY_CARD(id); return `<span class="cb${CURSE_BY[id] ? " cu" : ""}" title="${c ? c.name : id}"><canvas id="cb-${id}"></canvas>${n > 1 ? `<i>${n}</i>` : ""}</span>`; }).join("")
+  cardbarEl.innerHTML = rels + (all.length ? all.map(id => { const n = (S.cards[id] || S.curses[id]); const c = ANY_CARD(id); const mx = (c && c.max) || 1; return `<span class="cb${CURSE_BY[id] ? " cu" : ""}${mx > 1 && n >= mx ? " maxed" : ""}" title="${c ? c.name : id}${mx > 1 ? `（${n}/${mx} 级）` : ""}"><canvas id="cb-${id}"></canvas>${mx > 1 && mx <= 5 ? `<em class="pips">${"●".repeat(n)}${"○".repeat(Math.max(0, mx - n))}</em>` : n > 1 ? `<i>${n}</i>` : ""}</span>`; }).join("")
     : '<span class="none">升级翻到的卡牌会显示在这里</span>');
   for (const id of all) cardIconTo($("cb-" + id), id);
   for (const id of S.relics || []) drawRelicIcon($("rl-" + id), id, 30);

@@ -199,6 +199,10 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .cardbar .cb{position:relative;width:30px;height:30px}
 .cardbar canvas{width:30px;height:30px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12}
 .cardbar .cu canvas{box-shadow:0 0 0 2px #a01838}
+.cardbar .cb{margin-bottom:6px}
+.cardbar .pips{position:absolute;left:0;right:0;bottom:-8px;text-align:center;font-style:normal;font-size:6px;letter-spacing:-1px;color:#ffd860;line-height:1}
+.cardbar .maxed canvas{box-shadow:0 0 0 2px #ffd860,0 0 8px rgba(255,216,96,.6);animation:maxg 2s ease-in-out infinite}
+@keyframes maxg{50%{box-shadow:0 0 0 2px #fff0b0,0 0 12px rgba(255,216,96,.9)}}
 .cardbar i{position:absolute;right:-2px;bottom:-3px;font-style:normal;font-family:var(--pix);font-size:8px;color:#1a1408;background:var(--gold);padding:1px 2px}
 .cardbar .none{color:var(--muted);font-size:12px;align-self:center}
 .info{background:var(--panel);border:2px solid #0a0c12;box-shadow:var(--bevel);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:180px}
@@ -219,6 +223,13 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 @media (max-width:980px){.levels{grid-template-columns:repeat(2,minmax(0,240px))}}
 @media (max-width:560px){.levels{grid-template-columns:1fr}}
 .lvcard{background:var(--panel);border:2px solid #0a0c12;box-shadow:var(--bevel);padding:10px;display:flex;flex-direction:column;gap:6px;text-align:left}
+.lvcard{border-top:3px solid var(--cc,#3a4460);position:relative}
+.lvcard.next{box-shadow:var(--bevel),0 0 0 2px #ffd860,0 0 16px rgba(255,216,96,.35)}
+.nextb{position:absolute;right:8px;top:-1px;background:#ffd860;color:#1a1408;font-style:normal;font-size:11px;padding:1px 8px;font-weight:700;z-index:1}
+.bdg{display:inline-block;font-size:10px;padding:0 5px;margin-right:4px;border:1px solid currentColor;font-weight:400}
+.bdg.hd{color:#ffb040}.bdg.nm{color:#ff6a6a}.bdg.ab{color:#c890ff}
+.chbtn small{display:block;font-size:10px;opacity:.8}.chbtn.on{box-shadow:0 0 0 2px var(--cc,#ffd860)}
+.chbar{height:5px;background:#1a2030;margin:2px 0 8px;box-shadow:0 0 0 1px #0a0c12}.chbar i{display:block;height:100%;background:var(--cc,#ffd860)}
 .lvcard canvas{width:100%;aspect-ratio:16/9;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12;display:block}
 .lvcard h3{margin:0;font-family:var(--serif);font-size:16px;display:flex;justify-content:space-between;align-items:baseline;gap:6px}
 .lvcard h3 span{font-size:14px;color:#ffd860;letter-spacing:2px}
@@ -296,6 +307,12 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .daily.lockd{opacity:.55}
 .toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:9;max-width:min(340px,calc(100vw - 32px))}
 .toast{background:var(--panel);border:2px solid #0a0c12;box-shadow:var(--bevel),0 6px 16px rgba(0,0,0,.5);padding:10px 12px;display:flex;gap:10px;align-items:center;font-size:12px;line-height:1.5;animation:tin .25s steps(4)}
+#fps{position:fixed;left:6px;top:6px;z-index:60;background:rgba(0,0,0,.65);color:#9ef09e;font:11px/1.4 monospace;padding:2px 6px;pointer-events:none;white-space:pre}
+.toast.mini{padding:4px 8px;gap:6px;font-size:11px;cursor:pointer;max-width:230px}
+.toast.mini .tb{display:none}.toast.mini b{display:inline;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast.mini .tb1{display:block;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast.mini canvas{width:24px;height:24px}
+.toast.mini.open{max-width:min(340px,calc(100vw - 32px));padding:8px 10px}.toast.mini.open .tb{display:inline}.toast.mini.open b{display:block;white-space:normal}.toast.mini.open .tb1{white-space:normal;max-width:none}.toast.mini.open canvas{width:36px;height:36px}
 .toast canvas{width:44px;height:44px;flex:none;image-rendering:pixelated;background:#243040;box-shadow:0 0 0 2px #0a0c12}
 .toast b{display:block;font-size:13px;color:#ffd860}
 @keyframes tin{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
@@ -446,6 +463,7 @@ body.imm .stage{position:fixed;inset:0;z-index:30;border:0;box-shadow:none;backg
 body.imm .toasts{z-index:40;right:auto;left:50%;transform:translateX(-50%);bottom:6px;max-width:min(340px,60vw)}
 body.imm .toast{padding:5px 8px;font-size:11px;opacity:.94} body.imm .toast canvas{width:28px;height:28px}
 body.imm .toasts .toast:not(:last-child){display:none}
+body.imm .toast.mini{padding:3px 8px}
 body.imm.panel .toasts{display:none}
 .hud{position:absolute;inset:0;z-index:7;pointer-events:none;font-size:12px}
 .hud button{pointer-events:auto;min-width:54px;min-height:40px;padding:4px 6px;font-size:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;background:rgba(36,43,62,.86)}
@@ -455,7 +473,7 @@ body.imm.panel .toasts{display:none}
 .hud button.rdy small{color:#ffd860}
 .hud button:disabled{opacity:.4}
 .hud-top{position:absolute;top:calc(4px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:rgba(10,12,18,.72);padding:3px 10px 5px;box-shadow:0 0 0 2px #0a0c12;white-space:nowrap}
-.hud-top b{font-family:var(--pix);font-size:10px;font-weight:400;color:var(--text)}
+.hud-top b{font-family:var(--pix);font-size:10px;text-shadow:0 1px 0 #000;font-weight:400;color:var(--text)}
 .hud-top .hc b{color:#62b4ff} .hud-top .hl b{color:var(--gold)} .hud-top .hd b{color:#ffd860}
 body.imm .hud-top{flex-wrap:wrap;justify-content:center;row-gap:3px}
 body.imm .hud-top .cbar{display:block;flex:0 0 100%;height:14px;margin:2px 0 0} body.imm .hud-top .cbar span{line-height:14px;font-size:10px}
@@ -521,7 +539,7 @@ body.imm .hud-syn{max-height:44%}
   body.imm .hud-syn{display:none}
   body.imm .hud-unit:not([hidden]){display:none}
   body.imm .hud-top{position:relative;top:auto;left:auto;transform:none;order:-1;align-self:center;margin-top:6px;flex-wrap:wrap;justify-content:center;white-space:normal;gap:2px 12px;max-width:calc(100% - 16px);padding:4px 12px 7px}
-  body.imm .hud-top b{font-size:11px}
+  body.imm .hud-top b{font-size:12px}
   body.imm .hud-l,body.imm .hud-r{position:static;transform:none;display:grid;gap:6px;padding:0 10px}
   body.imm .hud-l{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:auto}
   body.imm .hud-r{grid-template-columns:repeat(4,minmax(0,1fr));padding-bottom:10px}
@@ -540,6 +558,7 @@ body.imm .hud-syn{max-height:44%}
     <div class="stats">
       <div class="stat hp">晨星碑 <b id="s-hp">1000</b></div>
       <div class="stat lv">等级 <b id="s-lv">1</b></div>
+      <div class="stat pw" title="全队攻击和生命相对开局的倍数">战力 <b id="s-pw">×1.0</b></div>
       <div class="stat">波次 <b id="s-wave">0/10</b></div>
       <div class="stat">击杀 <b id="s-kills">0</b></div>
       <div class="stat dust">星尘 <b id="s-dust">0</b></div>
@@ -624,6 +643,7 @@ body.imm .hud-syn{max-height:44%}
     <div class="info" id="info"></div>
   </div>
 
+  <div id="fps" hidden></div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
   <p class="hint">
     每局只带 <b>1 个英雄</b> 上场，全程自动战斗。敌人从四周的传送门冲向中间的<b>晨星碑</b>，晨星碑血量打空就结束。
@@ -2600,9 +2620,11 @@ function ringSlots(list, r, ph) {
   // 人少的时候往里收一点（保持和以前一样的手感），但阵型的差别还是留着
   const n = Math.max(1, list.length), rr = (n <= 2 ? r * 0.83 : r) + Math.max(0, n - 4) * 0.22;
   list.forEach((u, i) => {
+    // 三个以上时隔一个往外挪一点，前后错开，不叠成一堆（只是站位微调）
+    const rz = rr + (n >= 3 && i % 2 ? 0.32 : 0);
     let a = ph + (i / n) * Math.PI * 2, x = 0, y = 0;
     for (let k = 0; k < 16; k++) {
-      x = CRYSTAL.x + Math.cos(a) * rr; y = CRYSTAL.y + Math.sin(a) * rr;
+      x = CRYSTAL.x + Math.cos(a) * rz; y = CRYSTAL.y + Math.sin(a) * rz;
       if (!solid(x, y) && x > 0.6 && x < COLS - 1.6 && y > 0.6 && y < ROWS - 1.6) break;
       a += 0.3;
     }
@@ -2619,7 +2641,7 @@ function knockOut(u) {
   }
   if (u.down > 0 || u.dead) return;
   if (u.summon) { u.dead = true; S.units = S.units.filter(x => x !== u); burst(u.x, u.y, "#9ab0c8", 18, 2.2, 0.7, 0.07); arrange(); return; }
-  u.down = reviveT(); u.hp = 0; u.pend = null;
+  u.down = u.downMax = reviveT(); u.hp = 0; u.pend = null;
   for (const e of S.enemies) if (e.target === u) e.target = null;
   addFx({ kind: "ucorpse", def: u.def, lv: u.lv, branch: u.branch, x: u.x, y: u.y, face: u.face, life: 0.9 });
   burst(u.x, u.y, "#ff9a8f", 14, 2.4, 0.6, 0.06);
@@ -2745,6 +2767,14 @@ function pickCard(id, silent) {
     addFx({ kind: "pillar", x: u.x, y: u.y, color: col, life: 0.9 });
     addFx({ kind: "text", x: u.x, y: u.y - 0.7, text: u.lv === 4 ? "转职 · " + u.def.branches[u.branch === "A" ? 0 : 1].name : u.lv + " 阶", color: col, life: 1.3, big: true });
     burst(u.x, u.y, col, u.lv === 4 ? 28 : 16, 2.4, 0.8, 0.07);
+    // 升阶越高，场面越大：2 阶一圈光，3 阶光圈 + 闪光，4 阶（转职）光柱连发 + 横幅 + 顿一下
+    addFx({ kind: "ring", x: u.x, y: u.y, color: col, life: 0.6, r0: 0.2, r1: u.lv === 2 ? 1.6 : u.lv === 3 ? 2.6 : 3.8, fill: u.lv >= 3 });
+    if (u.lv >= 3) { addFx({ kind: "flash", life: 0.25, color: col }); S.shake = Math.max(S.shake, 0.18); }
+    if (u.lv === 4) {
+      queueFx(0.18, { kind: "pillar", x: u.x, y: u.y, color: col, life: 0.9, burst: 30 });
+      addFx({ kind: "banner", text: `${u.def.name} · 转职「${u.def.branches[u.branch === "A" ? 0 : 1].name}」`, life: 2 });
+      S.hitStop = Math.max(S.hitStop || 0, 0.1); S.zoomK = Math.max(S.zoomK || 0, 0.04);
+    }
     if (u.lv === 4 && S.units.filter(x => x.lv >= 4).length >= 3) S.events.push({ type: "achv", id: "branch3" });
   }
   S.picks.push(id);
@@ -3726,7 +3756,7 @@ function drawAfxPips(e, fx, top) {
 const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true, lit: true }];
 // 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
 const OPT_KEY = "chenxing-td-opts";
-const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, sp2: 0, ct: [] }; } })();
+const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, fps: !!v.fps, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, fps: false, sp2: 0, ct: [] }; } })();
 function setOpt(k, v) { OPT[k] = typeof v === "number" || Array.isArray(v) ? v : !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
@@ -3743,8 +3773,10 @@ function adaptGfx(dt) {
   fpsEma = fpsEma == null ? fps : fpsEma * 0.9 + fps * 0.1;
   gfxAdaptCd -= dt;
   if (gfxAdaptCd > 0) return;
-  if (fpsEma < 42 && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
-  else if (fpsEma > 56 && autoIdx < GFX_LV.length - 1) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
+  // 预测式降档：场上怪多 / 特效多的时候（大波、首领战）门槛抬高到 50 帧，不用等真的卡了才降；这种时候也不急着升回去
+  const heavy = !!S && (S.enemies.length > 36 || S.fx.length > GFX.cap * 0.6);
+  if (fpsEma < (heavy ? 50 : 42) && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
+  else if (fpsEma > 56 && !heavy && autoIdx < GFX_LV.length - 1) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
 }
 // 特效满了就先丢掉装饰性的（粒子、伤害数字），横幅、演出、环这类关键反馈照常加
 const fxCheap = f => f.kind === "parts" || (f.kind === "text" && !f.big);
@@ -3777,7 +3809,7 @@ function addNum(x, y, v, color, big, key, maxHp) {
     for (let i = S.fx.length - 1, n = 0; i >= 0 && n < 60; i--, n++) {
       const f = S.fx[i];
       if (f.kind !== "text" || f.key !== key || f.color !== color || f.t > 0.35) continue;
-      f.val += v; f.text = String(Math.round(f.val)); f.t = Math.min(f.t, 0.06);
+      f.val += v; f.text = (color === "#7ee89c" ? "+" : "") + String(Math.round(f.val)); f.t = Math.min(f.t, 0.06);
       const sz = Math.max(f.sz, numSize(maxHp ? f.val / maxHp : 0, big)); if (sz === 4 && f.sz < 4) S.shake = Math.max(S.shake, 0.12);
       f.sz = sz; f.crit = f.crit || !!big;
       return;
@@ -3789,7 +3821,7 @@ function addNum(x, y, v, color, big, key, maxHp) {
   let stack = 0;
   for (let i = S.fx.length - 1, n = 0; i >= 0 && n < 24; i--, n++) { const f = S.fx[i]; if (f.kind === "text" && f.val != null && f.t < 0.4 && Math.abs(f.x - x) < 0.6 && Math.abs(f.y - (y - 0.35)) < 0.9) stack++; }
   y -= Math.min(stack, 3) * 0.22;
-  addFx({ kind: "text", x: x + (Math.random() - 0.5) * 0.3, y: y - 0.35, text: String(Math.round(v)), val: v, color, life: sz >= 3 ? 0.95 : 0.8, crit: !!big, sz, key, big: sz === 4 });
+  addFx({ kind: "text", x: x + (Math.random() - 0.5) * 0.3, y: y - 0.35, text: (color === "#7ee89c" ? "+" : "") + String(Math.round(v)), val: v, color, life: sz >= 3 ? 0.95 : 0.8, crit: !!big, sz, key, big: sz === 4 });
 }
 
 // ---------- 伤害 ----------
@@ -3911,6 +3943,11 @@ function hurt(e, amt, type, crit, src) {
     if (hasAfx(e, "warp") && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.15, "magic", null);
     if (tal(src, "t_pierce") && !e.dead) applyCorrode(e, 0.25, 4, src);
   }
+  if (crit && byUnit && !OPT.calm) {
+    // 分级顿帧：暴击打在精英/首领身上轻轻一顿；普通怪暴击的小击退
+    if ((e.elite || isBoss(e)) && (S.hitStopCd || 0) <= 0) { S.hitStop = Math.max(S.hitStop || 0, 0.035); S.hitStopCd = 0.35; }
+    else if (!e.elite && !isBoss(e) && !e.d.flying && !e.d.unstoppable && (e.knockCd || 0) <= S.t) { knock(e, 0.18); e.knockCd = S.t + 0.7; }
+  }
   if (e.shield > 0) {
     const m = type === "magic" ? 1.5 : 1, eff = amt * m;
     if (eff <= e.shield) { e.shield -= eff; addNum(e.x, e.y, eff, "#8ac8ff", crit, e.id, e.maxHp); e.hitT = 0.1; addStat(src, "dmg", eff); return eff; }
@@ -3944,6 +3981,7 @@ function bossFanfare(e, kind) {
   addFx({ kind: "flash", life: death ? 0.5 : 0.35, color: death ? "#ffffff" : col });
   addFx({ kind: "ring", x: e.x, y: e.y, color: col, life: 0.9, r0: 0.4, r1: death ? 9 : 6 });
   S.shake = Math.max(S.shake, death ? 0.9 : 0.6); S.zoomK = Math.max(S.zoomK || 0, death ? 0.05 : 0.03);
+  if (!death) S.hitStop = Math.max(S.hitStop || 0, 0.12);
   if (!death) return;
   // 连环爆炸 → 光柱 → 金色碎片雨 → 击破横幅
   for (let i = 0; i < 8; i++) {
@@ -4327,6 +4365,9 @@ function useSkill(u) {
   S.fx = S.fx.filter(f => f.kind !== "skillcut");
   addFx({ kind: "skillcut", id: D.id, lv: u.lv, branch: u.branch, name: D.name, skill: D.skill.name, color: D.color, hero: !!u.hero, life: 1.1 });
   if (u.hero) addFx({ kind: "flash", life: 0.18, color: D.color });
+  // 出手强调：定格一小下 + 镜头往里推一点 + 一圈向外的冲击线
+  if (!OPT.calm) { S.hitStop = Math.max(S.hitStop || 0, u.hero ? 0.06 : 0.03); S.zoomK = Math.max(S.zoomK || 0, u.hero ? 0.025 : 0.012); }
+  addFx({ kind: "burstlines", x: u.x, y: u.y, color: D.color, life: 0.35 });
   if (cl("lg_tide")) for (const a of S.units) if (alive(a)) { heal(a, a.maxHp * 0.06, true, null); if (a !== u) a.sp = Math.min(a.def.sp, a.sp + 8); }
 }
 function autoWant(u) {
@@ -5173,6 +5214,7 @@ function drawMap() {
     if (!isPath(c - 1, r)) edge(x, y, 2, T, () => x + 1 + (rnd() * 2 | 0), () => y + rnd() * T);
     if (!isPath(c + 1, r)) edge(x + T - 2, y, 2, T, () => x + T - 3 + (rnd() * 2 | 0), () => y + rnd() * T);
   }
+  drawGroundDecals(g, th, rnd);
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (MAP[r][c] === "=") drawBridge(g, c * T, r * T, isPath(c - 1, r) || isPath(c + 1, r), c, r);
   // 出生点、基地法阵
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
@@ -5192,6 +5234,24 @@ function drawMap() {
   props.sort((a, b) => a.y - b.y);
   const PROP = { tree: drawTree, pine: drawPine, grave: drawGraveProp, spire: drawSpire, cactus: drawCactus, crystal: drawCrystal, abyss: drawAbyssProp, ice: drawIceProp, mech: drawMechProp, blood: drawBloodProp, star: drawStarProp };
   for (const p of props) p.rock ? drawRock(g, p, th) : (PROP[th.prop] || drawTree)(g, p);
+}
+// 地面小细节：按主题撒裂纹 / 落叶 / 碎石 / 霜点 / 水洼，让大片空地有点东西（画进静态地图，不花每帧的钱）
+const THEME_DECAL = { forest: ["leaf", "puddle"], snow: ["frost"], lava: ["crack"], grave: ["crack", "bone"], desert: ["pebble"], sky: ["leaf"], cave: ["pebble"], abyss: ["crack"], ice: ["frost"], mech: ["bolt", "crack"], blood: ["crack"], star: ["frost"], ash: ["crack", "pebble"], ruin: ["crack", "pebble"], storm: ["puddle"], dawn: ["leaf"], tide: ["pebble", "puddle"], sunken: ["puddle", "bubble"], mirror: ["frost"], silent: ["frost"] };
+function drawGroundDecals(g, th, rnd) {
+  const kinds = THEME_DECAL[ST.theme] || ["pebble"], lite = th.path[2], dark = th.path[3];
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const ch = MAP[r][c]; if (ch === "#" || ch === "~" || ch === "=" || ch === "B" || "SR".includes(ch)) continue;
+    if (rnd() > 0.42) continue;
+    const k = kinds[(rnd() * kinds.length) | 0], x = c * T + 4 + rnd() * 30, y = r * T + 5 + rnd() * 28;
+    if (k === "crack") { let cx = x, cy = y; for (let i = 0; i < 6; i++) { rect(g, cx, cy, 2, 1, dark); cx += 1 + (rnd() * 2 | 0); cy += (rnd() * 3 | 0) - 1; } }
+    else if (k === "leaf") { for (let i = 0; i < 3; i++) rect(g, x + rnd() * 8, y + rnd() * 5, 2, 1, ["#c8843a", "#a85a28", "#d8b04a", "#7a4a22"][(rnd() * 4) | 0]); }
+    else if (k === "pebble") { for (let i = 0; i < 3; i++) { const px_ = x + rnd() * 9, py_ = y + rnd() * 5; rect(g, px_, py_, 3, 2, dark); rect(g, px_, py_, 2, 1, lite); } }
+    else if (k === "frost") { for (let i = 0; i < 4; i++) { const px_ = x + rnd() * 10, py_ = y + rnd() * 6; rect(g, px_, py_, 2, 1, "#ffffff"); dot(g, px_ + 1, py_ - 1, "rgba(220,240,255,.8)"); } }
+    else if (k === "puddle") { const w = 8 + (rnd() * 7 | 0); rect(g, x, y + 1, w, 3, "rgba(30,60,100,.35)"); rect(g, x + 1, y, w - 2, 1, "rgba(30,60,100,.28)"); rect(g, x + 2, y + 1, 3, 1, "rgba(220,240,255,.5)"); }
+    else if (k === "bone") { rect(g, x, y, 6, 1, "#d8d0b8"); dot(g, x - 1, y - 1, "#d8d0b8"); dot(g, x - 1, y + 1, "#d8d0b8"); dot(g, x + 6, y - 1, "#d8d0b8"); dot(g, x + 6, y + 1, "#d8d0b8"); }
+    else if (k === "bolt") { for (const [dx, dy] of [[0, 0], [5, 2], [9, 0]]) { dot(g, x + dx, y + dy, "#8a8c9c"); dot(g, x + dx, y + dy - 1, "#c8ccd8"); } }
+    else if (k === "bubble") { for (let i = 0; i < 3; i++) { const px_ = x + rnd() * 9, py_ = y + rnd() * 5; ring(g, px_, py_, 2, 2, "rgba(200,255,244,.5)"); } }
+  }
 }
 const WATER = { base: "#2f6ea8", d: "#2a64a0", l: "#3a80b8", wave: "#5a9ad0", shore: "#c8b890", dk: "#1e4a78" };
 const wetAt = (cc, rr) => "~=".includes(tileAt(cc, rr)) || (rr >= ROWS || rr < 0 || cc < 0 || cc >= COLS) && ST.theme === "sky";
@@ -5486,7 +5546,21 @@ function drawAmbient(now) {
       for (let i = 1; i < H; i++) { const hw = (i <= 11 ? R0(i * W) : R0((H - i) * 0.85)) - 1; if (hw < 0) continue; rect(ctx, x - hw, cy - 22 + i, hw * 2 + 1, 1, A[1]); rect(ctx, x - hw, cy - 22 + i, 2, 1, A[0]); rect(ctx, x + hw - 1, cy - 22 + i, 2, 1, A[2]); }
       rect(ctx, x - 1, cy - 17, 1, 14, A[0]);
       if ((t * 2 | 0) % 3 === 0) { dot(ctx, x - 4, cy - 11, "#ffffff"); dot(ctx, x + 7, cy - 16, "#ffffff"); }
+      // 受伤的晨星碑：血量越低裂纹越多，挨打时整块闪白，快碎了还会掉火星
+      const hf = S.crystal.hp / S.crystal.maxHp;
+      if (hf < 0.6) { line(ctx, x - 2, cy - 14, x + 1, cy - 8, OUT, 1); line(ctx, x + 1, cy - 8, x - 1, cy - 3, OUT, 1); }
+      if (hf < 0.3) { line(ctx, x + 4, cy - 12, x + 2, cy - 5, OUT, 1); line(ctx, x - 4, cy - 6, x - 6, cy - 1, OUT, 1); if ((t * 6 | 0) % 2) dot(ctx, x + 6 - ((t * 20) % 8 | 0), cy + ((t * 14) % 16 | 0), "#ffb040"); }
+      if (S.crystal.hitT > 0 && !OPT.calm) { ctx.globalAlpha = Math.min(0.6, S.crystal.hitT * 2); rect(ctx, x - 9, cy - 22, 19, 26, "#ffffff"); ctx.globalAlpha = 1; }
     }
+  }
+  // 墙上的火把 / 灯笼：固定位置（按格子坐标算），火苗两帧闪动 + 一点光
+  const TORCH = { grave: ["#7af0c0", "#e0fff0"], abyss: ["#ff5a9a", "#ffc0e0"], sunken: ["#7af0e0", "#e0fff8"], ruin: ["#ffd060", "#fff6c0"], silent: ["#c8d4ff", "#ffffff"], mech: ["#ffb040", "#ffe880"], cave: ["#80d8ff", "#e0f8ff"], blood: ["#ff6a5a", "#ffd0c0"] }[theme];
+  if (TORCH) for (let r = 0; r < ROWS - 1; r++) for (let c = 0; c < COLS; c++) {
+    if (MAP[r][c] !== "#" || MAP[r + 1][c] === "#" || (c * 7 + r * 13) % 9 !== 0) continue;
+    const x = c * T + 20, y = r * T + 33, fl = (t * 7 + c) % 2 < 1;
+    rect(ctx, x - 1, y, 3, 5, "#3a2a1a"); rect(ctx, x - 2, y - 1, 5, 2, "#5a4a3a");
+    rect(ctx, x - 1, y - (fl ? 5 : 4), 3, fl ? 4 : 3, TORCH[0]); dot(ctx, x, y - (fl ? 4 : 3), TORCH[1]);
+    addGlow(x, y - 3, 24, TORCH[0], 0.22 + Math.sin(t * 9 + c) * 0.05);
   }
   // 雷暴天气：远处闪电，纯画面效果，用固定周期而非随机避免闪烁不受控
   if (theme === "storm") {
@@ -6141,12 +6215,25 @@ function drawStations(t) {
 }
 function shadow(x, y, w) { ctx.fillStyle = "rgba(0,0,0,.33)"; ctx.fillRect(R0(x - w / 2), R0(y - 1), R0(w), 2); ctx.fillRect(R0(x - w / 2 + 2), R0(y + 1), R0(w - 4), 1); }
 function bar(x, y, w, frac, col, sub, subCol, gold) {
+  // 血量颜色随血量变：绿 → 黄 → 红，低于 30% 红色闪烁
+  if (col === "#6ee07a") col = frac < 0.3 ? (Math.sin(performance.now() / 110) > 0 ? "#ff4a3a" : "#c02a20") : frac < 0.6 ? "#f0c040" : col;
   rect(ctx, x - w / 2 - 1, y - 1, w + 2, sub == null ? 4 : 6, gold ? "#ffc830" : OUT);
   rect(ctx, x - w / 2, y, w, 2, "#3a2a2a"); rect(ctx, x - w / 2, y, Math.max(0, R0(w * frac)), 2, col);
   rect(ctx, x - w / 2, y, Math.max(0, R0(w * frac)), 1, "rgba(255,255,255,.35)");
   if (sub != null) { rect(ctx, x - w / 2, y + 2, w, 2, "#1c2a3a"); rect(ctx, x - w / 2, y + 2, Math.max(0, R0(w * sub)), 2, subCol); }
 }
 
+// 4 阶转职的外观：A 系（蓝）背后一对光翼，B 系（红）肩头跳动的火焰
+function drawBranchBack(u, fx, fy, t) {
+  if (u.branch !== "A") return;
+  const w = Math.sin(t * 3 + u.id) * 2;
+  for (const s of [-1, 1]) for (let i = 0; i < 5; i++) { const len = 9 - i, x = fx + s * (7 + i * 2), y = fy - 38 + i * 3 + w * (i / 4); ctx.globalAlpha = 0.5 - i * 0.05; rect(ctx, x - (s < 0 ? len - 1 : 0), y, len, 2, i % 2 ? "#8ac8ff" : "#d8f0ff"); }
+  ctx.globalAlpha = 1;
+}
+function drawBranchFront(u, fx, fy, t) {
+  if (u.branch === "A") return;
+  for (const s of [-1, 1]) for (let i = 0; i < 3; i++) { const k = (t * 2.4 + i / 3 + (s > 0 ? 0.4 : 0)) % 1; rect(ctx, fx + s * 9 + Math.sin(t * 5 + i) * 1, fy - 40 - k * 12, 2, 2 + (k < 0.5 ? 1 : 0), k < 0.4 ? "#ffb040" : k < 0.75 ? "#ff6a3a" : "#c02a20"); }
+}
 // ---------- 角色 ----------
 function drawUnit(u, now) {
   const D = u.def, [fx, fy] = unitFeet(u), t = now / 1000, pop = Math.min(1, u.age / 0.25);
@@ -6155,6 +6242,9 @@ function drawUnit(u, now) {
     ctx.globalAlpha = 0.5;
     ctx.save(); ctx.translate(fx, fy - 2); ctx.rotate(-(u.face || 1) * Math.PI / 2); ctx.drawImage(big, -HOX * 2, -80); ctx.restore();
     ctx.globalAlpha = 1;
+    // 复活倒计时圆环：弧线一圈圈补满
+    const k = 1 - u.down / (u.downMax || RULES.revive), n = 24;
+    for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i / n * 6.283; if (i / n <= k) rect(ctx, fx + Math.cos(a) * 11, fy - 10 + Math.sin(a) * 11, 2, 2, i / n > 0.85 ? "#ffe38a" : "#7ee89c"); else dot(ctx, fx + Math.cos(a) * 11, fy - 10 + Math.sin(a) * 11, "rgba(255,255,255,.18)"); }
     pixNum(ctx, String(Math.ceil(u.down)), fx, fy - 14, "#e2645a", 2);
     return;
   }
@@ -6175,11 +6265,14 @@ function drawUnit(u, now) {
   if (u.lv >= 4) { const c = u.branch === "A" ? "#8ac8ff" : "#ff8a7a"; for (let i = 0; i < 4; i++) { const k = (t * 0.9 + i / 4) % 1; rect(ctx, fx - 14 + i * 9 + Math.sin(t * 3 + i) * 2, fy - 4 - k * 48, 2, 2, k < 0.6 ? c : "#ffffff"); } }
   else if (u.lv >= 3) for (let i = 0; i < 3; i++) { const k = (t * 0.7 + i / 3) % 1; dot(ctx, fx - 12 + i * 12 + Math.sin(t * 3 + i) * 2, fy - 6 - k * 40, k < 0.6 ? "#ffd860" : "#fff6c0"); }
   let ph = heroPhase(D, u.atkT); if (ph === "idle" && u.hitT > 0.05) ph = "hurt";
-  const bob = ph === "idle" ? Math.floor(now / 420 + u.id * 0.5) % 2 : ph === "hurt" ? 1 : 0;
+  const walking = ph === "idle" && Math.hypot(u.x - u.tx, u.y - u.ty) > 0.08;
+  const bob = walking ? Math.floor(now / 110 + u.id) % 2 : ph === "idle" ? Math.floor(now / 420 + u.id * 0.5) % 2 : ph === "hurt" ? 1 : 0;
   const big = renderHero(D, { phase: ph, bob, flash: u.hitT > 0.05, face: u.face, skill: u.skillT > 0, lv: u.lv, branch: u.branch, t });
   // 出手前蓄力后撤、出手瞬间前冲一小步（按整像素挪，不拉伸，保持像素风）
   const kb = -R0(u.kb * 2) * u.face + (ph === "wind" ? -2 * u.face : ph === "strike" || ph === "release" ? 3 * u.face : 0), drop = R0((1 - pop) * 30) + (ph === "strike" || ph === "release" ? 1 : 0);
-  ctx.drawImage(big, fx - HOX * 2 + kb, fy - 80 - drop);
+  if (u.lv >= 4) drawBranchBack(u, fx, fy, t);
+  ctx.drawImage(big, fx - HOX * 2 + kb, fy - 80 - drop - (walking && bob ? 1 : 0));
+  if (u.lv >= 4) drawBranchFront(u, fx, fy, t);
   if (u.skillT > 0) addGlow(fx, fy - 22, 30, D.color, 0.4);
   if (S.shieldT > 0) { ctx.globalAlpha = Math.min(1, S.shieldT); ring(ctx, fx, fy - 18, 16, 8, "#8fd0ff", (t * 8 | 0) % 2); ctx.globalAlpha = 1; }
   if (u.frozenT > 0) {
@@ -6219,8 +6312,11 @@ function drawEnemy(e, now) {
   // 从传送门走出来：淡入 + 从地里升起一点，脚下闪一下紫光
   const born = Math.min(1, (S.t - (e.bornT == null ? -9 : e.bornT)) / 0.45);
   if (born < 1) { ctx.globalAlpha *= born; addGlow(fx, fy - 2, 20, "#c060ff", 0.6 * (1 - born)); }
-  ctx.drawImage(big, fx - FOE_FOOT[0] + kb + lunge, fy - FOE_FOOT[1] - lift + R0((1 - born) * 8));
+  // 挨打瞬间压扁一点（横向略宽、纵向略扁，脚底不动），暴击更明显
+  if (e.hitT > 0.08 && !OPT.calm) { const q = e.kb > 1.2 ? 0.88 : 0.93, dw = R0(120 / q * 0.97), dh = R0(120 * q); ctx.drawImage(big, 0, 0, 120, 120, fx - FOE_FOOT[0] + kb + lunge - R0((dw - 120) / 2), fy - FOE_FOOT[1] - lift + R0((1 - born) * 8) + (120 - dh), dw, dh); }
+  else ctx.drawImage(big, fx - FOE_FOOT[0] + kb + lunge, fy - FOE_FOOT[1] - lift + R0((1 - born) * 8));
   ctx.globalAlpha = 1;
+  if (!F.fly && (e.elite || isBoss(e))) { const rr = isBoss(e) ? 22 : 14, c1 = isBoss(e) ? (e.enraged ? "#ff4a3a" : "#c890ff") : "#ffc830"; ring(ctx, fx, fy, rr, rr * 0.4, c1, (t * 6 | 0) % 2); if (isBoss(e)) ring(ctx, fx, fy, rr + 5, (rr + 5) * 0.4, c1, (t * 4 | 0) % 2 === 0); }
   if (isBoss(e)) addGlow(fx, fy - 30 - lift, 46, e.enraged ? "#ff4a3a" : "#b070ff", 0.22 + Math.sin(t * 3) * 0.05);
   else if (e.elite) addGlow(fx, fy - 14 - lift, 22, "#ffc830", 0.2);
   const top = fy - hh - lift;
@@ -6279,7 +6375,11 @@ function drawFx(f, now) {
     if (/^\+?\d+$/.test(f.text)) {
       const [x, y] = tpx(f.x, f.y), pop = f.t < 0.08 ? -4 : 0;
       const sz = f.sz || (f.crit ? 3 : 2), pop2 = sz === 4 && f.t < 0.12 ? -6 : pop;   // 最大号刚出现时往上弹一下
-      if (k < 0.85 || (t * 20 | 0) % 2) pixNum(ctx, f.text, x, y - 10 - R0(k * 18) + pop2, sz === 4 ? "#ffe040" : f.color, sz);
+      const heal = f.color === "#7ee89c", yy = y - 10 - R0(k * (heal ? 11 : 18)) + pop2;
+      if (k < 0.85 || (t * 20 | 0) % 2) {
+        if (f.crit && sz < 4) pixNum(ctx, f.text, x + 1, yy + 1, "#a02810", sz);   // 暴击数字多一层深橙描边
+        pixNum(ctx, f.text, x, yy, sz === 4 ? "#ffe040" : f.crit ? "#ffd860" : f.color, sz);
+      }
     } else overlayTexts.push(f);
     return;
   }
@@ -6318,6 +6418,19 @@ function drawFx(f, now) {
     ctx.globalAlpha = 0.55 * (1 - k); rect(ctx, x - (w >> 1), y - 80, w, 100, f.color); ctx.globalAlpha = 1;
     rect(ctx, x - 1, y - 80 + R0(k * 40), 2, 100 - R0(k * 40), "#ffffff");
     addGlow(x, y - 10, 34, f.color || "#ffe38a", 0.5 * (1 - k));
+  } else if (f.kind === "cardfly") {
+    const [x0, y0] = tpx(f.x, f.y), [x1, y1] = tpx(f.x2, f.y2), e = 1 - (1 - k) ** 2;
+    const x = x0 + (x1 - x0) * e, y = y0 + (y1 - y0) * e - Math.sin(e * Math.PI) * 46, s = 26 * (1 - e * 0.35);
+    ctx.globalAlpha = Math.min(1, (1 - k) * 4);
+    rect(ctx, R0(x - s / 2 - 2), R0(y - s / 2 - 2), R0(s + 4), R0(s + 4), f.color);
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(f.icon, R0(x - s / 2), R0(y - s / 2), R0(s), R0(s));
+    for (let i = 1; i <= 3; i++) { const ee = Math.max(0, e - i * 0.07); dot(ctx, x0 + (x1 - x0) * ee, y0 + (y1 - y0) * ee - Math.sin(ee * Math.PI) * 46, f.color); }
+    ctx.globalAlpha = 1;
+  } else if (f.kind === "burstlines") {
+    const [x, y] = tpx(f.x, f.y), r0 = 10 + k * 34, r1 = r0 + 10 * (1 - k);
+    ctx.globalAlpha = 1 - k;
+    for (let i = 0; i < 14; i++) { const a = i / 14 * 6.283 + 0.2; line(ctx, x + Math.cos(a) * r0, y - 4 + Math.sin(a) * r0 * 0.75, x + Math.cos(a) * r1, y - 4 + Math.sin(a) * r1 * 0.75, i % 2 ? f.color : "#ffffff", 1); }
+    ctx.globalAlpha = 1;
   } else if (f.kind === "cast") {
     const [x, y] = tpx(f.x, f.y), r = 8 + k * 28;
     ring(ctx, x, y + 14, r, r * 0.45, f.color, (t * 12 | 0) % 2); ring(ctx, x, y + 14, r * 0.6, r * 0.27, "#ffffff", true);
@@ -6973,12 +7086,17 @@ function once(key, html) {
   seen.push(key); try { localStorage.setItem("chenxing-td-hints", JSON.stringify(seen)); } catch (e) { }
   toast(html);
 }
+// 提示：战斗中缩成一行「角标」（只留标题），点一下展开看全文；菜单里仍是完整的卡片
 function toast(html, draw) {
-  const el = document.createElement("div"); el.className = "toast";
-  el.innerHTML = (draw ? '<canvas aria-hidden="true"></canvas>' : "") + `<div>${html}</div>`;
+  const el = document.createElement("div");
+  const mini = typeof S !== "undefined" && S && !S.over && (S.wave > 0 || S.kills > 0) && !menuOpen;
+  const m = /^\s*<b>([\s\S]*?)<\/b>([\s\S]*)$/.exec(html);
+  el.className = "toast" + (mini ? " mini" : "");
+  el.innerHTML = (draw ? '<canvas aria-hidden="true"></canvas>' : "") + (m ? `<div><b>${m[1]}</b><span class="tb">${m[2]}</span></div>` : `<div><span class="tb1">${html}</span></div>`);
+  if (mini) el.addEventListener("click", () => { el.classList.toggle("open"); clearTimeout(el._t); el._t = setTimeout(() => el.remove(), 7000); });
   $("toasts").appendChild(el);
   if (draw) draw(el.querySelector("canvas"));
-  setTimeout(() => el.remove(), 6000);
+  el._t = setTimeout(() => el.remove(), mini ? 4500 : 6000);
   while ($("toasts").children.length > 3) $("toasts").firstChild.remove();
 }
 function drawFoeIcon(cvs, type) {
@@ -7009,10 +7127,25 @@ function handleEvents() {
 }
 
 // ---------- 顶栏 ----------
+// 本局成长：全队总攻击（按攻速折算）和总生命相对开局的倍数。基准取开局第一次读到的值（只有英雄一个人）
+function teamGrowth() {
+  let atk = 0, hp = 0;
+  for (const u of S.units) if (!u.summon) { atk += uAtk(u) / uInterval(u); hp += u.maxHp; }
+  if (!S.baseP && atk > 0) S.baseP = { atk, hp };
+  const b = S.baseP || { atk: atk || 1, hp: hp || 1 };
+  return { atk: atk / b.atk, hp: hp / b.hp, k: Math.sqrt(atk / b.atk * (hp / b.hp)), n: S.units.filter(u => !u.summon).length };
+}
+// 下一步目标：离凑齐最近的羁绊（还差一张就提示）
+function nextGoal() {
+  let best = null;
+  for (const g of SYNERGY) { const [a, b] = g.prog(); if (a > 0 && a < b && (!best || b - a < best.gap)) best = { g, a, b, gap: b - a }; }
+  return best ? `凑齐「${best.g.name}」${best.a}/${best.b}（${best.g.need}）` : "";
+}
 function updateStats() {
   setText("s-level", (S.daily ? "每日挑战 · " : S.vigil ? "守望之战 · " : S.endless ? "无尽 · " : `第 ${S.stage + 1} 关 · `) + ST.name + (S.diff && !S.daily ? " · " + DIFFS[S.diff].name : ""));
   setText("s-hp", Math.ceil(S.crystal.hp));
   setText("s-lv", S.level);
+  setText("s-pw", "×" + teamGrowth().k.toFixed(1));
   setText("s-wave", S.endless ? `${S.wave}/∞` : `${S.wave}/${ST.waves}`);
   setText("s-kills", S.kills);
   setText("s-dust", S.dust);
@@ -7025,7 +7158,8 @@ function updateStats() {
   setText("btn-call", S.spawnQueue.length || S.enemies.length ? "叠加下一波" : "立即出击");
   setText("btn-auto", S.autoWave ? "自动开波：开" : "自动开波：关");
   $("xp-fill").style.width = Math.min(100, S.xp / S.xpNeed * 100).toFixed(1) + "%";
-  setText("xp-txt", `Lv ${S.level} · 经验 ${Math.floor(S.xp)}/${S.xpNeed}` + (S.pending > 0 ? "（可以翻牌！）" : ""));
+  if (!S.goalT || S.t - S.goalT > 1) { S.goalT = S.t; S.goalTxt = nextGoal(); }
+  setText("xp-txt", `Lv ${S.level} · 经验 ${Math.floor(S.xp)}/${S.xpNeed}` + (S.pending > 0 ? "（可以翻牌！）" : "") + (S.goalTxt ? ` · 目标：${S.goalTxt}` : ""));
   const wb = $("wavebar"), key = S.stage + ":" + S.wave + ":" + (waiting ? 1 : 0) + ":" + (S.daily ? 1 : 0);
   if (wb.dataset.k !== key) {
     wb.dataset.k = key;
@@ -7066,7 +7200,7 @@ function updateCardbar() {
   const ids = Object.keys(S.cards);
   const all = ids.concat(Object.keys(S.curses || {}));
   const rels = (S.relics || []).map(id => `<span class="cb rl" title="${RELIC_BY[id].name}：${RELIC_BY[id].desc}"><canvas id="rl-${id}"></canvas></span>`).join("");
-  cardbarEl.innerHTML = rels + (all.length ? all.map(id => { const n = (S.cards[id] || S.curses[id]); const c = ANY_CARD(id); return `<span class="cb${CURSE_BY[id] ? " cu" : ""}" title="${c ? c.name : id}"><canvas id="cb-${id}"></canvas>${n > 1 ? `<i>${n}</i>` : ""}</span>`; }).join("")
+  cardbarEl.innerHTML = rels + (all.length ? all.map(id => { const n = (S.cards[id] || S.curses[id]); const c = ANY_CARD(id); const mx = (c && c.max) || 1; return `<span class="cb${CURSE_BY[id] ? " cu" : ""}${mx > 1 && n >= mx ? " maxed" : ""}" title="${c ? c.name : id}${mx > 1 ? `（${n}/${mx} 级）` : ""}"><canvas id="cb-${id}"></canvas>${mx > 1 && mx <= 5 ? `<em class="pips">${"●".repeat(n)}${"○".repeat(Math.max(0, mx - n))}</em>` : n > 1 ? `<i>${n}</i>` : ""}</span>`; }).join("")
     : '<span class="none">升级翻到的卡牌会显示在这里</span>');
   for (const id of all) cardIconTo($("cb-" + id), id);
   for (const id of S.relics || []) drawRelicIcon($("rl-" + id), id, 30);
@@ -7321,7 +7455,8 @@ function synGuideHtml(live) {
 }
 // 本局规则：契约、深渊、每日规则、天气、本关首领特性，都在这一页看
 function rulesHtml() {
-  const rows = [];
+  const rows = [], gr = teamGrowth();
+  rows.push(["本局成长", `全队总攻击 ×${gr.atk.toFixed(1)}，总生命 ×${gr.hp.toFixed(1)}（相对开局，${gr.n} 名队员）`]);
   if (S.contracts && S.contracts.length) rows.push(["自选契约", S.contracts.map(id => { const c = CONTRACTS.find(x => x.id === id); return c ? `${c.name}（${c.desc}）` : ""; }).join("、")]);
   if (S.abyss) rows.push(["深渊", `${S.abyss} 层：敌人更强，奖励更多`]);
   if (S.daily) { const m = DAILY_MODS.find(x => x.id === S.mod); if (m) rows.push(["每日规则", `${m.name}：${m.desc}`]); }
@@ -7349,11 +7484,33 @@ function celebratePick(p) {
     burst(CRYSTAL.x, CRYSTAL.y, "#ffe38a", 40, 4, 0.9, 0.09); S.shake = Math.max(S.shake, 0.3);
   }
 }
+// 选中的牌从场地下方飞到「受益的人」身上（新伙伴 / 升阶的角色 / 专属卡给英雄 / 其余给晨星碑），落地时闪一圈
+const FLY_CACHE = {};
+function flyIcon(p) {
+  const key = p.join ? "j:" + p.def.id : p.unit && p.unit.def ? "u:" + p.unit.def.id : p.id;
+  if (FLY_CACHE[key]) return FLY_CACHE[key];
+  const c = document.createElement("canvas");
+  if (p.join) drawPortrait(p.def, c, 1); else if (p.unit && p.unit.def) drawPortrait(p.unit.def, c, 1); else if (p.sig) drawPortrait(UNITS.find(u => u.id === p.card.hero), c, 3); else drawCardIcon(c, p.id, 32);
+  return FLY_CACHE[key] = c;
+}
+function flyCardTo(p, before) {
+  if (p.curse || OPT.calm) return;
+  let tgt = { x: CRYSTAL.x, y: CRYSTAL.y };
+  if (p.join) { const nu = S.units[S.units.length - 1]; if (S.units.length > before && nu) tgt = nu; }
+  else if (p.unit && p.unit.x != null) tgt = p.unit;
+  else if (p.sig && heroOf()) tgt = heroOf();
+  const col = (p.card && p.card.rare === 2) || p.join || p.branch ? "#ffd860" : "#9ad4ff";
+  const tx = tgt.x, ty = tgt.y;
+  addFx({ kind: "cardfly", x: COLS / 2 - 0.5, y: ROWS - 0.6, x2: tx, y2: ty, life: 0.6, color: col, icon: flyIcon(p) });
+  queueFx(0.55, { kind: "ring", x: tx, y: ty, color: col, life: 0.5, r0: 0.2, r1: 1.4, burst: 12 });
+}
 function takeCard(id) {
   if (!S.offer) return;
   const p = S.offer.find(x => x.id === id); if (!p) return;
   celebratePick(p);
+  const before = S.units.length;
   pickCard(id);
+  flyCardTo(p, before);
   $("levelup").hidden = true; $("levelup").dataset.k = "";
   openOffer();
 }
@@ -7875,6 +8032,7 @@ const abyssTop = d => Math.max(0, ...Object.values((d || loadSave()).abyss));
 const abyssOpen = d => Math.min(ABYSS_MAX, abyssTop(d) + 1);
 function openOverlay(html) { rosterAnim = null; $("ovbox").classList.remove("res"); $("ovbox").innerHTML = html; $("overlay").hidden = false; $("overlay").scrollTop = 0; menuOpen = true; if (S) { S.selUnit = null; S.spellMode = null; } }
 function closeOverlay() { $("overlay").hidden = true; menuOpen = false; rosterAnim = null; }
+const CH_COL = ["#6cb85e", "#e0c070", "#8fe0f0", "#ff8a5a", "#9ab0ff"];   // 每章的主题色：选关页的章节按钮、关卡卡片边框
 const chapterOf = i => CHAPTERS.reduce((k, c, j) => (i >= c.from ? j : k), 0);
 // 12.0 更新说明：每个版本只弹一次（单独的 localStorage 键）
 const NEWS_VER = "12.0";
@@ -7913,20 +8071,21 @@ function showLevels() {
       : `<div class="daily vigil lockd"><div><b>守望之战 · 长夜</b><p>通关第 ${VIGIL.unlockAt + 1} 关后解锁</p></div></div>`}`;
   const chStars = ids.reduce((n, i) => n + (save.stars[i] || 0), 0);
   openOverlay(`<h2>选择关卡</h2>
-    <div class="diffs">${CHAPTERS.map((c, j) => `<button data-chap="${j}" class="${j === chapSel ? "on" : ""}" ${unlocked(c.from) ? "" : "disabled"}>${c.name}${unlocked(c.from) ? "" : "（未解锁）"}</button>`).join("")}</div>
+    <div class="diffs">${CHAPTERS.map((c, j) => { const e = (CHAPTERS[j + 1] || { from: STAGES.length }).from, n = e - c.from, got = STAGES.slice(c.from, e).reduce((a, _, k) => a + (save.stars[c.from + k] || 0), 0); return `<button data-chap="${j}" class="chbtn${j === chapSel ? " on" : ""}" style="--cc:${CH_COL[j] || "#8fb3e0"}" ${unlocked(c.from) ? "" : "disabled"}>${c.name}${unlocked(c.from) ? `<small>★ ${got}/${n * 3}</small>` : "（未解锁）"}</button>`; }).join("")}</div>
     <div class="diffs">${DIFFS.map((d, i) => `<button data-diff="${i}" class="${i === diffSel ? "on" : ""}">${d.name}</button>`).join("")}</div>
-    <p class="chaprog">${ch.name} · 本章星级 ${chStars}/${ids.length * 3}</p><p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
+    <p class="chaprog">${ch.name} · 本章星级 ${chStars}/${ids.length * 3}</p><div class="chbar" style="--cc:${CH_COL[chapSel] || "#8fb3e0"}"><i style="width:${Math.round(chStars / (ids.length * 3) * 100)}%"></i></div><p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
     ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
     ${contractHtml()}
-    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="最多 30 帧，手机更省电、更不烫">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-sp2" title="${SPELL2[OPT.sp2].desc}。第二个法术槽（W）用哪个，点一下换">第二法术 · ${SPELL2[OPT.sp2].name}</button><button id="btn-pix" title="整数倍缩放，像素粗细均匀。窗口放不下合适的整数倍时自动不生效">像素完美 · ${OPT.pix ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
+    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="最多 30 帧，手机更省电、更不烫">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-sp2" title="${SPELL2[OPT.sp2].desc}。第二个法术槽（W）用哪个，点一下换">第二法术 · ${SPELL2[OPT.sp2].name}</button><button id="btn-pix" title="整数倍缩放，像素粗细均匀。窗口放不下合适的整数倍时自动不生效">像素完美 · ${OPT.pix ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button><button id="btn-fps" title="左上角显示帧率和当前画质，卡顿时截图反馈给我很有用">显示帧率 · ${OPT.fps ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
     <div class="levels">` +
     ids.map(i => { const st = STAGES[i];
       const open = unlocked(i), cleared = (save.stars[i] || 0) > 0, dc = save.diffClear[i] || [];
       const can = open && (diffSel === 0 || cleared);
-      return `<div class="lvcard${open ? "" : " locked"}"><canvas id="thumb-${i}" aria-hidden="true"></canvas>
+      const nextLv = open && !cleared && ids.find(k => unlocked(k) && !(save.stars[k] || 0)) === i;
+      return `<div class="lvcard${open ? "" : " locked"}${nextLv ? " next" : ""}" style="--cc:${CH_COL[chapterOf(i)] || "#8fb3e0"}">${nextLv ? '<em class="nextb">下一关</em>' : ""}<canvas id="thumb-${i}" aria-hidden="true"></canvas>
       <h3>${i + 1}. ${st.name}<span>${"★".repeat(save.stars[i] || 0)}${"☆".repeat(3 - (save.stars[i] || 0))}</span></h3>
       <p>${st.brief}（${st.waves} 波${st.haz ? " · 有机关" : ""}）</p>
-      <span class="rec">${save.abyss[i] ? `深渊 ${save.abyss[i]} 层 ✓ ` : ""}${dc.includes("hard") ? "困难 ✓ " : ""}${dc.includes("nightmare") ? "噩梦 ✓ " : ""}${save.best[i] ? `无尽最高 ${save.best[i]} 波` : ""}&nbsp;</span>
+      <span class="rec">${save.abyss[i] ? `<b class="bdg ab">深渊 ${save.abyss[i]}</b>` : ""}${dc.includes("hard") ? '<b class="bdg hd">困难</b>' : ""}${dc.includes("nightmare") ? '<b class="bdg nm">噩梦</b>' : ""}${save.best[i] ? `无尽最高 ${save.best[i]} 波` : ""}&nbsp;</span>
       <div class="btns"><button class="primary" data-lv="${i}" ${can ? "" : "disabled"}>${!open ? "通关上一关解锁" : can ? "开始 · " + DIFFS[diffSel].name + (abyssSel ? " · 深渊 " + abyssSel : "") : "先通关普通"}</button>
       ${cleared ? `<button data-endless="${i}">无尽</button>` : ""}${open && STORY[i] ? `<button data-story="${i}">剧情</button>` : ""}</div></div>`;
     }).join("") + `</div><div class="events">${evHtml}</div>`);
@@ -8065,6 +8224,7 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-sp2") { setOpt("sp2", (OPT.sp2 + 1) % SPELL2.length); applySpell2(OPT.sp2); buildSpells(); showLevels(); }
   else if (b.id === "btn-pix") { setOpt("pix", !OPT.pix); resize(); showLevels(); }
   else if (b.id === "btn-calm") { setOpt("calm", !OPT.calm); showLevels(); }
+  else if (b.id === "btn-fps") { setOpt("fps", !OPT.fps); showLevels(); }
   else if (b.id === "btn-gfx") { const next = gfxSel >= 2 ? -1 : gfxSel + 1; editSave(d => { d.gfx = next; }); applyGfx(next); showLevels(); }
   else if (b.id === "btn-svcopy") {
     const ta = $("sv-out"); ta.select(); ta.setSelectionRange(0, 99999);
@@ -8637,12 +8797,23 @@ function expCardHtml(save) {
 // ================= 主循环、开机、测试接口 =================
 // ---------- 主循环 ----------
 let last = performance.now(), acc = 0;
+// 帧率显示（菜单里「显示帧率」）：每半秒刷新一次，方便真机反馈卡顿
+let fpsN = 0, fpsT = 0, fpsMs = 0, fpsMax = 0;
+function fpsTick(now, ms) {
+  const el = $("fps"); if (!el) return;
+  if (!OPT.fps) { if (!el.hidden) el.hidden = true; return; }
+  el.hidden = false; fpsN++; fpsMs += ms; fpsMax = Math.max(fpsMax, ms);
+  if (now - fpsT < 500) return;
+  el.textContent = `${Math.round(fpsN * 1000 / Math.max(1, now - fpsT))} FPS · 平均 ${(fpsMs / fpsN).toFixed(1)}ms · 最差 ${fpsMax.toFixed(0)}ms\n画质 ${GFX.name}${gfxSel < 0 ? "（自动）" : ""} · 敌 ${S.enemies.length} · 特效 ${S.fx.length}`;
+  fpsT = now; fpsN = 0; fpsMs = 0; fpsMax = 0;
+}
 function frame(now) {
   if (OPT.eco && now - last < 30) { requestAnimationFrame(frame); return; }   // 省电：最多 30 帧
-  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  const dt = Math.min(0.1, (now - last) / 1000); fpsTick(now, (now - last)); last = now;
   adaptGfx(dt);
   if (S.slowCd > 0) S.slowCd -= dt;
   let k = 1; if (S.slowmo > 0) { S.slowmo -= dt; k = 0.3; }
+  if (S.hitStopCd > 0) S.hitStopCd -= dt;
   if (S.hitStop > 0) { S.hitStop -= dt; k = 0; }   // 顿帧：精英/首领被打死的一瞬间画面停住
   if (!menuOpen && !dlg && !S.paused && !S.over && !S.offer && !S.shop && !S.event) {
     acc += dt * S.speed * k;

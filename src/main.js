@@ -2,12 +2,23 @@
 // ================= 主循环、开机、测试接口 =================
 // ---------- 主循环 ----------
 let last = performance.now(), acc = 0;
+// 帧率显示（菜单里「显示帧率」）：每半秒刷新一次，方便真机反馈卡顿
+let fpsN = 0, fpsT = 0, fpsMs = 0, fpsMax = 0;
+function fpsTick(now, ms) {
+  const el = $("fps"); if (!el) return;
+  if (!OPT.fps) { if (!el.hidden) el.hidden = true; return; }
+  el.hidden = false; fpsN++; fpsMs += ms; fpsMax = Math.max(fpsMax, ms);
+  if (now - fpsT < 500) return;
+  el.textContent = `${Math.round(fpsN * 1000 / Math.max(1, now - fpsT))} FPS · 平均 ${(fpsMs / fpsN).toFixed(1)}ms · 最差 ${fpsMax.toFixed(0)}ms\n画质 ${GFX.name}${gfxSel < 0 ? "（自动）" : ""} · 敌 ${S.enemies.length} · 特效 ${S.fx.length}`;
+  fpsT = now; fpsN = 0; fpsMs = 0; fpsMax = 0;
+}
 function frame(now) {
   if (OPT.eco && now - last < 30) { requestAnimationFrame(frame); return; }   // 省电：最多 30 帧
-  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  const dt = Math.min(0.1, (now - last) / 1000); fpsTick(now, (now - last)); last = now;
   adaptGfx(dt);
   if (S.slowCd > 0) S.slowCd -= dt;
   let k = 1; if (S.slowmo > 0) { S.slowmo -= dt; k = 0.3; }
+  if (S.hitStopCd > 0) S.hitStopCd -= dt;
   if (S.hitStop > 0) { S.hitStop -= dt; k = 0; }   // 顿帧：精英/首领被打死的一瞬间画面停住
   if (!menuOpen && !dlg && !S.paused && !S.over && !S.offer && !S.shop && !S.event) {
     acc += dt * S.speed * k;

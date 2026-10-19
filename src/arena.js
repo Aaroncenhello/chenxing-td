@@ -346,9 +346,11 @@ function ringSlots(list, r, ph) {
   // 人少的时候往里收一点（保持和以前一样的手感），但阵型的差别还是留着
   const n = Math.max(1, list.length), rr = (n <= 2 ? r * 0.83 : r) + Math.max(0, n - 4) * 0.22;
   list.forEach((u, i) => {
+    // 三个以上时隔一个往外挪一点，前后错开，不叠成一堆（只是站位微调）
+    const rz = rr + (n >= 3 && i % 2 ? 0.32 : 0);
     let a = ph + (i / n) * Math.PI * 2, x = 0, y = 0;
     for (let k = 0; k < 16; k++) {
-      x = CRYSTAL.x + Math.cos(a) * rr; y = CRYSTAL.y + Math.sin(a) * rr;
+      x = CRYSTAL.x + Math.cos(a) * rz; y = CRYSTAL.y + Math.sin(a) * rz;
       if (!solid(x, y) && x > 0.6 && x < COLS - 1.6 && y > 0.6 && y < ROWS - 1.6) break;
       a += 0.3;
     }
@@ -365,7 +367,7 @@ function knockOut(u) {
   }
   if (u.down > 0 || u.dead) return;
   if (u.summon) { u.dead = true; S.units = S.units.filter(x => x !== u); burst(u.x, u.y, "#9ab0c8", 18, 2.2, 0.7, 0.07); arrange(); return; }
-  u.down = reviveT(); u.hp = 0; u.pend = null;
+  u.down = u.downMax = reviveT(); u.hp = 0; u.pend = null;
   for (const e of S.enemies) if (e.target === u) e.target = null;
   addFx({ kind: "ucorpse", def: u.def, lv: u.lv, branch: u.branch, x: u.x, y: u.y, face: u.face, life: 0.9 });
   burst(u.x, u.y, "#ff9a8f", 14, 2.4, 0.6, 0.06);
@@ -491,6 +493,14 @@ function pickCard(id, silent) {
     addFx({ kind: "pillar", x: u.x, y: u.y, color: col, life: 0.9 });
     addFx({ kind: "text", x: u.x, y: u.y - 0.7, text: u.lv === 4 ? "转职 · " + u.def.branches[u.branch === "A" ? 0 : 1].name : u.lv + " 阶", color: col, life: 1.3, big: true });
     burst(u.x, u.y, col, u.lv === 4 ? 28 : 16, 2.4, 0.8, 0.07);
+    // 升阶越高，场面越大：2 阶一圈光，3 阶光圈 + 闪光，4 阶（转职）光柱连发 + 横幅 + 顿一下
+    addFx({ kind: "ring", x: u.x, y: u.y, color: col, life: 0.6, r0: 0.2, r1: u.lv === 2 ? 1.6 : u.lv === 3 ? 2.6 : 3.8, fill: u.lv >= 3 });
+    if (u.lv >= 3) { addFx({ kind: "flash", life: 0.25, color: col }); S.shake = Math.max(S.shake, 0.18); }
+    if (u.lv === 4) {
+      queueFx(0.18, { kind: "pillar", x: u.x, y: u.y, color: col, life: 0.9, burst: 30 });
+      addFx({ kind: "banner", text: `${u.def.name} · 转职「${u.def.branches[u.branch === "A" ? 0 : 1].name}」`, life: 2 });
+      S.hitStop = Math.max(S.hitStop || 0, 0.1); S.zoomK = Math.max(S.zoomK || 0, 0.04);
+    }
     if (u.lv === 4 && S.units.filter(x => x.lv >= 4).length >= 3) S.events.push({ type: "achv", id: "branch3" });
   }
   S.picks.push(id);

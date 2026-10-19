@@ -39,12 +39,25 @@ function drawStations(t) {
 }
 function shadow(x, y, w) { ctx.fillStyle = "rgba(0,0,0,.33)"; ctx.fillRect(R0(x - w / 2), R0(y - 1), R0(w), 2); ctx.fillRect(R0(x - w / 2 + 2), R0(y + 1), R0(w - 4), 1); }
 function bar(x, y, w, frac, col, sub, subCol, gold) {
+  // 血量颜色随血量变：绿 → 黄 → 红，低于 30% 红色闪烁
+  if (col === "#6ee07a") col = frac < 0.3 ? (Math.sin(performance.now() / 110) > 0 ? "#ff4a3a" : "#c02a20") : frac < 0.6 ? "#f0c040" : col;
   rect(ctx, x - w / 2 - 1, y - 1, w + 2, sub == null ? 4 : 6, gold ? "#ffc830" : OUT);
   rect(ctx, x - w / 2, y, w, 2, "#3a2a2a"); rect(ctx, x - w / 2, y, Math.max(0, R0(w * frac)), 2, col);
   rect(ctx, x - w / 2, y, Math.max(0, R0(w * frac)), 1, "rgba(255,255,255,.35)");
   if (sub != null) { rect(ctx, x - w / 2, y + 2, w, 2, "#1c2a3a"); rect(ctx, x - w / 2, y + 2, Math.max(0, R0(w * sub)), 2, subCol); }
 }
 
+// 4 阶转职的外观：A 系（蓝）背后一对光翼，B 系（红）肩头跳动的火焰
+function drawBranchBack(u, fx, fy, t) {
+  if (u.branch !== "A") return;
+  const w = Math.sin(t * 3 + u.id) * 2;
+  for (const s of [-1, 1]) for (let i = 0; i < 5; i++) { const len = 9 - i, x = fx + s * (7 + i * 2), y = fy - 38 + i * 3 + w * (i / 4); ctx.globalAlpha = 0.5 - i * 0.05; rect(ctx, x - (s < 0 ? len - 1 : 0), y, len, 2, i % 2 ? "#8ac8ff" : "#d8f0ff"); }
+  ctx.globalAlpha = 1;
+}
+function drawBranchFront(u, fx, fy, t) {
+  if (u.branch === "A") return;
+  for (const s of [-1, 1]) for (let i = 0; i < 3; i++) { const k = (t * 2.4 + i / 3 + (s > 0 ? 0.4 : 0)) % 1; rect(ctx, fx + s * 9 + Math.sin(t * 5 + i) * 1, fy - 40 - k * 12, 2, 2 + (k < 0.5 ? 1 : 0), k < 0.4 ? "#ffb040" : k < 0.75 ? "#ff6a3a" : "#c02a20"); }
+}
 // ---------- 角色 ----------
 function drawUnit(u, now) {
   const D = u.def, [fx, fy] = unitFeet(u), t = now / 1000, pop = Math.min(1, u.age / 0.25);
@@ -53,6 +66,9 @@ function drawUnit(u, now) {
     ctx.globalAlpha = 0.5;
     ctx.save(); ctx.translate(fx, fy - 2); ctx.rotate(-(u.face || 1) * Math.PI / 2); ctx.drawImage(big, -HOX * 2, -80); ctx.restore();
     ctx.globalAlpha = 1;
+    // 复活倒计时圆环：弧线一圈圈补满
+    const k = 1 - u.down / (u.downMax || RULES.revive), n = 24;
+    for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + i / n * 6.283; if (i / n <= k) rect(ctx, fx + Math.cos(a) * 11, fy - 10 + Math.sin(a) * 11, 2, 2, i / n > 0.85 ? "#ffe38a" : "#7ee89c"); else dot(ctx, fx + Math.cos(a) * 11, fy - 10 + Math.sin(a) * 11, "rgba(255,255,255,.18)"); }
     pixNum(ctx, String(Math.ceil(u.down)), fx, fy - 14, "#e2645a", 2);
     return;
   }
@@ -73,11 +89,14 @@ function drawUnit(u, now) {
   if (u.lv >= 4) { const c = u.branch === "A" ? "#8ac8ff" : "#ff8a7a"; for (let i = 0; i < 4; i++) { const k = (t * 0.9 + i / 4) % 1; rect(ctx, fx - 14 + i * 9 + Math.sin(t * 3 + i) * 2, fy - 4 - k * 48, 2, 2, k < 0.6 ? c : "#ffffff"); } }
   else if (u.lv >= 3) for (let i = 0; i < 3; i++) { const k = (t * 0.7 + i / 3) % 1; dot(ctx, fx - 12 + i * 12 + Math.sin(t * 3 + i) * 2, fy - 6 - k * 40, k < 0.6 ? "#ffd860" : "#fff6c0"); }
   let ph = heroPhase(D, u.atkT); if (ph === "idle" && u.hitT > 0.05) ph = "hurt";
-  const bob = ph === "idle" ? Math.floor(now / 420 + u.id * 0.5) % 2 : ph === "hurt" ? 1 : 0;
+  const walking = ph === "idle" && Math.hypot(u.x - u.tx, u.y - u.ty) > 0.08;
+  const bob = walking ? Math.floor(now / 110 + u.id) % 2 : ph === "idle" ? Math.floor(now / 420 + u.id * 0.5) % 2 : ph === "hurt" ? 1 : 0;
   const big = renderHero(D, { phase: ph, bob, flash: u.hitT > 0.05, face: u.face, skill: u.skillT > 0, lv: u.lv, branch: u.branch, t });
   // 出手前蓄力后撤、出手瞬间前冲一小步（按整像素挪，不拉伸，保持像素风）
   const kb = -R0(u.kb * 2) * u.face + (ph === "wind" ? -2 * u.face : ph === "strike" || ph === "release" ? 3 * u.face : 0), drop = R0((1 - pop) * 30) + (ph === "strike" || ph === "release" ? 1 : 0);
-  ctx.drawImage(big, fx - HOX * 2 + kb, fy - 80 - drop);
+  if (u.lv >= 4) drawBranchBack(u, fx, fy, t);
+  ctx.drawImage(big, fx - HOX * 2 + kb, fy - 80 - drop - (walking && bob ? 1 : 0));
+  if (u.lv >= 4) drawBranchFront(u, fx, fy, t);
   if (u.skillT > 0) addGlow(fx, fy - 22, 30, D.color, 0.4);
   if (S.shieldT > 0) { ctx.globalAlpha = Math.min(1, S.shieldT); ring(ctx, fx, fy - 18, 16, 8, "#8fd0ff", (t * 8 | 0) % 2); ctx.globalAlpha = 1; }
   if (u.frozenT > 0) {
@@ -117,8 +136,11 @@ function drawEnemy(e, now) {
   // 从传送门走出来：淡入 + 从地里升起一点，脚下闪一下紫光
   const born = Math.min(1, (S.t - (e.bornT == null ? -9 : e.bornT)) / 0.45);
   if (born < 1) { ctx.globalAlpha *= born; addGlow(fx, fy - 2, 20, "#c060ff", 0.6 * (1 - born)); }
-  ctx.drawImage(big, fx - FOE_FOOT[0] + kb + lunge, fy - FOE_FOOT[1] - lift + R0((1 - born) * 8));
+  // 挨打瞬间压扁一点（横向略宽、纵向略扁，脚底不动），暴击更明显
+  if (e.hitT > 0.08 && !OPT.calm) { const q = e.kb > 1.2 ? 0.88 : 0.93, dw = R0(120 / q * 0.97), dh = R0(120 * q); ctx.drawImage(big, 0, 0, 120, 120, fx - FOE_FOOT[0] + kb + lunge - R0((dw - 120) / 2), fy - FOE_FOOT[1] - lift + R0((1 - born) * 8) + (120 - dh), dw, dh); }
+  else ctx.drawImage(big, fx - FOE_FOOT[0] + kb + lunge, fy - FOE_FOOT[1] - lift + R0((1 - born) * 8));
   ctx.globalAlpha = 1;
+  if (!F.fly && (e.elite || isBoss(e))) { const rr = isBoss(e) ? 22 : 14, c1 = isBoss(e) ? (e.enraged ? "#ff4a3a" : "#c890ff") : "#ffc830"; ring(ctx, fx, fy, rr, rr * 0.4, c1, (t * 6 | 0) % 2); if (isBoss(e)) ring(ctx, fx, fy, rr + 5, (rr + 5) * 0.4, c1, (t * 4 | 0) % 2 === 0); }
   if (isBoss(e)) addGlow(fx, fy - 30 - lift, 46, e.enraged ? "#ff4a3a" : "#b070ff", 0.22 + Math.sin(t * 3) * 0.05);
   else if (e.elite) addGlow(fx, fy - 14 - lift, 22, "#ffc830", 0.2);
   const top = fy - hh - lift;
@@ -177,7 +199,11 @@ function drawFx(f, now) {
     if (/^\+?\d+$/.test(f.text)) {
       const [x, y] = tpx(f.x, f.y), pop = f.t < 0.08 ? -4 : 0;
       const sz = f.sz || (f.crit ? 3 : 2), pop2 = sz === 4 && f.t < 0.12 ? -6 : pop;   // 最大号刚出现时往上弹一下
-      if (k < 0.85 || (t * 20 | 0) % 2) pixNum(ctx, f.text, x, y - 10 - R0(k * 18) + pop2, sz === 4 ? "#ffe040" : f.color, sz);
+      const heal = f.color === "#7ee89c", yy = y - 10 - R0(k * (heal ? 11 : 18)) + pop2;
+      if (k < 0.85 || (t * 20 | 0) % 2) {
+        if (f.crit && sz < 4) pixNum(ctx, f.text, x + 1, yy + 1, "#a02810", sz);   // 暴击数字多一层深橙描边
+        pixNum(ctx, f.text, x, yy, sz === 4 ? "#ffe040" : f.crit ? "#ffd860" : f.color, sz);
+      }
     } else overlayTexts.push(f);
     return;
   }
@@ -216,6 +242,19 @@ function drawFx(f, now) {
     ctx.globalAlpha = 0.55 * (1 - k); rect(ctx, x - (w >> 1), y - 80, w, 100, f.color); ctx.globalAlpha = 1;
     rect(ctx, x - 1, y - 80 + R0(k * 40), 2, 100 - R0(k * 40), "#ffffff");
     addGlow(x, y - 10, 34, f.color || "#ffe38a", 0.5 * (1 - k));
+  } else if (f.kind === "cardfly") {
+    const [x0, y0] = tpx(f.x, f.y), [x1, y1] = tpx(f.x2, f.y2), e = 1 - (1 - k) ** 2;
+    const x = x0 + (x1 - x0) * e, y = y0 + (y1 - y0) * e - Math.sin(e * Math.PI) * 46, s = 26 * (1 - e * 0.35);
+    ctx.globalAlpha = Math.min(1, (1 - k) * 4);
+    rect(ctx, R0(x - s / 2 - 2), R0(y - s / 2 - 2), R0(s + 4), R0(s + 4), f.color);
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(f.icon, R0(x - s / 2), R0(y - s / 2), R0(s), R0(s));
+    for (let i = 1; i <= 3; i++) { const ee = Math.max(0, e - i * 0.07); dot(ctx, x0 + (x1 - x0) * ee, y0 + (y1 - y0) * ee - Math.sin(ee * Math.PI) * 46, f.color); }
+    ctx.globalAlpha = 1;
+  } else if (f.kind === "burstlines") {
+    const [x, y] = tpx(f.x, f.y), r0 = 10 + k * 34, r1 = r0 + 10 * (1 - k);
+    ctx.globalAlpha = 1 - k;
+    for (let i = 0; i < 14; i++) { const a = i / 14 * 6.283 + 0.2; line(ctx, x + Math.cos(a) * r0, y - 4 + Math.sin(a) * r0 * 0.75, x + Math.cos(a) * r1, y - 4 + Math.sin(a) * r1 * 0.75, i % 2 ? f.color : "#ffffff", 1); }
+    ctx.globalAlpha = 1;
   } else if (f.kind === "cast") {
     const [x, y] = tpx(f.x, f.y), r = 8 + k * 28;
     ring(ctx, x, y + 14, r, r * 0.45, f.color, (t * 12 | 0) % 2); ring(ctx, x, y + 14, r * 0.6, r * 0.27, "#ffffff", true);

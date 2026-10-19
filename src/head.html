@@ -199,6 +199,10 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .cardbar .cb{position:relative;width:30px;height:30px}
 .cardbar canvas{width:30px;height:30px;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12}
 .cardbar .cu canvas{box-shadow:0 0 0 2px #a01838}
+.cardbar .cb{margin-bottom:6px}
+.cardbar .pips{position:absolute;left:0;right:0;bottom:-8px;text-align:center;font-style:normal;font-size:6px;letter-spacing:-1px;color:#ffd860;line-height:1}
+.cardbar .maxed canvas{box-shadow:0 0 0 2px #ffd860,0 0 8px rgba(255,216,96,.6);animation:maxg 2s ease-in-out infinite}
+@keyframes maxg{50%{box-shadow:0 0 0 2px #fff0b0,0 0 12px rgba(255,216,96,.9)}}
 .cardbar i{position:absolute;right:-2px;bottom:-3px;font-style:normal;font-family:var(--pix);font-size:8px;color:#1a1408;background:var(--gold);padding:1px 2px}
 .cardbar .none{color:var(--muted);font-size:12px;align-self:center}
 .info{background:var(--panel);border:2px solid #0a0c12;box-shadow:var(--bevel);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:180px}
@@ -219,6 +223,13 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 @media (max-width:980px){.levels{grid-template-columns:repeat(2,minmax(0,240px))}}
 @media (max-width:560px){.levels{grid-template-columns:1fr}}
 .lvcard{background:var(--panel);border:2px solid #0a0c12;box-shadow:var(--bevel);padding:10px;display:flex;flex-direction:column;gap:6px;text-align:left}
+.lvcard{border-top:3px solid var(--cc,#3a4460);position:relative}
+.lvcard.next{box-shadow:var(--bevel),0 0 0 2px #ffd860,0 0 16px rgba(255,216,96,.35)}
+.nextb{position:absolute;right:8px;top:-1px;background:#ffd860;color:#1a1408;font-style:normal;font-size:11px;padding:1px 8px;font-weight:700;z-index:1}
+.bdg{display:inline-block;font-size:10px;padding:0 5px;margin-right:4px;border:1px solid currentColor;font-weight:400}
+.bdg.hd{color:#ffb040}.bdg.nm{color:#ff6a6a}.bdg.ab{color:#c890ff}
+.chbtn small{display:block;font-size:10px;opacity:.8}.chbtn.on{box-shadow:0 0 0 2px var(--cc,#ffd860)}
+.chbar{height:5px;background:#1a2030;margin:2px 0 8px;box-shadow:0 0 0 1px #0a0c12}.chbar i{display:block;height:100%;background:var(--cc,#ffd860)}
 .lvcard canvas{width:100%;aspect-ratio:16/9;image-rendering:pixelated;box-shadow:0 0 0 2px #0a0c12;display:block}
 .lvcard h3{margin:0;font-family:var(--serif);font-size:16px;display:flex;justify-content:space-between;align-items:baseline;gap:6px}
 .lvcard h3 span{font-size:14px;color:#ffd860;letter-spacing:2px}
@@ -296,6 +307,12 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .daily.lockd{opacity:.55}
 .toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:9;max-width:min(340px,calc(100vw - 32px))}
 .toast{background:var(--panel);border:2px solid #0a0c12;box-shadow:var(--bevel),0 6px 16px rgba(0,0,0,.5);padding:10px 12px;display:flex;gap:10px;align-items:center;font-size:12px;line-height:1.5;animation:tin .25s steps(4)}
+#fps{position:fixed;left:6px;top:6px;z-index:60;background:rgba(0,0,0,.65);color:#9ef09e;font:11px/1.4 monospace;padding:2px 6px;pointer-events:none;white-space:pre}
+.toast.mini{padding:4px 8px;gap:6px;font-size:11px;cursor:pointer;max-width:230px}
+.toast.mini .tb{display:none}.toast.mini b{display:inline;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast.mini .tb1{display:block;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast.mini canvas{width:24px;height:24px}
+.toast.mini.open{max-width:min(340px,calc(100vw - 32px));padding:8px 10px}.toast.mini.open .tb{display:inline}.toast.mini.open b{display:block;white-space:normal}.toast.mini.open .tb1{white-space:normal;max-width:none}.toast.mini.open canvas{width:36px;height:36px}
 .toast canvas{width:44px;height:44px;flex:none;image-rendering:pixelated;background:#243040;box-shadow:0 0 0 2px #0a0c12}
 .toast b{display:block;font-size:13px;color:#ffd860}
 @keyframes tin{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
@@ -446,6 +463,7 @@ body.imm .stage{position:fixed;inset:0;z-index:30;border:0;box-shadow:none;backg
 body.imm .toasts{z-index:40;right:auto;left:50%;transform:translateX(-50%);bottom:6px;max-width:min(340px,60vw)}
 body.imm .toast{padding:5px 8px;font-size:11px;opacity:.94} body.imm .toast canvas{width:28px;height:28px}
 body.imm .toasts .toast:not(:last-child){display:none}
+body.imm .toast.mini{padding:3px 8px}
 body.imm.panel .toasts{display:none}
 .hud{position:absolute;inset:0;z-index:7;pointer-events:none;font-size:12px}
 .hud button{pointer-events:auto;min-width:54px;min-height:40px;padding:4px 6px;font-size:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;background:rgba(36,43,62,.86)}
@@ -455,7 +473,7 @@ body.imm.panel .toasts{display:none}
 .hud button.rdy small{color:#ffd860}
 .hud button:disabled{opacity:.4}
 .hud-top{position:absolute;top:calc(4px + env(safe-area-inset-top,0));left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:rgba(10,12,18,.72);padding:3px 10px 5px;box-shadow:0 0 0 2px #0a0c12;white-space:nowrap}
-.hud-top b{font-family:var(--pix);font-size:10px;font-weight:400;color:var(--text)}
+.hud-top b{font-family:var(--pix);font-size:10px;text-shadow:0 1px 0 #000;font-weight:400;color:var(--text)}
 .hud-top .hc b{color:#62b4ff} .hud-top .hl b{color:var(--gold)} .hud-top .hd b{color:#ffd860}
 body.imm .hud-top{flex-wrap:wrap;justify-content:center;row-gap:3px}
 body.imm .hud-top .cbar{display:block;flex:0 0 100%;height:14px;margin:2px 0 0} body.imm .hud-top .cbar span{line-height:14px;font-size:10px}
@@ -521,7 +539,7 @@ body.imm .hud-syn{max-height:44%}
   body.imm .hud-syn{display:none}
   body.imm .hud-unit:not([hidden]){display:none}
   body.imm .hud-top{position:relative;top:auto;left:auto;transform:none;order:-1;align-self:center;margin-top:6px;flex-wrap:wrap;justify-content:center;white-space:normal;gap:2px 12px;max-width:calc(100% - 16px);padding:4px 12px 7px}
-  body.imm .hud-top b{font-size:11px}
+  body.imm .hud-top b{font-size:12px}
   body.imm .hud-l,body.imm .hud-r{position:static;transform:none;display:grid;gap:6px;padding:0 10px}
   body.imm .hud-l{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:auto}
   body.imm .hud-r{grid-template-columns:repeat(4,minmax(0,1fr));padding-bottom:10px}
@@ -540,6 +558,7 @@ body.imm .hud-syn{max-height:44%}
     <div class="stats">
       <div class="stat hp">晨星碑 <b id="s-hp">1000</b></div>
       <div class="stat lv">等级 <b id="s-lv">1</b></div>
+      <div class="stat pw" title="全队攻击和生命相对开局的倍数">战力 <b id="s-pw">×1.0</b></div>
       <div class="stat">波次 <b id="s-wave">0/10</b></div>
       <div class="stat">击杀 <b id="s-kills">0</b></div>
       <div class="stat dust">星尘 <b id="s-dust">0</b></div>
@@ -624,6 +643,7 @@ body.imm .hud-syn{max-height:44%}
     <div class="info" id="info"></div>
   </div>
 
+  <div id="fps" hidden></div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
   <p class="hint">
     每局只带 <b>1 个英雄</b> 上场，全程自动战斗。敌人从四周的传送门冲向中间的<b>晨星碑</b>，晨星碑血量打空就结束。
