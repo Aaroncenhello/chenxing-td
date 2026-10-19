@@ -128,6 +128,8 @@ function uAtk(u) {
     if (sg("sg_sw2")) a *= 1 + Math.min(0.8, 0.08 * S.enemies.filter(e => !e.dead && dist(u, e) <= 2.2).length);
     if (sg("sg_mg1")) a *= 1 + 0.12 * sg("sg_mg1");
     if (sg("sg_gu1")) a *= 1 + 0.2 * sg("sg_gu1");
+    if (sg("sg_hu1") && u.def.id === "hunter") a *= 1 + 0.06 * sg("sg_hu1");
+    if (sg("sg_br1") && u.def.id === "breaker") a *= 1 + 0.06 * sg("sg_br1");
     if (sg("sg_st1")) a *= 1 + 0.15 * sg("sg_st1");
     if (sg("sg_la2")) a *= 1.4;
     if (sg("sg_pr1") && u.def.dmg === "heal") a *= 1 + 0.25 * sg("sg_pr1");
@@ -139,6 +141,7 @@ function uAtk(u) {
   a *= 1 + marshalBanner(u);
   if (rallyOn()) a *= 1.3;
   if (S.huntT > 0) a *= 1.08;
+  if (S.chorusT > 0) a *= 1.2;
   a *= 1 + 0.45 * cu("cu_blood") + 0.6 * cu("cu_frenzy");
   if (cl("lg_bond")) a *= 1 + 0.08 * S.allies;
   if (syn("scholar")) a *= 1.15;
@@ -150,6 +153,8 @@ function uAtk(u) {
 function uDef(u) {
   let d = u.def.def * lvK(u, "def") * (1 + 0.3 * cl("armor")) * (skillOn(u, "knight") ? 2 : 1);
   if (br(u, "lancer", "B")) d *= 1.6;
+  if (br(u, "counter", "A")) d *= 1.25;
+  if (u.hero && u.def.id === "counter" && sg("sg_co1")) d *= 1 + 0.1 * sg("sg_co1");
   if (hasTal(u, "knight") && u.hp < u.maxHp * 0.4) d *= 1.8;
   if (tal(u, "t_def")) d *= 1.3;
   d *= (S.buff.def || 1) * (1 + 0.05 * dk("armor"));

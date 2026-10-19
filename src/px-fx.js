@@ -140,7 +140,7 @@ function drawEnemy(e, now) {
 }
 
 // ---------- 飞行物 ----------
-const SHOT_COL = { archer: "#f0e0b8", mage: "#b070ff", frost: "#80e0ff", priest: "#6ee07a", enemy: "#9a50e0", gunner: "#ff9a3a", alchemist: "#a8d848", bard: "#f07aa8", summoner: "#7af0e0", fire: "#ff8a3a", dark: "#b070ff", chrono: "#7ae0d0", marshal: "#ffe060" };
+const SHOT_COL = { hunter: "#e0d8f0", songstress: "#7ae0f0", archer: "#f0e0b8", mage: "#b070ff", frost: "#80e0ff", priest: "#6ee07a", enemy: "#9a50e0", gunner: "#ff9a3a", alchemist: "#a8d848", bard: "#f07aa8", summoner: "#7af0e0", fire: "#ff8a3a", dark: "#b070ff", chrono: "#7ae0d0", marshal: "#ffe060" };
 function drawShot(s) {
   const [x, y] = tpx(s.x, s.y), k = s.kind, col = SHOT_COL[k] || "#ffffff";
   s.trail.forEach((p, i) => { const [a, b] = tpx(p[0], p[1]); if (k === "gunner") { if (i % 2) rect(ctx, a - 1, b - 1, 3, 3, "rgba(160,150,140,.6)"); } else if (i % 2 === 0) rect(ctx, a, b, 2, 2, i > 3 ? col : "rgba(255,255,255,.45)"); });

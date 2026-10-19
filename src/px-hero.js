@@ -82,6 +82,23 @@ const HERO = {
     back: { x: -5, y: -2, rows: ["KKKK.", "KBBBK", "KBYBK", "KBbBK", "KBBBK", ".KBK.", ".KBK.", ".KBK.", ".KBK.", "..K.."] },
     top: { x: 2, y: 3, rows: ["KYYYYYYYYK"] },
     sleeve: "#e0d8c8", boot: "#9a9284", weapon: "lance" },
+  counter: { pal: { H: "#7a4a30", h: "#4a2a18", L: "#b07a50", E: "#58c0b0", A: "#c89860", a: "#7a5a30", B: "#2a8a88", Y: "#ffd860", R: "#1a6a68" },
+    body: [".KKKKKKKK.", "KAAKBBKAAK", "KAaKBBKaAK", ".KAKBYKAK.", ".KABBBBAK.", ".KaKBBKaK.", ".KKKKKKKK."],
+    back: { x: -5, y: 1, rows: ["KKKKK", "KBBBK", "KBYBK", "KBBBK", "KBbBK", ".KBK.", "..K.."] },
+    sleeve: "#c89860", boot: "#7a5a30", weapon: "sword", blade: 7 },
+  hunter: { pal: { H: "#d8dce8", h: "#9a9eb0", L: "#ffffff", E: "#e04a4a", G: "#5a4a7a", g: "#3a2e56", N: "#8a5a30", W: "#e0d8f0" },
+    body: [".KKKKKKKK.", "KGGKWWKGGK", "KGgGWWGgGK", ".KGGGGGGK.", ".KNNNNNNK.", ".KGgGGgGK.", ".KKKKKKKK."],
+    hairBack: 10, pin: "#e04a4a", sleeve: "#5a4a7a", boot: "#3a2a1a", weapon: "bow" },
+  songstress: { pal: { H: "#58b8e8", h: "#2a78b0", L: "#c8f0ff", E: "#ffd040", P: "#2a6a9a", p: "#164868", V: "#7ae0f0", Y: "#ffe060", W: "#e8fbff" },
+    body: ["..KKKKKKKK..", ".KPPPVVPPPK.", ".KPpPPPPpPK.", ".KPPPYPPPPK.", "KPPPPPPPPPPK", "KPpPPVPPPpPK", "KWWWWWWWWWWK", ".KKKKKKKKKK."],
+    hairBack: 9, robe: true,
+    top: { x: 3, y: -3, rows: ["..Y..Y..", ".YVYYVY.", "KVVVVVVK"] },
+    sleeve: "#2a6a9a", boot: "#164868", weapon: "wand", orb: "frost" },
+  breaker: { pal: { H: "#e8e8f8", h: "#a8a8c0", L: "#ffffff", E: "#a0b0ff", D: "#3a3e5a", d: "#262a40", T: "#8a96e0", t: "#4a56a0" },
+    body: [".KKKKKKKK.", "KTTTTTTTTK", "KDTtTTtTDK", ".KDDDDDDK.", ".KDdDDdDK.", ".KDDDDDDK.", ".KKKKKKKK."],
+    back: { x: -3, y: 11, rows: ["KK...", "KTK..", "KTTK.", ".KTTK", "..KK."] },
+    top: { x: 2, y: 11, rows: ["KTTTTTTTTK"] },
+    sleeve: "#3a3e5a", boot: "#262a40", weapon: "dagger" },
 };
 // 米拉的石像守卫「咚咚」
 const GOLEM_PAL = { K: "#1c1a24", S: "#9ab0c8", s: "#6a7a94", L: "#c8d6e6", C: "#7af0e0", c: "#3ab0a8", E: "#7af0e0", M: "#6aa858" };

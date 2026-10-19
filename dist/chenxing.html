@@ -841,6 +841,26 @@ const UNITS = [
     note: "站前排，光环让全队更硬；技能能立刻把倒下的队友扶起来",
     skill: { name: "不退之令", desc: "立刻扶起所有倒下的队友，全队回复 25% 生命，并且 10 秒内攻击 +30%、受到的伤害 −25%", dur: 10 }, trait: "光环：范围内队友受到的伤害 −15%",
     branches: [{ name: "百战统帅", desc: "光环减伤提高到 −25%，阻挡 +1，生命 +30%" }, { name: "冲锋旗手", desc: "光环改为全队攻击 +30%，自己的攻击横扫一片" }] },
+  { id: "counter", joinAt: 16, name: "凯伦", cls: "反击者", place: "ground", color: "#58c0b0",
+    hp: 3000, atk: 340, def: 420, res: 25, interval: 1.5, range: 1.3, taunt: 1.4, block: 3, dmg: "phys", sp: 34,
+    note: "站前排挨打，挨一下还一下；技能期间把挨的打全数奉还",
+    skill: { name: "共鸣震击", desc: "5 秒内受到的伤害 −30%，并且每次挨打都向周围的敌人反震 100% 的伤害", dur: 5 }, trait: "受到攻击时，对攻击者反弹 50% 的伤害",
+    branches: [{ name: "回响壁垒", desc: "防御 +25%，反弹提高到 80%" }, { name: "雷鸣反击", desc: "反弹变成范围伤害，波及攻击者身边 1.2 格内的敌人" }] },
+  { id: "hunter", joinAt: 17, name: "薇拉", cls: "猎魔人", place: "high", color: "#b8a0e8",
+    hp: 1100, atk: 330, def: 80, res: 20, interval: 1.3, range: 3.6, dmg: "phys", air: true, sp: 36,
+    note: "专挑最硬的敌人打；技能给最大的目标打上标记",
+    skill: { name: "猎杀标记", desc: "给场上生命最高的敌人打上标记，10 秒内全队对它的伤害 +50%", dur: 0 }, trait: "优先攻击精英和首领，对它们的伤害 +20%",
+    branches: [{ name: "处决者", desc: "对生命低于 30% 的敌人伤害 +40%" }, { name: "毒矢猎手", desc: "攻击让目标中毒 4 秒，每秒造成 40% 攻击力的伤害" }] },
+  { id: "songstress", joinAt: 18, name: "莉亚", cls: "潮汐歌者", place: "high", color: "#58b8e8",
+    hp: 1000, atk: 220, def: 70, res: 35, interval: 1.4, range: 3.0, dmg: "magic", air: true, sp: 38,
+    note: "攻击减速敌人，顺便给最受伤的队友回血；技能让全场敌人慢下来",
+    skill: { name: "退潮", desc: "全场地面敌人减速 55%，持续 6 秒，全队回复 15% 生命", dur: 0 }, trait: "攻击让目标减速 20%，并为生命最低的队友回复相当于 40% 攻击力的生命",
+    branches: [{ name: "潮汐祝福", desc: "攻击回复量翻倍，退潮的回复提高到 25%" }, { name: "海啸", desc: "被减速的敌人受到的所有伤害 +25%" }] },
+  { id: "breaker", joinAt: 19, name: "澈", cls: "断音者", place: "ground", color: "#8a96e0",
+    hp: 1900, atk: 460, def: 220, res: 30, interval: 1.0, range: 1.3, taunt: 1.0, block: 2, dmg: "phys", sp: 34,
+    note: "专克读条的首领；技能一刀截断场上所有读条",
+    skill: { name: "截断", desc: "立刻打断场上所有正在读条的敌人（使其破防），并对周围敌人造成 1.5 倍攻击的伤害、眩晕 0.8 秒", dur: 0 }, trait: "对正在读条的敌人伤害 +60%",
+    branches: [{ name: "共振", desc: "截断成功打断读条后，全队攻击 +20%，持续 8 秒" }, { name: "静音刃", desc: "普通攻击有 20% 几率眩晕目标 0.6 秒" }] },
 ];
 const GOLEM_S = { id: "golem_s", name: "咚咚", cls: "石像守卫", place: "ground", color: "#9ab0c8", summon: true,
   hp: 2600, atk: 320, def: 480, res: 20, interval: 1.5, range: 1.3, taunt: 1.4, block: 3, dmg: "phys", sp: 1,
@@ -1092,6 +1112,10 @@ const TALENTS = {
   star: { name: "星辰指引", desc: "对生命全满的敌人伤害 +40%" },
   chrono: { name: "长考", desc: "停滞领域的定身时间延长到 4.2 秒" },
   marshal: { name: "不退之旗", desc: "不退之令的效果延长到 12 秒" },
+  counter: { name: "不动如山", desc: "生命高于 70% 时，受到的伤害 −20%" },
+  hunter: { name: "穷追", desc: "对生命低于 50% 的敌人伤害 +25%" },
+  songstress: { name: "和声", desc: "攻击的回复量 +30%" },
+  breaker: { name: "余音", desc: "截断成功打断读条后，自己的技力立刻回复 50%" },
 };
 const BIO = {
   knight: "晨星骑士团团长。沉稳可靠，总是站在队伍最前面。",
@@ -1110,6 +1134,10 @@ const BIO = {
   star: "从星海另一边来的观测者，记得所有星星的名字，也记得它们熄灭的那一天。",
   chrono: "万碑之墓最后一任守碑人，守了九百年。说话很慢，因为她习惯了等。",
   marshal: "带过三百二十一支队伍的军团长，铠甲上全是缺口。她记得每一个倒下的人的名字。",
+  counter: "潮汐海岸边守礁的老兵，盾上全是浪打的痕迹。口头禅是「你推我多重，我就还你多重」。",
+  hunter: "追了一头会说话的怪物三年的猎魔人，目光只盯着最大的那一个，从不浪费一支箭。",
+  songstress: "潮汐里长大的歌者，歌声能让浪慢下来。她说每个名字都有自己的音调，她一个都没忘。",
+  breaker: "沉没钟楼里最后一个听得见钟声的人。她学会了在钟声响起前，先一步掐断它。",
 };
 
 const ACHV = [
@@ -1143,7 +1171,7 @@ const ACHV = [
   { id: "chapter3", name: "第三章完结", desc: "通关第 12 关" },
   { id: "nameless", name: "叫出它的名字", desc: "通关第 16 关，击败无名者" },
   { id: "chapter5", name: "第五章完结", desc: "通关第 20 关，击败静默者" },
-  { id: "allchars16", name: "十六人", desc: "解锁全部 16 名角色" },
+  { id: "allchars16", name: "全员集结", desc: "解锁全部角色（含第五章的新伙伴）" },
   { id: "exped", name: "远征归来", desc: "完成一次远征（打赢最后一层的首领）" },
   { id: "relics", name: "遗物收藏家", desc: "图鉴里集齐全部遗物" },
   { id: "cards", name: "博览群牌", desc: "图鉴里集齐全部通用升级卡（不含专属卡、诅咒卡和补充卡）" },
@@ -1726,6 +1754,11 @@ const SIG = [
   { id: "sg_ch1", hero: "chrono", rare: 1, kind: "stat", name: "慢下来", max: 3, w: 9, desc: lv => `减速效果 +${10 * lv}%，对减速中的敌人伤害 +${18 * lv}%` },
   { id: "sg_ch2", hero: "chrono", rare: 2, kind: "skill", name: "时之回廊", max: 1, w: 7, desc: () => "每 16 秒自动把全场敌人定住 1.5 秒" },
   // 维罗妮卡 · 军团长
+  // 凯伦 · 反击者 / 薇拉 · 猎魔人 / 莉亚 · 潮汐歌者 / 澈 · 断音者
+  { id: "sg_co1", hero: "counter", rare: 1, kind: "stat", name: "回震", max: 3, w: 9, desc: lv => `英雄的反弹伤害 +${25 * lv}%，防御 +${10 * lv}%` },
+  { id: "sg_hu1", hero: "hunter", rare: 1, kind: "stat", name: "穷追不舍", max: 3, w: 9, desc: lv => `英雄对精英和首领的伤害 +${15 * lv}%，攻击 +${6 * lv}%` },
+  { id: "sg_so1", hero: "songstress", rare: 1, kind: "stat", name: "余韵", max: 3, w: 9, desc: lv => `英雄攻击的回复量 +${25 * lv}%，减速更强（每级 −8% 移速）` },
+  { id: "sg_br1", hero: "breaker", rare: 1, kind: "stat", name: "利刃", max: 3, w: 9, desc: lv => `英雄对读条敌人的伤害 +${20 * lv}%，攻击 +${6 * lv}%` },
   { id: "sg_ma1", hero: "marshal", rare: 1, kind: "special", name: "列阵", max: 3, w: 9, desc: lv => `英雄阻挡 +${lv}，全队受到的伤害 −${8 * lv}%` },
   { id: "sg_ma2", hero: "marshal", rare: 2, kind: "skill", name: "永不倒下", max: 1, w: 7, desc: () => "队友倒下时立刻站起来一次，每人每局一次" },
 ];
@@ -2349,6 +2382,8 @@ function uAtk(u) {
     if (sg("sg_sw2")) a *= 1 + Math.min(0.8, 0.08 * S.enemies.filter(e => !e.dead && dist(u, e) <= 2.2).length);
     if (sg("sg_mg1")) a *= 1 + 0.12 * sg("sg_mg1");
     if (sg("sg_gu1")) a *= 1 + 0.2 * sg("sg_gu1");
+    if (sg("sg_hu1") && u.def.id === "hunter") a *= 1 + 0.06 * sg("sg_hu1");
+    if (sg("sg_br1") && u.def.id === "breaker") a *= 1 + 0.06 * sg("sg_br1");
     if (sg("sg_st1")) a *= 1 + 0.15 * sg("sg_st1");
     if (sg("sg_la2")) a *= 1.4;
     if (sg("sg_pr1") && u.def.dmg === "heal") a *= 1 + 0.25 * sg("sg_pr1");
@@ -2360,6 +2395,7 @@ function uAtk(u) {
   a *= 1 + marshalBanner(u);
   if (rallyOn()) a *= 1.3;
   if (S.huntT > 0) a *= 1.08;
+  if (S.chorusT > 0) a *= 1.2;
   a *= 1 + 0.45 * cu("cu_blood") + 0.6 * cu("cu_frenzy");
   if (cl("lg_bond")) a *= 1 + 0.08 * S.allies;
   if (syn("scholar")) a *= 1.15;
@@ -2371,6 +2407,8 @@ function uAtk(u) {
 function uDef(u) {
   let d = u.def.def * lvK(u, "def") * (1 + 0.3 * cl("armor")) * (skillOn(u, "knight") ? 2 : 1);
   if (br(u, "lancer", "B")) d *= 1.6;
+  if (br(u, "counter", "A")) d *= 1.25;
+  if (u.hero && u.def.id === "counter" && sg("sg_co1")) d *= 1 + 0.1 * sg("sg_co1");
   if (hasTal(u, "knight") && u.hp < u.maxHp * 0.4) d *= 1.8;
   if (tal(u, "t_def")) d *= 1.3;
   d *= (S.buff.def || 1) * (1 + 0.05 * dk("armor"));
@@ -3846,6 +3884,9 @@ function hurt(e, amt, type, crit, src) {
   if (S.auraBoss && !S.auraBoss.dead && e !== S.auraBoss && !isBoss(e) && dist(S.auraBoss, e) <= 3.2) amt *= 0.8;
   if (e.brokenT > 0) amt *= BREAK_BONUS;
   if (e.mark > 0) amt *= 1.25;
+  if (e.huntMark > S.t) amt *= 1.5;
+  if (e.slowT > 0 && S.units.some(p => !p.dead && p.down <= 0 && br(p, "songstress", "B"))) amt *= 1.25;
+  if (e.cast && src && src.def && src.def.id === "breaker") amt *= 1.6 + (src.hero ? 0.2 * sg("sg_br1") : 0);
   if (e.cast && syn("silentecho")) amt *= syn2("silentecho") ? 1.5 : 1.3;
   if (S.weakWaves > 0) amt *= 1.1;
   if (rl("rl_shard") && (e.freezeT > 0 || e.slowT > 0)) amt *= 1.35;
@@ -3951,6 +3992,7 @@ function hurtUnit(u, amt, type, from) {
   if (from && from.d && from.d.ranged && cl("mirrorarmor")) amt *= 1 - 0.1 * cl("mirrorarmor");
   if (cl("dodge") && type !== "poison" && roll("fight") < 0.07 * cl("dodge")) { addFx({ kind: "text", x: u.x, y: u.y - 0.6, text: "闪避", color: "#a8d848", life: 0.7 }); return; }
   if (u.def.id === "knight" && u.lv >= 3) amt *= 0.85;
+  if (u.def.id === "counter") { if (hasTal(u, "counter") && u.hp > u.maxHp * 0.7) amt *= 0.8; if (u.skillT > 0) amt *= 0.7; }
   if (u.hero && sg("sg_kn1")) amt *= Math.max(0.4, 1 - 0.12 * sg("sg_kn1"));
   if (u.blessT > 0) amt *= 0.75;
   if (rl("rl_mirror")) amt *= 0.85;
@@ -3966,6 +4008,12 @@ function hurtUnit(u, amt, type, from) {
   addStat(u, "taken", amt);
   addNum(u.x, u.y, amt, type === "magic" ? "#d4b4ff" : type === "poison" ? "#9cf07a" : "#ff9a8f", false, "u" + u.id, u.maxHp);
   if (type !== "poison") burst(u.x, u.y - 0.1, "#ff9a8f", 3, 2, 0.3, 0.04);
+  if (u.def.id === "counter" && from && from.d && !from.dead && type !== "poison") {
+    const k = (br(u, "counter", "A") ? 0.8 : 0.5) + (u.hero ? 0.25 * sg("sg_co1") : 0), rb = amt * k;
+    if (br(u, "counter", "B")) { for (const e of S.enemies) if (hittable(e) && dist(e, from) <= 1.2) hurt(e, rb, "magic", false, u); addFx({ kind: "ring", x: from.x, y: from.y, color: "#58c0b0", life: 0.4, r0: 0.2, r1: 1.2 }); }
+    else hurt(from, rb, "phys", false, u);
+    if (u.skillT > 0) for (const e of S.enemies) if (hittable(e) && e !== from && dist(e, u) <= 2.2) hurt(e, amt * 1.0, "magic", false, u);
+  }
   if (cl("thorn") && from && !from.dead && type !== "poison") hurt(from, amt * 0.25 * cl("thorn"), "magic", false, { key: "thorn" });
   if (tal(u, "t_thorn") && from && !from.dead && type === "phys") hurt(from, amt * 0.2, "magic", false, { key: "thorn" });
   const rf = (u.def.id === "mech" ? (br(u, "mech", "A") ? 0.5 : 0.2) : 0) + (u.hero ? 0.25 * sg("sg_me1") : 0);
@@ -4012,7 +4060,18 @@ function shoot(src, target, kind, atk) {
 function landShot(s) {
   const t = s.target, u = s.src;
   if (s.kind === "archer") hurt(t, calc(s.atk * (t.d.flying && hasTal(u, "archer") ? 1.5 : 1) * (t.d.flying && u.hero && sg("sg_ar2") ? 2 : 1), "phys", eDef(t), eRes(t)), "phys", false, u);
-  else if (s.kind === "mage" && br(u, "mage", "B")) {
+  else if (s.kind === "hunter") {
+    let m = (t.elite || isBoss(t)) ? 1.2 + (u.hero ? 0.15 * sg("sg_hu1") : 0) : 1;
+    if (hasTal(u, "hunter") && t.hp < t.maxHp * 0.5) m *= 1.25;
+    if (br(u, "hunter", "A") && t.hp < t.maxHp * 0.3) m *= 1.4;
+    hurt(t, calc(s.atk * m, "phys", eDef(t), eRes(t)), "phys", false, u);
+    if (br(u, "hunter", "B") && !t.dead) t.poison = { dps: uAtk(u) * 0.4, t: 4, acc: 0, src: u };
+  } else if (s.kind === "songstress") {
+    hurt(t, calc(s.atk, "magic", eDef(t), eRes(t)), "magic", false, u);
+    if (!t.dead && t.freezeT <= 0) { t.slowT = Math.max(t.slowT, 1.5); t.slowK = Math.min(t.slowK || 1, 0.8 - (u.hero ? 0.08 * sg("sg_so1") : 0)); }
+    const lo = S.units.filter(a => alive(a) && a.hp < a.maxHp).sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+    if (lo) heal(lo, uAtk(u) * 0.4 * (br(u, "songstress", "A") ? 2 : 1) * (hasTal(u, "songstress") ? 1.3 : 1) * (1 + (u.hero ? 0.25 * sg("sg_so1") : 0)), false, u);
+  } else if (s.kind === "mage" && br(u, "mage", "B")) {
     let cur = t, dmg = s.atk; const hit = new Set();
     for (let j = 0; j < 4 && cur; j++) {
       hit.add(cur); hurt(cur, calc(dmg, "magic", eDef(cur), eRes(cur)), "magic", false, u);
@@ -4092,6 +4151,7 @@ function pickTargets(u) {
   const fo = focusFoe(), first = (a, b) => (b === fo) - (a === fo);
   // 飞行敌人贴到晨星碑上啃的时候会降下来，近战也能打到
   if (D.place === "ground") { const g = pool.filter(e => canMelee(e)); if (!g.length) return []; g.sort((a, b) => first(a, b) || toCrystal(a) - toCrystal(b)); return g.slice(0, 1); }
+  if (D.id === "hunter") return pool.sort((a, b) => first(a, b) || (isBoss(b) || b.elite) - (isBoss(a) || a.elite) || b.hp - a.hp).slice(0, 1);
   if (br(u, "archer", "B")) return pool.sort((a, b) => first(a, b) || b.hp - a.hp).slice(0, 1);
   pool.sort((a, b) => first(a, b) || toCrystal(a) - toCrystal(b));
   return pool.slice(0, (D.id === "archer" ? (br(u, "archer", "A") ? 4 : u.lv >= 3 ? 2 : 1) : 1) + (u.hero ? sg("sg_ar1") : 0));
@@ -4124,6 +4184,7 @@ function strike(u, targets) {
     const crit = (D.id === "assassin" && (u.skillT > 0 || (u.lv >= 3 && roll("fight") < 0.3 + critB))) || (br(u, "sword", "A") && roll("fight") < 0.2 + critB) || (critB && roll("fight") < critB);
     const mult = crit ? (D.id === "assassin" ? 2.2 : 2) * (u.hero ? 1 + 0.2 * sg("sg_as1") : 1) : 1;
     dealt += hurt(t, calc(uAtk(u) * mult, "phys", eDef(t), eRes(t)), "phys", crit, u);
+    if (br(u, "breaker", "B") && !t.dead && !t.d.unstoppable && roll("fight") < 0.2) t.stunT = Math.max(t.stunT || 0, 0.6);
     if (br(u, "assassin", "B")) t.poison = { dps: uAtk(u) * 0.4, t: 4, acc: 0, src: u };
     if (D.id === "lancer" && u.lv >= 3 && !t.dead && roll("fight") < 0.25) knock(t, 0.5);
     if (u.hero && sg("sg_la1") && !t.dead) knock(t, 0.4);
@@ -4198,6 +4259,22 @@ function useSkill(u) {
     }
     u.stop = 0.12; S.shake = Math.max(S.shake, 0.2);
   }
+  if (D.id === "counter") addFx({ kind: "ring", x: u.x, y: u.y, color: "#58c0b0", life: 0.8, r0: 0.3, r1: 2.2, fill: true });
+  if (D.id === "hunter") {
+    const t = S.enemies.filter(e => hittable(e)).sort((a, b) => b.maxHp - a.maxHp)[0];
+    if (t) { t.huntMark = S.t + 10; addFx({ kind: "ring", x: t.x, y: t.y, color: "#e04a4a", life: 1, r0: 1.4, r1: 0.3 }); addFx({ kind: "text", x: t.x, y: t.y - 1, text: "猎杀标记", color: "#ff8a8a", life: 1.3, big: true }); }
+  }
+  if (D.id === "songstress") {
+    for (const e of S.enemies) if (hittable(e) && !e.d.flying && !e.d.unstoppable) { e.slowT = Math.max(e.slowT, 6); e.slowK = Math.min(e.slowK || 1, 0.45); }
+    for (const a of S.units) if (alive(a)) heal(a, a.maxHp * (br(u, "songstress", "A") ? 0.25 : 0.15), false, u);
+    addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#58b8e8", life: 1, r0: 0.5, r1: 9 });
+  }
+  if (D.id === "breaker") {
+    let broke = 0;
+    for (const e of S.enemies) if (e.cast && !e.dead) { breakCast(e, "截断"); broke++; }
+    for (const e of S.enemies) if (hittable(e) && !e.d.flying && dist(u, e) <= 2.2) { hurt(e, calc(uAtk(u) * 1.5, "phys", eDef(e), eRes(e)), "phys", false, u); if (!e.d.unstoppable) e.stunT = Math.max(e.stunT || 0, 0.8); }
+    if (broke) { if (br(u, "breaker", "A")) S.chorusT = 8; if (hasTal(u, "breaker")) u.sp = Math.max(u.sp, D.sp * 0.5); }
+  }
   if (D.id === "mech") { heal(u, u.maxHp * 0.15, false, u); for (const e of ground()) burnEnemy(e, uAtk(u) * 0.4, 6, u); }
   if (D.id === "star") {
     const hits = [];
@@ -4268,6 +4345,10 @@ function autoWant(u) {
     case "mech": return eng.length > 0 || near.length >= 2 || near.some(big);
     case "star": return near.length >= 3 || near.some(big) || S.enemies.filter(hittable).length >= 5;
     case "chrono": return near.length >= 3 || near.some(big) || near.some(e => toCrystal(e) <= CRYSTAL.r + 1.2);
+    case "counter": return eng.length >= 2 || (eng.length > 0 && u.hp < u.maxHp * 0.75);
+    case "hunter": return near.some(big) || near.length >= 3;
+    case "songstress": return near.length >= 3 || near.some(big) || S.units.some(a => alive(a) && a.hp < a.maxHp * 0.55);
+    case "breaker": return S.enemies.some(e => e.cast && !e.dead) || near.length >= 3 || near.some(big);
     case "marshal": return S.units.some(a => !a.summon && a.down > 0) || eng.length >= 2 || S.units.some(a => alive(a) && a.hp < a.maxHp * 0.45);
   }
   return near.length > 0;
@@ -4545,6 +4626,7 @@ function step(dt) {
   S.hitFlash = Math.max(0, S.hitFlash - dt);
   if (S.shieldT > 0) S.shieldT -= dt;
   if (S.huntT > 0) S.huntT -= dt;
+  if (S.chorusT > 0) S.chorusT -= dt;
   if (S.rallyT > 0) S.rallyT -= dt;
   S.crystal.hitT = Math.max(0, S.crystal.hitT - dt);
   if (S.comboT > 0) { S.comboT -= dt; if (S.comboT <= 0) S.combo = 0; }
@@ -5549,6 +5631,23 @@ const HERO = {
     back: { x: -5, y: -2, rows: ["KKKK.", "KBBBK", "KBYBK", "KBbBK", "KBBBK", ".KBK.", ".KBK.", ".KBK.", ".KBK.", "..K.."] },
     top: { x: 2, y: 3, rows: ["KYYYYYYYYK"] },
     sleeve: "#e0d8c8", boot: "#9a9284", weapon: "lance" },
+  counter: { pal: { H: "#7a4a30", h: "#4a2a18", L: "#b07a50", E: "#58c0b0", A: "#c89860", a: "#7a5a30", B: "#2a8a88", Y: "#ffd860", R: "#1a6a68" },
+    body: [".KKKKKKKK.", "KAAKBBKAAK", "KAaKBBKaAK", ".KAKBYKAK.", ".KABBBBAK.", ".KaKBBKaK.", ".KKKKKKKK."],
+    back: { x: -5, y: 1, rows: ["KKKKK", "KBBBK", "KBYBK", "KBBBK", "KBbBK", ".KBK.", "..K.."] },
+    sleeve: "#c89860", boot: "#7a5a30", weapon: "sword", blade: 7 },
+  hunter: { pal: { H: "#d8dce8", h: "#9a9eb0", L: "#ffffff", E: "#e04a4a", G: "#5a4a7a", g: "#3a2e56", N: "#8a5a30", W: "#e0d8f0" },
+    body: [".KKKKKKKK.", "KGGKWWKGGK", "KGgGWWGgGK", ".KGGGGGGK.", ".KNNNNNNK.", ".KGgGGgGK.", ".KKKKKKKK."],
+    hairBack: 10, pin: "#e04a4a", sleeve: "#5a4a7a", boot: "#3a2a1a", weapon: "bow" },
+  songstress: { pal: { H: "#58b8e8", h: "#2a78b0", L: "#c8f0ff", E: "#ffd040", P: "#2a6a9a", p: "#164868", V: "#7ae0f0", Y: "#ffe060", W: "#e8fbff" },
+    body: ["..KKKKKKKK..", ".KPPPVVPPPK.", ".KPpPPPPpPK.", ".KPPPYPPPPK.", "KPPPPPPPPPPK", "KPpPPVPPPpPK", "KWWWWWWWWWWK", ".KKKKKKKKKK."],
+    hairBack: 9, robe: true,
+    top: { x: 3, y: -3, rows: ["..Y..Y..", ".YVYYVY.", "KVVVVVVK"] },
+    sleeve: "#2a6a9a", boot: "#164868", weapon: "wand", orb: "frost" },
+  breaker: { pal: { H: "#e8e8f8", h: "#a8a8c0", L: "#ffffff", E: "#a0b0ff", D: "#3a3e5a", d: "#262a40", T: "#8a96e0", t: "#4a56a0" },
+    body: [".KKKKKKKK.", "KTTTTTTTTK", "KDTtTTtTDK", ".KDDDDDDK.", ".KDdDDdDK.", ".KDDDDDDK.", ".KKKKKKKK."],
+    back: { x: -3, y: 11, rows: ["KK...", "KTK..", "KTTK.", ".KTTK", "..KK."] },
+    top: { x: 2, y: 11, rows: ["KTTTTTTTTK"] },
+    sleeve: "#3a3e5a", boot: "#262a40", weapon: "dagger" },
 };
 // 米拉的石像守卫「咚咚」
 const GOLEM_PAL = { K: "#1c1a24", S: "#9ab0c8", s: "#6a7a94", L: "#c8d6e6", C: "#7af0e0", c: "#3ab0a8", E: "#7af0e0", M: "#6aa858" };
@@ -6143,7 +6242,7 @@ function drawEnemy(e, now) {
 }
 
 // ---------- 飞行物 ----------
-const SHOT_COL = { archer: "#f0e0b8", mage: "#b070ff", frost: "#80e0ff", priest: "#6ee07a", enemy: "#9a50e0", gunner: "#ff9a3a", alchemist: "#a8d848", bard: "#f07aa8", summoner: "#7af0e0", fire: "#ff8a3a", dark: "#b070ff", chrono: "#7ae0d0", marshal: "#ffe060" };
+const SHOT_COL = { hunter: "#e0d8f0", songstress: "#7ae0f0", archer: "#f0e0b8", mage: "#b070ff", frost: "#80e0ff", priest: "#6ee07a", enemy: "#9a50e0", gunner: "#ff9a3a", alchemist: "#a8d848", bard: "#f07aa8", summoner: "#7af0e0", fire: "#ff8a3a", dark: "#b070ff", chrono: "#7ae0d0", marshal: "#ffe060" };
 function drawShot(s) {
   const [x, y] = tpx(s.x, s.y), k = s.kind, col = SHOT_COL[k] || "#ffffff";
   s.trail.forEach((p, i) => { const [a, b] = tpx(p[0], p[1]); if (k === "gunner") { if (i % 2) rect(ctx, a - 1, b - 1, 3, 3, "rgba(160,150,140,.6)"); } else if (i % 2 === 0) rect(ctx, a, b, 2, 2, i > 3 ? col : "rgba(255,255,255,.45)"); });
@@ -6830,7 +6929,8 @@ const starHtml = n => `<span class="stars">${[0, 1, 2].map(i => i < n ? '<span c
 function levelOf(exp) { let lv = 1, e = exp || 0; while (lv < PROG.max && e >= expNeed(lv)) { e -= expNeed(lv); lv++; } return { lv, into: e, need: lv < PROG.max ? expNeed(lv) : 0 }; }
 function awkOf(exp) { const L = levelOf(exp); return L.lv >= PROG.max ? Math.min(AWK.max, Math.floor(L.into / AWK.need)) : 0; }
 function awkInfo(exp) { const L = levelOf(exp), a = awkOf(exp); return { a, into: L.lv >= PROG.max && a < AWK.max ? L.into - a * AWK.need : 0, full: a >= AWK.max }; }
-function joinExp(D) { let e = 0; for (let l = 1; l < (D.joinAt || 0); l++) e += expNeed(l); return e; }
+// 后加入的角色起步经验按「第 13 关加入」封顶，否则第五章的新角色一加入就满觉醒
+function joinExp(D) { let e = 0; for (let l = 1; l < Math.min(13, D.joinAt || 0); l++) e += expNeed(l); return e; }
 const charExp = (d, id) => Math.max((d.chars[id] && d.chars[id].exp) || 0, joinExp(UNITS.find(u => u.id === id) || {}));
 function masteryOf(d, id) { const w = (d.use[id] && d.use[id].win) || 0; let m = 0; MASTERY.forEach((t, i) => { if (w >= t.win) m = i + 1; }); return m; }
 function charMasts(d) { d = d || loadSave(); const o = {}; for (const u of UNITS) o[u.id] = masteryOf(d, u.id); return o; }

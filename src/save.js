@@ -100,7 +100,8 @@ const starHtml = n => `<span class="stars">${[0, 1, 2].map(i => i < n ? '<span c
 function levelOf(exp) { let lv = 1, e = exp || 0; while (lv < PROG.max && e >= expNeed(lv)) { e -= expNeed(lv); lv++; } return { lv, into: e, need: lv < PROG.max ? expNeed(lv) : 0 }; }
 function awkOf(exp) { const L = levelOf(exp); return L.lv >= PROG.max ? Math.min(AWK.max, Math.floor(L.into / AWK.need)) : 0; }
 function awkInfo(exp) { const L = levelOf(exp), a = awkOf(exp); return { a, into: L.lv >= PROG.max && a < AWK.max ? L.into - a * AWK.need : 0, full: a >= AWK.max }; }
-function joinExp(D) { let e = 0; for (let l = 1; l < (D.joinAt || 0); l++) e += expNeed(l); return e; }
+// 后加入的角色起步经验按「第 13 关加入」封顶，否则第五章的新角色一加入就满觉醒
+function joinExp(D) { let e = 0; for (let l = 1; l < Math.min(13, D.joinAt || 0); l++) e += expNeed(l); return e; }
 const charExp = (d, id) => Math.max((d.chars[id] && d.chars[id].exp) || 0, joinExp(UNITS.find(u => u.id === id) || {}));
 function masteryOf(d, id) { const w = (d.use[id] && d.use[id].win) || 0; let m = 0; MASTERY.forEach((t, i) => { if (w >= t.win) m = i + 1; }); return m; }
 function charMasts(d) { d = d || loadSave(); const o = {}; for (const u of UNITS) o[u.id] = masteryOf(d, u.id); return o; }
