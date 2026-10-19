@@ -213,6 +213,12 @@ const ENEMIES = {
   ghost:    { name: "幽灵", hp: 1200, atk: 220, def: 0, res: 30, speed: 0.95, interval: 1.5, color: "#a8e8f0", reward: 2, physRes: 0.7, ghost: true },
   necro:    { name: "死灵法师", hp: 2000, atk: 220, def: 50, res: 50, speed: 0.5, interval: 1.6, color: "#6a4a9a", reward: 3, summon: { every: 7, n: 2 } },
   shield:   { name: "盾卫", hp: 1800, atk: 280, def: 220, res: 10, speed: 0.65, interval: 1.5, color: "#7a8aa8", reward: 2, shield: 1600 },
+  warden:   { name: "持盾哨兵", hp: 2600, atk: 260, def: 240, res: 10, speed: 0.6, interval: 1.6, color: "#4aa8a0", reward: 3, weight: 2, guard: true,
+              skin: "shield", pal: { A: "#3a8a88", a: "#1f5a58", S: "#bff0e8", s: "#6ab8b0", Y: "#ffe060", R: "#80f0ff" } },
+  pilferer: { name: "窃贼", hp: 900, atk: 150, def: 10, res: 0, speed: 1.65, interval: 1.2, color: "#a070d0", reward: 2, steal: 14,
+              skin: "goblin", pal: { G: "#a070d0", g: "#6a4a98", Y: "#ffe040", e: "#ff5050", N: "#4a3a60", n: "#2a2038" } },
+  hexer:    { name: "驱魔者", hp: 1500, atk: 220, def: 30, res: 60, speed: 0.7, interval: 1.7, color: "#d05050", reward: 3, ranged: 2.6, drain: true,
+              skin: "dmage", pal: { P: "#a03a3a", p: "#5a1e1e", L: "#d06a6a", V: "#fff0b0" } },
   stalker:  { name: "潜行者", hp: 1000, atk: 300, def: 40, res: 20, speed: 1.2, interval: 1.2, color: "#5a5a7a", reward: 2, stealth: 1.6 },
   sandworm: { name: "沙虫", hp: 2200, atk: 320, def: 110, res: 20, speed: 0.75, interval: 1.5, color: "#c8a060", reward: 2, burrow: { up: 4.5, down: 2, speed: 1.4 } },
   scorpion: { name: "毒蝎", hp: 1600, atk: 240, def: 150, res: 10, speed: 0.95, interval: 1.3, color: "#c8703a", reward: 2, venom: { k: 0.35, t: 4 } },
@@ -265,6 +271,9 @@ const ENEMIES = {
               crystal: 6, weight: 6, unstoppable: true, ranged: 3.6, aoe: { every: 7.5, radius: 2.4, mult: 1.15 }, phases: [0.8, 0.6, 0.4, 0.2],
               skin: "sovereign", pal: { P: "#d0ccdc", p: "#9c98ac", L: "#ffffff", D: "#3a3648", d: "#4a4658", G: "#ffe060", E: "#ff4a8a", V: "#ffffff", S: "#f0eef6", s: "#b8b4c4", H: "#2a2632", h: "#8a86a0" } },
 };
+// 新敌人加进几个关卡的敌人池：[关卡序号, 权重, 第几波起]
+const NEW_FOE_POOLS = { warden: [[4, 3, 5], [7, 3, 6], [9, 3, 4], [11, 3, 5], [14, 3, 5]], pilferer: [[2, 1.6, 3], [5, 1.6, 3], [8, 1.6, 3], [10, 1.6, 3], [13, 1.6, 3]], hexer: [[3, 2.4, 6], [6, 2.4, 5], [9, 2.4, 5], [12, 2.4, 4], [15, 2.4, 5]] };
+for (const [type, list] of Object.entries(NEW_FOE_POOLS)) for (const [si, w, from] of list) STAGES[si].pool.push([type, w, from]);
 const ELITE = { hp: 2.4, atk: 1.3, reward: 3 };
 
 const SPELLS = [

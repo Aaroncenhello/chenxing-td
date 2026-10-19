@@ -702,7 +702,8 @@ function takeCurse(id) {
 function shopCost(it) { return Math.round(it.cost * (1 - 0.04 * dk("merchant")) * (ab(7) ? 1.25 : 1) * (cu("cu_greed") ? 0.7 : 1) * (1 + S.shopDone * 0.12)); }
 function openShop() {
   if (S.over || S.shop) return;
-  const pool = SHOP.items.filter(it => !(it.id === "revive" && S.units.every(u => u.down <= 0 && u.hp >= u.maxHp)) && !(it.id === "ult" && S.star >= ULT.max));
+  const pool = SHOP.items.filter(it => !(it.id === "revive" && S.units.every(u => u.down <= 0 && u.hp >= u.maxHp)) && !(it.id === "ult" && S.star >= ULT.max)
+    && !(it.id === "relicbox" && (S.relics.length >= RELIC_MAX || RELICS.every(r => S.relics.includes(r.id)))) && !(it.id === "recycle" && !Object.keys(S.cards).some(id => CARD_BY[id])));
   const out = [];
   const bag = pool.slice();
   while (out.length < 3 && bag.length) out.push(bag.splice(Math.floor(roll("shop") * bag.length), 1)[0]);
@@ -720,6 +721,10 @@ function buyShop(id) {
   if (it.id === "revive") for (const u of S.units) { if (u.down > 0) reviveUnit(u); u.hp = u.maxHp; addFx({ kind: "pillar", x: u.x, y: u.y, color: "#7ee89c", life: 0.7 }); }
   if (it.id === "reroll") S.rerolls += 2;
   if (it.id === "ult") S.star = ULT.max;
+  if (it.id === "banish") S.banishLeft++;
+  if (it.id === "relicbox") gainRelic();
+  if (it.id === "recycle") { forgetCard(); S.pending++; }
+  if (it.id === "tonic") { buffAll({ atk: 1.08 }); addFx({ kind: "pillar", x: CRYSTAL.x, y: CRYSTAL.y, color: "#ffb040", life: 0.8 }); }
   return true;
 }
 function closeShop() { S.shop = null; S.nextWaveIn = Math.min(S.nextWaveIn, 3); }

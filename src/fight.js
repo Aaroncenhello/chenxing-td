@@ -78,6 +78,7 @@ function killEnemy(e, src) {
   if (e.elite || isBoss(e)) S.eliteKills = (S.eliteKills || 0) + 1;
   if (e === S.focus) S.focusKills = (S.focusKills || 0) + 1;
   addStat(src, "kills", 1);
+  if (e.stolen) { const back = Math.round(e.stolen * 1.5); S.dust += back; addFx({ kind: "text", x: e.x, y: e.y - 0.8, text: "+" + back + " 星尘（追回）", color: "#ffd860", life: 1.2, big: true }); }
   gainXp(e.d.reward * RULES.xpKill * (e.elite ? 2 : 1));
   if (rl("rl_slayer") && (e.elite || isBoss(e))) gainXp(e.d.reward * RULES.xpKill * 0.8);
   gainStar(e); addCombo();
@@ -156,6 +157,7 @@ function hurt(e, amt, type, crit, src) {
   if (e.dead) return 0;
   if (type === "phys" && e.d.physRes) amt *= 1 - e.d.physRes;
   if (type === "phys" && hasAfx(e, "harden")) amt *= 0.75;
+  if (e.guarded && src && src.def && src.def.place === "high") amt *= 0.6;
   if (e.brokenT > 0) amt *= BREAK_BONUS;
   if (e.mark > 0) amt *= 1.25;
   if (S.weakWaves > 0) amt *= 1.1;

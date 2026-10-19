@@ -46,6 +46,16 @@ function afxAuras() {
     for (const e of S.enemies) if (!e.dead && dist(a, e) <= 3) e.warcry = 1;
   }
 }
+// 持盾哨兵的光环：身边的敌人挨远程攻击少受 40%（每步算一次，没有哨兵就直接返回）
+function guardAuras() {
+  let any = false;
+  for (const e of S.enemies) { if (e.guarded) e.guarded = 0; if (e.d.guard && !e.dead) any = true; }
+  if (!any) return;
+  for (const g of S.enemies) {
+    if (!g.d.guard || g.dead) continue;
+    for (const e of S.enemies) if (!e.dead && dist(g, e) <= 2.2) e.guarded = 1;
+  }
+}
 // 敌人出手间隔：狂怒会越打越快
 const eInt = e => e.d.interval * (hasAfx(e, "frenzy") ? Math.max(0.5, 0.5 + 0.5 * (e.hp / e.maxHp)) : 1);
 const eRes = e => e.d.res * (ab(19) ? 1.2 : 1) + (hasAfx(e, "warded") ? 35 : 0);

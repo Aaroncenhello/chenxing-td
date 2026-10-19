@@ -139,6 +139,9 @@ const ACHV = [
 ];
 
 const ENEMY_DESC = {
+  warden: "举着巨盾站在队伍里，附近的敌人受到的远程伤害 −40%，先近身解决它。",
+  pilferer: "跑得快，每打中一次就偷走你一点星尘；杀掉它能拿回偷走的（多还一半）。",
+  hexer: "每次命中会抽走目标一部分技力，还会打断正在释放的技能。",
   ashwalker: "灰里走出来的旧兵，忘了自己叫什么，血厚、走得稳。",
   emberling: "还没烧完的一点火，跑得极快，数量很多。",
   monolith: "醒过来的旧晨星碑，物理伤害对它效果很差，要用法术。",
@@ -183,6 +186,10 @@ const SHOP = { everyWaves: 4, dustPerKill: 1, dustElite: 4, dustBoss: 25, start:
     { id: "revive", name: "全员急救", desc: "倒下的角色立刻站起，全队回满生命", cost: 35 },
     { id: "reroll", name: "占卜罗盘", desc: "重抽次数 +2", cost: 30 },
     { id: "ult", name: "晨星充能", desc: "晨星之力立刻充满", cost: 55 },
+    { id: "banish", name: "放逐许可", desc: "放逐次数 +1（翻牌时把一张卡永久移出牌堆）", cost: 35 },
+    { id: "relicbox", name: "遗物宝匣", desc: "随机获得一件遗物", cost: 150 },
+    { id: "recycle", name: "回炉重造", desc: "随机一张卡降 1 级，换一次翻牌", cost: 25 },
+    { id: "tonic", name: "战地补给", desc: "全队攻击永久 +8%", cost: 60 },
   ] };
 // 卡牌稀有度
 const RARITY = [

@@ -859,6 +859,12 @@ const ENEMIES = {
   ghost:    { name: "幽灵", hp: 1200, atk: 220, def: 0, res: 30, speed: 0.95, interval: 1.5, color: "#a8e8f0", reward: 2, physRes: 0.7, ghost: true },
   necro:    { name: "死灵法师", hp: 2000, atk: 220, def: 50, res: 50, speed: 0.5, interval: 1.6, color: "#6a4a9a", reward: 3, summon: { every: 7, n: 2 } },
   shield:   { name: "盾卫", hp: 1800, atk: 280, def: 220, res: 10, speed: 0.65, interval: 1.5, color: "#7a8aa8", reward: 2, shield: 1600 },
+  warden:   { name: "持盾哨兵", hp: 2600, atk: 260, def: 240, res: 10, speed: 0.6, interval: 1.6, color: "#4aa8a0", reward: 3, weight: 2, guard: true,
+              skin: "shield", pal: { A: "#3a8a88", a: "#1f5a58", S: "#bff0e8", s: "#6ab8b0", Y: "#ffe060", R: "#80f0ff" } },
+  pilferer: { name: "窃贼", hp: 900, atk: 150, def: 10, res: 0, speed: 1.65, interval: 1.2, color: "#a070d0", reward: 2, steal: 14,
+              skin: "goblin", pal: { G: "#a070d0", g: "#6a4a98", Y: "#ffe040", e: "#ff5050", N: "#4a3a60", n: "#2a2038" } },
+  hexer:    { name: "驱魔者", hp: 1500, atk: 220, def: 30, res: 60, speed: 0.7, interval: 1.7, color: "#d05050", reward: 3, ranged: 2.6, drain: true,
+              skin: "dmage", pal: { P: "#a03a3a", p: "#5a1e1e", L: "#d06a6a", V: "#fff0b0" } },
   stalker:  { name: "潜行者", hp: 1000, atk: 300, def: 40, res: 20, speed: 1.2, interval: 1.2, color: "#5a5a7a", reward: 2, stealth: 1.6 },
   sandworm: { name: "沙虫", hp: 2200, atk: 320, def: 110, res: 20, speed: 0.75, interval: 1.5, color: "#c8a060", reward: 2, burrow: { up: 4.5, down: 2, speed: 1.4 } },
   scorpion: { name: "毒蝎", hp: 1600, atk: 240, def: 150, res: 10, speed: 0.95, interval: 1.3, color: "#c8703a", reward: 2, venom: { k: 0.35, t: 4 } },
@@ -911,6 +917,9 @@ const ENEMIES = {
               crystal: 6, weight: 6, unstoppable: true, ranged: 3.6, aoe: { every: 7.5, radius: 2.4, mult: 1.15 }, phases: [0.8, 0.6, 0.4, 0.2],
               skin: "sovereign", pal: { P: "#d0ccdc", p: "#9c98ac", L: "#ffffff", D: "#3a3648", d: "#4a4658", G: "#ffe060", E: "#ff4a8a", V: "#ffffff", S: "#f0eef6", s: "#b8b4c4", H: "#2a2632", h: "#8a86a0" } },
 };
+// 新敌人加进几个关卡的敌人池：[关卡序号, 权重, 第几波起]
+const NEW_FOE_POOLS = { warden: [[4, 3, 5], [7, 3, 6], [9, 3, 4], [11, 3, 5], [14, 3, 5]], pilferer: [[2, 1.6, 3], [5, 1.6, 3], [8, 1.6, 3], [10, 1.6, 3], [13, 1.6, 3]], hexer: [[3, 2.4, 6], [6, 2.4, 5], [9, 2.4, 5], [12, 2.4, 4], [15, 2.4, 5]] };
+for (const [type, list] of Object.entries(NEW_FOE_POOLS)) for (const [si, w, from] of list) STAGES[si].pool.push([type, w, from]);
 const ELITE = { hp: 2.4, atk: 1.3, reward: 3 };
 
 const SPELLS = [
@@ -1073,6 +1082,9 @@ const ACHV = [
 ];
 
 const ENEMY_DESC = {
+  warden: "举着巨盾站在队伍里，附近的敌人受到的远程伤害 −40%，先近身解决它。",
+  pilferer: "跑得快，每打中一次就偷走你一点星尘；杀掉它能拿回偷走的（多还一半）。",
+  hexer: "每次命中会抽走目标一部分技力，还会打断正在释放的技能。",
   ashwalker: "灰里走出来的旧兵，忘了自己叫什么，血厚、走得稳。",
   emberling: "还没烧完的一点火，跑得极快，数量很多。",
   monolith: "醒过来的旧晨星碑，物理伤害对它效果很差，要用法术。",
@@ -1117,6 +1129,10 @@ const SHOP = { everyWaves: 4, dustPerKill: 1, dustElite: 4, dustBoss: 25, start:
     { id: "revive", name: "全员急救", desc: "倒下的角色立刻站起，全队回满生命", cost: 35 },
     { id: "reroll", name: "占卜罗盘", desc: "重抽次数 +2", cost: 30 },
     { id: "ult", name: "晨星充能", desc: "晨星之力立刻充满", cost: 55 },
+    { id: "banish", name: "放逐许可", desc: "放逐次数 +1（翻牌时把一张卡永久移出牌堆）", cost: 35 },
+    { id: "relicbox", name: "遗物宝匣", desc: "随机获得一件遗物", cost: 150 },
+    { id: "recycle", name: "回炉重造", desc: "随机一张卡降 1 级，换一次翻牌", cost: 25 },
+    { id: "tonic", name: "战地补给", desc: "全队攻击永久 +8%", cost: 60 },
   ] };
 // 卡牌稀有度
 const RARITY = [
@@ -2701,7 +2717,8 @@ function takeCurse(id) {
 function shopCost(it) { return Math.round(it.cost * (1 - 0.04 * dk("merchant")) * (ab(7) ? 1.25 : 1) * (cu("cu_greed") ? 0.7 : 1) * (1 + S.shopDone * 0.12)); }
 function openShop() {
   if (S.over || S.shop) return;
-  const pool = SHOP.items.filter(it => !(it.id === "revive" && S.units.every(u => u.down <= 0 && u.hp >= u.maxHp)) && !(it.id === "ult" && S.star >= ULT.max));
+  const pool = SHOP.items.filter(it => !(it.id === "revive" && S.units.every(u => u.down <= 0 && u.hp >= u.maxHp)) && !(it.id === "ult" && S.star >= ULT.max)
+    && !(it.id === "relicbox" && (S.relics.length >= RELIC_MAX || RELICS.every(r => S.relics.includes(r.id)))) && !(it.id === "recycle" && !Object.keys(S.cards).some(id => CARD_BY[id])));
   const out = [];
   const bag = pool.slice();
   while (out.length < 3 && bag.length) out.push(bag.splice(Math.floor(roll("shop") * bag.length), 1)[0]);
@@ -2719,6 +2736,10 @@ function buyShop(id) {
   if (it.id === "revive") for (const u of S.units) { if (u.down > 0) reviveUnit(u); u.hp = u.maxHp; addFx({ kind: "pillar", x: u.x, y: u.y, color: "#7ee89c", life: 0.7 }); }
   if (it.id === "reroll") S.rerolls += 2;
   if (it.id === "ult") S.star = ULT.max;
+  if (it.id === "banish") S.banishLeft++;
+  if (it.id === "relicbox") gainRelic();
+  if (it.id === "recycle") { forgetCard(); S.pending++; }
+  if (it.id === "tonic") { buffAll({ atk: 1.08 }); addFx({ kind: "pillar", x: CRYSTAL.x, y: CRYSTAL.y, color: "#ffb040", life: 0.8 }); }
   return true;
 }
 function closeShop() { S.shop = null; S.nextWaveIn = Math.min(S.nextWaveIn, 3); }
@@ -3299,6 +3320,16 @@ function afxAuras() {
     for (const e of S.enemies) if (!e.dead && dist(a, e) <= 3) e.warcry = 1;
   }
 }
+// 持盾哨兵的光环：身边的敌人挨远程攻击少受 40%（每步算一次，没有哨兵就直接返回）
+function guardAuras() {
+  let any = false;
+  for (const e of S.enemies) { if (e.guarded) e.guarded = 0; if (e.d.guard && !e.dead) any = true; }
+  if (!any) return;
+  for (const g of S.enemies) {
+    if (!g.d.guard || g.dead) continue;
+    for (const e of S.enemies) if (!e.dead && dist(g, e) <= 2.2) e.guarded = 1;
+  }
+}
 // 敌人出手间隔：狂怒会越打越快
 const eInt = e => e.d.interval * (hasAfx(e, "frenzy") ? Math.max(0.5, 0.5 + 0.5 * (e.hp / e.maxHp)) : 1);
 const eRes = e => e.d.res * (ab(19) ? 1.2 : 1) + (hasAfx(e, "warded") ? 35 : 0);
@@ -3420,6 +3451,7 @@ function killEnemy(e, src) {
   if (e.elite || isBoss(e)) S.eliteKills = (S.eliteKills || 0) + 1;
   if (e === S.focus) S.focusKills = (S.focusKills || 0) + 1;
   addStat(src, "kills", 1);
+  if (e.stolen) { const back = Math.round(e.stolen * 1.5); S.dust += back; addFx({ kind: "text", x: e.x, y: e.y - 0.8, text: "+" + back + " 星尘（追回）", color: "#ffd860", life: 1.2, big: true }); }
   gainXp(e.d.reward * RULES.xpKill * (e.elite ? 2 : 1));
   if (rl("rl_slayer") && (e.elite || isBoss(e))) gainXp(e.d.reward * RULES.xpKill * 0.8);
   gainStar(e); addCombo();
@@ -3498,6 +3530,7 @@ function hurt(e, amt, type, crit, src) {
   if (e.dead) return 0;
   if (type === "phys" && e.d.physRes) amt *= 1 - e.d.physRes;
   if (type === "phys" && hasAfx(e, "harden")) amt *= 0.75;
+  if (e.guarded && src && src.def && src.def.place === "high") amt *= 0.6;
   if (e.brokenT > 0) amt *= BREAK_BONUS;
   if (e.mark > 0) amt *= 1.25;
   if (S.weakWaves > 0) amt *= 1.1;
@@ -4293,6 +4326,7 @@ function step(dt) {
   // 敌人
   separate();
   afxAuras();
+  guardAuras();
   // 拦截目标占用量：先按当前状态建一份表，选目标时查表而不是每只敌人都扫一遍全场（大波刷怪时否则是 O(敌人数²)）
   const loadOf = new Map();
   for (const o of S.enemies) if (!o.dead && o.target) loadOf.set(o.target, (loadOf.get(o.target) || 0) + (o.d.weight || 1));
@@ -4403,6 +4437,8 @@ function step(dt) {
         const u = e.target;
         if (e.pend <= 0 && u && alive(u)) {
           hurtUnit(u, calc(eAtk(e), e.d.ranged ? "magic" : "phys", uDef(u), uRes(u)), e.d.ranged ? "magic" : "phys", e);
+          if (e.d.steal && S.dust > 0) { const g = Math.min(S.dust, e.d.steal); S.dust -= g; e.stolen = (e.stolen || 0) + g; addFx({ kind: "text", x: u.x, y: u.y - 0.6, text: "-" + g + " 星尘", color: "#c890ff", life: 0.9 }); }
+          if (e.d.drain && alive(u)) { u.sp = Math.max(0, u.sp * 0.7); if (u.skillT > 0) u.skillT = 0; addFx({ kind: "text", x: u.x, y: u.y - 0.6, text: "技力被抽走", color: "#ff8a8a", life: 0.9 }); }
           if (e.d.venom && alive(u)) u.poison = { dps: eAtk(e) * e.d.venom.k, t: e.d.venom.t, acc: 0 };
           else if (hasAfx(e, "venom") && alive(u)) u.poison = { dps: eAtk(e) * 0.35, t: 4, acc: 0 };
           u.stop = 0.06; e.stop = 0.06;

@@ -182,6 +182,7 @@ function step(dt) {
   // 敌人
   separate();
   afxAuras();
+  guardAuras();
   // 拦截目标占用量：先按当前状态建一份表，选目标时查表而不是每只敌人都扫一遍全场（大波刷怪时否则是 O(敌人数²)）
   const loadOf = new Map();
   for (const o of S.enemies) if (!o.dead && o.target) loadOf.set(o.target, (loadOf.get(o.target) || 0) + (o.d.weight || 1));
@@ -292,6 +293,8 @@ function step(dt) {
         const u = e.target;
         if (e.pend <= 0 && u && alive(u)) {
           hurtUnit(u, calc(eAtk(e), e.d.ranged ? "magic" : "phys", uDef(u), uRes(u)), e.d.ranged ? "magic" : "phys", e);
+          if (e.d.steal && S.dust > 0) { const g = Math.min(S.dust, e.d.steal); S.dust -= g; e.stolen = (e.stolen || 0) + g; addFx({ kind: "text", x: u.x, y: u.y - 0.6, text: "-" + g + " 星尘", color: "#c890ff", life: 0.9 }); }
+          if (e.d.drain && alive(u)) { u.sp = Math.max(0, u.sp * 0.7); if (u.skillT > 0) u.skillT = 0; addFx({ kind: "text", x: u.x, y: u.y - 0.6, text: "技力被抽走", color: "#ff8a8a", life: 0.9 }); }
           if (e.d.venom && alive(u)) u.poison = { dps: eAtk(e) * e.d.venom.k, t: e.d.venom.t, acc: 0 };
           else if (hasAfx(e, "venom") && alive(u)) u.poison = { dps: eAtk(e) * 0.35, t: 4, acc: 0 };
           u.stop = 0.06; e.stop = 0.06;
