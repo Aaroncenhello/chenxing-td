@@ -481,6 +481,8 @@ body.imm .hud-top .hc{display:none}
 body.imm .cbar.desk{display:none}
 .h-xp{position:absolute;left:0;right:0;bottom:0;height:3px;background:#0c0f15}
 .h-xp i{display:block;height:100%;background:#6fcf8e;width:0}
+.hud-btns,.hud-more{display:contents}
+#h-more{display:none}
 .hud-l,.hud-r{position:absolute;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
 .hud-l{left:calc(6px + env(safe-area-inset-left,0))} .hud-r{right:calc(6px + env(safe-area-inset-right,0))}
 @media (max-height:420px){.hud button{min-height:36px;min-width:54px;font-size:12px}.hud-r,.hud-l{gap:4px}.hud-r button{min-height:38px}}
@@ -549,23 +551,32 @@ body.imm .hud-syn{max-height:44%}
   body.imm .toasts{top:auto;bottom:var(--toast-bottom,40%);max-width:calc(100vw - 24px)}
   body.imm .pinfo{display:flex}
   body.imm .overlay{padding:12px 10px}
-  /* 竖屏大画面：战场转成 9:16，占满中间；顶栏一行、信息条只留队员和羁绊、按钮缩成两排矮条 */
-  body.imm.big .stage{gap:5px;padding-top:4px;padding-bottom:6px}
+  /* 竖屏大画面：战场转成 9:16，占满中间；顶栏一行、信息条只留一行队员 + 羁绊、法术和控制键合成一排矮条（少用的收进「更多」），省下的高度全给战场 */
+  body.imm.big .stage{gap:4px;padding-top:3px;padding-bottom:5px;background-size:cover;background-position:center}
   body.imm.big .hud-unit:not([hidden]){display:block;width:160px}
-  body.imm.big .hud-top{margin-top:2px;padding:3px 10px 4px;gap:1px 10px}
-  body.imm.big .hud-top .cbar{height:12px;margin:1px 0 0}body.imm.big .hud-top .cbar span{line-height:12px;font-size:9px}
-  body.imm.big .hud-l{margin-top:0;gap:4px}
-  body.imm.big .hud-r{grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;padding-bottom:4px}
+  body.imm.big .hud-top{margin-top:0;padding:2px 8px 3px;gap:0 8px;flex-wrap:nowrap;white-space:nowrap;width:calc(100% - 12px);max-width:none;justify-content:space-between}
+  body.imm.big .hud-top .cbar{flex:1 1 80px;min-width:70px;height:13px;margin:0}body.imm.big .hud-top .cbar span{line-height:13px;font-size:9px}
+  body.imm.big .hud-top b{font-size:11px}
+  body.imm.big .hud-top .h-xp{display:none}
+  body.imm.big .hud-btns{display:flex;gap:4px;padding:0 6px;position:relative}
+  body.imm.big .hud-l,body.imm.big .hud-r{margin:0;padding:0;gap:3px}
+  body.imm.big .hud-l{flex:3 1 0;grid-template-columns:repeat(3,minmax(0,1fr))}
+  body.imm.big .hud-r{flex:5 1 0;grid-template-columns:repeat(5,minmax(0,1fr))}
   body.imm.big #h-call{grid-column:span 1}
-  body.imm.big .hud button{min-height:44px;font-size:13px;padding:0 1px;line-height:1.15}
-  body.imm.big .hud-l button{min-height:46px}body.imm.big .hud button small{font-size:10px}
-  body.imm.big .pinfo{flex:0 0 auto;gap:3px;max-height:134px;overflow:hidden}body.imm.big .pinfo>*{flex-shrink:0}
-  body.imm.big .pi-sel,body.imm.big .pi-next,body.imm.big .pi-cards{display:none}
-  body.imm.big .pi-status{min-height:0;font-size:12px}
-  body.imm.big .pi-team{gap:3px}
-  body.imm.big .pu{min-height:32px;padding:2px 4px;column-gap:4px;grid-template-columns:24px 1fr}
-  body.imm.big .pu canvas{width:24px;height:24px}
-  @media (max-height:760px){body.imm.big .pi-status{display:none}body.imm.big .hud-top{padding:2px 10px 3px}}
+  body.imm.big #h-more{display:block}
+  body.imm.big #h-auto{white-space:pre-line}
+  body.imm.big .hud-more{display:none;position:absolute;right:6px;bottom:calc(100% + 6px);grid-template-columns:repeat(3,minmax(64px,auto));gap:4px;padding:6px;background:rgba(10,12,18,.96);box-shadow:0 0 0 2px #0a0c12,0 0 0 4px #3a4258;z-index:15}
+  body.imm.big .hud-more.open{display:grid}
+  body.imm.big .hud button{min-height:44px;font-size:12px;padding:0 1px;line-height:1.1}
+  body.imm.big .hud-l button{min-height:44px}body.imm.big .hud button small{font-size:10px}
+  body.imm.big .pinfo{flex:0 0 auto;gap:3px;max-height:96px;overflow:hidden;padding:0 6px}body.imm.big .pinfo>*{flex-shrink:0}
+  body.imm.big .pi-sel,body.imm.big .pi-next,body.imm.big .pi-cards,body.imm.big .pi-status{display:none}
+  body.imm.big .pi-syn{min-height:0;gap:4px}
+  body.imm.big .pi-team{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:3px}
+  body.imm.big .pu{display:flex;flex-direction:column;align-items:stretch;gap:2px;min-height:0;padding:3px 3px 3px;text-align:center}
+  body.imm.big .pu canvas{grid-row:auto;width:26px;height:26px;align-self:center}
+  body.imm.big .pu b,body.imm.big .pu .lv{display:none}
+  body.imm.big .pu i{height:3px}
 }
 </style>
 
@@ -631,6 +642,7 @@ body.imm .hud-syn{max-height:44%}
       <div class="hud-top"><div class="cbar" aria-label="晨星碑生命"><i class="tr"></i><i class="fl"></i><span><em>晨星碑</em> <b class="cv"></b></span></div><span class="hc">碑 <b id="h-hp"></b></span><span>波 <b id="h-wave"></b></span><span class="hl">Lv <b id="h-lv"></b></span><span class="hd">尘 <b id="h-dust"></b></span><span id="h-next"></span><span class="h-xp"><i id="h-xpf"></i></span></div>
       <div class="hud-syn" id="h-syn"></div>
       <div class="hud-unit ucard" id="h-unit" hidden></div>
+      <div class="hud-btns">
       <div class="hud-l">
         <button data-h="meteor" id="h-meteor"><b>陨星</b><small id="h-cd-meteor"></small></button>
         <button data-h="heal" id="h-heal"><b>圣愈</b><small id="h-cd-heal"></small></button>
@@ -641,9 +653,13 @@ body.imm .hud-syn{max-height:44%}
         <button data-h="auto" id="h-auto">自动</button>
         <button data-h="speed" id="h-speed">1×</button>
         <button data-h="pause" id="h-pause">暂停</button>
-        <button data-h="form" id="h-form">阵型</button>
-        <button data-h="menu">选关</button>
-        <button data-h="exit">退出</button>
+        <button data-h="more" id="h-more">更多</button>
+        <div class="hud-more" id="hud-more">
+          <button data-h="form" id="h-form">阵型</button>
+          <button data-h="menu">选关</button>
+          <button data-h="exit">退出</button>
+        </div>
+      </div>
       </div>
     </div>
     <div class="overlay" id="overlay" hidden><div class="ovbox" id="ovbox"></div></div>
@@ -5048,10 +5064,10 @@ function resize() {
   const imm = document.body.classList.contains("imm"), port = imm && window.matchMedia("(orientation: portrait)").matches;
   // 竖屏大画面只在「转过来确实更大」的时候开：先试着开，量一下战场能有多大，没比不转大 12% 就退回横版布局
   if (port && OPT.big) {
-    setRot(true);
+    const was = ROT; setRot(true);
     const cs0 = getComputedStyle(stage), pH = parseFloat(cs0.paddingLeft) + parseFloat(cs0.paddingRight), pV = parseFloat(cs0.paddingTop) + parseFloat(cs0.paddingBottom);
     const k1 = Math.min((window.innerWidth - pH) / PW, (window.innerHeight - pV - bigUsed(stage, cs0) - 4) / PHt), k0 = (window.innerWidth - pH) / LW;
-    if (k1 < k0 * 1.12) setRot(false);
+    if (k1 < k0 * (was ? 1.0 : 1.12)) setRot(false);   // 开要大 12% 以上，已经开着就只要不比横版小；边缘上不来回跳
   } else setRot(false);
   if (imm) {
     const vw = window.innerWidth, vh = window.innerHeight;
@@ -5071,9 +5087,20 @@ function resize() {
   // 竖屏时提示（新敌人、遗物……）弹在按钮区正上方，盖住的是信息区最下面的卡牌行，不挡战场和按钮
   if (port) { const hl = document.querySelector(ROT ? ".pinfo" : ".hud-l"); document.body.style.setProperty("--toast-bottom", Math.round(window.innerHeight - (hl ? hl.getBoundingClientRect().top : window.innerHeight * 0.6) + 6) + "px"); }
   DPR = Math.min(window.devicePixelRatio || 1, 2);
-  tx.width = Math.round(PW * k * DPR); tx.height = Math.round(PHt * k * DPR);
+  const tw = Math.round(PW * k * DPR), th_ = Math.round(PHt * k * DPR);
+  if (tx.width !== tw) tx.width = tw; if (tx.height !== th_) tx.height = th_;   // 没变就别动：给画布赋宽高会清空并重新分配，iOS 上反复分配容易黑屏
   if (S && mapFor !== mapKey()) { drawMap(); mapFor = mapKey(); }
+  if (S) { try { render(performance.now()); } catch (e) { } }   // 画布被清过，马上补画一帧，不留空白
   for (const D of UNITS) drawPortrait(D);
+}
+// 屏幕尺寸变化（iOS 地址栏收放会连发好几次）合并成每帧最多重排一次
+let resizeQ = 0;
+function resizeSoon() { if (resizeQ) return; resizeQ = requestAnimationFrame(() => { resizeQ = 0; resize(); }); }
+// 静态底图是离屏画布，iOS 内存紧张或切后台回来时可能被系统清空（地图变黑）：每 2 秒抽一个点，发现是空的就重画
+let mapGuardAt = 0;
+function mapGuard(now) {
+  if (now - mapGuardAt < 2000) return; mapGuardAt = now;
+  try { if (mctx.getImageData((LW / 2) | 0, (LH / 2) | 0, 1, 1).data[3] === 0) mapFor = -1; } catch (e) { }
 }
 
 // ---------- 像素工具 ----------
@@ -5236,6 +5263,17 @@ const isPath = (c, r) => ".SRB=".includes(tileAt(c, r));
 const LAVA = new Set();
 let LAVAPOS = [];   // 熔岩格坐标，画发光用
 
+// 竖屏大画面：战场两侧的空位铺一层放大、压暗的地图当背景，不再是一片黑
+let bgFillCv = null;
+function updateBgFill() {
+  const st = document.querySelector(".stage"); if (!st) return;
+  if (!ROT) { st.style.backgroundImage = ""; return; }
+  try {
+    if (!bgFillCv) { bgFillCv = document.createElement("canvas"); bgFillCv.width = 36; bgFillCv.height = 64; }
+    const g = bgFillCv.getContext("2d"), sc = 36 / LH; g.imageSmoothingEnabled = true; g.setTransform(0, sc, -sc, 0, LH * sc, 0); g.drawImage(mapCv, 0, 0);
+    st.style.backgroundImage = `linear-gradient(rgba(5,6,10,.62),rgba(5,6,10,.62)),url(${bgFillCv.toDataURL()})`;
+  } catch (e) { st.style.backgroundImage = ""; }
+}
 function drawMap() {
   const g = mctx, th = TH(), rnd = rng(9173 + S.stage * 101);
   LAVA.clear();
@@ -5291,6 +5329,7 @@ function drawMap() {
     const draw = () => (p.rock ? drawRock(g, p, th) : (PROP[th.prop] || drawTree)(g, p));
     if (ROT) { g.save(); g.translate(p.x, p.y); g.rotate(-Math.PI / 2); g.translate(-p.x, -p.y); draw(); g.restore(); } else draw();   // 底图整体转 90° 贴上去，所以这里先反转一次，贴上去就是直立的
   }
+  updateBgFill();
 }
 // 地面小细节：按主题撒裂纹 / 落叶 / 碎石 / 霜点 / 水洼，让大片空地有点东西（画进静态地图，不花每帧的钱）
 const THEME_DECAL = { forest: ["leaf", "puddle"], snow: ["frost"], lava: ["crack"], grave: ["crack", "bone"], desert: ["pebble"], sky: ["leaf"], cave: ["pebble"], abyss: ["crack"], ice: ["frost"], mech: ["bolt", "crack"], blood: ["crack"], star: ["frost"], ash: ["crack", "pebble"], ruin: ["crack", "pebble"], storm: ["puddle"], dawn: ["leaf"], tide: ["pebble", "puddle"], sunken: ["puddle", "bubble"], mirror: ["frost"], silent: ["frost"] };
@@ -6936,7 +6975,7 @@ function stampDecal(x, y, r, color) {
 }
 function drawDecals(now) {
   if (!decalCv || decalFor !== mapKey()) return;
-  if (now - decalFadeAt > 500) { decalFadeAt = now; const g = decalCv.getContext("2d"); g.globalCompositeOperation = "destination-out"; g.fillStyle = "rgba(0,0,0,.05)"; g.fillRect(0, 0, PW, PHt); g.globalCompositeOperation = "source-over"; }
+  if (now - decalFadeAt > 500) { decalFadeAt = now; const g = decalCv.getContext("2d"); g.globalCompositeOperation = "destination-out"; g.fillStyle = "rgba(0,0,0,.05)"; g.fillRect(0, 0, LW, LH); g.globalCompositeOperation = "source-over"; }
   ctx.drawImage(decalCv, 0, 0);
 }
 // 光斑：几块缓慢飘过的暖光，给地面一点光照变化
@@ -7692,13 +7731,15 @@ function maybeImm() { if (!immOff && isPhone() && !isImm()) setImm(true); }
 $("btn-full").addEventListener("click", () => setImm(!isImm()));
 $("hud").addEventListener("click", ev => {
   const b = ev.target.closest("[data-h]"); if (!b || !S) return;
-  const h = b.dataset.h;
+  const h = b.dataset.h, more = $("hud-more");
+  if (more && h !== "more") more.classList.remove("open");
   if (h === "meteor" || h === "heal") pressSpell(h);
   else if (h === "ult") castUlt();
   else if (h === "call") callWaveEarly();
   else if (h === "auto") $("btn-auto").click();
   else if (h === "speed") toggleSpeed();
   else if (h === "pause") togglePause();
+  else if (h === "more") more.classList.toggle("open");
   else if (h === "form") cycleForm();
   else if (h === "menu") showLevels();
   else if (h === "exit") setImm(false);
@@ -7712,7 +7753,7 @@ function updateHud() {
   const m = Math.ceil(S.spells.meteor || 0), hl = Math.ceil(S.spells.heal || 0), st = Math.floor(S.star / ULT.max * 100);
   const waiting = S.wave < totalWaves() && !S.spawnQueue.length;
   const nx = waiting ? (S.autoWave ? Math.ceil(Math.max(0, S.nextWaveIn)) + "s" : "手动") : S.spawnQueue.length ? "出怪 " + S.spawnQueue.length : "剩 " + S.enemies.length;
-  const key = [Math.ceil(S.crystal.hp), S.wave, S.level, S.dust, nx, m, hl, st, S.speed, S.paused, S.autoWave, canCallWave(), S.spellMode, Math.floor(S.xp / S.xpNeed * 50), S.formIdx].join("|");
+  const key = [Math.ceil(S.crystal.hp), S.wave, S.level, S.dust, nx, m, hl, st, S.speed, S.paused, S.autoWave, canCallWave(), S.spellMode, Math.floor(S.xp / S.xpNeed * 50), S.formIdx, ROT].join("|");
   if (key === hudKey) return; hudKey = key;
   setText("h-hp", Math.ceil(S.crystal.hp)); setText("h-wave", S.endless ? S.wave : S.wave + "/" + ST.waves); setText("h-lv", S.level); setText("h-dust", S.dust);
   setText("h-next", "下一波 " + nx); $("h-xpf").style.width = Math.min(100, S.xp / S.xpNeed * 100).toFixed(1) + "%";
@@ -7721,7 +7762,7 @@ function updateHud() {
   setText("h-cd-heal", noSp ? "禁用" : hl > 0 ? hl + "s" : "就绪"); $("h-heal").classList.toggle("rdy", !noSp && hl <= 0);
   setText("h-ultp", st + "%"); $("h-ult").classList.toggle("rdy", ultReady());
   setText("h-call", S.spawnQueue.length || S.enemies.length ? "叠波" : "出击"); $("h-call").disabled = !canCallWave();
-  setText("h-auto", S.autoWave ? "自动·开" : "自动·关"); setText("h-speed", S.speed + "×"); setText("h-pause", S.paused ? "继续" : "暂停");
+  setText("h-auto", (S.autoWave ? "自动·开" : "自动·关").replace("·", ROT ? "\n" : "·")); setText("h-speed", S.speed + "×"); setText("h-pause", S.paused ? "继续" : "暂停");
   setText("h-form", formOf().name);
 }
 // ---------- 竖屏信息区 ----------
@@ -8890,8 +8931,14 @@ function fpsTick(now, ms) {
   el.textContent = `${Math.round(fpsN * 1000 / Math.max(1, now - fpsT))} FPS · 平均 ${(fpsMs / fpsN).toFixed(1)}ms · 最差 ${fpsMax.toFixed(0)}ms\n画质 ${GFX.name}${gfxSel < 0 ? "（自动）" : ""} · 敌 ${S.enemies.length} · 特效 ${S.fx.length}`;
   fpsT = now; fpsN = 0; fpsMs = 0; fpsMax = 0;
 }
+// 一帧里哪怕出了错也要接着排下一帧，否则画面会整个停住（看上去就是黑屏 / 卡死）；错误只在控制台里报，前 3 次
+let frameErrs = 0;
 function frame(now) {
-  if (OPT.eco && now - last < 30) { requestAnimationFrame(frame); return; }   // 省电：最多 30 帧
+  try { frameBody(now); } catch (e) { if (frameErrs++ < 3) setTimeout(() => { throw e; }); }
+  requestAnimationFrame(frame);
+}
+function frameBody(now) {
+  if (OPT.eco && now - last < 30) return;   // 省电：最多 30 帧
   const dt = Math.min(0.1, (now - last) / 1000); fpsTick(now, (now - last)); last = now;
   adaptGfx(dt);
   if (S.slowCd > 0) S.slowCd -= dt;
@@ -8905,9 +8952,8 @@ function frame(now) {
   }
   if (!S.offer && !S.shop && !S.cine && !S.event && S.pending > 0 && !S.over && !dlg && !menuOpen) { const mr = S.forceRare || 0; S.forceRare = 0; openOffer(mr, true); }
   handleEvents();
-  fitCheck(now); render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateUnitCards(now); updateCrystalBars(); updateTut(dt); updateDlg(dt); animRoster(now);
+  fitCheck(now); mapGuard(now); render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateUnitCards(now); updateCrystalBars(); updateTut(dt); updateDlg(dt); animRoster(now);
   if (!dlg) checkOver();
-  requestAnimationFrame(frame);
 }
 
 applyGfx(loadSave().gfx);
@@ -8915,7 +8961,7 @@ newRun(0, { perks: loadSave().perks, charLv: charLevels(), charTal: loadSave().t
 applySpell2(OPT.sp2);
 buildSpells();
 resize();
-window.addEventListener("resize", resize);
+window.addEventListener("resize", resizeSoon);
 showLevels();
 showNews();
 window.__td = {
@@ -8924,6 +8970,10 @@ window.__td = {
   setFocus, FORMS, AFFIX, cycleForm, setSlot, clearSlot, arrange, formOf, callWaveEarly, toggleAutoWave, cardPool,
 };
 // 切到别的标签页或后台时自动暂停，回来不会被偷袭
+// 从后台回来：离屏画布可能被系统清空，重画底图再重排一次
+const reviveView = () => { mapFor = -1; resizeSoon(); };
+window.addEventListener("pageshow", reviveView);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) reviveView(); });
 document.addEventListener("visibilitychange", () => { if (document.hidden && S && !S.over && !S.paused && !menuOpen && !dlg && (S.wave > 0 || S.kills > 0)) togglePause(); });
 requestAnimationFrame(frame);
 </script>

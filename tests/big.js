@@ -45,4 +45,31 @@ for (const [w, h, wantRot] of [[390, 844, true], [844, 390, false]]) {
   check(r.rot && r.bad.length === 0, '竖屏大画面下 9 张地图跑 10 秒 + 首领演出都能画', r);
   await p.context().close();
 }
+// 画面占比：iPhone Safari 可视区大约 390×750，战场至少占宽度 80%，两侧的空位不是纯黑（有地图背景）
+{
+  const p = await prep(390, 750);
+  const r = await p.evaluate(() => { const c = cv.getBoundingClientRect(); return { rot: ROT, frac: c.width / innerWidth, bg: document.querySelector('.stage').style.backgroundImage.length > 20 }; });
+  check(r.rot && r.frac >= 0.8, `390×750 战场占宽度 ${(r.frac * 100).toFixed(0)}%（要求 ≥ 80%）`, r);
+  check(r.bg, '战场两侧铺了模糊地图背景，不是纯黑');
+  // 「更多」里的阵型 / 选关 / 退出点得到
+  await p.click('#h-more'); await p.waitForTimeout(80);
+  const more = await p.evaluate(() => [...document.querySelectorAll('#hud-more button')].map(b => { const q = b.getBoundingClientRect(), el = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return q.width > 30 && q.top >= 0 && q.bottom <= innerHeight && (el === b || b.contains(el)); }));
+  check(more.length === 3 && more.every(Boolean), '更多菜单里 3 个按钮都在屏内、点得到', more);
+  await p.click('#h-more'); await p.waitForTimeout(80);
+  check(!(await p.evaluate(() => $('hud-more').classList.contains('open'))), '再点一下「更多」收起');
+  // 视口高度来回抖几次（地址栏收放）、队员数变化：不能来回切横竖版，也不能留空白
+  const flips = await p.evaluate(async () => { let n = 0, prev = ROT; for (let i = 0; i < 12; i++) { window.dispatchEvent(new Event('resize')); await new Promise(r => setTimeout(r, 60)); if (ROT !== prev) { n++; prev = ROT; } } return n; });
+  check(flips === 0, '连发 12 次 resize，横竖版不来回切', flips);
+  for (const h of [748, 752, 750, 746, 750]) { await p.setViewportSize({ width: 390, height: h }); await p.waitForTimeout(120); }
+  check(await p.evaluate(() => ROT), '视口高度小幅抖动后仍是竖屏大画面');
+  // 黑屏防护 1：离屏底图被系统清空后，2 秒内自动重画
+  await p.evaluate(() => { mctx.clearRect(0, 0, LW, LH); });
+  await p.waitForTimeout(2600);
+  check(await p.evaluate(() => mctx.getImageData((LW / 2) | 0, (LH / 2) | 0, 1, 1).data[3] === 255), '底图被清空后会自动重画（防 iOS 回收画布导致地图变黑）');
+  // 黑屏防护 2：某一帧里出错，后面的帧照样继续
+  const n = await p.evaluate(async () => { let n = 0; const o = window.updatePInfo; window.updatePInfo = () => { n++; throw new Error('boom'); }; await new Promise(r => setTimeout(r, 400)); window.updatePInfo = o; return n; });
+  check(n >= 5, `帧里报错后主循环没有停（出错帧数 ${n}）`, n);
+  await p.context().close();
+}
+for (let i = errs.length - 1; i >= 0; i--) if (errs[i] === 'boom') errs.splice(i, 1);
 noErrors(errs); report('big'); await b.close(); })();

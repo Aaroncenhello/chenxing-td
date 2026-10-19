@@ -357,13 +357,15 @@ function maybeImm() { if (!immOff && isPhone() && !isImm()) setImm(true); }
 $("btn-full").addEventListener("click", () => setImm(!isImm()));
 $("hud").addEventListener("click", ev => {
   const b = ev.target.closest("[data-h]"); if (!b || !S) return;
-  const h = b.dataset.h;
+  const h = b.dataset.h, more = $("hud-more");
+  if (more && h !== "more") more.classList.remove("open");
   if (h === "meteor" || h === "heal") pressSpell(h);
   else if (h === "ult") castUlt();
   else if (h === "call") callWaveEarly();
   else if (h === "auto") $("btn-auto").click();
   else if (h === "speed") toggleSpeed();
   else if (h === "pause") togglePause();
+  else if (h === "more") more.classList.toggle("open");
   else if (h === "form") cycleForm();
   else if (h === "menu") showLevels();
   else if (h === "exit") setImm(false);
@@ -377,7 +379,7 @@ function updateHud() {
   const m = Math.ceil(S.spells.meteor || 0), hl = Math.ceil(S.spells.heal || 0), st = Math.floor(S.star / ULT.max * 100);
   const waiting = S.wave < totalWaves() && !S.spawnQueue.length;
   const nx = waiting ? (S.autoWave ? Math.ceil(Math.max(0, S.nextWaveIn)) + "s" : "手动") : S.spawnQueue.length ? "出怪 " + S.spawnQueue.length : "剩 " + S.enemies.length;
-  const key = [Math.ceil(S.crystal.hp), S.wave, S.level, S.dust, nx, m, hl, st, S.speed, S.paused, S.autoWave, canCallWave(), S.spellMode, Math.floor(S.xp / S.xpNeed * 50), S.formIdx].join("|");
+  const key = [Math.ceil(S.crystal.hp), S.wave, S.level, S.dust, nx, m, hl, st, S.speed, S.paused, S.autoWave, canCallWave(), S.spellMode, Math.floor(S.xp / S.xpNeed * 50), S.formIdx, ROT].join("|");
   if (key === hudKey) return; hudKey = key;
   setText("h-hp", Math.ceil(S.crystal.hp)); setText("h-wave", S.endless ? S.wave : S.wave + "/" + ST.waves); setText("h-lv", S.level); setText("h-dust", S.dust);
   setText("h-next", "下一波 " + nx); $("h-xpf").style.width = Math.min(100, S.xp / S.xpNeed * 100).toFixed(1) + "%";
@@ -386,7 +388,7 @@ function updateHud() {
   setText("h-cd-heal", noSp ? "禁用" : hl > 0 ? hl + "s" : "就绪"); $("h-heal").classList.toggle("rdy", !noSp && hl <= 0);
   setText("h-ultp", st + "%"); $("h-ult").classList.toggle("rdy", ultReady());
   setText("h-call", S.spawnQueue.length || S.enemies.length ? "叠波" : "出击"); $("h-call").disabled = !canCallWave();
-  setText("h-auto", S.autoWave ? "自动·开" : "自动·关"); setText("h-speed", S.speed + "×"); setText("h-pause", S.paused ? "继续" : "暂停");
+  setText("h-auto", (S.autoWave ? "自动·开" : "自动·关").replace("·", ROT ? "\n" : "·")); setText("h-speed", S.speed + "×"); setText("h-pause", S.paused ? "继续" : "暂停");
   setText("h-form", formOf().name);
 }
 // ---------- 竖屏信息区 ----------

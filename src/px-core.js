@@ -46,10 +46,10 @@ function resize() {
   const imm = document.body.classList.contains("imm"), port = imm && window.matchMedia("(orientation: portrait)").matches;
   // 竖屏大画面只在「转过来确实更大」的时候开：先试着开，量一下战场能有多大，没比不转大 12% 就退回横版布局
   if (port && OPT.big) {
-    setRot(true);
+    const was = ROT; setRot(true);
     const cs0 = getComputedStyle(stage), pH = parseFloat(cs0.paddingLeft) + parseFloat(cs0.paddingRight), pV = parseFloat(cs0.paddingTop) + parseFloat(cs0.paddingBottom);
     const k1 = Math.min((window.innerWidth - pH) / PW, (window.innerHeight - pV - bigUsed(stage, cs0) - 4) / PHt), k0 = (window.innerWidth - pH) / LW;
-    if (k1 < k0 * 1.12) setRot(false);
+    if (k1 < k0 * (was ? 1.0 : 1.12)) setRot(false);   // 开要大 12% 以上，已经开着就只要不比横版小；边缘上不来回跳
   } else setRot(false);
   if (imm) {
     const vw = window.innerWidth, vh = window.innerHeight;
@@ -69,9 +69,20 @@ function resize() {
   // 竖屏时提示（新敌人、遗物……）弹在按钮区正上方，盖住的是信息区最下面的卡牌行，不挡战场和按钮
   if (port) { const hl = document.querySelector(ROT ? ".pinfo" : ".hud-l"); document.body.style.setProperty("--toast-bottom", Math.round(window.innerHeight - (hl ? hl.getBoundingClientRect().top : window.innerHeight * 0.6) + 6) + "px"); }
   DPR = Math.min(window.devicePixelRatio || 1, 2);
-  tx.width = Math.round(PW * k * DPR); tx.height = Math.round(PHt * k * DPR);
+  const tw = Math.round(PW * k * DPR), th_ = Math.round(PHt * k * DPR);
+  if (tx.width !== tw) tx.width = tw; if (tx.height !== th_) tx.height = th_;   // 没变就别动：给画布赋宽高会清空并重新分配，iOS 上反复分配容易黑屏
   if (S && mapFor !== mapKey()) { drawMap(); mapFor = mapKey(); }
+  if (S) { try { render(performance.now()); } catch (e) { } }   // 画布被清过，马上补画一帧，不留空白
   for (const D of UNITS) drawPortrait(D);
+}
+// 屏幕尺寸变化（iOS 地址栏收放会连发好几次）合并成每帧最多重排一次
+let resizeQ = 0;
+function resizeSoon() { if (resizeQ) return; resizeQ = requestAnimationFrame(() => { resizeQ = 0; resize(); }); }
+// 静态底图是离屏画布，iOS 内存紧张或切后台回来时可能被系统清空（地图变黑）：每 2 秒抽一个点，发现是空的就重画
+let mapGuardAt = 0;
+function mapGuard(now) {
+  if (now - mapGuardAt < 2000) return; mapGuardAt = now;
+  try { if (mctx.getImageData((LW / 2) | 0, (LH / 2) | 0, 1, 1).data[3] === 0) mapFor = -1; } catch (e) { }
 }
 
 // ---------- 像素工具 ----------
@@ -234,6 +245,17 @@ const isPath = (c, r) => ".SRB=".includes(tileAt(c, r));
 const LAVA = new Set();
 let LAVAPOS = [];   // 熔岩格坐标，画发光用
 
+// 竖屏大画面：战场两侧的空位铺一层放大、压暗的地图当背景，不再是一片黑
+let bgFillCv = null;
+function updateBgFill() {
+  const st = document.querySelector(".stage"); if (!st) return;
+  if (!ROT) { st.style.backgroundImage = ""; return; }
+  try {
+    if (!bgFillCv) { bgFillCv = document.createElement("canvas"); bgFillCv.width = 36; bgFillCv.height = 64; }
+    const g = bgFillCv.getContext("2d"), sc = 36 / LH; g.imageSmoothingEnabled = true; g.setTransform(0, sc, -sc, 0, LH * sc, 0); g.drawImage(mapCv, 0, 0);
+    st.style.backgroundImage = `linear-gradient(rgba(5,6,10,.62),rgba(5,6,10,.62)),url(${bgFillCv.toDataURL()})`;
+  } catch (e) { st.style.backgroundImage = ""; }
+}
 function drawMap() {
   const g = mctx, th = TH(), rnd = rng(9173 + S.stage * 101);
   LAVA.clear();
@@ -289,6 +311,7 @@ function drawMap() {
     const draw = () => (p.rock ? drawRock(g, p, th) : (PROP[th.prop] || drawTree)(g, p));
     if (ROT) { g.save(); g.translate(p.x, p.y); g.rotate(-Math.PI / 2); g.translate(-p.x, -p.y); draw(); g.restore(); } else draw();   // 底图整体转 90° 贴上去，所以这里先反转一次，贴上去就是直立的
   }
+  updateBgFill();
 }
 // 地面小细节：按主题撒裂纹 / 落叶 / 碎石 / 霜点 / 水洼，让大片空地有点东西（画进静态地图，不花每帧的钱）
 const THEME_DECAL = { forest: ["leaf", "puddle"], snow: ["frost"], lava: ["crack"], grave: ["crack", "bone"], desert: ["pebble"], sky: ["leaf"], cave: ["pebble"], abyss: ["crack"], ice: ["frost"], mech: ["bolt", "crack"], blood: ["crack"], star: ["frost"], ash: ["crack", "pebble"], ruin: ["crack", "pebble"], storm: ["puddle"], dawn: ["leaf"], tide: ["pebble", "puddle"], sunken: ["puddle", "bubble"], mirror: ["frost"], silent: ["frost"] };
