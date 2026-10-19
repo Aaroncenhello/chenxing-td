@@ -48,11 +48,12 @@ const { check, noErrors, report } = require('./lib');
       const bad = [...document.querySelectorAll('#hud button')].filter(b => b.offsetParent).map(b => { const q = b.getBoundingClientRect(); const el = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2);
         return b.dataset.h + ((q.top >= 0 && q.bottom <= innerHeight && q.left >= 0 && q.right <= innerWidth) ? '' : ':OUT') + (el && (el === b || b.contains(el)) ? '' : ':blocked') + (q.height >= 44 ? '' : ':small'); }).filter(x => x.includes(':'));
       const hl = document.querySelector('.hud-l').getBoundingClientRect();
-      return { imm: document.body.classList.contains('imm'), fieldW: Math.round(sc.width), fieldBottom: Math.round(sc.bottom), btnTop: Math.round(hl.top), bad };
+      return { imm: document.body.classList.contains('imm'), rot: ROT, fieldW: Math.round(sc.width), fieldH: Math.round(sc.height), fieldBottom: Math.round(sc.bottom), btnTop: Math.round(hl.top), bad };
     });
     console.log(`竖屏 ${w}×${h}:`, JSON.stringify(r));
     check(r.imm, `竖屏 ${w}×${h} 开局自动进入全屏布局`);
-    check(r.fieldW >= w - 2, `竖屏 ${w}×${h} 战场撑满屏幕宽度`, r.fieldW);
+    check(r.rot ? r.fieldW * r.fieldH >= w * w * 9 / 16 * 1.25 : r.fieldW >= w - 2, `竖屏 ${w}×${h} ${r.rot ? '竖屏大画面：战场面积比横版大 25% 以上' : '横版布局：战场撑满屏幕宽度'}`, r);
+    if (h >= 667) check(r.rot, `竖屏 ${w}×${h} 这个尺寸会开竖屏大画面`, r);
     check(r.fieldBottom <= r.btnTop, `竖屏 ${w}×${h} 战场和按钮区不重叠`, r);
     check(r.bad.length === 0, `竖屏 ${w}×${h} 每个按钮都在屏幕内、没被挡住、够大好点`, r.bad);
     // 翻牌时新敌人提示不能压在卡上

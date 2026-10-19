@@ -5,7 +5,7 @@
 const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true, lit: true }];
 // 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
 const OPT_KEY = "chenxing-td-opts";
-const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, fps: !!v.fps, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, fps: false, sp2: 0, ct: [] }; } })();
+const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, fps: !!v.fps, big: v.big !== false, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, fps: false, big: true, sp2: 0, ct: [] }; } })();
 function setOpt(k, v) { OPT[k] = typeof v === "number" || Array.isArray(v) ? v : !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {

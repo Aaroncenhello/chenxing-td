@@ -1,26 +1,63 @@
 
 // ================= 像素画面：原生 640×360，角色用 Scale2x 放大 =================
-const T = 40, PW = COLS * T, PHt = ROWS * T, PLAT = 6;
+const T = 40, LW = COLS * T, LH = ROWS * T, PLAT = 6;   // LW/LH：地图本身的像素尺寸（横版 640×360）
+// 竖屏大画面：整个战场在显示层转 90°（逻辑坐标一点不动）。PW/PHt 是「画布（视图）」的尺寸，转了以后宽高对调；
+// ROT 开着时，tpx/unitFeet/foeFeet 直接给出转过之后的坐标，角色、特效、文字都保持直立；
+// 只有按格子画的地图层（底图、水、熔岩、地面细节）在 WP（世界层）里整体套一次旋转矩阵。
+let PW = LW, PHt = LH, ROT = false, WP = false;
+const vpt = (lx, ly) => (ROT && !WP ? [LH - ly, lx] : [lx, ly]);                   // 横版像素 → 视图像素
+const vdir = (dx, dy) => (ROT && !WP ? [-dy, dx] : [dx, dy]);                      // 横版方向向量 → 视图方向向量
+const upright = (cx, cy, fn) => { if (!(ROT && WP)) { fn(); return; } ctx.save(); ctx.translate(cx, cy); ctx.rotate(-Math.PI / 2); ctx.translate(-cx, -cy); fn(); ctx.restore(); };   // 世界层里把一块东西转回直立
 const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
 const tx = document.getElementById("tx"), tctx = tx.getContext("2d");
 cv.width = PW; cv.height = PHt;
-const mapCv = document.createElement("canvas"); mapCv.width = PW; mapCv.height = PHt;
+const mapCv = document.createElement("canvas"); mapCv.width = LW; mapCv.height = LH;
 const mctx = mapCv.getContext("2d");
 let DPR = 1, mapFor = -1;
 const mapKey = () => (S ? S.stage + ":" + ST.theme + ":" + (S.seed || 0) + ":" + (S.gen ? 1 : 0) : -1);
 const OUT = "#1c1424";
 
+// 开 / 关竖屏大画面：换画布尺寸，重生成屏幕空间的环境粒子，暗角缓存作废
+function setRot(on) {
+  on = !!on; if (on === ROT) return;
+  ROT = on; PW = on ? LH : LW; PHt = on ? LW : LH; document.body.classList.toggle("big", on);
+  cv.width = PW; cv.height = PHt;
+  for (const f of AMB) { f.x = Math.random() * PW; f.y = Math.random() * PHt; }
+  if (typeof vigFor !== "undefined") vigFor = null;
+}
+// 竖屏大画面：战场以外的所有排版元素（顶栏、信息条、按钮）加起来占多高
+let bigUsedLast = 0;
+function bigUsed(stage, cs) {
+  stage = stage || document.querySelector(".stage"); cs = cs || getComputedStyle(stage);
+  const gap = parseFloat(cs.rowGap) || 0, scr = document.getElementById("screen");
+  const items = [...stage.children].flatMap(el => (getComputedStyle(el).display === "contents" ? [...el.children] : [el])).filter(el => { const p = getComputedStyle(el); return el !== scr && p.display !== "none" && p.position !== "absolute" && p.position !== "fixed" && el.offsetHeight > 0; });
+  return (bigUsedLast = items.reduce((a, el) => { const p = getComputedStyle(el); return a + el.offsetHeight + (parseFloat(p.marginTop) || 0) + (parseFloat(p.marginBottom) || 0); }, 0) + gap * items.length);
+}
+// 队员数、羁绊条变化会让信息条的高度变，每 0.4 秒看一眼，变了就重新排
+let fitAt = 0;
+function fitCheck(now) {
+  if (!ROT || now - fitAt < 400) return; fitAt = now;
+  const before = bigUsedLast; if (Math.abs(bigUsed() - before) > 1) resize();
+}
 function resize() {
   const stage = document.querySelector(".stage");
   let w = (stage && stage.clientWidth) || 960, k = w / PW;
   // 沉浸全屏：在整个窗口里等比缩放。横屏左右留出按钮的位置；竖屏宽度撑满，高度给顶栏和下面的按钮区留位置（布局见 CSS 的 orientation:portrait）
   const imm = document.body.classList.contains("imm"), port = imm && window.matchMedia("(orientation: portrait)").matches;
+  // 竖屏大画面只在「转过来确实更大」的时候开：先试着开，量一下战场能有多大，没比不转大 12% 就退回横版布局
+  if (port && OPT.big) {
+    setRot(true);
+    const cs0 = getComputedStyle(stage), pH = parseFloat(cs0.paddingLeft) + parseFloat(cs0.paddingRight), pV = parseFloat(cs0.paddingTop) + parseFloat(cs0.paddingBottom);
+    const k1 = Math.min((window.innerWidth - pH) / PW, (window.innerHeight - pV - bigUsed(stage, cs0) - 4) / PHt), k0 = (window.innerWidth - pH) / LW;
+    if (k1 < k0 * 1.12) setRot(false);
+  } else setRot(false);
   if (imm) {
     const vw = window.innerWidth, vh = window.innerHeight;
     if (port) {
       const cs = getComputedStyle(stage), hOf = sel => (document.querySelector(sel) || {}).offsetHeight || 0;
       const padH = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight), padV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
-      const room = vh - padV - hOf(".hud-top") - hOf(".hud-l") - hOf(".hud-r") - 3 * 8 - 16;
+      let room = vh - padV - hOf(".hud-top") - hOf(".hud-l") - hOf(".hud-r") - 3 * 8 - 16;
+      if (ROT) room = vh - padV - bigUsed(stage, cs) - 4;   // 竖屏大画面：战场以外的东西量一遍实际高度，剩下的全给战场
       k = Math.min((vw - padH) / PW, Math.max(0.2, room / PHt));
     } else k = Math.min(vw / PW, vh / PHt);
   }
@@ -30,7 +67,7 @@ function resize() {
   scr.style.width = Math.floor(PW * k) + "px"; scr.style.height = Math.floor(PHt * k) + "px";
   document.body.style.setProperty("--fw", Math.floor(PW * k) + "px");   // 横屏全屏时左右黑边的宽度靠它算（羁绊看板）
   // 竖屏时提示（新敌人、遗物……）弹在按钮区正上方，盖住的是信息区最下面的卡牌行，不挡战场和按钮
-  if (port) { const hl = document.querySelector(".hud-l"); document.body.style.setProperty("--toast-bottom", Math.round(window.innerHeight - (hl ? hl.getBoundingClientRect().top : window.innerHeight * 0.6) + 6) + "px"); }
+  if (port) { const hl = document.querySelector(ROT ? ".pinfo" : ".hud-l"); document.body.style.setProperty("--toast-bottom", Math.round(window.innerHeight - (hl ? hl.getBoundingClientRect().top : window.innerHeight * 0.6) + 6) + "px"); }
   DPR = Math.min(window.devicePixelRatio || 1, 2);
   tx.width = Math.round(PW * k * DPR); tx.height = Math.round(PHt * k * DPR);
   if (S && mapFor !== mapKey()) { drawMap(); mapFor = mapKey(); }
@@ -200,9 +237,9 @@ let LAVAPOS = [];   // 熔岩格坐标，画发光用
 function drawMap() {
   const g = mctx, th = TH(), rnd = rng(9173 + S.stage * 101);
   LAVA.clear();
-  rect(g, 0, 0, PW, PHt, th.g[0]);
-  for (let i = 0; i < 9000; i++) dot(g, rnd() * PW, rnd() * PHt, th.g[i % 4]);
-  for (let i = 0; i < 900; i++) { const x = rnd() * PW, y = rnd() * PHt; rect(g, x, y, 1, 2, th.blade); dot(g, x + 1, y + 1, th.g[1]); }
+  rect(g, 0, 0, LW, LH, th.g[0]);
+  for (let i = 0; i < 9000; i++) dot(g, rnd() * LW, rnd() * LH, th.g[i % 4]);
+  for (let i = 0; i < 900; i++) { const x = rnd() * LW, y = rnd() * LH; rect(g, x, y, 1, 2, th.blade); dot(g, x + 1, y + 1, th.g[1]); }
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
     const ch = MAP[r][c], x = c * T, y = r * T;
     if (ch === "#") {
@@ -287,7 +324,7 @@ function drawWater(g, x, y, c, r, rnd, under) {
 // 天空：云海 + 浮岛底部的岩石
 function drawSkyVoid(g, x, y, c, r, rnd, under) {
   const band = ["#9ad4f4", "#8ccaf0", "#7ec0ec", "#72b6e6", "#68ace0", "#5ea2da", "#5698d4", "#4e8ece", "#4886c8"];
-  for (let yy = 0; yy < T; yy += 4) rect(g, x, y + yy, T, 4, band[Math.min(8, Math.floor((y + yy) / PHt * 9))]);
+  for (let yy = 0; yy < T; yy += 4) rect(g, x, y + yy, T, 4, band[Math.min(8, Math.floor((y + yy) / LH * 9))]);
   for (let i = 0; i < 3; i++) if (rnd() < 0.55) { const cx = x + 6 + rnd() * 28, cy = y + 8 + rnd() * 26, w = 8 + rnd() * 10;
     disc(g, cx, cy, w * 0.45, "#dff2fc"); disc(g, cx + w * 0.4, cy + 1, w * 0.35, "#eef8fe"); disc(g, cx - w * 0.4, cy + 2, w * 0.3, "#d2ecfa"); rect(g, cx - w * 0.6, cy + w * 0.25, w * 1.2, 2, "#c4e2f6"); }
   if (under) return;
@@ -540,11 +577,14 @@ function drawAmbient(now) {
       if ((t * 3 + c) % 2 < 0.3) { disc(ctx, c * T + 14 + (c * 7 % 12), r * T + 18, 2, "#ffe080"); }
     }
     if (ch === "S" || ch === "R") {
+      upright(x, y, () => {
       addGlow(x, y - 2, 30, "#ff3a9a", 0.3 + Math.sin(t * 3 + c) * 0.08);
       for (let yy = -14; yy <= 14; yy++) { const hw = R0(Math.sqrt(1 - (yy / 15) ** 2) * 10); rect(ctx, x - hw, y + yy - 2, hw * 2 + 1, 1, Math.abs(yy) > 11 ? "#3a0f2a" : "#12040e"); }
       for (let i = 0; i < 14; i++) { const a = t * 3 + i / 14 * 6.283; rect(ctx, x + Math.cos(a) * 10, y - 2 + Math.sin(a) * 14, 2, 2, i % 2 ? "#ff5a9a" : "#ffc0e0"); }
       for (let i = 0; i < 6; i++) { const a = -t * 5 + i / 6 * 6.283; dot(ctx, x + Math.cos(a) * 4, y - 2 + Math.sin(a) * 6, "#e060c0"); }
+      });
     } else if (ch === "B") {
+      upright(x, y, () => {
       const low = S.crystal.hp < S.crystal.maxHp * 0.3, bob = R0(Math.sin(t * 2.5) * 2), cy = y - 14 + bob;
       const A = low ? ["#ffe0d8", "#ff6a5a", "#a02030"] : ["#e8f8ff", "#62b4ff", "#2a5aa8"];
       // 光柱
@@ -566,6 +606,7 @@ function drawAmbient(now) {
       if (hf < 0.6) { line(ctx, x - 2, cy - 14, x + 1, cy - 8, OUT, 1); line(ctx, x + 1, cy - 8, x - 1, cy - 3, OUT, 1); }
       if (hf < 0.3) { line(ctx, x + 4, cy - 12, x + 2, cy - 5, OUT, 1); line(ctx, x - 4, cy - 6, x - 6, cy - 1, OUT, 1); if ((t * 6 | 0) % 2) dot(ctx, x + 6 - ((t * 20) % 8 | 0), cy + ((t * 14) % 16 | 0), "#ffb040"); }
       if (S.crystal.hitT > 0 && !OPT.calm) { ctx.globalAlpha = Math.min(0.6, S.crystal.hitT * 2); rect(ctx, x - 9, cy - 22, 19, 26, "#ffffff"); ctx.globalAlpha = 1; }
+      });
     }
   }
   // 墙上的火把 / 灯笼：固定位置（按格子坐标算），火苗两帧闪动 + 一点光
@@ -573,16 +614,22 @@ function drawAmbient(now) {
   if (TORCH) for (let r = 0; r < ROWS - 1; r++) for (let c = 0; c < COLS; c++) {
     if (MAP[r][c] !== "#" || MAP[r + 1][c] === "#" || (c * 7 + r * 13) % 9 !== 0) continue;
     const x = c * T + 20, y = r * T + 33, fl = (t * 7 + c) % 2 < 1;
-    rect(ctx, x - 1, y, 3, 5, "#3a2a1a"); rect(ctx, x - 2, y - 1, 5, 2, "#5a4a3a");
-    rect(ctx, x - 1, y - (fl ? 5 : 4), 3, fl ? 4 : 3, TORCH[0]); dot(ctx, x, y - (fl ? 4 : 3), TORCH[1]);
+    upright(x, y, () => {
+      rect(ctx, x - 1, y, 3, 5, "#3a2a1a"); rect(ctx, x - 2, y - 1, 5, 2, "#5a4a3a");
+      rect(ctx, x - 1, y - (fl ? 5 : 4), 3, fl ? 4 : 3, TORCH[0]); dot(ctx, x, y - (fl ? 4 : 3), TORCH[1]);
+    });
     addGlow(x, y - 3, 24, TORCH[0], 0.22 + Math.sin(t * 9 + c) * 0.05);
   }
   // 雷暴天气：远处闪电，纯画面效果，用固定周期而非随机避免闪烁不受控
   if (theme === "storm") {
     const lt = t % 6.4;
-    if (lt < 0.08) { ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.fillRect(0, 0, PW, PHt); }
-    else if (lt < 0.16) { ctx.fillStyle = "rgba(255,255,255,.18)"; ctx.fillRect(0, 0, PW, PHt); }
+    if (lt < 0.08) { ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.fillRect(0, 0, LW, LH); }
+    else if (lt < 0.16) { ctx.fillStyle = "rgba(255,255,255,.18)"; ctx.fillRect(0, 0, LW, LH); }
   }
+}
+// 屏幕空间的环境粒子（雪、雨、萤火、灰烬……）：永远在「视图」里直立地飘，不跟着地图转
+function drawAmbientParticles(now) {
+  const t = now / 1000, theme = ST.theme;
   if (GFX.amb) for (const f of AMB) {
     if (theme === "snow") { const y = (f.y + t * 18 * f.s) % PHt, x = f.x + Math.sin(t + f.p) * 6; dot(ctx, x, y, "#ffffff"); if (f.s > 0.6) dot(ctx, x + 1, y, "#e0ecff"); }
     else if (theme === "ice") {

@@ -12,9 +12,17 @@ function pixNum(g, str, x, y, col, k) {
     }
   }
 }
-const unitFeet = u => [R0(u.x * T + 20), R0(u.y * T + 30)];
-const foeFeet = e => [R0(e.x * T + 20), R0(e.y * T + 30)];
-const tpx = (x, y) => [R0(x * T + 20), R0(y * T + 18)];
+const unitFeet = u => vpt(R0(u.x * T + 20), R0(u.y * T + 30));
+const foeFeet = e => vpt(R0(e.x * T + 20), R0(e.y * T + 30));
+const tpx = (x, y) => vpt(R0(x * T + 20), R0(y * T + 18));
+const tpxL = (x, y) => [R0(x * T + 20), R0(y * T + 18)];   // 世界层（地面痕迹画布）要用横版坐标
+// 竖屏大画面里「朝哪边看」按屏幕横向算：朝目标（没有目标就朝晨星碑），离得太近就保持上一次的朝向
+function vFace(o) {
+  const t = o.target && o.target.x != null ? o.target : CRYSTAL, sdx = -(t.y - o.y);
+  if (Math.abs(sdx) > 0.06) o.vf = sdx > 0 ? 1 : -1;
+  return o.vf || 1;
+}
+function withFace(o, fn, now) { if (!ROT) return fn(o, now); const f = o.face; o.face = vFace(o); fn(o, now); o.face = f; }
 // 10.0：固定站位的小旗子 + 拖动时的落点预览
 function drawStations(t) {
   for (const u of S.units) {
@@ -167,7 +175,7 @@ function drawShot(s) {
   const [x, y] = tpx(s.x, s.y), k = s.kind, col = SHOT_COL[k] || "#ffffff";
   s.trail.forEach((p, i) => { const [a, b] = tpx(p[0], p[1]); if (k === "gunner") { if (i % 2) rect(ctx, a - 1, b - 1, 3, 3, "rgba(160,150,140,.6)"); } else if (i % 2 === 0) rect(ctx, a, b, 2, 2, i > 3 ? col : "rgba(255,255,255,.45)"); });
   if (k === "archer") {
-    const dx = s.target.x - s.x, dy = s.target.y - 0.1 - s.y, d = Math.hypot(dx, dy) || 1;
+    const [dx, dy] = vdir(s.target.x - s.x, s.target.y - 0.1 - s.y), d = Math.hypot(dx, dy) || 1;
     line(ctx, x - dx / d * 12, y - dy / d * 12, x, y, "#c8a070", 2); rect(ctx, x - 1, y - 1, 3, 3, "#ffffff");
   } else if (k === "priest") {
     rect(ctx, x - 4, y - 1, 9, 3, col); rect(ctx, x - 1, y - 4, 3, 9, col); rect(ctx, x - 1, y - 1, 3, 3, "#ffffff");
@@ -234,7 +242,7 @@ function drawFx(f, now) {
   } else if (f.kind === "parts") {
     for (const p of f.parts) {
       if (k > 0.7 && (t * 20 | 0) % 2) continue;
-      const x = (f.x + p.vx * f.t) * T + 20, y = (f.y + p.vy * f.t + 2.2 * f.t * f.t) * T + 16, sz = p.s > 0.065 && k < 0.5 ? 3 : 2;
+      const [x, y] = vpt((f.x + p.vx * f.t) * T + 20, (f.y + p.vy * f.t + 2.2 * f.t * f.t) * T + 16), sz = p.s > 0.065 && k < 0.5 ? 3 : 2;
       rect(ctx, x, y, sz, sz, f.color);
     }
   } else if (f.kind === "pillar") {
@@ -393,7 +401,7 @@ function drawHazAir(t) {
     if (h.type !== "beam") continue;
     const [x, y] = tpx(h.x, h.y), L = (h.len || 5) * T;
     for (let i = 0; i < (h.n || 2); i++) {
-      const a = h.ang + i / (h.n || 2) * Math.PI * 2, ux = Math.cos(a), uy = Math.sin(a) * 0.72;
+      const a = h.ang + i / (h.n || 2) * Math.PI * 2, [vx_, vy_] = vdir(Math.cos(a), Math.sin(a)), ux = vx_, uy = ROT ? vy_ : vy_ * 0.72;
       ctx.globalAlpha = 0.45;
       for (let d = 12; d < L; d += 3) { const px_ = x + ux * d, py_ = y + 8 + uy * d; rect(ctx, px_ - 1, py_ - 1, 3, 3, h.color); }
       ctx.globalAlpha = 1;
@@ -549,7 +557,7 @@ function drawWavePreview(t) {
   const col = WAVE_COL[info.kind], soon = S.autoWave !== false && S.nextWaveIn <= 3, pulse = 0.5 + Math.sin(t * (soon ? 12 : 5)) * 0.5;
   for (const [pi] of info.ports) {
     const p = PORTALS[pi]; if (!p) continue;
-    const [x, y] = tpx(p.x, p.y), dx = CRYSTAL.x - p.x, dy = CRYSTAL.y - p.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
+    const [x, y] = tpx(p.x, p.y), [dx, dy] = vdir(CRYSTAL.x - p.x, CRYSTAL.y - p.y), d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d;
     // 传送门外圈脉动
     ctx.globalAlpha = 0.35 + pulse * 0.45; ring(ctx, x, y + 6, 15 + pulse * 3, 10 + pulse * 2, col); ctx.globalAlpha = 1;
     // 往晨星碑方向走的三道箭头
@@ -662,7 +670,7 @@ function drawVignette() {
   const key = mapKey();
   if (vigFor !== key) {
     vigFor = key; vigCv = vigCv || document.createElement("canvas"); vigCv.width = PW; vigCv.height = PHt;
-    const g = vigCv.getContext("2d"), grad = g.createRadialGradient(PW / 2, PHt / 2, PHt * 0.38, PW / 2, PHt / 2, PW * 0.62);
+    const g = vigCv.getContext("2d"), grad = g.createRadialGradient(PW / 2, PHt / 2, LH * 0.38, PW / 2, PHt / 2, LW * 0.62);
     grad.addColorStop(0, "rgba(0,0,0,0)"); grad.addColorStop(1, "rgba(4,3,10,.5)");
     g.fillStyle = grad; g.fillRect(0, 0, PW, PHt);
     const base = TH().g[0]; g.fillStyle = hexA(/^#[0-9a-f]{6}$/i.test(base) ? base : "#40a040", 0.1); g.fillRect(0, 0, PW, PHt);
@@ -673,12 +681,12 @@ function drawVignette() {
 let decalCv = null, decalFor = null, decalFadeAt = 0;
 function decalCtx() {
   const key = mapKey();
-  if (!decalCv) { decalCv = document.createElement("canvas"); decalCv.width = PW; decalCv.height = PHt; }
-  if (decalFor !== key) { decalFor = key; decalCv.getContext("2d").clearRect(0, 0, PW, PHt); }
+  if (!decalCv) { decalCv = document.createElement("canvas"); decalCv.width = LW; decalCv.height = LH; }
+  if (decalFor !== key) { decalFor = key; decalCv.getContext("2d").clearRect(0, 0, LW, LH); }
   return decalCv.getContext("2d");
 }
 function stampDecal(x, y, r, color) {
-  const g = decalCtx(), [px_, py_] = tpx(x, y), c = (color || "#ff8a3a").toLowerCase();
+  const g = decalCtx(), [px_, py_] = tpxL(x, y), c = (color || "#ff8a3a").toLowerCase();
   const rgb = parseInt(c.slice(1), 16) || 0, R_ = rgb >> 16, G_ = (rgb >> 8) & 255, B_ = rgb & 255;
   const col = B_ > R_ + 20 && B_ > 180 ? "rgba(225,245,255,.32)" : G_ > R_ + 20 && G_ > B_ ? "rgba(70,100,35,.4)" : R_ > 180 ? "rgba(26,12,6,.5)" : "rgba(10,8,16,.4)";
   for (let i = 0; i < 5; i++) { const a = Math.random() * 6.283, d = Math.random() * r * T * 0.5; disc(g, px_ + Math.cos(a) * d, py_ + 8 + Math.sin(a) * d * 0.6, (0.35 + Math.random() * 0.4) * r * T * 0.5, col); }
@@ -690,7 +698,7 @@ function drawDecals(now) {
 }
 // 光斑：几块缓慢飘过的暖光，给地面一点光照变化
 function drawDapples(t) {
-  for (let i = 0; i < 2; i++) addGlow((t * (6 + i * 3) + i * 330) % (PW + 160) - 80, 100 + i * 140 + Math.sin(t * 0.3 + i) * 18, 80, "#fff2c0", 0.07);
+  for (let i = 0; i < 2; i++) addGlow((t * (6 + i * 3) + i * 330) % (LW + 160) - 80, 100 + i * 140 + Math.sin(t * 0.3 + i) * 18, 80, "#fff2c0", 0.07);
 }
 
 // ---------- 每帧绘制 ----------
@@ -704,10 +712,15 @@ function render(now) {
   const ox = amp ? R0((Math.random() - 0.5) * amp) : 0, oy = amp ? R0((Math.random() - 0.5) * amp) : 0;
   const zoom = 1 + (OPT.calm ? 0 : (S.zoomK || 0));   // 大招 / 击破首领：短促地往里顿一下镜头，加重打击感
   ctx.setTransform(1, 0, 0, 1, 0, 0); rect(ctx, 0, 0, PW, PHt, TH().bg);
-  ctx.setTransform(zoom, 0, 0, zoom, PW / 2 * (1 - zoom) + ox, PHt / 2 * (1 - zoom) + oy);
+  const bx = PW / 2 * (1 - zoom) + ox, by = PHt / 2 * (1 - zoom) + oy;
+  ctx.setTransform(zoom, 0, 0, zoom, bx, by);
+  // 世界层（按格子画的东西）：竖屏大画面时整体转 90°，横版坐标 (X,Y) → 视图 (LH−Y, X)
+  if (ROT) { ctx.transform(0, 1, -1, 0, LH, 0); WP = true; }
   ctx.drawImage(mapCv, 0, 0);
   if (GFX.lit) { drawDecals(now); drawDapples(t); }
   drawAmbient(now);
+  if (ROT) { ctx.setTransform(zoom, 0, 0, zoom, bx, by); WP = false; }
+  drawAmbientParticles(now);
   drawHazGround(t);
   drawGates(t);
   for (const p of S.pools) drawPool(p, t);
@@ -736,16 +749,16 @@ function render(now) {
   if (GFX.lit) {
     const [cx_, cy_] = tpx(CRYSTAL.x, CRYSTAL.y), low = S.crystal.hp < S.crystal.maxHp * 0.3;
     addGlow(cx_, cy_ - 4, 52, low ? "#ff6a5a" : "#62b4ff", 0.34 + Math.sin(t * 2.2) * 0.08);
-    for (const [c, r] of LAVAPOS) addGlow(c * T + 20, r * T + 20, 34, "#ff7a30", 0.22 + Math.sin(t * 2 + c) * 0.06);
+    for (const [c, r] of LAVAPOS) addGlow(...vpt(c * T + 20, r * T + 20), 34, "#ff7a30", 0.22 + Math.sin(t * 2 + c) * 0.06);
   }
   // 复用同一个数组装「按脚下 y 排序画」的列表，别每帧都 filter+map+spread 出一堆临时数组
   renderSortBuf.length = 0;
   for (const u of S.units) if (!u.dead) renderSortBuf.push({ y: unitFeet(u)[1], u, e: null });
   for (const e of S.enemies) if (!e.d.flying) renderSortBuf.push({ y: foeFeet(e)[1], u: null, e });
   renderSortBuf.sort((a, b) => a.y - b.y);
-  for (const it of renderSortBuf) it.u ? drawUnit(it.u, now) : drawEnemy(it.e, now);
+  for (const it of renderSortBuf) it.u ? withFace(it.u, drawUnit, now) : withFace(it.e, drawEnemy, now);
   for (const f of S.fx) if (f.kind === "corpse" || f.kind === "ucorpse" || f.kind === "shatter") drawFx(f, now);
-  for (const e of S.enemies) if (e.d.flying) drawEnemy(e, now);
+  for (const e of S.enemies) if (e.d.flying) withFace(e, drawEnemy, now);
   drawBlades(t);
   drawFocus(t);
   drawHazAir(t);
