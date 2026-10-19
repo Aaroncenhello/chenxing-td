@@ -17,6 +17,10 @@ const THUMB = {
   ruin: { g: "#5a5a52", p: "#8a8a7e", b: "#3a3a34", w: "#2f6ea8" },
   storm: { g: "#2e3446", p: "#48506a", b: "#181d28", w: "#2a4a8a" },
   dawn: { g: "#c8b488", p: "#e8dcb8", b: "#9a8660", w: "#5ab0d8" },
+  tide: { g: "#c8bc90", p: "#8a7a5a", b: "#6c8c92", w: "#3a9ac0" },
+  sunken: { g: "#2a4a52", p: "#5a6a60", b: "#142a30", w: "#58e0c8" },
+  mirror: { g: "#9aa4b8", p: "#d0d8e8", b: "#5e6880", w: "#a0e0ff" },
+  silent: { g: "#1c2030", p: "#3a4258", b: "#0e1220", w: "#8a96c0" },
 };
 function drawThumb(cvs, st) {
   const k = 4, g = cvs.getContext("2d"), th = THUMB[st.theme];
@@ -75,6 +79,24 @@ const abyssOpen = d => Math.min(ABYSS_MAX, abyssTop(d) + 1);
 function openOverlay(html) { rosterAnim = null; $("ovbox").classList.remove("res"); $("ovbox").innerHTML = html; $("overlay").hidden = false; $("overlay").scrollTop = 0; menuOpen = true; if (S) { S.selUnit = null; S.spellMode = null; } }
 function closeOverlay() { $("overlay").hidden = true; menuOpen = false; rosterAnim = null; }
 const chapterOf = i => CHAPTERS.reduce((k, c, j) => (i >= c.from ? j : k), 0);
+// 12.0 更新说明：每个版本只弹一次（单独的 localStorage 键）
+const NEWS_VER = "12.0";
+function showNews() {
+  let seen = ""; try { seen = localStorage.getItem("chenxing-td-news") || ""; } catch (e) { }
+  if (seen === NEWS_VER || !loadSave().tutorial) return false;
+  try { localStorage.setItem("chenxing-td-news", NEWS_VER); } catch (e) { }
+  openOverlay(`<h2>12.0 更新内容</h2><div class="tree">
+    <small><b>首领专属特性</b>　15 位首领各有一个机制（召唤、分裂、落雷、抹除……），血条旁会写出来</small>
+    <small><b>天气与昼夜</b>　每 5 波有 2 波天气，户外关会从白天走到夜里</small>
+    <small><b>自选契约</b>　选关页勾选额外难度，通关多拿星星</small>
+    <small><b>连败辅助</b>　同一关连败后晨星碑生命会增加</small>
+    <small><b>卡牌放逐</b>　翻牌时放逐不想要的牌；<b>第二法术槽</b>可换星盾、号令、时停</small>
+    <small><b>羁绊第二档、20 个事件、新敌人、商店新品</b></small>
+    <small><b>角色精通</b>　用同一角色多通关，脚下会亮起小标</small></div>
+    <p>战斗中点「羁绊」看板，可以随时查看本局规则。</p>
+    <div class="btns"><button class="primary" id="btn-newsok">知道了</button></div>`);
+  return true;
+}
 function showLevels() {
   const save = loadSave(), bank = starBank(), running = S && !S.over && (S.wave > 0 || S.kills > 0);
   const td = todayInfo(), mod = DAILY_MODS.find(m => m.id === td.mod), rec = save.daily[td.date];
@@ -212,9 +234,11 @@ function showCodex(tab) {
           <b>${seen ? d.name : "？？？"}${seen && BOSS_TYPES.includes(k) ? " · 首领" : ""}</b>
           <p>${seen ? `生命 ${d.hp} · 攻击 ${d.atk} · 防御 ${d.def} · 法抗 ${d.res}${d.flying ? " · 飞行" : ""}` : "还没遇到"}</p><p>${seen ? ENEMY_DESC[k] || "" : ""}</p>
           ${seen && ult ? `<p class="mech"><b>大招 · ${ult.name}</b>：${ult.tip}</p>` : ""}
+          ${seen && BOSS_MECH[k] ? `<p class="mech"><b>首领特性 · ${BOSS_MECH[k].name}</b>：${BOSS_MECH[k].tip}</p>` : ""}
           ${seen ? `<p class="kn">累计击杀 <b>${n}</b></p>` : ""}</div></div>`; }).join("")}</div>`;
   }
-  openOverlay(`<h2>图鉴</h2>${head}${body}
+  const cp = codexProgress(save);
+  openOverlay(`<h2>图鉴</h2><p class="cxprog">完成度 <b>${cp.pct}%</b>（${cp.have}/${cp.all}）${cp.tier ? ` · 称号：<b style="color:#ffd860">${cp.tier.title}</b>` : ""}${cp.next ? ` · 到 ${cp.next.pct}% 得「${cp.next.title}」+${cp.next.stars}★` : " · 已集齐"}</p>${head}${body}
     <div class="btns"><button id="btn-menu">返回选关</button></div>`);
   for (const c of $("ovbox").querySelectorAll("canvas[data-foe]")) { if (c.dataset.foe) drawFoeIcon(c, c.dataset.foe); else { c.width = 52; c.height = 52; } }
   for (const c of $("ovbox").querySelectorAll("canvas[data-cxc]")) {
@@ -252,9 +276,6 @@ $("ovbox").addEventListener("click", ev => {
     if (navigator.clipboard) navigator.clipboard.writeText(ta.value).then(() => toast("<b>已复制</b>存档代码在剪贴板里了。"), () => {});
     else toast(ok ? "<b>已复制</b>存档代码在剪贴板里了。" : "<b>请手动复制</b>长按或 Ctrl+C 复制选中的代码。");
   }
-  else if (b.id === "btn-share") { const R = settleRun(); if (!R) return; const txt = shareText(R); const done = () => toast("<b>已复制战绩</b>可以直接贴给朋友。");
-    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, () => { prompt("复制下面这段文字：", txt); });
-    else { const ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (e) { } ta.remove(); ok ? done() : prompt("复制下面这段文字：", txt); } }
   else if (b.id === "btn-svdl") saveFile();
   else if (b.id === "btn-svin") {
     const err = importSave($("sv-in").value);
@@ -294,6 +315,7 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-retry") startRun(S.stage, lastOpts);
   else if (b.id === "btn-next") beginStage(S.stage + 1, { diff: S.diff && S.stage + 1 < STAGES.length && (loadSave().stars[S.stage + 1] || 0) > 0 ? S.diff : 0, abyss: S.abyss || 0 });
   else if (b.id === "btn-menu") { heroCtx = null; showLevels(); }
+  else if (b.id === "btn-newsok") showLevels();
 });
 let lastOpts = {};
 // 进关流程：第一次玩先看剧情，然后选英雄
@@ -460,15 +482,6 @@ function checkOver() {
   if (R.story) playStory(R.story, () => showResult(R));
   else showResult(R);
 }
-// 战绩分享码：一段能直接贴给朋友的文字（每日挑战带日期和规则，别人可以打同一局）
-function shareText(R) {
-  const modeName = { main: "主线", daily: "每日挑战", week: "每周挑战", endless: "无尽", vigil: "守望之战", exped: "远征" }[R.mode] || "主线";
-  const hero = S.heroId ? UNITS.find(u => u.id === S.heroId) : null;
-  const tag = R.mode === "daily" && S.daily ? ` ${S.daily.date}·${DAILY_MODS.find(m => m.id === S.mod).name}` : R.mode === "week" ? " " + S.week.key : S.diff ? " " + DIFFS[S.diff].name : "";
-  const ab_ = S.abyss ? ` · 深渊${S.abyss}层` : "";
-  const ct_ = S.contracts && S.contracts.length ? ` · 契约${S.contracts.length}项` : "";
-  return `【晨星守望】${modeName}${tag} · 第${S.stage + 1}关「${ST.name}」${R.win ? "通关 ✓" : "撑到第 " + R.reached + " 波"}${ab_}${ct_}\n英雄 ${hero ? hero.name : "?"} · 击败 ${S.kills} · Lv${S.level} · 卡牌 ${Object.keys(S.cards).length} · 遗物 ${S.relics.length}${S.endless ? " · 无尽第 " + R.reached + " 波" : ""}\nhttps://aaroncenhello.github.io/chenxing-td/`;
-}
 // 连败辅助：输了之后，指出离凑齐最近的两个羁绊，下一局会有什么补贴
 function lossTip(R) {
   if (!R.lose) return "";
@@ -480,7 +493,7 @@ function lossTip(R) {
 }
 function showResult(R) {
   R = R || settleRun();
-  const win = R.win, exp = expHtml(R.exp), tail = `<p class="shr"><button id="btn-share">复制战绩（贴给朋友）</button></p>` + (R.bounty && R.bounty.length ? `<p class="stars bgot">悬赏完成：${R.bounty.join("、")} · +${R.bountyStars}★</p>` : "") + battleReport() + cardsHtml() + statsTable() + exp;
+  const win = R.win, exp = expHtml(R.exp), tail = (R.bounty && R.bounty.length ? `<p class="stars bgot">悬赏完成：${R.bounty.join("、")} · +${R.bountyStars}★</p>` : "") + `<details class="rdet"${innerWidth <= 520 || innerHeight <= 520 ? "" : " open"}><summary>详细战报（伤害、卡牌、队员数据）</summary>${battleReport()}${cardsHtml()}${statsTable()}</details>` + exp;
   if (R.mode === "exped") {
     const rl_ = R.expRelic ? `<p style="color:#ffd860">精英战利品：遗物「${RELIC_BY[R.expRelic].name}」</p>` : "";
     if (R.expDone) openOverlay(`<h2>远征完成！</h2><p class="stars">首领击破 +${R.expStars}★ · 本次远征共 ${R.expTotal}★</p>${rl_}${tail}<div class="btns"><button class="primary" id="btn-exped">再来一次远征</button><button id="btn-menu">选关</button></div>`);

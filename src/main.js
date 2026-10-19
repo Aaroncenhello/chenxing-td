@@ -28,10 +28,11 @@ buildSpells();
 resize();
 window.addEventListener("resize", resize);
 showLevels();
+showNews();
 window.__td = {
   get S() { return S; }, step, settle: settleRun, newRun: (i, o) => startRun(i, o || {}), beginStage, castUlt, castSpell, useSkill, pickCard, openOffer, randomCards, cardInfo,
   UNITS, STAGES, CARDS, awardExp, levelOf, buyShop, closeShop, rerollOffer, SYNERGY, VIGIL, EVENTS, takeEvent, openEvent,
-  FORMS, AFFIX, cycleForm, setSlot, clearSlot, arrange, formOf, callWaveEarly, toggleAutoWave, cardPool,
+  setFocus, FORMS, AFFIX, cycleForm, setSlot, clearSlot, arrange, formOf, callWaveEarly, toggleAutoWave, cardPool,
 };
 // 切到别的标签页或后台时自动暂停，回来不会被偷袭
 document.addEventListener("visibilitychange", () => { if (document.hidden && S && !S.over && !S.paused && !menuOpen && !dlg && (S.wave > 0 || S.kills > 0)) togglePause(); });

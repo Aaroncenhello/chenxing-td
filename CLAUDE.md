@@ -48,7 +48,7 @@ npm run sim            # 平衡模拟，见下
 | 文件 | 内容 |
 |---|---|
 | head.html | 全部 CSS、页面结构（顶栏、战场、翻牌/商店/事件面板、HUD、底部面板、说明文字） |
-| config.js | `RULES`、16 个关卡 `STAGES`（地图字符画、敌人池、首领、机关）、16 名角色 `UNITS`、敌人 `ENEMIES`、`ELITE`、`SPELLS` |
+| config.js | `RULES`、20 个关卡 `STAGES`（地图字符画、敌人池、首领、机关）、20 名角色 `UNITS`、敌人 `ENEMIES`、`ELITE`、`SPELLS` |
 | config-meta.js | 难度 `DIFFS`、每日规则、商店 `SHOP`、稀有度 `RARE_W`、成就、天赋树、阵型 `FORMS`、角色传记等 |
 | cards.js | 升级卡 `CARDS`（含传说卡、`fl_*` 无限补充卡）、自动技能数值、卡牌像素图标 |
 | meta.js | **11.0** 天赋星盘 `DISK`/`dk()`、深渊层数 `ABYSS`/`ab()`/`abyssK()`、每周挑战 `WEEK_RULES`/`weekInfo()`/`wk()` |
@@ -116,9 +116,15 @@ npm run sim            # 平衡模拟，见下
   - **自选契约** `CONTRACTS`（config-meta.js）：选关页可勾的 6 种加难条件，点数越多通关额外星星越多（`contractStars`，进 `runReward`）；`S.contracts`，用 `ct(id)` 判断。
   - **连败辅助**：存档字段 `lose`（主线每关连续失败次数，`SAVE_VER` 13），2 次起晨星碑生命 +8%、4 次起 +16%（`ASSIST`/`assistOf`，在 `startRun` 里加；**sim 要传 `assist: 0`**，否则同进程里连败会让后面的局变简单）。结算页输了会提示差一点的羁绊。
   - **角色精通**：按该角色的通关胜场（`use[id].win`）3/10/25 局分「熟练/精通/宗师」（`MASTERY`、`masteryOf`），只换外观（角色页称号、战场脚下小菱形 `S.mast`），不加数值，不进存档。
-  - **战绩分享码**：结算页「复制战绩」，文字由 `shareText(R)` 生成。
   - **首领专属特性**：boss.js 的 `BOSS_MECH`，每位首领一条（号角召狼、分裂、汲魔回血、护佑光环、饕餮、震地、俯冲、岩肤、冰甲、自动维修、嚎叫、余烬、碑文反噬、落雷、抹除），入场演出里会显示；带「预警」的先在目标脚下画一圈、1 秒后结算。只对 `isBoss(e) || e.lead` 生效。
   - **天气**：haz.js，`WEATHER_OF[主题]`，每 5 波里有 2 波（`(wave + stage) % 5 >= 3`）；骤雨/暴风雪/热浪/雷暴只带轻微数值（见 `WEATHER[id].tip`），画面在 px-fx.js `drawWeather`；户外关还有昼夜色调 `drawTod`（纯画面）。
+  - **图鉴总完成度**（save.js `codexProgress`）：敌人 + 卡牌 + 遗物 + 词缀 + 事件的收集率，25/50/75/100% 给称号和星星（共 +20★，直接按进度算进 `starBank`，不额外存档）。
+  - **本局规则页**（`rulesHtml`，点羁绊看板打开）、12.0 更新说明（`showNews`，localStorage `chenxing-td-news`）、一次性提示 `once(key, html)`（`chenxing-td-hints`）。
+  - sim 机器人会在首领读条时集火并用陨星术打断（`NOFOCUS=1` 可关）；实测对胜率影响很小（多在噪声内），说明中后期的瓶颈不在打断。
+  - **第五章 · 无声之海**（第 17–20 关：潮汐海岸、沉没钟楼、镜面回廊、无声之海）：新主题 `tide/sunken/mirror/silent`（**新主题要同时加到 px-core.js `THEMES`、ui-menu.js `THUMB`、arena.js `THEME_NAME`，缺一个选关页就白屏**），7 种新敌人（皮肤复用 + `pal` 换色）、最终首领静默者（`BOSS_TYPES`）。`tests/ch5.js` 对**全部关卡**做数据体检（主题/敌人/地图可达/首领称号大招特性、剧情与关卡一一对应），以后加关卡先跑它。毕业档模拟胜率约 第17关 100% / 18 关 75% / 19 关 42% / 20 关 38%。`balance.js` 加了「五章」档，默认跑 20 关。
+  - **新角色（第 17–20 关解锁）**：凯伦（反击者 `counter`）、薇拉（猎魔人 `hunter`）、莉亚（潮汐歌者 `songstress`）、澈（断音者 `breaker`），各有技能、2 个转职、天赋、专属卡（`sg_co1/hu1/so1/br1`）、像素图。机制散在 fight.js（`hurtUnit` 反弹、`landShot` 的 hunter/songstress、`useSkill`、`autoWant`）。`joinExp` 起步经验按「第 13 关加入」封顶，否则后加入的角色一加入就满觉醒。
+  - **新卡 8 张**：潮汐涌动 `sk_tide`、钟鸣 `sk_bell`、回声 `echo`、静默领域 `silence`、打捞 `salvage`、镜面护甲 `mirrorarmor`、传说 潮汐之心 `lg_tide` / 猎手之誓 `lg_hunt`；羁绊 潮钟共鸣 `tidebell`、静默回响 `silentecho`（都带二档）。测试 `cards5`、`heroes5`。
+  - 平衡矩阵（SEED=2026，RUNS=24，20 关 6 档）：毕业档第 1–11 关 88–100%，12 关 58%，13–15 关 63–100%，16 关 8%；第五章毕业档 92 / 75 / ~30 / 58%。24 局一格的误差约 ±10 个百分点，**差异小于 15 个百分点别当真**；定位问题先用固定英雄（`HERO=`）排除英雄轮换带来的噪声。
 - **viewport**：`head.html` 里的 `<meta name="viewport">` 不能删——没有它手机会按 980px 宽的电脑网页排版再整体缩小。
 
 ## 踩过的坑

@@ -140,7 +140,7 @@ function drawEnemy(e, now) {
 }
 
 // ---------- 飞行物 ----------
-const SHOT_COL = { archer: "#f0e0b8", mage: "#b070ff", frost: "#80e0ff", priest: "#6ee07a", enemy: "#9a50e0", gunner: "#ff9a3a", alchemist: "#a8d848", bard: "#f07aa8", summoner: "#7af0e0", fire: "#ff8a3a", dark: "#b070ff", chrono: "#7ae0d0", marshal: "#ffe060" };
+const SHOT_COL = { hunter: "#e0d8f0", songstress: "#7ae0f0", archer: "#f0e0b8", mage: "#b070ff", frost: "#80e0ff", priest: "#6ee07a", enemy: "#9a50e0", gunner: "#ff9a3a", alchemist: "#a8d848", bard: "#f07aa8", summoner: "#7af0e0", fire: "#ff8a3a", dark: "#b070ff", chrono: "#7ae0d0", marshal: "#ffe060" };
 function drawShot(s) {
   const [x, y] = tpx(s.x, s.y), k = s.kind, col = SHOT_COL[k] || "#ffffff";
   s.trail.forEach((p, i) => { const [a, b] = tpx(p[0], p[1]); if (k === "gunner") { if (i % 2) rect(ctx, a - 1, b - 1, 3, 3, "rgba(160,150,140,.6)"); } else if (i % 2 === 0) rect(ctx, a, b, 2, 2, i > 3 ? col : "rgba(255,255,255,.45)"); });
@@ -434,7 +434,7 @@ function drawOverlay() {
     txt(Math.ceil(f * 100) + "%", x + w - 14 * s, y + h * 0.5 + 3 * s * tk, 7 * s * tk, "#ffffff");
     tctx.fillStyle = "#ffe38a"; for (const kk of b.d.phases || [0.5]) tctx.fillRect(x + w * kk - s / 2, y, s, h);
     if (b.shield > 0) { tctx.fillStyle = "#8ac8ff"; tctx.fillRect(x, y + h - 2 * s, w * Math.min(1, b.shield / (b.maxShield || 1)), 2 * s); }
-    txt(b.d.name + (b.afx && b.afx.length ? "（" + afxNames(b) + "）" : "") + (b.enraged ? " · 狂暴" : "") + (b.brokenT > 0 ? " · 破防" : ""), tx.width / 2, y + h + 9 * s * tk, 8 * s * tk, b.brokenT > 0 ? "#ffe38a" : b.enraged ? "#ff8a7a" : "#ffe38a");
+    txt(b.d.name + (b.afx && b.afx.length ? "（" + afxNames(b) + "）" : "") + (mechOf(b) ? " · 特性：" + mechOf(b).name : "") + (b.enraged ? " · 狂暴" : "") + (b.brokenT > 0 ? " · 破防" : ""), tx.width / 2, y + h + 9 * s * tk, 8 * s * tk, b.brokenT > 0 ? "#ffe38a" : b.enraged ? "#ff8a7a" : "#ffe38a");
     if (b.cast) {
       const c = b.cast, cy = y + h + 20 * s * tk, ch = 6 * s * tk, bk = Math.min(1, c.got / c.need);
       tctx.fillStyle = "rgba(10,6,10,.85)"; tctx.fillRect(x - 2 * s, cy - 2 * s, w + 4 * s, ch + 4 * s);
@@ -445,6 +445,7 @@ function drawOverlay() {
     }
   }
   drawWaveLabels(s, txt, tk);
+  if (S.wx && !S.over) { const W = WEATHER[S.wx]; tctx.textAlign = "right"; txt(`天气 · ${W.name}`, tx.width - 14 * s, 16 * s * tk, 8 * s * tk, W.color); tctx.textAlign = "center"; }
   if (S.combo >= 3 && S.comboT > 0 && !$("pinfo").offsetHeight) {   // 竖屏信息区有大号连杀，战场里就不重复画
     const tier = S.combo >= 50 ? "#ff6a5a" : S.combo >= 20 ? "#ffb040" : S.combo >= 10 ? "#ffd860" : "#ffffff";
     tctx.textAlign = "left"; txt(`连杀 ×${S.combo}`, 12 * s, 16 * s * tk, (10 + Math.min(6, S.combo / 8)) * s * tk, tier);
@@ -609,7 +610,7 @@ function drawWeather(t) {
   else if (id === "heat") for (let i = 0; i < 6; i++) { const y = (i * 61 + t * 12) % PHt, x = (i * 113) % PW; ctx.globalAlpha = 0.09; ctx.fillStyle = "#ffe0a0"; ctx.fillRect(x + Math.sin(t * 3 + i) * 6, y, 90, 1); ctx.globalAlpha = 1; }
 }
 // 昼夜：户外关随波数推进，从白天到黄昏再到夜里（纯画面，不影响数值）
-const TOD_THEMES = new Set(["forest", "snow", "desert", "sky", "ash", "storm"]);
+const TOD_THEMES = new Set(["forest", "snow", "desert", "sky", "ash", "storm", "tide"]);
 function drawTod() {
   if (!TOD_THEMES.has(ST.theme) || S.wave < 1) return;
   const f = Math.min(1, (S.wave - 1) / Math.max(1, totalWaves() - 1));

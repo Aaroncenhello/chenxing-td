@@ -48,6 +48,11 @@ const SIG = [
   { id: "sg_ch1", hero: "chrono", rare: 1, kind: "stat", name: "慢下来", max: 3, w: 9, desc: lv => `减速效果 +${10 * lv}%，对减速中的敌人伤害 +${18 * lv}%` },
   { id: "sg_ch2", hero: "chrono", rare: 2, kind: "skill", name: "时之回廊", max: 1, w: 7, desc: () => "每 16 秒自动把全场敌人定住 1.5 秒" },
   // 维罗妮卡 · 军团长
+  // 凯伦 · 反击者 / 薇拉 · 猎魔人 / 莉亚 · 潮汐歌者 / 澈 · 断音者
+  { id: "sg_co1", hero: "counter", rare: 1, kind: "stat", name: "回震", max: 3, w: 9, desc: lv => `英雄的反弹伤害 +${25 * lv}%，防御 +${10 * lv}%` },
+  { id: "sg_hu1", hero: "hunter", rare: 1, kind: "stat", name: "穷追不舍", max: 3, w: 9, desc: lv => `英雄对精英和首领的伤害 +${15 * lv}%，攻击 +${6 * lv}%` },
+  { id: "sg_so1", hero: "songstress", rare: 1, kind: "stat", name: "余韵", max: 3, w: 9, desc: lv => `英雄攻击的回复量 +${25 * lv}%，减速更强（每级 −8% 移速）` },
+  { id: "sg_br1", hero: "breaker", rare: 1, kind: "stat", name: "利刃", max: 3, w: 9, desc: lv => `英雄对读条敌人的伤害 +${20 * lv}%，攻击 +${6 * lv}%` },
   { id: "sg_ma1", hero: "marshal", rare: 1, kind: "special", name: "列阵", max: 3, w: 9, desc: lv => `英雄阻挡 +${lv}，全队受到的伤害 −${8 * lv}%` },
   { id: "sg_ma2", hero: "marshal", rare: 2, kind: "skill", name: "永不倒下", max: 1, w: 7, desc: () => "队友倒下时立刻站起来一次，每人每局一次" },
 ];

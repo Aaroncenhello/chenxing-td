@@ -6,6 +6,13 @@ function setText(id, v) { const el = $(id); if (!el) return; const s = String(v)
 let menuOpen = false;
 
 // ---------- 提示 ----------
+// 第一次碰到新系统时的一次性提示（单独的 localStorage 键，不进主存档）
+function once(key, html) {
+  let seen = []; try { seen = JSON.parse(localStorage.getItem("chenxing-td-hints") || "[]"); } catch (e) { }
+  if (!Array.isArray(seen) || seen.includes(key)) return;
+  seen.push(key); try { localStorage.setItem("chenxing-td-hints", JSON.stringify(seen)); } catch (e) { }
+  toast(html);
+}
 function toast(html, draw) {
   const el = document.createElement("div"); el.className = "toast";
   el.innerHTML = (draw ? '<canvas aria-hidden="true"></canvas>' : "") + `<div>${html}</div>`;

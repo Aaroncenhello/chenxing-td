@@ -71,7 +71,7 @@ function synHint(p) {
   });
   return best;
 }
-const BOSS_TYPES = ["boss", "sovereign", "devourer", "nameless", "stormlord"];
+const BOSS_TYPES = ["boss", "sovereign", "devourer", "nameless", "stormlord", "silencer"];
 const isBossType = t => BOSS_TYPES.includes(t);
 const isBoss = e => isBossType(e.type);
 const hittable = e => !e.dead && !e.under;
@@ -128,6 +128,8 @@ function uAtk(u) {
     if (sg("sg_sw2")) a *= 1 + Math.min(0.8, 0.08 * S.enemies.filter(e => !e.dead && dist(u, e) <= 2.2).length);
     if (sg("sg_mg1")) a *= 1 + 0.12 * sg("sg_mg1");
     if (sg("sg_gu1")) a *= 1 + 0.2 * sg("sg_gu1");
+    if (sg("sg_hu1") && u.def.id === "hunter") a *= 1 + 0.06 * sg("sg_hu1");
+    if (sg("sg_br1") && u.def.id === "breaker") a *= 1 + 0.06 * sg("sg_br1");
     if (sg("sg_st1")) a *= 1 + 0.15 * sg("sg_st1");
     if (sg("sg_la2")) a *= 1.4;
     if (sg("sg_pr1") && u.def.dmg === "heal") a *= 1 + 0.25 * sg("sg_pr1");
@@ -138,6 +140,8 @@ function uAtk(u) {
   if (tal(u, "t_last") && u.hp < u.maxHp * 0.35) a *= 1.4;
   a *= 1 + marshalBanner(u);
   if (rallyOn()) a *= 1.3;
+  if (S.huntT > 0) a *= 1.08;
+  if (S.chorusT > 0) a *= 1.2;
   a *= 1 + 0.45 * cu("cu_blood") + 0.6 * cu("cu_frenzy");
   if (cl("lg_bond")) a *= 1 + 0.08 * S.allies;
   if (syn("scholar")) a *= 1.15;
@@ -149,6 +153,8 @@ function uAtk(u) {
 function uDef(u) {
   let d = u.def.def * lvK(u, "def") * (1 + 0.3 * cl("armor")) * (skillOn(u, "knight") ? 2 : 1);
   if (br(u, "lancer", "B")) d *= 1.6;
+  if (br(u, "counter", "A")) d *= 1.25;
+  if (u.hero && u.def.id === "counter" && sg("sg_co1")) d *= 1 + 0.1 * sg("sg_co1");
   if (hasTal(u, "knight") && u.hp < u.maxHp * 0.4) d *= 1.8;
   if (tal(u, "t_def")) d *= 1.3;
   d *= (S.buff.def || 1) * (1 + 0.05 * dk("armor"));
@@ -522,6 +528,7 @@ function openOffer(minRare, noCharge) {
   if (S.offer || S.over) return;
   if (!minRare && S.pending <= 0) return;
   S.offerRare = minRare || 0;
+  if (S.banishLeft > 0) once("banish", "<b>放逐</b>每局 " + BANISH_N + " 次：翻牌时点「放逐」（或按 X）再点一张卡，它这局就不会再出现。");
   S.offer = randomCards(3, minRare);
   if (!S.offer.length) { S.pending = 0; S.offer = null; return; }
   if (minRare && !noCharge) S.pending++;
@@ -543,7 +550,7 @@ function genStage(stage, seed, opts) {
     pool, boss: base.boss, map: g.map, haz: g.haz, generated: true,
   };
 }
-const THEME_NAME = { forest: "翠林", snow: "霜雪", lava: "熔岩", grave: "幽影", desert: "黄沙", sky: "浮空", cave: "晶洞", abyss: "深渊", ice: "冰封", mech: "机械", blood: "血月", star: "星界", ash: "灰烬", ruin: "碑墓", storm: "雷暴", dawn: "晨光" };
+const THEME_NAME = { forest: "翠林", snow: "霜雪", lava: "熔岩", grave: "幽影", desert: "黄沙", sky: "浮空", cave: "晶洞", abyss: "深渊", ice: "冰封", mech: "机械", blood: "血月", star: "星界", ash: "灰烬", ruin: "碑墓", storm: "雷暴", dawn: "晨光", tide: "潮汐", sunken: "沉没", mirror: "镜廊", silent: "无声" };
 const VIGIL_BOSS = ["boss", "sovereign", "devourer"];
 
 // ---------- 波次 ----------
@@ -602,6 +609,7 @@ function startWave(append) {
   if (append) S.spawnQueue = S.spawnQueue.concat(q).sort((a, b) => a.at - b.at);
   else { S.spawnQueue = q; S.waveClock = 0; }
   S.wave++;
+  if (cl("salvage")) { const g = cl("salvage") * (3 + Math.floor(S.wave / 4)); S.dust += g; addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.2, text: `打捞 +${g} 星尘`, color: "#7ad8e8", life: 1.2 }); }
   S.waveK = S.nextWaveK || 1; S.nextWaveK = S.nextWaveK2 || 1; S.nextWaveK2 = 1;
   if (S.slowWaves > 0) S.slowWaves--;
   if (S.weakWaves > 0) S.weakWaves--;

@@ -5,6 +5,7 @@ const BOSS_TITLE = {
   orc: "兽人前锋队长", bigslime: "沼泽之母", sandworm: "沙海底下的巨虫", wyvern: "天空的暴君",
   golem: "熔岩铸成的巨人", frostgiant: "永冬的看守", warmech: "旧世界留下的战争兵器",
   bloodwolf: "血月下的头狼", shaman: "腐沼祭司", necro: "白骨的主人",
+  silencer: "把每一声呼喊都按下去的人", crab: "退潮后露出来的礁岩", bellkeeper: "拆走了钟舌的守钟人", mirrorknight: "镜子里先出手的那个",
   nameless: "没有名字，也不肯有", stormlord: "雷云里的那个声音", monolith: "醒过来的第一座碑",
   ashwalker: "灰里走出来的旧兵", voidknight: "把名字交出去的骑士",
 };
@@ -21,13 +22,13 @@ const ULT_OF = {
   boss: "roar", sovereign: "call", devourer: "nova",
   orc: "roar", bigslime: "call", sandworm: "smash", wyvern: "roar", golem: "smash",
   frostgiant: "zero", warmech: "smash", bloodwolf: "roar", shaman: "mend", necro: "call",
-  nameless: "nova", stormlord: "zero", monolith: "smash", ashwalker: "roar", voidknight: "mend",
+  nameless: "nova", silencer: "zero", crab: "smash", bellkeeper: "roar", mirrorknight: "mend", stormlord: "zero", monolith: "smash", ashwalker: "roar", voidknight: "mend",
 };
 const ultOf = e => ((isBoss(e) || e.lead) && ULT_DEF[ULT_OF[e.type]]) || null;
 const BREAK_BONUS = 1.6;   // 破防期间受到的伤害倍率
 
 function startCast(e, U) {
-  e.cast = { u: U, t: 0, dur: U.cast * (e.enraged ? 0.82 : 1), need: e.maxHp * U.need, got: 0 };
+  e.cast = { u: U, t: 0, dur: U.cast * (e.enraged ? 0.82 : 1), need: e.maxHp * U.need * Math.max(0.3, 1 - 0.2 * cl("silence")), got: 0 };
   e.pend = 0; e.target = null;
   addFx({ kind: "banner", text: `${e.d.name} 正在吟唱 · ${U.name}`, life: 1.6, danger: true });
   addFx({ kind: "ring", x: e.x, y: e.y, color: U.color, life: 0.8, r0: 0.2, r1: 2.2 });
@@ -122,6 +123,10 @@ const BOSS_MECH = {
   ashwalker: { id: "ember",     name: "余烬",     cd: 10, tip: "点燃两名队员（有预警）" },
   monolith:  { id: "reflect",   name: "碑文反噬", cd: 0,  tip: "被法术打中时，反弹 10% 伤害给攻击者" },
   stormlord: { id: "bolt",      name: "落雷",     cd: 8,  tip: "雷击两名队员（有预警）" },
+  crab:      { id: "glacier",   name: "贝壳甲",   cd: 15, tip: "周期性凝出贝壳甲，要先打碎" },
+  bellkeeper:{ id: "howl",      name: "钟鸣",     cd: 14, tip: "钟声响起，全体敌人 5 秒内攻击 +20%、移速 +12%" },
+  mirrorknight:{ id: "reflect", name: "镜面",     cd: 0,  tip: "被法术打中时，反弹 10% 伤害给攻击者" },
+  silencer:  { id: "erase",     name: "静默",     cd: 14, tip: "清空一名队员的技力并定身（有预警）" },
   nameless:  { id: "erase",     name: "抹除",     cd: 20, tip: "清空一名队员的技力并定身（有预警）" },
 };
 const mechOf = e => ((isBoss(e) || e.lead) && BOSS_MECH[e.type]) || null;
@@ -180,6 +185,7 @@ function startCine(e) {
     elite: !!e.elite, ult: (ultOf(e) || {}).name || "", mech: mechOf(e), t: 0, dur: 2.9,
   };
   S.cineWave = S.wave;
+  if (mechOf(e)) once("bossmech", "<b>首领特性</b>每位首领有一个专属机制，有「预警」的会先在目标脚下画圈。读条时集火可以打断大招。");
   S.shake = 0.8; S.hitFlash = 0.7;
   addFx({ kind: "ring", x: e.x, y: e.y, color: e.d.color, life: 1, r0: 0.2, r1: 3.6 });
   burst(e.x, e.y, e.d.color, 40, 4.4, 1.1, 0.1);

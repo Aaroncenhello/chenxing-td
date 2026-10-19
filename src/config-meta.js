@@ -87,6 +87,10 @@ const TALENTS = {
   star: { name: "星辰指引", desc: "对生命全满的敌人伤害 +40%" },
   chrono: { name: "长考", desc: "停滞领域的定身时间延长到 4.2 秒" },
   marshal: { name: "不退之旗", desc: "不退之令的效果延长到 12 秒" },
+  counter: { name: "不动如山", desc: "生命高于 70% 时，受到的伤害 −20%" },
+  hunter: { name: "穷追", desc: "对生命低于 50% 的敌人伤害 +25%" },
+  songstress: { name: "和声", desc: "攻击的回复量 +30%" },
+  breaker: { name: "余音", desc: "截断成功打断读条后，自己的技力立刻回复 50%" },
 };
 const BIO = {
   knight: "晨星骑士团团长。沉稳可靠，总是站在队伍最前面。",
@@ -105,6 +109,10 @@ const BIO = {
   star: "从星海另一边来的观测者，记得所有星星的名字，也记得它们熄灭的那一天。",
   chrono: "万碑之墓最后一任守碑人，守了九百年。说话很慢，因为她习惯了等。",
   marshal: "带过三百二十一支队伍的军团长，铠甲上全是缺口。她记得每一个倒下的人的名字。",
+  counter: "潮汐海岸边守礁的老兵，盾上全是浪打的痕迹。口头禅是「你推我多重，我就还你多重」。",
+  hunter: "追了一头会说话的怪物三年的猎魔人，目光只盯着最大的那一个，从不浪费一支箭。",
+  songstress: "潮汐里长大的歌者，歌声能让浪慢下来。她说每个名字都有自己的音调，她一个都没忘。",
+  breaker: "沉没钟楼里最后一个听得见钟声的人。她学会了在钟声响起前，先一步掐断它。",
 };
 
 const ACHV = [
@@ -137,7 +145,8 @@ const ACHV = [
   { id: "interrupt5", name: "一句话也别想念完", desc: "一局内打断 5 次首领读条" },
   { id: "chapter3", name: "第三章完结", desc: "通关第 12 关" },
   { id: "nameless", name: "叫出它的名字", desc: "通关第 16 关，击败无名者" },
-  { id: "allchars16", name: "十六人", desc: "解锁全部 16 名角色" },
+  { id: "chapter5", name: "第五章完结", desc: "通关第 20 关，击败静默者" },
+  { id: "allchars16", name: "全员集结", desc: "解锁全部角色（含第五章的新伙伴）" },
   { id: "exped", name: "远征归来", desc: "完成一次远征（打赢最后一层的首领）" },
   { id: "relics", name: "遗物收藏家", desc: "图鉴里集齐全部遗物" },
   { id: "cards", name: "博览群牌", desc: "图鉴里集齐全部通用升级卡（不含专属卡、诅咒卡和补充卡）" },
@@ -155,6 +164,13 @@ const ENEMY_DESC = {
   voidknight: "把名字交出去换来的护盾，护盾破掉之后就只是个骑士。",
   stormlord: "雷云里的那个声音。会读条放「绝对零度」，读条时集火可以打断。",
   nameless: "没有名字，也不肯有。四个形态，会放「星海坍缩」——一定要打断。",
+  crab: "背着厚厚的贝壳甲，物理伤害打不动，用法术或持续输出；首领战时会周期性重新凝甲。",
+  siren: "会飞，歌声让队伍很难集火，需要能打飞行的角色。",
+  drowned: "成群结队的溺亡者，单个不强，数量多，靠范围伤害清理。",
+  tidecaller: "不断召唤溺亡者，法抗很高，要优先集火。",
+  bellkeeper: "体型庞大的守钟人，防御极高；首领战时会敲钟，让所有敌人加速加攻。",
+  mirrorknight: "举着镜盾，被法术打中会反弹一部分伤害；先打碎它的护盾。",
+  silencer: "把每一声呼喊都按下去。四个形态，会放「绝对零度」冻结全队，还会抹掉队员的技力——读条时一定要打断。",
   slime: "最基础的敌人。", bigslime: "血厚，死后分裂成两只史莱姆。", goblin: "数量多，速度中等。",
   wolf: "跑得很快，容易冲到晨星碑。", orc: "防御 300，物理攻击打不太动，用法术更好。",
   garg: "会飞，不会被近战拦住，直接飞向晨星碑。只有能打飞行的角色和技能能打到。",
@@ -244,6 +260,10 @@ const SYNERGY = [
     prog: () => [(cl("res") > 0) + (cl("wardmind") > 0), 2] },
   { id: "corrosive", name: "锈蚀猎手", need: "剧毒喷雾 + 破甲", desc: "中毒/被腐蚀的敌人防御再 −15%", color: "#a8d848",
     prog: () => [(cl("sk_toxic") > 0) + (cl("pierce") > 0), 2] },
+  { id: "tidebell", name: "潮钟共鸣", need: "潮汐涌动 + 钟鸣", desc: "潮水减速时间 +50%，钟鸣眩晕时间 +50%", color: "#5ab8e8",
+    prog: () => [(cl("sk_tide") > 0) + (cl("sk_bell") > 0), 2] },
+  { id: "silentecho", name: "静默回响", need: "静默领域 + 回声", desc: "正在读条的敌人受到的伤害 +30%", color: "#c8d4ff",
+    prog: () => [(cl("silence") > 0) + (cl("echo") > 0), 2] },
 ];
 // 羁绊第二档：两张卡都升到 3 级时，原来的效果再加强一档
 const SYN_T2 = {
@@ -252,6 +272,8 @@ const SYN_T2 = {
   bloodlust: { cards: ["vamp", "boom"], desc: "吸血 ×3（原 ×2），殉爆伤害 +80%、范围更大（原 +50%）" },
   shockwave: { cards: ["sk_spear", "sk_gale"], desc: "被眩晕的敌人受到的伤害 +50%（原 +30%）" },
   wardguard: { cards: ["res", "wardmind"], desc: "法术伤害 −15%（原 −10%），全队法抗 +20（原 +10）" },
+  tidebell: { cards: ["sk_tide", "sk_bell"], desc: "潮水击退 +50%（1.4 → 2.1 格），钟鸣伤害 +50%（原效果保留）" },
+  silentecho: { cards: ["silence", "echo"], desc: "正在读条的敌人受到的伤害 +50%（原 +30%）" },
   corrosive: { cards: ["sk_toxic", "pierce"], desc: "中毒/被腐蚀的敌人防御 −25%（原 −15%）" },
 };
 for (const g of SYNERGY) if (SYN_T2[g.id]) g.t2 = SYN_T2[g.id];
@@ -270,6 +292,8 @@ const SYN_HOW = {
   scholar: () => `同一局拿到 5 种不同的属性卡（同一张升级多次只算 1 种），例如 ${CARDS.filter(c => c.kind === "stat" && !c.filler && !c.rare).slice(0, 4).map(c => "「" + c.name + "」").join("")}`,
   legendary: () => "同一局拿到 2 种传说卡（金色边框的卡）",
   shockwave: () => `同一局拿到技能卡 ${synCards("sk_spear", "sk_gale")}`,
+  tidebell: () => `同一局拿到技能卡 ${synCards("sk_tide", "sk_bell")}`,
+  silentecho: () => `同一局拿到 ${synCards("silence", "echo")}（回声要先有暴击来源）`,
   wardguard: () => `同一局拿到 ${synCards("res", "wardmind")}`,
   corrosive: () => `同一局拿到 ${synCards("sk_toxic", "pierce")}`,
 };

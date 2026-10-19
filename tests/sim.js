@@ -23,6 +23,7 @@ const OUT = process.env.OUT || '';
 const PATCH = process.env.PATCH || '';
 // SEED=数字：每一局用固定的随机种子（第 st 关第 r 局 = SEED + st*1000 + r），前后两个版本用同一组种子对比，随机波动小得多
 const SEED = +(process.env.SEED || 0);
+const NOFOCUS = !!process.env.NOFOCUS;   // 关掉「首领读条时集火 + 陨星打断」，和旧基线对比时用
 
 (async () => {
   const b = await chromium.launch();
@@ -37,7 +38,7 @@ const SEED = +(process.env.SEED || 0);
   await p.waitForTimeout(500);
   if (PATCH) await p.evaluate(PATCH);
 
-  const out = await p.evaluate(async ({ STAGES_N, ST0, RUNS, DIFF, HERO, CLV, PERKS, VIG, DISK_in, ABY, STARS, ALLCHARS, SEED }) => {
+  const out = await p.evaluate(async ({ STAGES_N, ST0, RUNS, DIFF, HERO, CLV, PERKS, VIG, DISK_in, ABY, STARS, ALLCHARS, SEED, NOFOCUS }) => {
     const res = [];
     const T = window.__td, DISK_disk = {};   // DISK 是页面里的星盘节点表，传进来的等级叫 DISK_in
     if (STARS) {   // 便宜优先地把星星花光，同价按 DISK 表里的顺序
@@ -96,6 +97,11 @@ const SEED = +(process.env.SEED || 0);
             T.pickCard(best.id);
             continue;
           }
+          // 会点集火和打断的人：首领读条时集火它、陨星术砸它（NOFOCUS=1 关掉，用来和旧数据对比）
+          if (!NOFOCUS) {
+            const bs = S.enemies.find(e => e.cast && !e.dead);
+            if (bs) { if (S.focus !== bs) T.setFocus(bs); if (S.spells.meteor <= 0) { try { T.castSpell('meteor', bs.x, bs.y); } catch (err) {} } }
+          }
           // auto ult / spells
           if (S.star >= 100) { try { T.castUlt(); } catch (e) {} }
           if (S.spells.meteor <= 0 && S.enemies.length >= 4) {
@@ -113,7 +119,7 @@ const SEED = +(process.env.SEED || 0);
       }
     }
     return { res, disk: STARS ? DISK_disk : DISK_in };
-  }, { STAGES_N, ST0, RUNS, DIFF, HERO, CLV, PERKS, VIG, DISK_in: DISK, ABY, STARS, ALLCHARS, SEED });
+  }, { STAGES_N, ST0, RUNS, DIFF, HERO, CLV, PERKS, VIG, DISK_in: DISK, ABY, STARS, ALLCHARS, SEED, NOFOCUS });
   if (OUT) require('fs').writeFileSync(OUT, JSON.stringify(out));
   const out_res = out.res;
   console.log('星盘:', JSON.stringify(out.disk));

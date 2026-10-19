@@ -51,6 +51,14 @@ const CARDS = [
   { id: "lg_army", rare: 2, kind: "ally", name: "万军之阵", max: 1, w: 5, desc: () => "伙伴上限 +2，场上所有伙伴立刻升 1 阶" },
   { id: "lg_aegis", rare: 2, kind: "stat", name: "永恒壁垒", max: 2, w: 5, desc: lv => `晨星碑生命上限 +${40 * lv}%，每波结束回复 ${8 * lv}%` },
   { id: "lg_greed", rare: 2, kind: "stat", name: "星尘洪流", max: 1, w: 5, desc: () => "经验和星尘获得翻倍" },
+  { id: "sk_tide", rare: 1, kind: "skill", name: "潮汐涌动", max: 5, w: 6, desc: lv => `每 ${(11 - lv * 0.8).toFixed(1)} 秒涌起一道潮水：地面敌人被推回 1.4 格，减速 ${(1.8 + lv * 0.2).toFixed(1)} 秒，并受到法术伤害` },
+  { id: "sk_bell", rare: 1, kind: "skill", name: "钟鸣", max: 5, w: 6, desc: lv => `每 ${(13 - lv).toFixed(0)} 秒敲响一次钟：晨星碑 ${(3 + lv * 0.2).toFixed(1)} 格内的敌人眩晕 ${(0.8 + lv * 0.15).toFixed(2)} 秒并受到法术伤害` },
+  { id: "echo", rare: 1, kind: "special", name: "回声", max: 3, w: 6, need: () => cl("crit") > 0 || dk("crit") > 0 || cu("cu_moon") > 0, desc: lv => `暴击时有 ${25 * lv}% 几率再回响一次，造成 50% 的伤害` },
+  { id: "silence", rare: 1, kind: "special", name: "静默领域", max: 3, w: 6, desc: lv => `首领和精英读条大招所需的打断伤害 −${20 * lv}%` },
+  { id: "salvage", rare: 0, kind: "special", name: "打捞", max: 4, w: 6, desc: lv => `每波开始获得 ${3 * lv} 星尘，每过 4 波再多 ${lv} 星尘` },
+  { id: "mirrorarmor", rare: 1, kind: "stat", name: "镜面护甲", max: 3, w: 6, desc: lv => `队员受到远程敌人的伤害 −${10 * lv}%` },
+  { id: "lg_tide", rare: 2, kind: "special", name: "潮汐之心", max: 1, w: 5, desc: () => "任何队员释放技能后，全队回复 6% 生命，其他队员技力 +8" },
+  { id: "lg_hunt", rare: 2, kind: "special", name: "猎手之誓", max: 1, w: 5, desc: () => "对精英和首领伤害 +30%；击杀精英或首领后，全队攻击 +8%，持续 12 秒" },
   { id: "lg_bond", rare: 2, kind: "stat", name: "誓约之环", max: 1, w: 5, need: () => S.mod !== "solo", desc: () => "全队攻击和生命上限随伙伴数量提升：每有一名伙伴在场 +8%，没有上限" },
   { id: "lg_ward", rare: 2, kind: "stat", name: "圣域壁垒", max: 1, w: 5, desc: () => "晨星碑受到的伤害 −20%" },
   { id: "lg_focus", rare: 2, kind: "special", name: "焚天之力", max: 1, w: 5, desc: () => "对集火目标的伤害额外 +25%" },
@@ -73,8 +81,8 @@ const CARDS = [
 const CARD_BY = Object.fromEntries(CARDS.map(c => [c.id, c]));
 const ANY_CARD = id => CARD_BY[id] || (typeof SIG_BY !== "undefined" && SIG_BY[id]) || (typeof CURSE_BY !== "undefined" && CURSE_BY[id]);
 // 自动技能的冷却和威力（威力会跟着关卡强度一起涨）
-const SKILL_CD = { sk_meteor: lv => 9 - lv * 0.8, sk_chain: lv => 6 - lv * 0.5, sk_nova: lv => 7 - lv * 0.5, sk_fire: lv => 8 - lv * 0.6, sk_holy: lv => 12 - lv, sk_spear: lv => 7 - lv * 0.5, sk_toxic: lv => 8 - lv * 0.5, sk_gale: lv => 5.5 - lv * 0.3, lg_time: lv => 22 - lv * 4 };
-const SKILL_DMG = { sk_meteor: 1200, sk_chain: 700, sk_nova: 500, sk_fire: 610, sk_holy: 560, sk_blade: 350, sk_spike: 200, sk_spear: 1050, sk_toxic: 420, sk_gale: 380, lg_judge: 3400 };
+const SKILL_CD = { sk_meteor: lv => 9 - lv * 0.8, sk_chain: lv => 6 - lv * 0.5, sk_nova: lv => 7 - lv * 0.5, sk_fire: lv => 8 - lv * 0.6, sk_holy: lv => 12 - lv, sk_spear: lv => 7 - lv * 0.5, sk_toxic: lv => 8 - lv * 0.5, sk_gale: lv => 5.5 - lv * 0.3, sk_tide: lv => 11 - lv * 0.8, sk_bell: lv => 13 - lv, lg_time: lv => 22 - lv * 4 };
+const SKILL_DMG = { sk_meteor: 1200, sk_chain: 700, sk_nova: 500, sk_fire: 610, sk_holy: 560, sk_blade: 350, sk_spike: 200, sk_spear: 1050, sk_toxic: 420, sk_gale: 380, sk_tide: 260, sk_bell: 300, lg_judge: 3400 };
 
 // 卡牌小图标（16×16）
 function drawCardIcon(cvs, id, size) {
@@ -134,6 +142,14 @@ function drawCardIcon(cvs, id, size) {
     case "lg_army": for (const x of [2, 6, 10]) { px(x, 6, 3, 6, "#8fb3e0"); px(x, 4, 3, 2, "#e3b75c"); } px(2, 12, 12, 2, "#3a4460"); break;
     case "lg_aegis": px(3, 2, 10, 7, "#62b4ff"); px(4, 9, 8, 3, "#62b4ff"); px(7, 12, 2, 2, "#62b4ff"); px(5, 4, 6, 4, "#e8f8ff"); px(7, 5, 2, 6, "#ffd860"); break;
     case "lg_greed": for (const [x, y] of [[3, 3], [11, 4], [6, 11], [12, 11], [8, 7]]) px(x, y, 2, 2, "#ffe040"); dsc(8, 8, 5, "rgba(255,224,64,.25)"); px(7, 6, 2, 4, "#fff6c0"); break;
+    case "sk_tide": px(2, 9, 12, 2, "#5ab8e8"); px(1, 6, 4, 3, "#8ad8ff"); px(5, 5, 4, 3, "#8ad8ff"); px(9, 6, 4, 3, "#8ad8ff"); px(3, 12, 10, 2, "#2a78b0"); px(2, 5, 1, 1, "#ffffff"); px(6, 4, 1, 1, "#ffffff"); break;
+    case "sk_bell": px(7, 2, 2, 2, "#c8a030"); px(5, 4, 6, 6, "#ffd860"); px(4, 9, 8, 2, "#ffd860"); px(5, 4, 2, 6, "#fff6c0"); px(7, 12, 2, 2, "#8a6a10"); px(2, 5, 1, 4, "#a0e0ff"); px(13, 5, 1, 4, "#a0e0ff"); break;
+    case "echo": px(3, 5, 3, 6, "#ffe040"); px(7, 4, 2, 8, "#ffd860"); px(10, 3, 1, 10, "#c8a030"); px(12, 2, 1, 12, "#8a6a10"); break;
+    case "silence": dsc(8, 8, 6, "#2a3a6a"); px(4, 7, 8, 2, "#c8d4ff"); px(5, 4, 1, 8, "#12141f"); px(10, 4, 1, 8, "#12141f"); px(7, 5, 2, 6, "#e0e8ff"); break;
+    case "salvage": px(3, 8, 10, 6, "#8a5a30"); px(4, 9, 8, 1, "#b07840"); px(6, 4, 4, 4, "#8a5a30"); px(7, 2, 2, 3, "#7ad8e8"); px(5, 11, 6, 1, "#ffd860"); px(7, 10, 2, 3, "#fff6c0"); break;
+    case "mirrorarmor": px(3, 3, 10, 9, "#c8d4ec"); px(4, 4, 8, 7, "#a8b8d8"); px(4, 4, 3, 3, "#ffffff"); px(8, 8, 3, 2, "#ffffff"); px(6, 12, 4, 2, "#7a86a0"); break;
+    case "lg_tide": dsc(8, 8, 6, "#2a78b0"); dsc(8, 8, 4, "#5ab8e8"); dsc(8, 8, 2, "#e8fbff"); px(2, 12, 12, 2, "#ffd860"); px(7, 1, 2, 3, "#ffd860"); break;
+    case "lg_hunt": px(3, 12, 10, 2, "#8a5a30"); px(7, 2, 2, 11, "#dfe6f2"); px(5, 4, 6, 2, "#c83a4a"); px(4, 7, 8, 1, "#c83a4a"); px(7, 1, 2, 1, "#ffd860"); px(12, 2, 2, 2, "#ffd860"); break;
     case "lg_bond": dsc(5, 8, 3, "#8fb3e0"); dsc(11, 8, 3, "#e3b75c"); px(7, 7, 2, 2, "#fff6c0"); px(4, 3, 8, 1, "#ffd860"); px(4, 3, 1, 3, "#ffd860"); px(11, 3, 1, 3, "#ffd860"); break;
     case "lg_ward": px(4, 2, 8, 7, "#ffd860"); px(5, 9, 6, 3, "#ffd860"); px(7, 12, 2, 2, "#ffd860"); px(6, 4, 4, 5, "#fff6c0"); px(7, 6, 2, 2, "#12141f"); break;
     case "lg_focus": dsc(8, 8, 6, "rgba(255,90,42,.22)"); px(7, 1, 2, 14, "#ff5a2a"); px(1, 7, 14, 2, "#ff5a2a"); dsc(8, 8, 3, "#ffe040"); break;
