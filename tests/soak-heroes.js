@@ -36,7 +36,7 @@ const { check, noErrors, report } = require('./lib');
     return res;
   });
   console.log(out.map(r => `${r.hero}@L${r.st+1}:${r.over === 'win' ? '★' : '×w'+r.wave}(sig${r.sig})`).join(' '));
-  check(out.length === 16, '16 个英雄都跑过一局', out.length);
+  check(out.length === 20, '20 个英雄都跑过一局', out.length);
   check(out.some(r => r.sig > 0), '专属卡会出现', out.map(r => r.sig));
   noErrors(errs);
   report('soak-heroes');
