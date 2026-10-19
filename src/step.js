@@ -200,11 +200,12 @@ function step(dt) {
     }
     if (e.burn > 0) {
       e.burn -= dt; e.burnAcc = (e.burnAcc || 0) + dt;
-      if (e.burnAcc >= 0.5) { e.burnAcc -= 0.5; if (!e.under) hurt(e, e.burnDps * 0.5, "poison", false, e.burnSrc || { key: "burn" }); if (e.dead) continue; }
+      if (e.burnAcc >= 0.5) { e.burnAcc -= 0.5; if (!e.under) hurt(e, e.burnDps * 0.5 * (S.wx === "rain" ? 0.7 : S.wx === "heat" ? 1.3 : 1), "poison", false, e.burnSrc || { key: "burn" }); if (e.dead) continue; }
     }
     if (e.mark > 0) e.mark -= dt;
     afxStep(e, dt);
     // 首领大招：读条 / 破防僵直
+    if (isBoss(e) || e.lead) mechStep(e, dt);
     if (isBoss(e) || e.lead || e.brokenT > 0) { if (ultStep(e, dt)) continue; }
     // 宝箱怪：只会往最近的传送门逃
     if (e.d.flee) {

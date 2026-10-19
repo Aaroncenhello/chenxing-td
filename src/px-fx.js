@@ -593,6 +593,31 @@ function addGlow(x, y, r, color, a) {
 }
 // 暗角 + 每章色调：地图换了才重建，平时就是一次 drawImage
 let vigCv = null, vigFor = null;
+// 天气：雨 / 雪 / 热浪 / 雷暴的画面（纯效果，用固定公式出点，不用随机）
+function drawWeather(t) {
+  const id = S.wx; if (!id) return;
+  const k = Math.min(1, (4 - Math.max(0, S.wxT || 0)) / 1.2 + 0.2);   // 刚开始时渐入
+  if (id === "rain") { ctx.globalAlpha = 0.1 * k; ctx.fillStyle = "#10284a"; ctx.fillRect(0, 0, PW, PHt); }
+  else if (id === "blizzard") { ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#dce8f8"; ctx.fillRect(0, 0, PW, PHt); }
+  else if (id === "heat") { ctx.globalAlpha = 0.08 * k; ctx.fillStyle = "#ff8a30"; ctx.fillRect(0, 0, PW, PHt); }
+  else if (id === "storm") { ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#0a1226"; ctx.fillRect(0, 0, PW, PHt); }
+  ctx.globalAlpha = 1;
+  if (!GFX.amb) return;
+  const n = GFX.k >= 1 ? 120 : 60;
+  if (id === "rain" || id === "storm") for (let i = 0; i < n; i++) { const s = 0.6 + (i * 37 % 10) / 25, y = (i * 53 % PHt + t * 330 * s) % PHt, x = ((i * 91 % PW) - t * 60 * s + y * 0.18 + PW * 2) % PW; rect(ctx, x, y, 1, 4 + (i % 3), i % 4 ? "rgba(170,200,240,.6)" : "rgba(220,236,255,.85)"); }
+  else if (id === "blizzard") for (let i = 0; i < n; i++) { const s = 0.5 + (i * 29 % 10) / 14, y = (i * 47 % PHt + t * 40 * s) % PHt, x = ((i * 83 % PW) - t * 150 * s + PW * 4) % PW; rect(ctx, x, y, i % 3 ? 1 : 2, 1, "rgba(255,255,255,.75)"); }
+  else if (id === "heat") for (let i = 0; i < 6; i++) { const y = (i * 61 + t * 12) % PHt, x = (i * 113) % PW; ctx.globalAlpha = 0.09; ctx.fillStyle = "#ffe0a0"; ctx.fillRect(x + Math.sin(t * 3 + i) * 6, y, 90, 1); ctx.globalAlpha = 1; }
+}
+// 昼夜：户外关随波数推进，从白天到黄昏再到夜里（纯画面，不影响数值）
+const TOD_THEMES = new Set(["forest", "snow", "desert", "sky", "ash", "storm"]);
+function drawTod() {
+  if (!TOD_THEMES.has(ST.theme) || S.wave < 1) return;
+  const f = Math.min(1, (S.wave - 1) / Math.max(1, totalWaves() - 1));
+  if (f < 0.4) return;
+  if (f < 0.72) { ctx.globalAlpha = 0.17 * (f - 0.4) / 0.32; ctx.fillStyle = "#ff8a3c"; }
+  else { ctx.globalAlpha = 0.17 + 0.2 * (f - 0.72) / 0.28; ctx.fillStyle = "#0a1038"; }
+  ctx.fillRect(0, 0, PW, PHt); ctx.globalAlpha = 1;
+}
 function drawVignette() {
   const key = mapKey();
   if (vigFor !== key) {
@@ -687,6 +712,7 @@ function render(now) {
   for (const s of S.shots) drawShot(s);
   for (const f of S.fx) if (f.kind !== "corpse" && f.kind !== "ucorpse" && f.kind !== "shatter") drawFx(f, now);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
+  drawWeather(t); drawTod();
   if (GFX.lit) drawVignette();
   if (S.hitFlash > 0 && !OPT.calm) { ctx.fillStyle = `rgba(255,40,40,${(S.hitFlash * 0.5).toFixed(3)})`; ctx.fillRect(0, 0, PW, 6); ctx.fillRect(0, PHt - 6, PW, 6); ctx.fillRect(0, 0, 6, PHt); ctx.fillRect(PW - 6, 0, 6, PHt); }
   if (S.slowmo > 0) { ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fillRect(0, 0, PW, PHt); }

@@ -105,6 +105,69 @@ function castHit(e, amt) {
   if (e.cast.got >= e.cast.need) breakCast(e, null);
 }
 
+// ---------- 首领专属机制：每位首领一个自动触发的特性，没有要手动摆放的东西 ----------
+// 有「预警」的会在目标脚下先画一圈，1 秒后才结算；反制手段都是现有的：集火、打断、换配置
+const BOSS_MECH = {
+  orc:       { id: "muster",    name: "战争号角", cd: 15, tip: "每 15 秒吹号，召来 2 只狼" },
+  bigslime:  { id: "split",     name: "沼泽分裂", cd: 0,  tip: "生命每掉 25%，分裂出 2 只小史莱姆" },
+  boss:      { id: "drain",     name: "汲取魔力", cd: 6,  tip: "身边每有一只小怪就回血，先清小怪" },
+  sovereign: { id: "aura",      name: "君主护佑", cd: 3,  tip: "身边 3 格内的小怪受到的伤害 −20%" },
+  devourer:  { id: "devour",    name: "饕餮",     cd: 8,  tip: "吞掉身边的小怪回血，别让小怪靠近它" },
+  sandworm:  { id: "quake",     name: "震地",     cd: 12, tip: "地面角色被震晕 1 秒（有预警）" },
+  wyvern:    { id: "dive",      name: "俯冲",     cd: 11, tip: "俯冲重击一名队员（有预警）" },
+  golem:     { id: "stoneskin", name: "岩肤",     cd: 0,  tip: "物理伤害 −30%，法术更有效" },
+  frostgiant:{ id: "glacier",   name: "冰甲",     cd: 16, tip: "周期性凝出冰甲，要先打碎" },
+  warmech:   { id: "repair",    name: "自动维修", cd: 0,  tip: "3 秒没挨打就自我修复，要持续输出" },
+  bloodwolf: { id: "howl",      name: "血月嚎叫", cd: 13, tip: "全体敌人 5 秒内攻击 +20%、移速 +12%" },
+  ashwalker: { id: "ember",     name: "余烬",     cd: 10, tip: "点燃两名队员（有预警）" },
+  monolith:  { id: "reflect",   name: "碑文反噬", cd: 0,  tip: "被法术打中时，反弹 10% 伤害给攻击者" },
+  stormlord: { id: "bolt",      name: "落雷",     cd: 8,  tip: "雷击两名队员（有预警）" },
+  nameless:  { id: "erase",     name: "抹除",     cd: 20, tip: "清空一名队员的技力并定身（有预警）" },
+};
+const mechOf = e => ((isBoss(e) || e.lead) && BOSS_MECH[e.type]) || null;
+function mechPick(n) {
+  const a = S.units.filter(alive), out = [];
+  while (out.length < n && a.length) out.push(a.splice(Math.floor(roll("fight") * a.length), 1)[0]);
+  return out;
+}
+function mechMark(m, us, fn, color) {
+  for (const u of us) addFx({ kind: "ring", x: u.x, y: u.y, color, life: 1, r0: 1.1, r1: 0.25 });
+  m.pend = { t: 1, fn: () => fn(us.filter(alive)) };
+}
+function mechStep(e, dt) {
+  const M = mechOf(e); if (!M || e.dead || S.cine) return;
+  const m = e.mech || (e.mech = { t: M.cd * 0.6, split: 0.75, pend: null, rep: 0 });
+  if (m.pend) { m.pend.t -= dt; if (m.pend.t <= 0) { const p = m.pend; m.pend = null; p.fn(); } }
+  const id = M.id, atk = eAtk(e), say = (txt, c) => addFx({ kind: "text", x: e.x, y: e.y - 1.3, text: txt, color: c || "#ffb0a0", life: 1.3, big: true });
+  if (id === "split") {
+    while (m.split > 0 && e.hp <= e.maxHp * m.split && e.hp > 0) { m.split -= 0.25; say(M.name); for (let i = 0; i < 2; i++) spawnNear("slime", e, false, true).hitT = 0.2; }
+    return;
+  }
+  if (id === "repair") {
+    if (S.t - e.hurtAt > 3 && e.hp < e.maxHp) { m.rep += dt; if (m.rep >= 1) { m.rep = 0; const g = Math.min(e.maxHp * 0.012, e.maxHp - e.hp); e.hp += g; addNum(e.x, e.y, g, "#7ee89c"); } } else m.rep = 0;
+    return;
+  }
+  if (id === "aura") { S.auraBoss = e; }
+  if (e.cast || e.stunT > 0 || e.freezeT > 0 || e.brokenT > 0) return;
+  m.t -= dt * (e.enraged ? 1.25 : 1); if (m.t > 0) return; m.t = M.cd;
+  if (id === "muster") { say(M.name); for (let i = 0; i < 2; i++) spawnNear("wolf", e, false, true).hitT = 0.2; addFx({ kind: "ring", x: e.x, y: e.y, color: "#ffb040", life: 0.8, r0: 0.2, r1: 2.4 }); }
+  else if (id === "drain") {
+    const n = Math.min(4, S.enemies.filter(o => o !== e && !o.dead && !isBoss(o) && dist(o, e) <= 2.5).length);
+    if (n) { const g = Math.min(e.maxHp * 0.015 * n, e.maxHp - e.hp); if (g > 0) { e.hp += g; addNum(e.x, e.y, g, "#c890ff"); addFx({ kind: "ring", x: e.x, y: e.y, color: "#b070ff", life: 0.7, r0: 2.4, r1: 0.3 }); } }
+  }
+  else if (id === "aura") addFx({ kind: "ring", x: e.x, y: e.y, color: "#ffd860", life: 1, r0: 0.3, r1: 3.2 });
+  else if (id === "devour") {
+    let o = null, bd = 3; for (const x of S.enemies) if (x !== e && !x.dead && !isBoss(x) && !x.lead) { const d = dist(x, e); if (d < bd) { bd = d; o = x; } }
+    if (o) { o.dead = true; addFx({ kind: "boom", x: o.x, y: o.y, r: 0.7, color: "#c860ff", life: 0.4 }); const g = Math.min(e.maxHp * 0.03, e.maxHp - e.hp); e.hp += g; if (g > 0) addNum(e.x, e.y, g, "#c890ff"); }
+  }
+  else if (id === "glacier") { e.shield = Math.max(e.shield, Math.round(e.maxHp * 0.06)); e.maxShield = Math.max(e.maxShield, e.shield); say(M.name, "#8fe0f0"); addFx({ kind: "ring", x: e.x, y: e.y, color: "#8fe0f0", life: 0.8, r0: 0.2, r1: 2 }); }
+  else if (id === "howl") { say(M.name); for (const o of S.enemies) if (!o.dead) o.howlUntil = S.t + 5; addFx({ kind: "ring", x: e.x, y: e.y, color: "#ff4a5a", life: 1, r0: 0.3, r1: 9 }); }
+  else if (id === "quake") { say(M.name, "#ffb040"); const us = S.units.filter(u => alive(u) && u.def.place === "ground"); mechMark(m, us, l => { for (const u of l) { hurtUnit(u, calc(atk * 0.9, "phys", uDef(u), uRes(u)), "phys", e); u.stop = Math.max(u.stop || 0, 1); } S.shake = Math.max(S.shake, 0.4); addFx({ kind: "boom", x: e.x, y: e.y, r: 3, color: "#d0a050", life: 0.5 }); }, "#d0a050"); }
+  else if (id === "dive") { say(M.name); mechMark(m, mechPick(1), l => { for (const u of l) { hurtUnit(u, calc(atk * 1.8, "phys", uDef(u), uRes(u)), "phys", e); addFx({ kind: "boom", x: u.x, y: u.y, r: 1, color: "#ffd890", life: 0.4 }); } }, "#ffd890"); }
+  else if (id === "ember") { say(M.name, "#ff8a3a"); mechMark(m, mechPick(2), l => { for (const u of l) { hurtUnit(u, calc(atk * 1.1, "magic", uDef(u), uRes(u)), "magic", e); addFx({ kind: "boom", x: u.x, y: u.y, r: 1, color: "#ff8a3a", life: 0.4 }); } }, "#ff8a3a"); }
+  else if (id === "bolt") { say(M.name, "#9ed0ff"); mechMark(m, mechPick(2), l => { for (const u of l) { hurtUnit(u, calc(atk * 1.3, "magic", uDef(u), uRes(u)), "magic", e); u.stop = Math.max(u.stop || 0, 0.5); addFx({ kind: "pillar", x: u.x, y: u.y, color: "#c8e0ff", life: 0.5 }); } }, "#9ed0ff"); }
+  else if (id === "erase") { say(M.name, "#ffffff"); mechMark(m, mechPick(1), l => { for (const u of l) { u.sp = 0; u.stop = Math.max(u.stop || 0, 2); addFx({ kind: "text", x: u.x, y: u.y - 0.8, text: "被抹除", color: "#ffffff", life: 1.2, big: true }); } }, "#ffffff"); }
+}
 // ---------- 入场演出 ----------
 function cineWorthy(e) {
   if (S.cine || S.cineWave === S.wave) return false;
@@ -114,7 +177,7 @@ function cineWorthy(e) {
 function startCine(e) {
   S.cine = {
     type: e.type, name: e.d.name, title: BOSS_TITLE[e.type] || "强敌", color: e.d.color,
-    elite: !!e.elite, ult: (ultOf(e) || {}).name || "", t: 0, dur: 2.9,
+    elite: !!e.elite, ult: (ultOf(e) || {}).name || "", mech: mechOf(e), t: 0, dur: 2.9,
   };
   S.cineWave = S.wave;
   S.shake = 0.8; S.hitFlash = 0.7;
@@ -189,6 +252,7 @@ function drawCineText(s, txt, tk) {
   }
   if (ttk > 0) { tctx.globalAlpha = a * ttk; txt(C.title, x0 + 8 * s + (1 - ttk) * 60 * s, tx.height * 0.54, 13 * s * tk, C.color); }
   if (uk > 0 && C.ult) { tctx.globalAlpha = a * uk; txt(`大招 · ${C.ult}（读条时集火可以打断）`, x0 + 8 * s, tx.height * 0.66, 11 * s * tk, "#cfd8e4"); }
+  if (uk > 0 && C.mech) { tctx.globalAlpha = a * uk; txt(`特性 · ${C.mech.name}：${C.mech.tip}`, x0 + 8 * s, tx.height * 0.74, 11 * s * tk, "#ffd0a0"); }
   tctx.globalAlpha = a * 0.7; tctx.textAlign = "right";
   txt("点一下跳过", tx.width - 12 * s, tx.height - 14 * s * tk, 10 * s * tk, "#9aa0b4");
   tctx.restore(); tctx.textAlign = "center"; tctx.globalAlpha = 1;

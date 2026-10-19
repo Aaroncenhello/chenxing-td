@@ -2210,6 +2210,7 @@ function uInterval(u) {
   if (br(u, "summoner", "B") && golemOf(u)) i *= 0.5;
   if (syn("volley") && u.def.place === "high") i *= 0.8;
   if (u.chill && !rl("rl_stoneheart")) i *= 1 + u.chill;
+  if (S.wx === "blizzard") i *= 1.05;
   if (rl("rl_frenzy")) i /= 1 + Math.min(0.4, Math.floor((S.combo || 0) / 10) * 0.04);
   if (u.hero) { if (sg("sg_sw1")) i /= 1 + 0.15 * sg("sg_sw1"); if (sg("sg_ar1")) i /= 1 + 0.1 * sg("sg_ar1"); if (sg("sg_gu1")) i *= Math.max(0.5, 1 - 0.08 * sg("sg_gu1")); }
   i /= 1 + 0.35 * cu("cu_brittle");
@@ -2238,10 +2239,10 @@ const uTaunt = u => (u.def.taunt || 0) + (u.def.place === "ground" ? 0.1 * cl("r
 const uBlock = u => (u.def.block || 0) + (u.def.id === "knight" && u.lv >= 3 ? 1 : 0) + (br(u, "lancer", "B") ? 1 : 0) + (br(u, "marshal", "A") ? 1 : 0) + (tal(u, "t_block") ? 1 : 0) + (u.hero ? sg("sg_kn1") + sg("sg_ma1") : 0);
 const uSplash = u => ((br(u, "mage", "A") ? 2 : br(u, "frost", "B") ? 1.2 : u.def.id === "mage" && u.lv >= 3 ? 1.4 : br(u, "alchemist", "B") ? 1.3 : u.def.splash || 0)
   + (u.hero ? 0.35 * sg("sg_mg1") + 0.3 * sg("sg_st1") + 0.25 * sg("sg_al1") : 0)) * (u.hero && sg("sg_gu2") ? 2 : 1);
-const eAtk = e => e.d.atk * (e.warcry ? 1.25 : 1) * (e.elite ? ELITE.atk : 1) * Math.sqrt(e.hpK) * S.diffK.atk * (e.enraged ? 1.3 : 1);
+const eAtk = e => e.d.atk * (e.warcry ? 1.25 : 1) * (e.elite ? ELITE.atk : 1) * Math.sqrt(e.hpK) * S.diffK.atk * (e.enraged ? 1.3 : 1) * (e.howlUntil > S.t ? 1.2 : 1);
 const slowAura = e => (toCrystal(e) <= 3.5 ? 1 - Math.min(0.5, 0.12 * cl("slow")) : 1);
 const chillOf = e => 1;
-const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ct("swift") ? 1.15 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e);
+const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (e.howlUntil > S.t ? 1.12 : 1) * (S.wx === "blizzard" ? 0.92 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ct("swift") ? 1.15 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e);
 const corrodeK = e => (e.corrode && e.corrode.t > 0 ? e.corrode.k : 0);
 const eDef = e => (e.d.def + (S.mod === "tough" ? 150 : 0)) * (ab(19) ? 1.2 : 1) * (1 - corrodeK(e)) * (1 - 0.15 * cl("pierce")) * (syn("inferno") && e.burn > 0 ? (syn2("inferno") ? 0.7 : 0.8) : 1) * (syn("corrosive") && corrodeK(e) > 0 ? (syn2("corrosive") ? 0.75 : 0.85) : 1);
 const corrodeOf = u => (br(u, "alchemist", "A") ? 0.55 : u.lv >= 3 ? 0.4 : 0.25) + (u.hero ? 0.1 * sg("sg_al1") : 0);
@@ -2799,7 +2800,31 @@ const hazSlow = e => {
   for (const h of S.haz) if (h.type === "field" && distTo(e, h.x, h.y) <= h.r) k *= 1 - h.slow;
   return k;
 };
+// ---------- 天气：按主题和波次固定出现（每 5 波里有 2 波），双方都受影响，只做轻微数值 ----------
+const WEATHER = {
+  rain:     { name: "骤雨",   tip: "燃烧伤害 −30%，法术伤害 +8%", color: "#8ab4e8" },
+  blizzard: { name: "暴风雪", tip: "敌人移速 −8%，我方攻击间隔 +5%", color: "#e0f0ff" },
+  heat:     { name: "热浪",   tip: "燃烧伤害 +30%，治疗效果 −10%", color: "#ffb060" },
+  storm:    { name: "雷暴",   tip: "每 8 秒落雷劈一个敌人（造成其 5% 生命），偶尔也会劈到队员", color: "#c8d8ff" },
+};
+const WEATHER_OF = { forest: "rain", grave: "rain", snow: "blizzard", ice: "blizzard", desert: "heat", lava: "heat", ash: "heat", sky: "storm", storm: "storm" };
+const wxNow = () => (S.wave > 0 && !S.over && WEATHER_OF[ST.theme] && (S.wave + (S.stage | 0)) % 5 >= 3 ? WEATHER_OF[ST.theme] : null);
+function wxStep(dt) {
+  const id = wxNow();
+  if (id !== S.wx) {
+    S.wx = id; S.wxT = 4;
+    if (id) { const W = WEATHER[id]; addFx({ kind: "banner", text: `天气 · ${W.name}（${W.tip}）`, life: 2.6 }); }
+    else if (S.wave > 1) addFx({ kind: "banner", text: "天气转好了", life: 1.6 });
+  }
+  if (id === "storm") {
+    S.wxT -= dt; if (S.wxT > 0) return; S.wxT = 8;
+    const t = S.enemies.filter(e => !e.dead && !e.under);
+    if (t.length) { const e = t[Math.floor(roll("fight") * t.length)]; addFx({ kind: "pillar", x: e.x, y: e.y, color: "#c8e0ff", life: 0.5 }); hurt(e, e.maxHp * (isBoss(e) || e.lead ? 0.01 : 0.05), "magic", false, { key: "weather" }); }
+    if (roll("fight") < 0.5) { const us = S.units.filter(alive); if (us.length) { const u = us[Math.floor(roll("fight") * us.length)]; addFx({ kind: "pillar", x: u.x, y: u.y, color: "#c8e0ff", life: 0.5 }); hurtUnit(u, u.maxHp * 0.03, "magic", null); } }
+  }
+}
 function hazStep(dt) {
+  wxStep(dt);
   if (!S.haz || !S.haz.length) return;
   if (S.gate) S.gate.t += dt;
   const pk = powerK() * (S.hazK || 1);
@@ -2992,6 +3017,69 @@ function castHit(e, amt) {
   if (e.cast.got >= e.cast.need) breakCast(e, null);
 }
 
+// ---------- 首领专属机制：每位首领一个自动触发的特性，没有要手动摆放的东西 ----------
+// 有「预警」的会在目标脚下先画一圈，1 秒后才结算；反制手段都是现有的：集火、打断、换配置
+const BOSS_MECH = {
+  orc:       { id: "muster",    name: "战争号角", cd: 15, tip: "每 15 秒吹号，召来 2 只狼" },
+  bigslime:  { id: "split",     name: "沼泽分裂", cd: 0,  tip: "生命每掉 25%，分裂出 2 只小史莱姆" },
+  boss:      { id: "drain",     name: "汲取魔力", cd: 6,  tip: "身边每有一只小怪就回血，先清小怪" },
+  sovereign: { id: "aura",      name: "君主护佑", cd: 3,  tip: "身边 3 格内的小怪受到的伤害 −20%" },
+  devourer:  { id: "devour",    name: "饕餮",     cd: 8,  tip: "吞掉身边的小怪回血，别让小怪靠近它" },
+  sandworm:  { id: "quake",     name: "震地",     cd: 12, tip: "地面角色被震晕 1 秒（有预警）" },
+  wyvern:    { id: "dive",      name: "俯冲",     cd: 11, tip: "俯冲重击一名队员（有预警）" },
+  golem:     { id: "stoneskin", name: "岩肤",     cd: 0,  tip: "物理伤害 −30%，法术更有效" },
+  frostgiant:{ id: "glacier",   name: "冰甲",     cd: 16, tip: "周期性凝出冰甲，要先打碎" },
+  warmech:   { id: "repair",    name: "自动维修", cd: 0,  tip: "3 秒没挨打就自我修复，要持续输出" },
+  bloodwolf: { id: "howl",      name: "血月嚎叫", cd: 13, tip: "全体敌人 5 秒内攻击 +20%、移速 +12%" },
+  ashwalker: { id: "ember",     name: "余烬",     cd: 10, tip: "点燃两名队员（有预警）" },
+  monolith:  { id: "reflect",   name: "碑文反噬", cd: 0,  tip: "被法术打中时，反弹 10% 伤害给攻击者" },
+  stormlord: { id: "bolt",      name: "落雷",     cd: 8,  tip: "雷击两名队员（有预警）" },
+  nameless:  { id: "erase",     name: "抹除",     cd: 20, tip: "清空一名队员的技力并定身（有预警）" },
+};
+const mechOf = e => ((isBoss(e) || e.lead) && BOSS_MECH[e.type]) || null;
+function mechPick(n) {
+  const a = S.units.filter(alive), out = [];
+  while (out.length < n && a.length) out.push(a.splice(Math.floor(roll("fight") * a.length), 1)[0]);
+  return out;
+}
+function mechMark(m, us, fn, color) {
+  for (const u of us) addFx({ kind: "ring", x: u.x, y: u.y, color, life: 1, r0: 1.1, r1: 0.25 });
+  m.pend = { t: 1, fn: () => fn(us.filter(alive)) };
+}
+function mechStep(e, dt) {
+  const M = mechOf(e); if (!M || e.dead || S.cine) return;
+  const m = e.mech || (e.mech = { t: M.cd * 0.6, split: 0.75, pend: null, rep: 0 });
+  if (m.pend) { m.pend.t -= dt; if (m.pend.t <= 0) { const p = m.pend; m.pend = null; p.fn(); } }
+  const id = M.id, atk = eAtk(e), say = (txt, c) => addFx({ kind: "text", x: e.x, y: e.y - 1.3, text: txt, color: c || "#ffb0a0", life: 1.3, big: true });
+  if (id === "split") {
+    while (m.split > 0 && e.hp <= e.maxHp * m.split && e.hp > 0) { m.split -= 0.25; say(M.name); for (let i = 0; i < 2; i++) spawnNear("slime", e, false, true).hitT = 0.2; }
+    return;
+  }
+  if (id === "repair") {
+    if (S.t - e.hurtAt > 3 && e.hp < e.maxHp) { m.rep += dt; if (m.rep >= 1) { m.rep = 0; const g = Math.min(e.maxHp * 0.012, e.maxHp - e.hp); e.hp += g; addNum(e.x, e.y, g, "#7ee89c"); } } else m.rep = 0;
+    return;
+  }
+  if (id === "aura") { S.auraBoss = e; }
+  if (e.cast || e.stunT > 0 || e.freezeT > 0 || e.brokenT > 0) return;
+  m.t -= dt * (e.enraged ? 1.25 : 1); if (m.t > 0) return; m.t = M.cd;
+  if (id === "muster") { say(M.name); for (let i = 0; i < 2; i++) spawnNear("wolf", e, false, true).hitT = 0.2; addFx({ kind: "ring", x: e.x, y: e.y, color: "#ffb040", life: 0.8, r0: 0.2, r1: 2.4 }); }
+  else if (id === "drain") {
+    const n = Math.min(4, S.enemies.filter(o => o !== e && !o.dead && !isBoss(o) && dist(o, e) <= 2.5).length);
+    if (n) { const g = Math.min(e.maxHp * 0.015 * n, e.maxHp - e.hp); if (g > 0) { e.hp += g; addNum(e.x, e.y, g, "#c890ff"); addFx({ kind: "ring", x: e.x, y: e.y, color: "#b070ff", life: 0.7, r0: 2.4, r1: 0.3 }); } }
+  }
+  else if (id === "aura") addFx({ kind: "ring", x: e.x, y: e.y, color: "#ffd860", life: 1, r0: 0.3, r1: 3.2 });
+  else if (id === "devour") {
+    let o = null, bd = 3; for (const x of S.enemies) if (x !== e && !x.dead && !isBoss(x) && !x.lead) { const d = dist(x, e); if (d < bd) { bd = d; o = x; } }
+    if (o) { o.dead = true; addFx({ kind: "boom", x: o.x, y: o.y, r: 0.7, color: "#c860ff", life: 0.4 }); const g = Math.min(e.maxHp * 0.03, e.maxHp - e.hp); e.hp += g; if (g > 0) addNum(e.x, e.y, g, "#c890ff"); }
+  }
+  else if (id === "glacier") { e.shield = Math.max(e.shield, Math.round(e.maxHp * 0.06)); e.maxShield = Math.max(e.maxShield, e.shield); say(M.name, "#8fe0f0"); addFx({ kind: "ring", x: e.x, y: e.y, color: "#8fe0f0", life: 0.8, r0: 0.2, r1: 2 }); }
+  else if (id === "howl") { say(M.name); for (const o of S.enemies) if (!o.dead) o.howlUntil = S.t + 5; addFx({ kind: "ring", x: e.x, y: e.y, color: "#ff4a5a", life: 1, r0: 0.3, r1: 9 }); }
+  else if (id === "quake") { say(M.name, "#ffb040"); const us = S.units.filter(u => alive(u) && u.def.place === "ground"); mechMark(m, us, l => { for (const u of l) { hurtUnit(u, calc(atk * 0.9, "phys", uDef(u), uRes(u)), "phys", e); u.stop = Math.max(u.stop || 0, 1); } S.shake = Math.max(S.shake, 0.4); addFx({ kind: "boom", x: e.x, y: e.y, r: 3, color: "#d0a050", life: 0.5 }); }, "#d0a050"); }
+  else if (id === "dive") { say(M.name); mechMark(m, mechPick(1), l => { for (const u of l) { hurtUnit(u, calc(atk * 1.8, "phys", uDef(u), uRes(u)), "phys", e); addFx({ kind: "boom", x: u.x, y: u.y, r: 1, color: "#ffd890", life: 0.4 }); } }, "#ffd890"); }
+  else if (id === "ember") { say(M.name, "#ff8a3a"); mechMark(m, mechPick(2), l => { for (const u of l) { hurtUnit(u, calc(atk * 1.1, "magic", uDef(u), uRes(u)), "magic", e); addFx({ kind: "boom", x: u.x, y: u.y, r: 1, color: "#ff8a3a", life: 0.4 }); } }, "#ff8a3a"); }
+  else if (id === "bolt") { say(M.name, "#9ed0ff"); mechMark(m, mechPick(2), l => { for (const u of l) { hurtUnit(u, calc(atk * 1.3, "magic", uDef(u), uRes(u)), "magic", e); u.stop = Math.max(u.stop || 0, 0.5); addFx({ kind: "pillar", x: u.x, y: u.y, color: "#c8e0ff", life: 0.5 }); } }, "#9ed0ff"); }
+  else if (id === "erase") { say(M.name, "#ffffff"); mechMark(m, mechPick(1), l => { for (const u of l) { u.sp = 0; u.stop = Math.max(u.stop || 0, 2); addFx({ kind: "text", x: u.x, y: u.y - 0.8, text: "被抹除", color: "#ffffff", life: 1.2, big: true }); } }, "#ffffff"); }
+}
 // ---------- 入场演出 ----------
 function cineWorthy(e) {
   if (S.cine || S.cineWave === S.wave) return false;
@@ -3001,7 +3089,7 @@ function cineWorthy(e) {
 function startCine(e) {
   S.cine = {
     type: e.type, name: e.d.name, title: BOSS_TITLE[e.type] || "强敌", color: e.d.color,
-    elite: !!e.elite, ult: (ultOf(e) || {}).name || "", t: 0, dur: 2.9,
+    elite: !!e.elite, ult: (ultOf(e) || {}).name || "", mech: mechOf(e), t: 0, dur: 2.9,
   };
   S.cineWave = S.wave;
   S.shake = 0.8; S.hitFlash = 0.7;
@@ -3076,6 +3164,7 @@ function drawCineText(s, txt, tk) {
   }
   if (ttk > 0) { tctx.globalAlpha = a * ttk; txt(C.title, x0 + 8 * s + (1 - ttk) * 60 * s, tx.height * 0.54, 13 * s * tk, C.color); }
   if (uk > 0 && C.ult) { tctx.globalAlpha = a * uk; txt(`大招 · ${C.ult}（读条时集火可以打断）`, x0 + 8 * s, tx.height * 0.66, 11 * s * tk, "#cfd8e4"); }
+  if (uk > 0 && C.mech) { tctx.globalAlpha = a * uk; txt(`特性 · ${C.mech.name}：${C.mech.tip}`, x0 + 8 * s, tx.height * 0.74, 11 * s * tk, "#ffd0a0"); }
   tctx.globalAlpha = a * 0.7; tctx.textAlign = "right";
   txt("点一下跳过", tx.width - 12 * s, tx.height - 14 * s * tk, 10 * s * tk, "#9aa0b4");
   tctx.restore(); tctx.textAlign = "center"; tctx.globalAlpha = 1;
@@ -3567,6 +3656,8 @@ function hurt(e, amt, type, crit, src) {
   if (type === "phys" && e.d.physRes) amt *= 1 - e.d.physRes;
   if (type === "phys" && hasAfx(e, "harden")) amt *= 0.75;
   if (e.guarded && src && src.def && src.def.place === "high") amt *= 0.6;
+  if (type === "phys" && e.type === "golem" && mechOf(e)) amt *= 0.7;
+  if (S.auraBoss && !S.auraBoss.dead && e !== S.auraBoss && !isBoss(e) && dist(S.auraBoss, e) <= 3.2) amt *= 0.8;
   if (e.brokenT > 0) amt *= BREAK_BONUS;
   if (e.mark > 0) amt *= 1.25;
   if (S.weakWaves > 0) amt *= 1.1;
@@ -3580,6 +3671,7 @@ function hurt(e, amt, type, crit, src) {
   if (rl("rl_rot") && (e.burn > 0 || (e.poison && e.poison.t > 0) || corrodeK(e) > 0)) amt *= 1.2;
   const byUnit = src && src.def && type !== "poison";
   if (byUnit) {
+    if (type === "magic" && S.wx === "rain") amt *= 1.08;
     if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1);
     if (rl("rl_berserk") && !crit) { src.hitN = (src.hitN || 0) + 1; if (src.hitN % 8 === 0) { amt *= 3; crit = true; } }
     if ((cl("crit") || cu("cu_moon") || dk("crit")) && !crit && roll("fight") < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon")) { amt *= 2 + 0.15 * cl("critdmg"); crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
@@ -3587,6 +3679,7 @@ function hurt(e, amt, type, crit, src) {
     if (cl("freeze") && !e.d.unstoppable && roll("fight") < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
     if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? (syn2("bloodlust") ? 3 : 2) : 1), true, src);
     if (hasAfx(e, "thorns") && src.def.place === "ground" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.18, "magic", null);
+    if (e.type === "monolith" && mechOf(e) && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.1, "magic", null);
     if (hasAfx(e, "warp") && type === "magic" && !src.dead && src.down <= 0) hurtUnit(src, amt * 0.15, "magic", null);
     if (tal(src, "t_pierce") && !e.dead) applyCorrode(e, 0.25, 4, src);
   }
@@ -3693,6 +3786,7 @@ function hurtUnit(u, amt, type, from) {
 function heal(u, amt, quiet, src) {
   if (u.dead || u.down > 0) return;
   if (src && src.hero && sg("sg_pr2")) u.blessT = 6;
+  if (S.wx === "heat") amt *= 0.9;
   const got = Math.min(amt, u.maxHp - u.hp);
   u.hp += got;
   if (src) addStat(src, "heal", got);
@@ -4400,11 +4494,12 @@ function step(dt) {
     }
     if (e.burn > 0) {
       e.burn -= dt; e.burnAcc = (e.burnAcc || 0) + dt;
-      if (e.burnAcc >= 0.5) { e.burnAcc -= 0.5; if (!e.under) hurt(e, e.burnDps * 0.5, "poison", false, e.burnSrc || { key: "burn" }); if (e.dead) continue; }
+      if (e.burnAcc >= 0.5) { e.burnAcc -= 0.5; if (!e.under) hurt(e, e.burnDps * 0.5 * (S.wx === "rain" ? 0.7 : S.wx === "heat" ? 1.3 : 1), "poison", false, e.burnSrc || { key: "burn" }); if (e.dead) continue; }
     }
     if (e.mark > 0) e.mark -= dt;
     afxStep(e, dt);
     // 首领大招：读条 / 破防僵直
+    if (isBoss(e) || e.lead) mechStep(e, dt);
     if (isBoss(e) || e.lead || e.brokenT > 0) { if (ultStep(e, dt)) continue; }
     // 宝箱怪：只会往最近的传送门逃
     if (e.d.flee) {
@@ -6275,6 +6370,31 @@ function addGlow(x, y, r, color, a) {
 }
 // 暗角 + 每章色调：地图换了才重建，平时就是一次 drawImage
 let vigCv = null, vigFor = null;
+// 天气：雨 / 雪 / 热浪 / 雷暴的画面（纯效果，用固定公式出点，不用随机）
+function drawWeather(t) {
+  const id = S.wx; if (!id) return;
+  const k = Math.min(1, (4 - Math.max(0, S.wxT || 0)) / 1.2 + 0.2);   // 刚开始时渐入
+  if (id === "rain") { ctx.globalAlpha = 0.1 * k; ctx.fillStyle = "#10284a"; ctx.fillRect(0, 0, PW, PHt); }
+  else if (id === "blizzard") { ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#dce8f8"; ctx.fillRect(0, 0, PW, PHt); }
+  else if (id === "heat") { ctx.globalAlpha = 0.08 * k; ctx.fillStyle = "#ff8a30"; ctx.fillRect(0, 0, PW, PHt); }
+  else if (id === "storm") { ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#0a1226"; ctx.fillRect(0, 0, PW, PHt); }
+  ctx.globalAlpha = 1;
+  if (!GFX.amb) return;
+  const n = GFX.k >= 1 ? 120 : 60;
+  if (id === "rain" || id === "storm") for (let i = 0; i < n; i++) { const s = 0.6 + (i * 37 % 10) / 25, y = (i * 53 % PHt + t * 330 * s) % PHt, x = ((i * 91 % PW) - t * 60 * s + y * 0.18 + PW * 2) % PW; rect(ctx, x, y, 1, 4 + (i % 3), i % 4 ? "rgba(170,200,240,.6)" : "rgba(220,236,255,.85)"); }
+  else if (id === "blizzard") for (let i = 0; i < n; i++) { const s = 0.5 + (i * 29 % 10) / 14, y = (i * 47 % PHt + t * 40 * s) % PHt, x = ((i * 83 % PW) - t * 150 * s + PW * 4) % PW; rect(ctx, x, y, i % 3 ? 1 : 2, 1, "rgba(255,255,255,.75)"); }
+  else if (id === "heat") for (let i = 0; i < 6; i++) { const y = (i * 61 + t * 12) % PHt, x = (i * 113) % PW; ctx.globalAlpha = 0.09; ctx.fillStyle = "#ffe0a0"; ctx.fillRect(x + Math.sin(t * 3 + i) * 6, y, 90, 1); ctx.globalAlpha = 1; }
+}
+// 昼夜：户外关随波数推进，从白天到黄昏再到夜里（纯画面，不影响数值）
+const TOD_THEMES = new Set(["forest", "snow", "desert", "sky", "ash", "storm"]);
+function drawTod() {
+  if (!TOD_THEMES.has(ST.theme) || S.wave < 1) return;
+  const f = Math.min(1, (S.wave - 1) / Math.max(1, totalWaves() - 1));
+  if (f < 0.4) return;
+  if (f < 0.72) { ctx.globalAlpha = 0.17 * (f - 0.4) / 0.32; ctx.fillStyle = "#ff8a3c"; }
+  else { ctx.globalAlpha = 0.17 + 0.2 * (f - 0.72) / 0.28; ctx.fillStyle = "#0a1038"; }
+  ctx.fillRect(0, 0, PW, PHt); ctx.globalAlpha = 1;
+}
 function drawVignette() {
   const key = mapKey();
   if (vigFor !== key) {
@@ -6369,6 +6489,7 @@ function render(now) {
   for (const s of S.shots) drawShot(s);
   for (const f of S.fx) if (f.kind !== "corpse" && f.kind !== "ucorpse" && f.kind !== "shatter") drawFx(f, now);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
+  drawWeather(t); drawTod();
   if (GFX.lit) drawVignette();
   if (S.hitFlash > 0 && !OPT.calm) { ctx.fillStyle = `rgba(255,40,40,${(S.hitFlash * 0.5).toFixed(3)})`; ctx.fillRect(0, 0, PW, 6); ctx.fillRect(0, PHt - 6, PW, 6); ctx.fillRect(0, 0, 6, PHt); ctx.fillRect(PW - 6, 0, 6, PHt); }
   if (S.slowmo > 0) { ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fillRect(0, 0, PW, PHt); }
