@@ -307,6 +307,7 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .daily.lockd{opacity:.55}
 .toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:9;max-width:min(340px,calc(100vw - 32px))}
 .toast{background:var(--panel);border:2px solid #0a0c12;box-shadow:var(--bevel),0 6px 16px rgba(0,0,0,.5);padding:10px 12px;display:flex;gap:10px;align-items:center;font-size:12px;line-height:1.5;animation:tin .25s steps(4)}
+#fps{position:fixed;left:6px;top:6px;z-index:60;background:rgba(0,0,0,.65);color:#9ef09e;font:11px/1.4 monospace;padding:2px 6px;pointer-events:none;white-space:pre}
 .toast.mini{padding:4px 8px;gap:6px;font-size:11px;cursor:pointer;max-width:230px}
 .toast.mini .tb{display:none}.toast.mini b{display:inline;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .toast.mini .tb1{display:block;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -642,6 +643,7 @@ body.imm .hud-syn{max-height:44%}
     <div class="info" id="info"></div>
   </div>
 
+  <div id="fps" hidden></div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
   <p class="hint">
     每局只带 <b>1 个英雄</b> 上场，全程自动战斗。敌人从四周的传送门冲向中间的<b>晨星碑</b>，晨星碑血量打空就结束。

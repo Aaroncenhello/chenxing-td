@@ -5,7 +5,7 @@
 const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true, lit: true }];
 // 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
 const OPT_KEY = "chenxing-td-opts";
-const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, sp2: 0, ct: [] }; } })();
+const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, fps: !!v.fps, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, fps: false, sp2: 0, ct: [] }; } })();
 function setOpt(k, v) { OPT[k] = typeof v === "number" || Array.isArray(v) ? v : !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
@@ -22,8 +22,10 @@ function adaptGfx(dt) {
   fpsEma = fpsEma == null ? fps : fpsEma * 0.9 + fps * 0.1;
   gfxAdaptCd -= dt;
   if (gfxAdaptCd > 0) return;
-  if (fpsEma < 42 && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
-  else if (fpsEma > 56 && autoIdx < GFX_LV.length - 1) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
+  // 预测式降档：场上怪多 / 特效多的时候（大波、首领战）门槛抬高到 50 帧，不用等真的卡了才降；这种时候也不急着升回去
+  const heavy = !!S && (S.enemies.length > 36 || S.fx.length > GFX.cap * 0.6);
+  if (fpsEma < (heavy ? 50 : 42) && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
+  else if (fpsEma > 56 && !heavy && autoIdx < GFX_LV.length - 1) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
 }
 // 特效满了就先丢掉装饰性的（粒子、伤害数字），横幅、演出、环这类关键反馈照常加
 const fxCheap = f => f.kind === "parts" || (f.kind === "text" && !f.big);

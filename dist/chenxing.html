@@ -307,6 +307,7 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .daily.lockd{opacity:.55}
 .toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:9;max-width:min(340px,calc(100vw - 32px))}
 .toast{background:var(--panel);border:2px solid #0a0c12;box-shadow:var(--bevel),0 6px 16px rgba(0,0,0,.5);padding:10px 12px;display:flex;gap:10px;align-items:center;font-size:12px;line-height:1.5;animation:tin .25s steps(4)}
+#fps{position:fixed;left:6px;top:6px;z-index:60;background:rgba(0,0,0,.65);color:#9ef09e;font:11px/1.4 monospace;padding:2px 6px;pointer-events:none;white-space:pre}
 .toast.mini{padding:4px 8px;gap:6px;font-size:11px;cursor:pointer;max-width:230px}
 .toast.mini .tb{display:none}.toast.mini b{display:inline;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .toast.mini .tb1{display:block;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -642,6 +643,7 @@ body.imm .hud-syn{max-height:44%}
     <div class="info" id="info"></div>
   </div>
 
+  <div id="fps" hidden></div>
   <div class="toasts" id="toasts" aria-live="polite"></div>
   <p class="hint">
     每局只带 <b>1 个英雄</b> 上场，全程自动战斗。敌人从四周的传送门冲向中间的<b>晨星碑</b>，晨星碑血量打空就结束。
@@ -3754,7 +3756,7 @@ function drawAfxPips(e, fx, top) {
 const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true, lit: true }];
 // 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
 const OPT_KEY = "chenxing-td-opts";
-const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, sp2: 0, ct: [] }; } })();
+const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, fps: !!v.fps, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, fps: false, sp2: 0, ct: [] }; } })();
 function setOpt(k, v) { OPT[k] = typeof v === "number" || Array.isArray(v) ? v : !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
@@ -3771,8 +3773,10 @@ function adaptGfx(dt) {
   fpsEma = fpsEma == null ? fps : fpsEma * 0.9 + fps * 0.1;
   gfxAdaptCd -= dt;
   if (gfxAdaptCd > 0) return;
-  if (fpsEma < 42 && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
-  else if (fpsEma > 56 && autoIdx < GFX_LV.length - 1) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
+  // 预测式降档：场上怪多 / 特效多的时候（大波、首领战）门槛抬高到 50 帧，不用等真的卡了才降；这种时候也不急着升回去
+  const heavy = !!S && (S.enemies.length > 36 || S.fx.length > GFX.cap * 0.6);
+  if (fpsEma < (heavy ? 50 : 42) && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
+  else if (fpsEma > 56 && !heavy && autoIdx < GFX_LV.length - 1) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
 }
 // 特效满了就先丢掉装饰性的（粒子、伤害数字），横幅、演出、环这类关键反馈照常加
 const fxCheap = f => f.kind === "parts" || (f.kind === "text" && !f.big);
@@ -8072,7 +8076,7 @@ function showLevels() {
     <p class="chaprog">${ch.name} · 本章星级 ${chStars}/${ids.length * 3}</p><div class="chbar" style="--cc:${CH_COL[chapSel] || "#8fb3e0"}"><i style="width:${Math.round(chStars / (ids.length * 3) * 100)}%"></i></div><p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
     ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
     ${contractHtml()}
-    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="最多 30 帧，手机更省电、更不烫">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-sp2" title="${SPELL2[OPT.sp2].desc}。第二个法术槽（W）用哪个，点一下换">第二法术 · ${SPELL2[OPT.sp2].name}</button><button id="btn-pix" title="整数倍缩放，像素粗细均匀。窗口放不下合适的整数倍时自动不生效">像素完美 · ${OPT.pix ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
+    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="最多 30 帧，手机更省电、更不烫">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-sp2" title="${SPELL2[OPT.sp2].desc}。第二个法术槽（W）用哪个，点一下换">第二法术 · ${SPELL2[OPT.sp2].name}</button><button id="btn-pix" title="整数倍缩放，像素粗细均匀。窗口放不下合适的整数倍时自动不生效">像素完美 · ${OPT.pix ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button><button id="btn-fps" title="左上角显示帧率和当前画质，卡顿时截图反馈给我很有用">显示帧率 · ${OPT.fps ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
     <div class="levels">` +
     ids.map(i => { const st = STAGES[i];
       const open = unlocked(i), cleared = (save.stars[i] || 0) > 0, dc = save.diffClear[i] || [];
@@ -8220,6 +8224,7 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-sp2") { setOpt("sp2", (OPT.sp2 + 1) % SPELL2.length); applySpell2(OPT.sp2); buildSpells(); showLevels(); }
   else if (b.id === "btn-pix") { setOpt("pix", !OPT.pix); resize(); showLevels(); }
   else if (b.id === "btn-calm") { setOpt("calm", !OPT.calm); showLevels(); }
+  else if (b.id === "btn-fps") { setOpt("fps", !OPT.fps); showLevels(); }
   else if (b.id === "btn-gfx") { const next = gfxSel >= 2 ? -1 : gfxSel + 1; editSave(d => { d.gfx = next; }); applyGfx(next); showLevels(); }
   else if (b.id === "btn-svcopy") {
     const ta = $("sv-out"); ta.select(); ta.setSelectionRange(0, 99999);
@@ -8792,9 +8797,19 @@ function expCardHtml(save) {
 // ================= 主循环、开机、测试接口 =================
 // ---------- 主循环 ----------
 let last = performance.now(), acc = 0;
+// 帧率显示（菜单里「显示帧率」）：每半秒刷新一次，方便真机反馈卡顿
+let fpsN = 0, fpsT = 0, fpsMs = 0, fpsMax = 0;
+function fpsTick(now, ms) {
+  const el = $("fps"); if (!el) return;
+  if (!OPT.fps) { if (!el.hidden) el.hidden = true; return; }
+  el.hidden = false; fpsN++; fpsMs += ms; fpsMax = Math.max(fpsMax, ms);
+  if (now - fpsT < 500) return;
+  el.textContent = `${Math.round(fpsN * 1000 / Math.max(1, now - fpsT))} FPS · 平均 ${(fpsMs / fpsN).toFixed(1)}ms · 最差 ${fpsMax.toFixed(0)}ms\n画质 ${GFX.name}${gfxSel < 0 ? "（自动）" : ""} · 敌 ${S.enemies.length} · 特效 ${S.fx.length}`;
+  fpsT = now; fpsN = 0; fpsMs = 0; fpsMax = 0;
+}
 function frame(now) {
   if (OPT.eco && now - last < 30) { requestAnimationFrame(frame); return; }   // 省电：最多 30 帧
-  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  const dt = Math.min(0.1, (now - last) / 1000); fpsTick(now, (now - last)); last = now;
   adaptGfx(dt);
   if (S.slowCd > 0) S.slowCd -= dt;
   let k = 1; if (S.slowmo > 0) { S.slowmo -= dt; k = 0.3; }
