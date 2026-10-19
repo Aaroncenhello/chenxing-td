@@ -230,6 +230,7 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 @media (max-width:760px){.cgrp.sys{padding-left:0;border-left:0;box-shadow:none}}
 .diffs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
 .eff.t2{color:#8fe0a0;opacity:.75}.eff.t2.on{opacity:1;font-weight:700}.eff.t2 small{color:var(--muted);font-weight:400}
+.ctrs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.ctrs button{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:104px;padding:6px 8px}.ctrs button em{font-style:normal;font-size:10px;color:var(--muted);max-width:130px;line-height:1.3}.ctrs button.on{background:var(--gold);color:#1a1408}.ctrs button.on em{color:#4a3a14}.ctrbonus{font-size:12px;color:#ffd860}
 .chaprog{font-family:var(--pix);font-size:10px;color:#ffd860;letter-spacing:.06em}
 .events{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:min(928px,100%)}
 .events .daily{width:auto;align-self:stretch}
@@ -1154,6 +1155,18 @@ const RARITY = [
 // 抽到各稀有度的基础权重，随等级提高
 const RARE_W = lv => [100, 26 + lv * 2.4, 3 + lv * 1.5];
 const REROLLS = 3;
+// 自选契约：开局前自己选几条，换更高难度和额外星星（只在主线关卡 / 无尽生效；每日、每周、远征、守望不用）
+const CONTRACTS = [
+  { id: "ironhide", name: "铁壁", pts: 1, desc: "敌人生命 +25%" },
+  { id: "swift", name: "疾袭", pts: 1, desc: "敌人移动速度 +15%" },
+  { id: "fewer", name: "寡兵", pts: 1, desc: "伙伴上限 −1" },
+  { id: "drought", name: "枯竭", pts: 1, desc: "击杀得到的星尘 −40%" },
+  { id: "elite", name: "精英潮", pts: 2, desc: "精英出现的几率大幅提高" },
+  { id: "seal", name: "封印", pts: 2, desc: "不能使用主动法术（陨星术和第二法术）" },
+];
+const CONTRACT_BY = Object.fromEntries(CONTRACTS.map(c => [c.id, c]));
+const contractPts = ids => (ids || []).reduce((n, id) => n + (CONTRACT_BY[id] ? CONTRACT_BY[id].pts : 0), 0);
+const contractStars = ids => Math.min(5, Math.ceil(contractPts(ids) * 0.75));   // 1 点 1★、2 点 2★、3 点 3★、5 点 4★、全选 5★
 const BANISH_N = 2;   // 每局可以放逐几次卡牌
 
 // 羁绊：满足条件就一直生效。prog() 返回 [已有, 需要]，选牌时用它提示「再拿这张就凑齐」
@@ -2064,6 +2077,7 @@ function tal(u, node) {
 const lvK = (u, k) => UPGRADE[k][Math.min(3, u.lv - 1)];
 const perk = id => S.perks.includes(id);
 const syn = id => !!(S.syn && S.syn[id]);
+const ct = id => !!(S && S.contracts && S.contracts.includes(id));   // 自选契约
 const syn2 = id => !!(S.syn2 && S.syn2[id]);   // 羁绊第二档
 function updateSyn() {
   const o = {}; let n = 0;
@@ -2221,11 +2235,11 @@ const uSplash = u => ((br(u, "mage", "A") ? 2 : br(u, "frost", "B") ? 1.2 : u.de
 const eAtk = e => e.d.atk * (e.warcry ? 1.25 : 1) * (e.elite ? ELITE.atk : 1) * Math.sqrt(e.hpK) * S.diffK.atk * (e.enraged ? 1.3 : 1);
 const slowAura = e => (toCrystal(e) <= 3.5 ? 1 - Math.min(0.5, 0.12 * cl("slow")) : 1);
 const chillOf = e => 1;
-const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e);
+const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ct("swift") ? 1.15 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e);
 const corrodeK = e => (e.corrode && e.corrode.t > 0 ? e.corrode.k : 0);
 const eDef = e => (e.d.def + (S.mod === "tough" ? 150 : 0)) * (ab(19) ? 1.2 : 1) * (1 - corrodeK(e)) * (1 - 0.15 * cl("pierce")) * (syn("inferno") && e.burn > 0 ? (syn2("inferno") ? 0.7 : 0.8) : 1) * (syn("corrosive") && corrodeK(e) > 0 ? (syn2("corrosive") ? 0.75 : 0.85) : 1);
 const corrodeOf = u => (br(u, "alchemist", "A") ? 0.55 : u.lv >= 3 ? 0.4 : 0.25) + (u.hero ? 0.1 * sg("sg_al1") : 0);
-const maxAllies = () => RULES.maxAllies + 2 * cl("lg_army");
+const maxAllies = () => RULES.maxAllies + 2 * cl("lg_army") - (ct("fewer") ? 1 : 0);
 const reviveT = () => cl("lg_phoenix") ? 3 : RULES.revive * (1 - 0.06 * dk("rally")) * (1 - 0.25 * cl("revive")) * (ab(15) ? 1.5 : 1);
 // 关卡强度在前 6 波内逐渐拉满，避免后期关卡一开局就压死人
 const stageHp = () => 1 + (ST.hp - 1) * Math.min(1, (S.wave || 1) / 6);
@@ -2273,6 +2287,9 @@ function newRun(stage, opts) {
   // 难度 × 深渊层数 × 每周规则 合成一个敌人强度系数
   const d0 = DIFFS[opts.diff || 0], ak = abyssK(abyss);
   const diffK = { ...d0, hp: d0.hp * ak.hp, atk: d0.atk * ak.atk, elite: d0.elite + ak.elite };
+  const contracts = !daily && !week && !opts.vigil && !opts.exped ? (opts.contracts || []).filter(id => CONTRACT_BY[id]) : [];
+  if (contracts.includes("ironhide")) diffK.hp *= 1.25;
+  if (contracts.includes("elite")) diffK.elite += 0.22;
   if (opts.exped) { diffK.hp *= opts.exped.hpK || 1; diffK.atk *= opts.exped.atkK || 1; diffK.elite += opts.exped.elite || 0; }
   if (week && week.rules.includes("giants")) diffK.hp *= 1.7;
   if (week && week.rules.includes("swarm")) diffK.hp *= 0.65;
@@ -2280,7 +2297,7 @@ function newRun(stage, opts) {
   const disk = opts.disk || {}, dkk = id => disk[id] || 0;
   const heroDef = UNITS.find(u => u.id === (opts.hero || "knight")) || UNITS[0];
   S = {
-    stage, disk, abyss, week, relics: [], phoenixUsed: false, endless: !!opts.endless, vigil: !!opts.vigil, gen: !!gen, seed: seedN, daily, mod: daily ? daily.mod : null, diff: opts.diff || 0, diffK, perks, charLv: opts.charLv || {}, charAwk: opts.charAwk || {}, charTal: opts.charTal || {},
+    stage, disk, abyss, week, relics: [], phoenixUsed: false, endless: !!opts.endless, vigil: !!opts.vigil, gen: !!gen, seed: seedN, daily, mod: daily ? daily.mod : contracts.includes("seal") ? "noSpell" : null, contracts, diff: opts.diff || 0, diffK, perks, charLv: opts.charLv || {}, charAwk: opts.charAwk || {}, charTal: opts.charTal || {},
     charOpen: (opts.charOpen || UNITS.map(u => u.id)).filter(id => !week || weekAllows(UNITS.find(u => u.id === id) || {}, week.rules)),
     rng: daily ? seeded(daily.seed) : week ? seeded(week.seed) : Math.random,
     rngs: makeRngs(daily ? daily.seed : week ? week.seed : 0),
@@ -3390,8 +3407,8 @@ function drawAfxPips(e, fx, top) {
 const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true, lit: true }];
 // 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
 const OPT_KEY = "chenxing-td-opts";
-const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, sp2: Math.max(0, Math.min(3, v.sp2 | 0)) }; } catch (e) { return { eco: false, calm: false, pix: false, sp2: 0 }; } })();
-function setOpt(k, v) { OPT[k] = typeof v === "number" ? v : !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
+const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, sp2: 0, ct: [] }; } })();
+function setOpt(k, v) { OPT[k] = typeof v === "number" || Array.isArray(v) ? v : !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
   gfxSel = sel == null ? -1 : sel;
@@ -3472,7 +3489,8 @@ function killEnemy(e, src) {
   if (rl("rl_fang") && src && src.def && !src.dead && src.down <= 0) heal(src, src.maxHp * 0.08, true, src);
   if (S.riftDust > 0 && e.elite) { const g = Math.round(S.riftDust / 4); S.dust += g; S.riftDust -= g; addFx({ kind: "text", x: e.x, y: e.y - 0.8, text: "+" + g + " 星尘", color: "#ffd860", life: 1.1, big: true }); }
   // 星尘
-  const dust = Math.round((isBoss(e) ? SHOP.dustBoss : e.elite ? SHOP.dustElite : SHOP.dustPerKill * Math.max(1, Math.round(e.d.reward * 0.7))) * (cl("lg_greed") ? 2 : 1) * (1 + 0.15 * cl("loot")) * (cu("cu_greed") ? 2 : 1) * (rl("rl_compass") ? 1.35 : 1) * (wk("poor") ? 0.5 : 1));
+  let dust = Math.round((isBoss(e) ? SHOP.dustBoss : e.elite ? SHOP.dustElite : SHOP.dustPerKill * Math.max(1, Math.round(e.d.reward * 0.7))) * (cl("lg_greed") ? 2 : 1) * (1 + 0.15 * cl("loot")) * (cu("cu_greed") ? 2 : 1) * (rl("rl_compass") ? 1.35 : 1) * (wk("poor") ? 0.5 : 1));
+  if (ct("drought")) dust = Math.floor(dust * 0.6 + roll("shop"));   // 随机进位：平均正好 −40%，不会被四舍五入吃掉
   if (!e.summoned) { S.dust += dust; if (dust >= 4) addFx({ kind: "text", x: e.x + 0.2, y: e.y - 0.5, text: "+" + dust + " 星尘", color: "#ffd860", life: 1 }); }
   // 宝箱怪：额外翻一次牌
   if (e.type === "treasure") {
@@ -7379,6 +7397,7 @@ function showLevels() {
     <div class="diffs">${DIFFS.map((d, i) => `<button data-diff="${i}" class="${i === diffSel ? "on" : ""}">${d.name}</button>`).join("")}</div>
     <p class="chaprog">${ch.name} · 本章星级 ${chStars}/${ids.length * 3}</p><p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
     ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
+    ${contractHtml()}
     <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="最多 30 帧，手机更省电、更不烫">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-sp2" title="${SPELL2[OPT.sp2].desc}。第二个法术槽（W）用哪个，点一下换">第二法术 · ${SPELL2[OPT.sp2].name}</button><button id="btn-pix" title="整数倍缩放，像素粗细均匀。窗口放不下合适的整数倍时自动不生效">像素完美 · ${OPT.pix ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
     <div class="levels">` +
     ids.map(i => { const st = STAGES[i];
@@ -7427,6 +7446,11 @@ function abyssHtml(save) {
   return `<div class="abyss"><div class="abrow"><button data-abyss="-1" ${abyssSel ? "" : "disabled"}>−</button><b>${abyssSel ? `深渊 ${abyssSel} 层` : "深渊：关闭"}</b><button data-abyss="1" ${abyssSel < open ? "" : "disabled"}>＋</button><small>已解锁到第 ${open} 层</small></div>
     <p>${a ? `本层新增<b>「${a.name}」</b>：${a.desc}。前面各层的规则同时生效。首次通关这一层 +${abyssStars(abyssSel)}★。` : "在任意一关通关深渊第 N 层，就能解锁第 N+1 层（最高 20 层）。每层都会叠一条新的敌方加成，星星奖励也越来越多。"}</p>
     ${abyssSel > 1 ? `<p class="abl">${ABYSS.slice(0, abyssSel).map((x, i) => `<span title="${x.desc}">${i + 1}·${x.name}</span>`).join("")}</p>` : ""}</div>`;
+}
+function contractHtml() {
+  const on = OPT.ct, pts = contractPts(on);
+  return `<div class="abyss ctr"><div class="abrow"><b>自选契约${on.length ? ` · ${pts} 点` : ""}</b><span class="ctrbonus">${on.length ? `通关额外 +${contractStars(on)}★` : "可选，换更高难度和额外星星"}</span></div>
+    <div class="ctrs">${CONTRACTS.map(c => `<button data-ct="${c.id}" class="${on.includes(c.id) ? "on" : ""}" title="${c.desc}">${c.name} <small>${c.pts}点</small><em>${c.desc}</em></button>`).join("")}</div></div>`;
 }
 function bountyHtml(save) {
   const B = todayBounties(), done = save.bounty.date === B.date ? save.bounty.done : [], n = B.list.filter(b => done.includes(b.key)).length;
@@ -7508,6 +7532,7 @@ function showAchv() {
 $("ovbox").addEventListener("click", ev => {
   const b = ev.target.closest("button"); if (!b) return;
   if (b.dataset.diff != null) { diffSel = +b.dataset.diff; showLevels(); }
+  else if (b.dataset.ct) { const id = b.dataset.ct; setOpt("ct", OPT.ct.includes(id) ? OPT.ct.filter(x => x !== id) : OPT.ct.concat(id)); showLevels(); }
   else if (b.dataset.abyss != null) { abyssSel = Math.max(0, Math.min(abyssOpen(), abyssSel + +b.dataset.abyss)); showLevels(); }
   else if (b.dataset.disk) { buyDisk(b.dataset.disk); }
   else if (b.id === "btn-diskreset") { if (b.dataset.sure) { editSave(d => { d.disk = {}; }); showPerks(); } else { b.dataset.sure = "1"; b.textContent = "再点一次确认重置"; } }
@@ -7541,7 +7566,7 @@ $("ovbox").addEventListener("click", ev => {
     editSave(dd => { dd.tal = dd.tal || {}; dd.tal[cid] = dd.tal[cid] || {}; dd.tal[cid][tier] = dd.tal[cid][tier] === node ? null : node; });
     showRoster(cid);
   }
-  else if (b.dataset.lv != null) beginStage(+b.dataset.lv, { diff: diffSel, abyss: abyssSel });
+  else if (b.dataset.lv != null) beginStage(+b.dataset.lv, { diff: diffSel, abyss: abyssSel, contracts: OPT.ct.slice() });
   else if (b.dataset.endless != null) beginStage(+b.dataset.endless, { endless: true });
   else if (b.dataset.story != null) replayStory(+b.dataset.story);
   else if (b.dataset.hero && heroCtx) { const { stage, opts } = heroCtx; heroCtx = null; editSave(d => { d.hero = b.dataset.hero; }); if (opts.expedStart) expStart(b.dataset.hero); else startRun(stage, { ...opts, hero: b.dataset.hero }); }
@@ -7877,10 +7902,10 @@ function checkBounties(R) {
 // 通关奖励：每次都给 1★，困难再 +2、噩梦再 +3，深渊每 5 层 +1；深渊新层首通另算
 function runReward() {
   const prev = loadSave().abyss[S.stage] || 0, lay = S.abyss || 0;
-  const bonus = 1 + (DIFF_BONUS[S.diff] || 0) + Math.floor(lay / 5);
+  const cts = contractStars(S.contracts), bonus = 1 + (DIFF_BONUS[S.diff] || 0) + Math.floor(lay / 5) + cts;
   let first = 0; for (let l = prev + 1; l <= lay; l++) first += abyssStars(l);
   editSave(d => { d.bonusStars += bonus; if (lay > prev) d.abyss[S.stage] = lay; });
-  return `通关奖励 +${bonus}★` + (first ? ` · 深渊 ${lay} 层首通 +${first}★` : "") + (S.relics.length ? ` · 本局带了 ${S.relics.length} 件遗物` : "");
+  return `通关奖励 +${bonus}★` + (cts ? `（含契约 +${cts}★）` : "") + (first ? ` · 深渊 ${lay} 层首通 +${first}★` : "") + (S.relics.length ? ` · 本局带了 ${S.relics.length} 件遗物` : "");
 }
 
 // ---------- 结算：战绩入档（图鉴和角色页要用）----------

@@ -95,10 +95,10 @@ function checkBounties(R) {
 // 通关奖励：每次都给 1★，困难再 +2、噩梦再 +3，深渊每 5 层 +1；深渊新层首通另算
 function runReward() {
   const prev = loadSave().abyss[S.stage] || 0, lay = S.abyss || 0;
-  const bonus = 1 + (DIFF_BONUS[S.diff] || 0) + Math.floor(lay / 5);
+  const cts = contractStars(S.contracts), bonus = 1 + (DIFF_BONUS[S.diff] || 0) + Math.floor(lay / 5) + cts;
   let first = 0; for (let l = prev + 1; l <= lay; l++) first += abyssStars(l);
   editSave(d => { d.bonusStars += bonus; if (lay > prev) d.abyss[S.stage] = lay; });
-  return `通关奖励 +${bonus}★` + (first ? ` · 深渊 ${lay} 层首通 +${first}★` : "") + (S.relics.length ? ` · 本局带了 ${S.relics.length} 件遗物` : "");
+  return `通关奖励 +${bonus}★` + (cts ? `（含契约 +${cts}★）` : "") + (first ? ` · 深渊 ${lay} 层首通 +${first}★` : "") + (S.relics.length ? ` · 本局带了 ${S.relics.length} 件遗物` : "");
 }
 
 // ---------- 结算：战绩入档（图鉴和角色页要用）----------

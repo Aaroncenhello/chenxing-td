@@ -200,6 +200,18 @@ const RARITY = [
 // 抽到各稀有度的基础权重，随等级提高
 const RARE_W = lv => [100, 26 + lv * 2.4, 3 + lv * 1.5];
 const REROLLS = 3;
+// 自选契约：开局前自己选几条，换更高难度和额外星星（只在主线关卡 / 无尽生效；每日、每周、远征、守望不用）
+const CONTRACTS = [
+  { id: "ironhide", name: "铁壁", pts: 1, desc: "敌人生命 +25%" },
+  { id: "swift", name: "疾袭", pts: 1, desc: "敌人移动速度 +15%" },
+  { id: "fewer", name: "寡兵", pts: 1, desc: "伙伴上限 −1" },
+  { id: "drought", name: "枯竭", pts: 1, desc: "击杀得到的星尘 −40%" },
+  { id: "elite", name: "精英潮", pts: 2, desc: "精英出现的几率大幅提高" },
+  { id: "seal", name: "封印", pts: 2, desc: "不能使用主动法术（陨星术和第二法术）" },
+];
+const CONTRACT_BY = Object.fromEntries(CONTRACTS.map(c => [c.id, c]));
+const contractPts = ids => (ids || []).reduce((n, id) => n + (CONTRACT_BY[id] ? CONTRACT_BY[id].pts : 0), 0);
+const contractStars = ids => Math.min(5, Math.ceil(contractPts(ids) * 0.75));   // 1 点 1★、2 点 2★、3 点 3★、5 点 4★、全选 5★
 const BANISH_N = 2;   // 每局可以放逐几次卡牌
 
 // 羁绊：满足条件就一直生效。prog() 返回 [已有, 需要]，选牌时用它提示「再拿这张就凑齐」
