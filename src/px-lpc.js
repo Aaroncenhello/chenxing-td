@@ -35,7 +35,7 @@ let lpcDirtyT = 0;
 function lpcDirty() { clearTimeout(lpcDirtyT); lpcDirtyT = setTimeout(lpcDone, 60); }
 function lpcDone() {
   lpcReady = true; HERO_PIC.clear(); FOE_VER++;
-  try { for (const D of UNITS) drawPortrait(D); teamKey = ""; cardKey = ""; piTeamKey = ""; hudKey = ""; } catch (e) { }
+  try { for (const D of UNITS) drawPortrait(D); teamKey = ""; cardKey = ""; piTeamKey = ""; hudKey = ""; if (typeof drawSkinThumbs === "function") drawSkinThumbs(); } catch (e) { }
 }
 const LPC_ATK_LEN = { slash: 0.42, thrust: 0.4, shoot: 0.36, cast: 0.4 };
 // 角色某一阶当前能用的图层：优先这一阶，没加载好就退到低一阶（最低裸体）

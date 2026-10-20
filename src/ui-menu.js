@@ -319,6 +319,10 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.dataset.hero && heroCtx) { const { stage, opts } = heroCtx; heroCtx = null; editSave(d => { d.hero = b.dataset.hero; }); if (opts.expedStart) expStart(b.dataset.hero); else startRun(stage, { ...opts, hero: b.dataset.hero }); }
   else if (b.dataset.ros) showRoster(b.dataset.ros);
   else if (b.dataset.rnav) showRoster(b.dataset.rnav);
+  else if (b.dataset.rskin != null) { rosterSkin = +b.dataset.rskin; showRoster(rosterFor); }
+  else if (b.dataset.rtier != null) { rosterTier = +b.dataset.rtier; for (const t of document.querySelectorAll(".tierb")) t.classList.toggle("on", +t.dataset.rtier === rosterTier); }
+  else if (b.dataset.rwear != null) { wearSkin(rosterFor, +b.dataset.rwear); showRoster(rosterFor); }
+  else if (b.dataset.rbuy != null) { const err = buySkin(rosterFor); if (err) toast("<b>不能兑换</b>" + err); else { rosterSkin = 1; toast("<b>已兑换</b>新外观已经穿上"); } showRoster(rosterFor); }
   else if (b.id === "btn-roster") showRoster();
   else if (b.dataset.perk) { const p = PERKS.find(x => x.id === b.dataset.perk); if (p && starBank().left >= p.cost) editSave(d => { if (!d.perks.includes(p.id)) d.perks.push(p.id); }); showPerks(); }
   else if (b.id === "btn-perks") showPerks();

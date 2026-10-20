@@ -15,7 +15,7 @@ const slitDress = c => T('dress', 'Slit dress', c), sashDress = c => T('dress', 
 module.exports = {
   knight: { color: 'light', ...H('High ponytail', 'blonde'), weapon: [T('weapon', 'Arming Sword', 'brass'), T('shield', 'Kite', 'kite blue blue')], names: ['誓约骑装', '白羽轻铠'], s: [
     sk([T('legs', 'Armour', 'steel'), T('shoes', 'Armour', 'steel')], [T('armour', 'Plate', 'steel'), T('gloves', 'Gloves', 'steel')], [T('hat', 'Tiara', 'tiara_gold'), T('cape', 'Solid', 'blue')]),
-    sk([boots('white'), hose('white'), mini('white')], [corset('blue'), T('shoulders', 'Pauldrons', 'silver')], [T('hat', 'Tiara', 'tiara_silver'), T('cape', 'Solid', 'blue')])] },
+    sk([boots('white'), hose('white'), plain('white')], [corset('blue'), T('shoulders', 'Pauldrons', 'silver')], [T('hat', 'Tiara', 'tiara_silver'), T('cape', 'Solid', 'blue')])] },
   sword: { color: 'light', ...H('High ponytail', 'red'), weapon: [T('weapon', 'Saber', 'saber')], names: ['红鬃剑装', '烈焰短装'], s: [
     sk([pants('black'), boots('black')], [T('armour', 'Leather', 'brown')], [T('bandana', 'Bandana', 'red')]),
     sk([shorts('black'), boots('black'), hose('black')], [corset('red')], [T('bandana', 'Bandana', 'red'), T('cape', 'Tattered', 'maroon')])] },

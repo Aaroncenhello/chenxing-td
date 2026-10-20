@@ -71,6 +71,7 @@ function frameBody(now) {
   if (!dlg) checkOver();
 }
 
+try { syncSkins(); } catch (e) { }
 lpcLoad();
 applyGfx(loadSave().gfx);
 newRun(0, { perks: loadSave().perks, charLv: charLevels(), charTal: loadSave().tal, hero: loadSave().hero, charOpen: openChars().map(u => u.id) });

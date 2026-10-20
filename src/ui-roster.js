@@ -134,6 +134,26 @@ function recHtml(d, D) {
     <div class="rrec">${cell("累计伤害", bigN(u.dmg || 0))}${D.dmg === "heal" || u.heal ? cell("累计治疗", bigN(u.heal || 0)) : cell("场均伤害", bigN((u.dmg || 0) / u.runs))}${cell("累计击杀", bigN(u.kills || 0))}${cell("承受伤害", bigN(u.taken || 0))}</div></div>`;
 }
 function expBar(exp) { const L = levelOf(exp); return { L, pct: L.lv >= PROG.max ? 100 : Math.round(L.into / L.need * 100) }; }
+// 角色页的外观预览：看哪一套、穿到几阶（只影响预览，不改存档）
+let rosterSkin = 0, rosterTier = 4, rosterFor = "";
+function skinHtml(D, d) {
+  const S = SKIN_DEF[D.id]; if (!S) return "";
+  const eq = skinOwned(d, D.id, d.skin[D.id] | 0) ? d.skin[D.id] | 0 : 0, owned = skinOwned(d, D.id, rosterSkin), r = skinRule(D.id), left = starBank().left;
+  const act = rosterSkin === eq ? `<button disabled>当前穿着</button>` : owned ? `<button class="primary" data-rwear="${rosterSkin}">穿上这套</button>`
+    : r.stars ? `<button class="primary" data-rbuy="1" ${left < r.stars ? "disabled" : ""}>兑换 ${r.stars}★（有 ${left}★）</button>` : `<button disabled>解锁条件：${skinRuleText(D.id)}</button>`;
+  return `<div class="skins"><b>外观</b><div class="skinrow">${S.names.map((n, i) => `<button class="skinb${i === rosterSkin ? " on" : ""}" data-rskin="${i}"><canvas data-skpt="${i}" width="56" height="56" aria-hidden="true"></canvas><span>${n}</span><small>${skinOwned(d, D.id, i) ? (i === eq ? "穿着中" : "已拥有") : skinRuleText(D.id)}</small></button>`).join("")}</div>
+    <div class="tierrow"><span>预览阶数</span>${[1, 2, 3, 4].map(t => `<button class="tierb${t === rosterTier ? " on" : ""}" data-rtier="${t}">${t === 1 ? "1 阶 · 裸体" : t + " 阶"}</button>`).join("")}</div>
+    <div class="btns">${act}</div><small class="skinnote">角色阶数越高，外观上穿得越齐；两套外观都是这样一件件穿上。</small></div>`;
+}
+// 外观缩略图：用该套外观的 4 阶全套头像（临时切换外观来画）
+function drawSkinThumbs() {
+  if (!rosterAnim) return; const D = rosterAnim.D, eq = SKIN_EQ[D.id];
+  for (const c of document.querySelectorAll("canvas[data-skpt]")) {
+    SKIN_EQ[D.id] = +c.dataset.skpt; lpcWant(D.id, `s${SKIN_EQ[D.id]}t4`);
+    const g = c.getContext("2d"); g.clearRect(0, 0, 56, 56); g.fillStyle = D.color; g.fillRect(0, 0, 56, 56); g.imageSmoothingEnabled = true; g.drawImage(heroPic(D, { face: 1 }), 40, 14, 176, 176, 0, 0, 56, 56);
+  }
+  SKIN_EQ[D.id] = eq;
+}
 function showRoster(id) {
   rosterAnim = null;
   const d = loadSave();
@@ -149,9 +169,12 @@ function showRoster(id) {
   }
   const D = UNITS.find(u => u.id === id), exp = charExp(d, id), { L, pct } = expBar(exp), k = (1 + PROG.perLv * (L.lv - 1)) * (1 + AWK.perLv * awkOf(exp)), tal = TALENTS[id];
   const open = UNITS.filter(charOpen), idx = open.indexOf(D);
+  if (rosterFor !== id) { rosterFor = id; rosterSkin = skinOwned(d, id, d.skin[id] | 0) ? d.skin[id] | 0 : 0; rosterTier = 4; }
+  for (const pt of ["s0t2", "s0t3", "s0t4", "s1t2", "s1t3", "s1t4", "nude"]) lpcWant(id, pt);
   const st = (name, base, mul) => `<div><span>${name}</span><b>${R0(base * mul)}</b>${mul > 1 ? `<small>+${R0(base * mul) - base}</small>` : ""}</div>`;
   openOverlay(`<div class="rdetail">
     <div class="rleft"><canvas id="r-anim" class="ranim" aria-hidden="true" style="--c:${D.color}"></canvas>
+      ${skinHtml(D, d)}
       <h3>${D.name} <small>${D.cls} · ${placeName(D)}</small></h3>
       <div class="rlv"><b>Lv ${L.lv}</b><span>${L.lv >= PROG.max ? "已满级" : `经验 ${L.into} / ${L.need}`}</span></div><div class="meter"><i style="width:${pct}%;background:var(--gold)"></i></div>
       ${L.lv >= PROG.max ? (() => { const A = awkInfo(exp); return `<div class="rlv awk"><b>觉醒 ${"★".repeat(A.a)}${"☆".repeat(AWK.max - A.a)}</b><span>${A.full ? "已完全觉醒" : `觉醒经验 ${A.into} / ${AWK.need}`}</span></div><div class="meter"><i style="width:${A.full ? 100 : Math.round(A.into / AWK.need * 100)}%;background:linear-gradient(90deg,#ffd860,#ff8ac0)"></i></div>
@@ -170,7 +193,7 @@ function showRoster(id) {
       <div class="miles">${MILESTONES.map(([lv, txt]) => `<span class="${L.lv >= lv ? "on" : ""}">${L.lv >= lv ? "✓" : "Lv" + lv} ${txt}</span>`).join("")}</div>
     </div></div>
     <div class="btns"><button data-rnav="${open[(idx - 1 + open.length) % open.length].id}">← 上一个</button><button data-rnav="${open[(idx + 1) % open.length].id}">下一个 →</button><button id="btn-roster">角色列表</button><button id="btn-menu">返回选关</button></div>`);
-  rosterAnim = { D, cvs: $("r-anim"), t0: performance.now() };
+  rosterAnim = { D, cvs: $("r-anim"), t0: performance.now() }; drawSkinThumbs();
 }
 function animRoster(now) {
   if (!rosterAnim || !menuOpen) return;
@@ -178,7 +201,8 @@ function animRoster(now) {
   if (cvs.width !== 240) { cvs.width = 240; cvs.height = 198; }
   const g = cvs.getContext("2d"); g.clearRect(0, 0, 240, 198);
   g.fillStyle = "rgba(0,0,0,.3)"; g.beginPath(); g.ellipse(120, 176, 40, 7, 0, 0, 6.3); g.fill();
-  drawHeroFig(g, D, { t, id: 1, face: 1, atkT: atkT < 0 ? null : atkT, lv: 1 }, 120, 174, 2);
+  const eq = SKIN_EQ[D.id]; SKIN_EQ[D.id] = rosterSkin;   // 预览用的外观和阶数（临时切换，画完换回）
+  drawHeroFig(g, D, { t, id: 1, face: 1, atkT: atkT < 0 ? null : atkT, lv: rosterTier }, 120, 174, 2); SKIN_EQ[D.id] = eq;
 }
 
 function expHtml(gains) {
