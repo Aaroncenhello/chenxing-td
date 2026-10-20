@@ -92,7 +92,7 @@ const STAGE_ACHV = ['first', 'perfect', 'solo', 'chapter1', 'chapter2', 'chapter
     return { ver: d.ver, savedVer: again.ver, week: again.week, bk: bk && bk.why, bkStars: bk && JSON.parse(bk.data).stars };
   });
   console.log('旧存档升级:', JSON.stringify(legacy));
-  check(legacy.ver === 13 && legacy.savedVer === 13, '旧存档读进来升到当前版本并写回', legacy);
+  check(legacy.ver === 14 && legacy.savedVer === 14, '旧存档读进来升到当前版本并写回', legacy);
   check(legacy.week.W3 && legacy.week.W3.clear, '升级不丢数据', legacy.week);
   check(!!legacy.bk && legacy.bkStars.join() === '3,2', '升级前自动备份了原来的存档', legacy);
 
