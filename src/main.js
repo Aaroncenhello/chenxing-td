@@ -12,8 +12,14 @@ function fpsTick(now, ms) {
   el.textContent = `${Math.round(fpsN * 1000 / Math.max(1, now - fpsT))} FPS · 平均 ${(fpsMs / fpsN).toFixed(1)}ms · 最差 ${fpsMax.toFixed(0)}ms\n画质 ${GFX.name}${gfxSel < 0 ? "（自动）" : ""} · 敌 ${S.enemies.length} · 特效 ${S.fx.length}`;
   fpsT = now; fpsN = 0; fpsMs = 0; fpsMax = 0;
 }
+// 一帧里哪怕出了错也要接着排下一帧，否则画面会整个停住（看上去就是黑屏 / 卡死）；错误只在控制台里报，前 3 次
+let frameErrs = 0;
 function frame(now) {
-  if (OPT.eco && now - last < 30) { requestAnimationFrame(frame); return; }   // 省电：最多 30 帧
+  try { frameBody(now); } catch (e) { if (frameErrs++ < 3) setTimeout(() => { throw e; }); }
+  requestAnimationFrame(frame);
+}
+function frameBody(now) {
+  if (OPT.eco && now - last < 30) return;   // 省电：最多 30 帧
   const dt = Math.min(0.1, (now - last) / 1000); fpsTick(now, (now - last)); last = now;
   adaptGfx(dt);
   if (S.slowCd > 0) S.slowCd -= dt;
@@ -27,9 +33,8 @@ function frame(now) {
   }
   if (!S.offer && !S.shop && !S.cine && !S.event && S.pending > 0 && !S.over && !dlg && !menuOpen) { const mr = S.forceRare || 0; S.forceRare = 0; openOffer(mr, true); }
   handleEvents();
-  fitCheck(now); render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateUnitCards(now); updateCrystalBars(); updateTut(dt); updateDlg(dt); animRoster(now);
+  fitCheck(now); mapGuard(now); render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateUnitCards(now); updateCrystalBars(); updateTut(dt); updateDlg(dt); animRoster(now);
   if (!dlg) checkOver();
-  requestAnimationFrame(frame);
 }
 
 applyGfx(loadSave().gfx);
@@ -37,7 +42,7 @@ newRun(0, { perks: loadSave().perks, charLv: charLevels(), charTal: loadSave().t
 applySpell2(OPT.sp2);
 buildSpells();
 resize();
-window.addEventListener("resize", resize);
+window.addEventListener("resize", resizeSoon);
 showLevels();
 showNews();
 window.__td = {
@@ -46,6 +51,10 @@ window.__td = {
   setFocus, FORMS, AFFIX, cycleForm, setSlot, clearSlot, arrange, formOf, callWaveEarly, toggleAutoWave, cardPool,
 };
 // 切到别的标签页或后台时自动暂停，回来不会被偷袭
+// 从后台回来：离屏画布可能被系统清空，重画底图再重排一次
+const reviveView = () => { mapFor = -1; resizeSoon(); };
+window.addEventListener("pageshow", reviveView);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) reviveView(); });
 document.addEventListener("visibilitychange", () => { if (document.hidden && S && !S.over && !S.paused && !menuOpen && !dlg && (S.wave > 0 || S.kills > 0)) togglePause(); });
 requestAnimationFrame(frame);
 </script>

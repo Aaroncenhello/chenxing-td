@@ -693,7 +693,7 @@ function stampDecal(x, y, r, color) {
 }
 function drawDecals(now) {
   if (!decalCv || decalFor !== mapKey()) return;
-  if (now - decalFadeAt > 500) { decalFadeAt = now; const g = decalCv.getContext("2d"); g.globalCompositeOperation = "destination-out"; g.fillStyle = "rgba(0,0,0,.05)"; g.fillRect(0, 0, PW, PHt); g.globalCompositeOperation = "source-over"; }
+  if (now - decalFadeAt > 500) { decalFadeAt = now; const g = decalCv.getContext("2d"); g.globalCompositeOperation = "destination-out"; g.fillStyle = "rgba(0,0,0,.05)"; g.fillRect(0, 0, LW, LH); g.globalCompositeOperation = "source-over"; }
   ctx.drawImage(decalCv, 0, 0);
 }
 // 光斑：几块缓慢飘过的暖光，给地面一点光照变化

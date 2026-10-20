@@ -18,7 +18,7 @@ const { check, noErrors, report } = require('./lib');
   await p.waitForTimeout(500);
   await p.screenshot({ path: 'L-battle.png' });
   // 每个 HUD 按钮都要在屏幕里、能点到
-  const vis = await p.evaluate(() => [...document.querySelectorAll('#hud button')].map(b => { const r = b.getBoundingClientRect(); const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return b.dataset.h + ':' + (r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth ? 'in' : 'OUT') + (el && (el === b || b.contains(el)) ? '' : '!blocked'); }));
+  const vis = await p.evaluate(() => [...document.querySelectorAll('#hud button')].filter(b => getComputedStyle(b).display !== 'none' && b.offsetParent).map(b => { const r = b.getBoundingClientRect(); const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return b.dataset.h + ':' + (r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth ? 'in' : 'OUT') + (el && (el === b || b.contains(el)) ? '' : '!blocked'); }));
   console.log('imm', imm, vis.join(' '));
   check(imm, '手机横屏开局自动进入沉浸全屏');
   check(vis.length > 0 && vis.every(v => v.endsWith(':in')), '每个 HUD 按钮都在屏幕内且没被挡住', vis.filter(v => !v.endsWith(':in')));
