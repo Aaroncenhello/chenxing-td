@@ -178,7 +178,7 @@ function animRoster(now) {
   if (cvs.width !== 240) { cvs.width = 240; cvs.height = 198; }
   const g = cvs.getContext("2d"); g.clearRect(0, 0, 240, 198);
   g.fillStyle = "rgba(0,0,0,.3)"; g.beginPath(); g.ellipse(120, 176, 40, 7, 0, 0, 6.3); g.fill();
-  drawChibi(g, D, { t, id: 1, face: 1, atkT: atkT < 0 ? null : atkT, lv: 1 }, 120, 174, 3);
+  drawHeroFig(g, D, { t, id: 1, face: 1, atkT: atkT < 0 ? null : atkT, lv: 1 }, 120, 174, 2);
 }
 
 function expHtml(gains) {

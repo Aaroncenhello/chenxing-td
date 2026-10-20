@@ -83,7 +83,7 @@ function drawUnit(u, now) {
   const D = u.def, [fx, fy] = unitFeet(u), t = now / 1000, pop = Math.min(1, u.age / 0.25);
   if (u.down > 0) { // 倒下：躺在地上，显示复活倒计时
     ctx.globalAlpha = 0.5;
-    ctx.save(); ctx.translate(fx, fy - 2); ctx.rotate(-(u.face || 1) * Math.PI / 2); drawChibi(ctx, D, { t: 0, id: u.id, face: u.face, lv: u.lv, branch: u.branch, hurt: true }, 0, 0); ctx.restore();
+    drawHeroFig(ctx, D, { t: 0, id: u.id, face: u.face, lv: u.lv, branch: u.branch, down: true }, fx, fy);
     ctx.globalAlpha = 1;
     // 复活倒计时圆环：弧线一圈圈补满
     const k = 1 - u.down / (u.downMax || RULES.revive), n = 24;
@@ -113,7 +113,7 @@ function drawUnit(u, now) {
   // 出手前蓄力后撤、出手瞬间前冲这些动作都在骨骼姿势里（身体前倾 lean），这里只处理击退和出场下落
   const kb = -R0(u.kb * 2) * u.face, drop = R0((1 - pop) * 30);
   if (u.lv >= 4) drawBranchBack(u, fx, fy, t);
-  drawChibi(ctx, D, { t: t + u.id * 0.37, id: u.id, face: u.face, atkT: u.atkT, walking, flash: u.hitT > 0.05, skill: u.skillT > 0, lv: u.lv, branch: u.branch, hurt: ph === "hurt" }, fx + kb, fy - drop, 1.1);
+  drawHeroFig(ctx, D, { t: t + u.id * 0.37, id: u.id, face: u.face, atkT: u.atkT, walking, flash: u.hitT > 0.05, skill: u.skillT > 0, lv: u.lv, branch: u.branch, hurt: ph === "hurt" }, fx + kb, fy - drop);
   if (u.lv >= 4) drawBranchFront(u, fx, fy, t);
   if (S.shieldT > 0) { ctx.globalAlpha = Math.min(1, S.shieldT); ring(ctx, fx, fy - 18, 16, 8, "#8fd0ff", (t * 8 | 0) % 2); ctx.globalAlpha = 1; }
   if (u.frozenT > 0) {
@@ -317,8 +317,7 @@ function drawFx(f, now) {
     const [fx, fy] = unitFeet(f), flash = k < 0.35 && (f.t * 24 | 0) % 2 === 0;
     const co = { t: 0, id: 1, face: f.face, lv: f.lv, branch: f.branch, flash, hurt: true };
     ctx.globalAlpha = k < 0.6 ? 1 : 1 - (k - 0.6) * 2.5;
-    if (k < 0.3) drawChibi(ctx, f.def, co, fx, fy);
-    else { ctx.save(); ctx.translate(fx, fy - 2); ctx.rotate(-(f.face || 1) * Math.PI / 2 * Math.min(1, (k - 0.3) * 5)); drawChibi(ctx, f.def, co, 0, 0); ctx.restore(); }
+    drawHeroFig(ctx, f.def, { ...co, down: k >= 0.3 }, fx, fy);
     ctx.globalAlpha = 1;
   }
 }

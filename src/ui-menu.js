@@ -82,6 +82,15 @@ const CH_COL = ["#6cb85e", "#e0c070", "#8fe0f0", "#ff8a5a", "#9ab0ff"];   // 每
 const chapterOf = i => CHAPTERS.reduce((k, c, j) => (i >= c.from ? j : k), 0);
 // 12.0 更新说明：每个版本只弹一次（单独的 localStorage 键）
 const NEWS_VER = "12.0";
+// 素材署名：角色像素精灵用的是 Liberated Pixel Cup 社区的素材（CC-BY-SA / GPL / OGA-BY 等），许可证要求署名
+function showCredits() {
+  const C = LPC_CREDITS, esc = t => String(t).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  openOverlay(`<h2>素材署名</h2><div class="tree" style="text-align:left;max-height:60vh;overflow:auto">
+    <small>角色的像素精灵由 <b>Liberated Pixel Cup（LPC）</b>社区艺术家的素材合成（Universal LPC Spritesheet Character Generator）。素材按各自的许可证使用：${esc(C.licenses.join("、"))}。CC-BY-SA / GPL 要求保留署名，并让基于这些素材的衍生美术按同样的许可证继续分享。</small>
+    <small><b>作者</b>　${esc(C.authors.join("、"))}</small>
+    ${C.items.map(i => `<small>${esc(i.file)} — ${esc(i.authors)}（${esc(i.licenses)}）${i.urls ? "　" + esc(i.urls.split(", ")[0]) : ""}</small>`).join("")}</div>
+    <div class="btns"><button class="primary" id="btn-newsok">返回</button></div>`);
+}
 function showNews() {
   let seen = ""; try { seen = localStorage.getItem("chenxing-td-news") || ""; } catch (e) { }
   if (seen === NEWS_VER || !loadSave().tutorial) return false;
@@ -121,7 +130,7 @@ function showLevels() {
     <p class="chaprog">${ch.name} · 本章星级 ${chStars}/${ids.length * 3}</p><div class="chbar" style="--cc:${CH_COL[chapSel] || "#8fb3e0"}"><i style="width:${Math.round(chStars / (ids.length * 3) * 100)}%"></i></div><p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
     ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
     ${contractHtml()}
-    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="30 帧 + 文字层降分辨率，手机更省电、更不烫（手机默认开）">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-sp2" title="${SPELL2[OPT.sp2].desc}。第二个法术槽（W）用哪个，点一下换">第二法术 · ${SPELL2[OPT.sp2].name}</button><button id="btn-pix" title="整数倍缩放，像素粗细均匀。窗口放不下合适的整数倍时自动不生效">像素完美 · ${OPT.pix ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button><button id="btn-fps" title="左上角显示帧率和当前画质，卡顿时截图反馈给我很有用">显示帧率 · ${OPT.fps ? "开" : "关"}</button><button id="btn-big" title="手机竖屏时把战场转成竖版，画面更大；关掉就是原来的横版画面">竖屏大画面 · ${OPT.big ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
+    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-credits">素材署名</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="30 帧 + 文字层降分辨率，手机更省电、更不烫（手机默认开）">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-sp2" title="${SPELL2[OPT.sp2].desc}。第二个法术槽（W）用哪个，点一下换">第二法术 · ${SPELL2[OPT.sp2].name}</button><button id="btn-pix" title="整数倍缩放，像素粗细均匀。窗口放不下合适的整数倍时自动不生效">像素完美 · ${OPT.pix ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button><button id="btn-fps" title="左上角显示帧率和当前画质，卡顿时截图反馈给我很有用">显示帧率 · ${OPT.fps ? "开" : "关"}</button><button id="btn-big" title="手机竖屏时把战场转成竖版，画面更大；关掉就是原来的横版画面">竖屏大画面 · ${OPT.big ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
     <div class="levels">` +
     ids.map(i => { const st = STAGES[i];
       const open = unlocked(i), cleared = (save.stars[i] || 0) > 0, dc = save.diffClear[i] || [];
@@ -319,6 +328,7 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-next") beginStage(S.stage + 1, { diff: S.diff && S.stage + 1 < STAGES.length && (loadSave().stars[S.stage + 1] || 0) > 0 ? S.diff : 0, abyss: S.abyss || 0 });
   else if (b.id === "btn-menu") { heroCtx = null; showLevels(); }
   else if (b.id === "btn-newsok") showLevels();
+  else if (b.id === "btn-credits") showCredits();
 });
 let lastOpts = {};
 // 进关流程：第一次玩先看剧情，然后选英雄
