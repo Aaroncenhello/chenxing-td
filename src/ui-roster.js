@@ -7,7 +7,7 @@ const isVillain = id => !!(SPEAKERS[id] && SPEAKERS[id].foe);
 // 立绘：从像素角色图里截出上半身，整数倍放大
 function drawBust(cvs, id, face, bob) {
   const size = 128; if (cvs.width !== size) { cvs.width = size; cvs.height = size; }
-  const g = cvs.getContext("2d"); g.imageSmoothingEnabled = false; g.clearRect(0, 0, size, size);
+  const g = cvs.getContext("2d"); g.imageSmoothingEnabled = true; cvs.style.imageRendering = "auto"; g.clearRect(0, 0, size, size);
   if (isVillain(id)) {
     const big = renderFoe(SPEAKERS[id].foe, { face, t: 0 });
     g.drawImage(big, 28, 50 - (bob ? 1 : 0), 64, 64, 0, 0, size, size);
