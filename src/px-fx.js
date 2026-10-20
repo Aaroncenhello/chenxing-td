@@ -82,9 +82,8 @@ function drawBranchFront(u, fx, fy, t) {
 function drawUnit(u, now) {
   const D = u.def, [fx, fy] = unitFeet(u), t = now / 1000, pop = Math.min(1, u.age / 0.25);
   if (u.down > 0) { // 倒下：躺在地上，显示复活倒计时
-    const big = renderHero(D, { phase: "idle", face: u.face, lv: u.lv, branch: u.branch, t: 0 });
     ctx.globalAlpha = 0.5;
-    ctx.save(); ctx.translate(fx, fy - 2); ctx.rotate(-(u.face || 1) * Math.PI / 2); ctx.drawImage(big, -HOX * 2, -80); ctx.restore();
+    drawHeroFig(ctx, D, { t: 0, id: u.id, face: u.face, lv: u.lv, branch: u.branch, down: true }, fx, fy);
     ctx.globalAlpha = 1;
     // 复活倒计时圆环：弧线一圈圈补满
     const k = 1 - u.down / (u.downMax || RULES.revive), n = 24;
@@ -111,11 +110,10 @@ function drawUnit(u, now) {
   let ph = heroPhase(D, u.atkT); if (ph === "idle" && u.hitT > 0.05) ph = "hurt";
   const walking = ph === "idle" && Math.hypot(u.x - u.tx, u.y - u.ty) > 0.08;
   const bob = walking ? Math.floor(now / 110 + u.id) % 2 : ph === "idle" ? Math.floor(now / 420 + u.id * 0.5) % 2 : ph === "hurt" ? 1 : 0;
-  const big = renderHero(D, { phase: ph, bob, flash: u.hitT > 0.05, face: u.face, skill: u.skillT > 0, lv: u.lv, branch: u.branch, t });
-  // 出手前蓄力后撤、出手瞬间前冲一小步（按整像素挪，不拉伸，保持像素风）
-  const kb = -R0(u.kb * 2) * u.face + (ph === "wind" ? -2 * u.face : ph === "strike" || ph === "release" ? 3 * u.face : 0), drop = R0((1 - pop) * 30) + (ph === "strike" || ph === "release" ? 1 : 0);
+  // 出手前蓄力后撤、出手瞬间前冲这些动作都在骨骼姿势里（身体前倾 lean），这里只处理击退和出场下落
+  const kb = -R0(u.kb * 2) * u.face, drop = R0((1 - pop) * 30);
   if (u.lv >= 4) drawBranchBack(u, fx, fy, t);
-  ctx.drawImage(big, fx - HOX * 2 + kb, fy - 80 - drop - (walking && bob ? 1 : 0));
+  drawHeroFig(ctx, D, { t: t + u.id * 0.37, id: u.id, face: u.face, atkT: u.atkT, walking, flash: u.hitT > 0.05, skill: u.skillT > 0, lv: u.lv, branch: u.branch, hurt: ph === "hurt" }, fx + kb, fy - drop);
   if (u.lv >= 4) drawBranchFront(u, fx, fy, t);
   if (S.shieldT > 0) { ctx.globalAlpha = Math.min(1, S.shieldT); ring(ctx, fx, fy - 18, 16, 8, "#8fd0ff", (t * 8 | 0) % 2); ctx.globalAlpha = 1; }
   if (u.frozenT > 0) {
@@ -142,24 +140,31 @@ function drawMound(e, fx, fy, t) {
   for (let i = 0; i < 4; i++) { const k = (t * 2 + i / 4 + e.id * 0.3) % 1; dot(ctx, fx - e.face * (6 + k * 14), fy - 4 - Math.sin(k * 3.14) * 6, i % 2 ? "#e0c080" : "#b89050"); }
 }
 function drawEnemy(e, now) {
-  const F = foeOf(e.type), [fx, fy] = foeFeet(e), t = now / 1000, w = F.frames[0][0].length * 2, hh = F.h * 2;
+  const [fx, fy] = foeFeet(e), t = now / 1000, L = foeLpc(e.type), box = foeBox(e.type), w = box[2] - box[0], hh = -box[1], fly = foeFly(e.type);
   if (e.under) { drawMound(e, fx, fy, t); return; }
-  const lift = F.fly ? 22 + R0(Math.sin(t * 4 + e.id) * 2) : 0;
-  shadow(fx, fy, F.fly ? 16 : Math.min(w, 40));
+  const lift = fly ? 22 + R0(Math.sin(t * 4 + e.id) * 2) : 0;
+  shadow(fx, fy, fly ? 16 : Math.min(w, 40));
   const frozen = e.freezeT > 0, moving = !e.target && !frozen && !e.stop;
   const ph = frozen ? "" : e.atkT < 0.16 ? "wind" : e.atkT < 0.3 ? "hit" : "";
-  const big = renderFoe(e.type, { step: moving ? Math.floor(e.walk * 7) % 2 : 0, ph, flash: e.hitT > 0.06, face: e.face, elite: e.elite, fuse: e.fuse > 0, broken: e.maxShield > 0 && e.shield <= 0, t: frozen ? 0 : t });
   const kb = -R0(e.kb * (isBoss(e) ? 1 : 3)) * e.face, lunge = e.target && ph === "hit" ? 4 * e.face : 0;
-  if (e.type === "ghost") ctx.globalAlpha = 0.62 + Math.sin(t * 6 + e.id) * 0.12;
+  if (e.type === "ghost" || e.type === "icewraith") ctx.globalAlpha = 0.62 + Math.sin(t * 6 + e.id) * 0.12;
   if (e.d.stealth && !e.revealed) ctx.globalAlpha = 0.22 + ((t * 8 + e.id) % 2 < 0.4 ? 0.12 : 0);
   // 从传送门走出来：淡入 + 从地里升起一点，脚下闪一下紫光
   const born = Math.min(1, (S.t - (e.bornT == null ? -9 : e.bornT)) / 0.45);
   if (born < 1) { ctx.globalAlpha *= born; addGlow(fx, fy - 2, 20, "#c060ff", 0.6 * (1 - born)); }
   // 挨打瞬间压扁一点（横向略宽、纵向略扁，脚底不动），暴击更明显
-  if (e.hitT > 0.08 && !OPT.calm) { const q = e.kb > 1.2 ? 0.88 : 0.93, dw = R0(120 / q * 0.97), dh = R0(120 * q); ctx.drawImage(big, 0, 0, 120, 120, fx - FOE_FOOT[0] + kb + lunge - R0((dw - 120) / 2), fy - FOE_FOOT[1] - lift + R0((1 - born) * 8) + (120 - dh), dw, dh); }
-  else ctx.drawImage(big, fx - FOE_FOOT[0] + kb + lunge, fy - FOE_FOOT[1] - lift + R0((1 - born) * 8));
+  const squash = e.hitT > 0.08 && !OPT.calm, q = e.kb > 1.2 ? 0.88 : 0.93;
+  if (L) {
+    const tint = e.fuse > 0 ? ((t * 12 | 0) % 2 ? "rgba(255,50,30,.42)" : null) : isBoss(e) && e.enraged ? "rgba(255,60,40,.22)" : e.elite ? ELITE_TINT : null;
+    drawFoeFig(ctx, e.type, { t: frozen ? 0 : t, id: e.id, face: e.face, atkT: frozen ? 9 : e.atkT, walking: moving, phase: e.walk * 6, flash: e.hitT > 0.06, tint, sx: squash ? 1 / q * 0.97 : 1, sy: squash ? q : 1 },
+      fx + kb + lunge, fy - lift + R0((1 - born) * 8));
+  } else {
+    const big = renderFoe(e.type, { step: moving ? Math.floor(e.walk * 7) % 2 : 0, ph, flash: e.hitT > 0.06, face: e.face, elite: e.elite, fuse: e.fuse > 0, broken: e.maxShield > 0 && e.shield <= 0, t: frozen ? 0 : t });
+    if (squash) { const dw = R0(120 / q * 0.97), dh = R0(120 * q); ctx.drawImage(big, 0, 0, 120, 120, fx - big.fx + kb + lunge - R0((dw - 120) / 2), fy - big.fy - lift + R0((1 - born) * 8) + (120 - dh), dw, dh); }
+    else ctx.drawImage(big, fx - big.fx + kb + lunge, fy - big.fy - lift + R0((1 - born) * 8));
+  }
   ctx.globalAlpha = 1;
-  if (!F.fly && (e.elite || isBoss(e))) { const rr = isBoss(e) ? 22 : 14, c1 = isBoss(e) ? (e.enraged ? "#ff4a3a" : "#c890ff") : "#ffc830"; ring(ctx, fx, fy, rr, rr * 0.4, c1, (t * 6 | 0) % 2); if (isBoss(e)) ring(ctx, fx, fy, rr + 5, (rr + 5) * 0.4, c1, (t * 4 | 0) % 2 === 0); }
+  if (!fly && (e.elite || isBoss(e))) { const rr = isBoss(e) ? 22 : 14, c1 = isBoss(e) ? (e.enraged ? "#ff4a3a" : "#c890ff") : "#ffc830"; ring(ctx, fx, fy, rr, rr * 0.4, c1, (t * 6 | 0) % 2); if (isBoss(e)) ring(ctx, fx, fy, rr + 5, (rr + 5) * 0.4, c1, (t * 4 | 0) % 2 === 0); }
   if (isBoss(e) && e.enraged) addGlow(fx, fy - 30 - lift, 46, "#ff4a3a", 0.2);   // 只有首领狂暴才亮红光，平时不加光晕
   const top = fy - hh - lift;
   if (e.stunT > 0) for (let i = 0; i < 3; i++) { const a = t * 6 + i * 2.1; rect(ctx, fx + Math.cos(a) * 9, top - 4 + Math.sin(a) * 3, 2, 2, "#ffe060"); }
@@ -168,8 +173,8 @@ function drawEnemy(e, now) {
   if (e.mark > 0) { const a = t * 3; for (let i = 0; i < 4; i++) { const b = a + i * 1.57; dot(ctx, fx + Math.cos(b) * 8, top - 2 + Math.sin(b) * 4, "#c890ff"); } }
   if (e.poison && e.poison.t > 0 && (t * 4 | 0) % 2) { rect(ctx, fx - 6, top + 6, 2, 2, "#9cf07a"); rect(ctx, fx + 5, top + 10, 2, 2, "#6ad050"); }
   if (frozen) {
-    ctx.fillStyle = "rgba(170,230,255,.5)"; ctx.fillRect(fx - w / 2 - 2, top - 2, w + 4, hh + 3);
-    rect(ctx, fx - w / 2 - 2, top - 2, w + 4, 1, "#e8fbff"); rect(ctx, fx - w / 2 - 2, top - 2, 1, hh + 3, "#e8fbff");
+    ctx.fillStyle = "rgba(170,230,255,.5)"; ctx.fillRect(fx + box[0] - 2, top - 2, w + 4, hh + 3);
+    rect(ctx, fx + box[0] - 2, top - 2, w + 4, 1, "#e8fbff"); rect(ctx, fx + box[0] - 2, top - 2, 1, hh + 3, "#e8fbff");
   } else if (e.slowT > 0 && (t * 6 | 0) % 2) for (let i = -2; i <= 2; i++) rect(ctx, fx + i * 5, fy + 1, 2, 1, "#8fe0f0");
   if (e.brokenT > 0) { ctx.globalAlpha = 0.5 + Math.sin(t * 14) * 0.2; ring(ctx, fx, fy, 16, 9, "#ffe38a", (t * 10 | 0) % 2); ctx.globalAlpha = 1; }
   if (e.d.stealth && !e.revealed) return;
@@ -300,27 +305,26 @@ function drawFx(f, now) {
     disc(ctx, sx, sy, 7, "#ff6a2a"); disc(ctx, sx - 1, sy + 1, 4, "#ffd060"); rect(ctx, sx - 2, sy, 3, 3, "#ffffff");
     addGlow(sx, sy, 30, mc, 0.8);
   } else if (f.kind === "corpse") {
-    const F = foeOf(f.type), [fx, fy] = foeFeet(f), flash = k < 0.3 && (f.t * 24 | 0) % 2 === 0;
-    const big = renderFoe(f.type, { step: 0, ph: "", flash, face: f.face, elite: f.elite, t: 0 });
-    const sy = k < 0.3 ? 1 : 1 - (k - 0.3) / 0.7 * 0.8, lift = F.fly ? R0(22 * (1 - Math.min(1, k * 2))) : 0;
+    const [fx, fy] = foeFeet(f), flash = k < 0.3 && (f.t * 24 | 0) % 2 === 0;
+    const sy = k < 0.3 ? 1 : 1 - (k - 0.3) / 0.7 * 0.8, lift = foeFly(f.type) ? R0(22 * (1 - Math.min(1, k * 2))) : 0;
     ctx.globalAlpha = k < 0.5 ? 1 : 1 - (k - 0.5) * 2;
-    ctx.drawImage(big, 0, 0, 120, 120, fx - FOE_FOOT[0], fy - lift - R0(FOE_FOOT[1] * sy), 120, R0(120 * sy));
+    if (foeLpc(f.type)) drawFoeFig(ctx, f.type, { t: 0, face: f.face, flash, tint: f.elite ? ELITE_TINT : null, atkT: 9, sy }, fx, fy - lift);
+    else { const big = renderFoe(f.type, { step: 0, ph: "", flash, face: f.face, elite: f.elite, t: 0 }); ctx.drawImage(big, 0, 0, 120, 120, fx - big.fx, fy - lift - R0(big.fy * sy), 120, R0(120 * sy)); }
     ctx.globalAlpha = 1;
   } else if (f.kind === "shatter") {
     const [fx, fy] = foeFeet(f), img = renderFoe(f.type, { step: 0, ph: "", flash: k < 0.15, face: f.face, elite: f.elite, t: 0 });
-    const ox = fx - FOE_FOOT[0], oy = fy - FOE_FOOT[1] - (f.fly ? 22 : 0), tt = f.t;
+    const ox = fx - img.fx, oy = fy - img.fy - (f.fly ? 22 : 0), tt = f.t, q = img.width / img.S, bs = f.bs * q;
     ctx.globalAlpha = k < 0.55 ? 1 : 1 - (k - 0.55) / 0.45;
     for (const b of f.blocks) {
-      const x = R0(ox + b.sx + b.vx * tt), y = R0(oy + b.sy + b.vy * tt + 260 * tt * tt), s = b.spin && k > 0.3 ? 6 : 8;
-      ctx.drawImage(img, b.sx, b.sy, 8, 8, x, y, s, s);
+      const x = R0(ox + b.sx + b.vx * tt), y = R0(oy + b.sy + b.vy * tt + 260 * tt * tt), s = b.spin && k > 0.3 ? f.bs - 2 : f.bs;
+      ctx.drawImage(img, b.sx * q, b.sy * q, bs, bs, x, y, s, s);
     }
     ctx.globalAlpha = 1;
   } else if (f.kind === "ucorpse") {
     const [fx, fy] = unitFeet(f), flash = k < 0.35 && (f.t * 24 | 0) % 2 === 0;
-    const big = renderHero(f.def, { phase: "idle", flash, face: f.face, lv: f.lv, branch: f.branch, t: 0 });
+    const co = { t: 0, id: 1, face: f.face, lv: f.lv, branch: f.branch, flash, hurt: true };
     ctx.globalAlpha = k < 0.6 ? 1 : 1 - (k - 0.6) * 2.5;
-    if (k < 0.3) ctx.drawImage(big, fx - HOX * 2, fy - 80);
-    else { ctx.save(); ctx.translate(fx, fy - 2); ctx.rotate(-(f.face || 1) * Math.PI / 2 * Math.min(1, (k - 0.3) * 5)); ctx.drawImage(big, -HOX * 2, -80); ctx.restore(); }
+    drawHeroFig(ctx, f.def, { ...co, down: k >= 0.3 }, fx, fy);
     ctx.globalAlpha = 1;
   }
 }
@@ -527,7 +531,7 @@ function drawSkillCut(f, k, s, txt) {
   tctx.globalAlpha = 1 - outK * 0.6;
   tctx.imageSmoothingEnabled = false;
   const D = UNITS.find(u => u.id === f.id), size = bh * 1.25;
-  if (D) tctx.drawImage(renderHero(D, { phase: "idle", face: 1, lv: f.lv, branch: f.branch }), HOX * 2 - 32, 22, 64, 64, x0 + 6 * s, cy - size * 0.62, size, size);
+  if (D) tctx.drawImage(heroPic(D, { face: 1, lv: f.lv, branch: f.branch }), 0, 0, 256, 256, x0 + 6 * s, cy - size * 0.62, size, size);
   tctx.textAlign = "left";
   txt(f.skill, x0 + size + 10 * s, cy + bh * 0.08, Math.min(18 * s, bh * 0.42), f.color);
   txt(f.name + (f.hero ? " · 英雄" : ""), x0 + size + 10 * s, cy - bh * 0.3, Math.min(9 * s, bh * 0.22), "#e8e0c8");
@@ -551,7 +555,7 @@ function drawCutin(f, k, s, txt) {
     const D = UNITS.find(u => u.id === id); if (!D) return;
     const slide = Math.max(0, 1 - Math.max(0, k * 6 - i * 0.35)), x = W * 0.5 - (n * size * 0.72) / 2 + i * size * 0.72 + slide * slide * W * 0.8, y = cy - size / 2 - (i - (n - 1) / 2) * sk * 0.35;
     tctx.fillStyle = D.color; tctx.globalAlpha = a * 0.35; tctx.fillRect(x + size * 0.12, y + size * 0.1, size * 0.76, size * 0.8); tctx.globalAlpha = a;
-    tctx.drawImage(renderHero(D, { phase: "idle", face: -1, lv: 4, branch: "A" }), HOX * 2 - 32, 22, 64, 64, x, y, size, size);
+    tctx.drawImage(heroPic(D, { face: -1, lv: 4, branch: "A" }), 0, 0, 256, 256, x, y, size, size);
   });
   const tk = Math.min(1, Math.max(0, k * 5 - 0.6));
   txt("晨星爆发", W / 2 + (1 - tk) * 200 * s, cy + bh / 2 - sk * 0.2 - 12 * s, 26 * s, "#fff0a0");
@@ -597,11 +601,11 @@ function drawWaveLabels(s, txt, tk) {
     const dx = CRYSTAL.x - p.x, dy = CRYSTAL.y - p.y, d = Math.hypot(dx, dy) || 1;
     const [px, py] = tpx(p.x + dx / d * 1.05, p.y + dy / d * 0.95), list = [...m].sort((a, b) => b[1] - a[1]).slice(0, 2);
     list.forEach(([type, n], i) => {
-      const F = foeOf(type), big = renderFoe(type, { face: 1, t: 0 }), sq = Math.max(F.h * 2 + 8, F.frames[0][0].length * 2 + 4, 36);
+      const big = renderFoe(type, { face: 1, t: 0 }), [csx, csy, csq] = foeCrop(type, big);
       const x = px * s + (i - (list.length - 1) / 2) * sz * 1.5, y = py * s;
       tctx.fillStyle = "rgba(10,8,20,.7)"; tctx.fillRect(x - sz * 0.62, y - sz * 0.62, sz * 1.24, sz * 1.24);
       tctx.fillStyle = col; tctx.fillRect(x - sz * 0.62, y + sz * 0.52, sz * 1.24, Math.max(1, s));
-      tctx.drawImage(big, 60 - sq / 2, 115 - sq, sq, sq, x - sz / 2, y - sz / 2 - sz * 0.08, sz, sz);
+      tctx.drawImage(big, csx, csy, csq, csq, x - sz / 2, y - sz / 2 - sz * 0.08, sz, sz);
       txt("×" + n, x + sz * 0.42, y + sz * 0.5, 8 * s * tk, "#ffffff");
     });
   }

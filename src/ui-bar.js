@@ -28,9 +28,8 @@ function toast(html, draw) {
 }
 function drawFoeIcon(cvs, type) {
   cvs.width = 52; cvs.height = 52; const g = cvs.getContext("2d"); g.imageSmoothingEnabled = false;
-  const big = renderFoe(type, { face: 1, t: 0 }), F = foeOf(type);
-  const sz = Math.max(F.h * 2 + 8, F.frames[0][0].length * 2 + 4, 36);
-  g.drawImage(big, 60 - sz / 2, 115 - sz, sz, sz, 0, 0, 52, 52);
+  const big = renderFoe(type, { face: 1, t: 0 }), [sx, sy, sz] = foeCrop(type, big);
+  g.drawImage(big, sx, sy, sz, sz, 0, 0, 52, 52);
 }
 function unlockAchv(id) {
   const a = ACHV.find(x => x.id === id); if (!a) return false;

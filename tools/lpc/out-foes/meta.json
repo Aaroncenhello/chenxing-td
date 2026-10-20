@@ -1,0 +1,705 @@
+{
+ "goblin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "pilferer": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "shaman": {
+  "w": 1536,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "bomber": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "wolf": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "bloodwolf": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "stormhound": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "orc": {
+  "w": 1152,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "slash_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   }
+  ]
+ },
+ "frostgiant": {
+  "w": 1152,
+  "h": 3968,
+  "custom": [
+   {
+    "name": "tool_hammer",
+    "fs": 128,
+    "rows": 4,
+    "cols": 9,
+    "frames": [
+     9,
+     9,
+     9,
+     9
+    ]
+   }
+  ]
+ },
+ "ashwalker": {
+  "w": 1280,
+  "h": 3968,
+  "custom": [
+   {
+    "name": "tool_axe",
+    "fs": 128,
+    "rows": 4,
+    "cols": 10,
+    "frames": [
+     10,
+     10,
+     10,
+     10
+    ]
+   }
+  ]
+ },
+ "garg": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "dmage": {
+  "w": 1536,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "hexer": {
+  "w": 1536,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "nullmage": {
+  "w": 1536,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "necro": {
+  "w": 1536,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "tidecaller": {
+  "w": 1536,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "skeleton": {
+  "w": 1664,
+  "h": 4992,
+  "custom": [
+   {
+    "name": "slash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   },
+   {
+    "name": "backslash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 13,
+    "frames": [
+     13,
+     13,
+     13,
+     13
+    ]
+   },
+   {
+    "name": "halfslash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   }
+  ]
+ },
+ "drowned": {
+  "w": 1536,
+  "h": 4736,
+  "custom": [
+   {
+    "name": "walk_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 9,
+    "frames": [
+     9,
+     9,
+     9,
+     9
+    ]
+   },
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "ghost": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "icewraith": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "stalker": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "shield": {
+  "w": 1664,
+  "h": 4992,
+  "custom": [
+   {
+    "name": "slash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   },
+   {
+    "name": "backslash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 13,
+    "frames": [
+     13,
+     13,
+     13,
+     13
+    ]
+   },
+   {
+    "name": "halfslash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   }
+  ]
+ },
+ "warden": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "starguard": {
+  "w": 1536,
+  "h": 5760,
+  "custom": [
+   {
+    "name": "slash_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   },
+   {
+    "name": "slash_reverse_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   },
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "voidknight": {
+  "w": 1536,
+  "h": 5760,
+  "custom": [
+   {
+    "name": "slash_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   },
+   {
+    "name": "slash_reverse_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   },
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "mirrorknight": {
+  "w": 1664,
+  "h": 4992,
+  "custom": [
+   {
+    "name": "slash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   },
+   {
+    "name": "backslash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 13,
+    "frames": [
+     13,
+     13,
+     13,
+     13
+    ]
+   },
+   {
+    "name": "halfslash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   }
+  ]
+ },
+ "harpy": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "siren": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "wyvern": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "golem": {
+  "w": 1152,
+  "h": 3968,
+  "custom": [
+   {
+    "name": "tool_hammer",
+    "fs": 128,
+    "rows": 4,
+    "cols": 9,
+    "frames": [
+     9,
+     9,
+     9,
+     9
+    ]
+   }
+  ]
+ },
+ "warmech": {
+  "w": 1536,
+  "h": 4992,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   },
+   {
+    "name": "slash_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   }
+  ]
+ },
+ "monolith": {
+  "w": 1152,
+  "h": 3968,
+  "custom": [
+   {
+    "name": "tool_hammer",
+    "fs": 128,
+    "rows": 4,
+    "cols": 9,
+    "frames": [
+     9,
+     9,
+     9,
+     9
+    ]
+   }
+  ]
+ },
+ "bellkeeper": {
+  "w": 1152,
+  "h": 3968,
+  "custom": [
+   {
+    "name": "tool_hammer",
+    "fs": 128,
+    "rows": 4,
+    "cols": 9,
+    "frames": [
+     9,
+     9,
+     9,
+     9
+    ]
+   }
+  ]
+ },
+ "imp": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "voidling": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "emberling": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "boss": {
+  "w": 1152,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "slash_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   }
+  ]
+ },
+ "sovereign": {
+  "w": 1536,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "devourer": {
+  "w": 1536,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "stormlord": {
+  "w": 1536,
+  "h": 5760,
+  "custom": [
+   {
+    "name": "slash_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   },
+   {
+    "name": "slash_reverse_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   },
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "nameless": {
+  "w": 1536,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "silencer": {
+  "w": 1152,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "slash_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   }
+  ]
+ }
+}

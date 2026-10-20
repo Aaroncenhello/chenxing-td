@@ -139,7 +139,7 @@ function sprite(key, rows, pal, white, outline) {
 }
 
 // Scale2x：把 1 倍像素图放大 2 倍，同时把斜边修圆滑
-function scale2x(src) {
+function scale2x(src, reuse) {
   const w = src.width, h = src.height;
   const s = new Uint32Array(src.getContext("2d").getImageData(0, 0, w, h).data.buffer);
   const W2 = w * 2, out = new ImageData(W2, h * 2), o = new Uint32Array(out.data.buffer);
@@ -150,15 +150,22 @@ function scale2x(src) {
     if (B !== H && D !== F) { if (D === B) e0 = D; if (B === F) e1 = F; if (D === H) e2 = D; if (H === F) e3 = F; }
     const i = y * 2 * W2 + x * 2; o[i] = e0; o[i + 1] = e1; o[i + W2] = e2; o[i + W2 + 1] = e3;
   }
-  const c = document.createElement("canvas"); c.width = W2; c.height = h * 2;
+  const c = reuse || document.createElement("canvas"); if (!reuse) { c.width = W2; c.height = h * 2; }
   c.getContext("2d").putImageData(out, 0, 0); return c;
 }
-const BIG = new Map();
+// 放大后的角色 / 怪物帧缓存。iOS Safari 对画布内存有总量限制，新建的画布要等垃圾回收才释放，
+// 打几分钟后画布一多就整屏变黑，所以：1 倍的草稿画布只用一张；放大后的画布满了就按先进先出回收，丢进池子里重复利用，不再一直 createElement
+const BIG = new Map(), BIG_POOL = [];
+let scratch1x = null;
 function cached2x(key, draw, w, h) {
   let c = BIG.get(key); if (c) return c;
-  if (BIG.size > 900) BIG.clear();
-  const b = document.createElement("canvas"); b.width = w; b.height = h;
-  draw(b.getContext("2d")); c = scale2x(b); BIG.set(key, c); return c;
+  if (BIG.size >= 360) { let n = 0; for (const [k, v] of BIG) { BIG.delete(k); BIG_POOL.push(v); if (++n >= 120) break; } }
+  if (!scratch1x) { scratch1x = document.createElement("canvas"); }
+  if (scratch1x.width !== w) scratch1x.width = w; if (scratch1x.height !== h) scratch1x.height = h;
+  const g = scratch1x.getContext("2d", { willReadFrequently: true }); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h);
+  draw(g);
+  let out = null; for (let i = BIG_POOL.length - 1; i >= 0; i--) if (BIG_POOL[i].width === w * 2 && BIG_POOL[i].height === h * 2) { out = BIG_POOL.splice(i, 1)[0]; break; }
+  c = scale2x(scratch1x, out); BIG.set(key, c); return c;
 }
 
 // ---------- 主题配色 ----------

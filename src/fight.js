@@ -20,7 +20,7 @@ function applyGfx(sel) {
 // 自动档位不是选完就定死：帧率持续偏低就自动降一档，回稳一阵子再谨慎升回去，别的画质选项不受影响
 let fpsEma = null, gfxAdaptCd = 2;
 function adaptGfx(dt, target) {
-  if (gfxSel >= 0 || !dt || target < 20) return;   // 菜单/暂停这类低帧率时段不参与判断
+  if (gfxSel >= 0 || !dt || target < 20 || dt >= 0.099) return;   // 菜单/暂停这类低帧率时段、以及切后台/卡住后的一次性大间隔（dt 被截在 0.1）都不参与判断
   const rel = (1 / Math.max(dt, 1e-3)) / target;   // 实际帧率 / 目标帧率：省电模式 30 帧封顶时不能被误判成「卡」
   fpsEma = fpsEma == null ? rel : fpsEma * 0.9 + rel * 0.1;
   gfxAdaptCd -= dt;
@@ -28,7 +28,7 @@ function adaptGfx(dt, target) {
   // 预测式降档：场上怪多 / 特效多的时候（大波、首领战）门槛抬高，不用等真的卡了才降；这种时候也不急着升回去
   const heavy = !!S && (S.enemies.length > 36 || S.fx.length > GFX.cap * 0.6);
   if (fpsEma < (heavy ? 0.83 : 0.7) && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
-  else if (fpsEma > 0.93 && !heavy && autoIdx < autoMax() && TOUCH === false) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
+  else if (fpsEma > 0.93 && !heavy && autoIdx < autoMax()) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
 }
 // 触屏设备自动档最高只到「中」（高档在手机上几乎看不出区别，却更烫）
 const autoMax = () => (TOUCH ? 1 : GFX_LV.length - 1);
@@ -46,13 +46,13 @@ function burst(x, y, color, n, spd, life, size) {
 }
 // 像素碎裂：把敌人的像素图切成 8×8 的小块，每块带一个往外飞的速度，drawFx 里按重力画出来
 function shatterFx(e) {
-  const F = foeOf(e.type), w = F.frames[0][0].length, h = F.frames[0].length + (F.legs ? 2 : 0), bs = 8, blocks = [];
-  const x0 = (30 - Math.floor(w / 2)) * 2, y0 = (56 - h) * 2, cx = x0 + w, cy = y0 + h;
-  for (let sy = y0; sy < 112; sy += bs) for (let sx = x0; sx < x0 + w * 2; sx += bs) {
+  const b = foeBox(e.type), big = renderFoe(e.type, { face: 1, t: 0 }), blocks = [];   // 小块按逻辑像素算：从身体占位的左上到脚底；个头大的块也大，总数大约 50 块
+  const half = Math.max(-b[0], b[2]), x0 = big.fx - half, y0 = big.fy + b[1], w = half * 2, h = -b[1], cx = x0 + w / 2, cy = y0 + h / 2, bs = Math.max(8, Math.ceil(Math.sqrt(w * h / 50) / 4) * 4);
+  for (let sy = y0; sy < y0 + h; sy += bs) for (let sx = x0; sx < x0 + w; sx += bs) {
     const dx = sx + bs / 2 - cx, dy = sy + bs / 2 - cy, d = Math.hypot(dx, dy) || 1;
     blocks.push({ sx, sy, vx: dx / d * (40 + Math.random() * 70), vy: dy / d * 40 - 50 - Math.random() * 70, spin: Math.random() < 0.5 });
   }
-  return { kind: "shatter", type: e.type, elite: e.elite, face: e.face, x: e.x, y: e.y, fly: !!F.fly, blocks: blocks.slice(0, 64), life: 0.7 };
+  return { kind: "shatter", type: e.type, elite: e.elite, face: e.face, x: e.x, y: e.y, fly: foeFly(e.type), bs, blocks: blocks.slice(0, 80), life: 0.7 };
 }
 const faceTo = (o, tx) => { if (tx < o.x - 0.05) o.face = -1; else if (tx > o.x + 0.05) o.face = 1; };
 // 伤害数字：key = 挨打的对象，短时间内同一对象、同一颜色的数字合并成一个往上滚，不刷屏；

@@ -225,11 +225,11 @@ function drawCine() {
   // 立绘：从右边滑进来
   const img = renderFoe(C.type, { step: 0, ph: C.t > 1.5 ? "wind" : "", face: -1, elite: C.elite, t: C.t });
   const slide = Math.max(0, 1 - C.t / 0.55), out = Math.max(0, (C.t - (C.dur - 0.35)) / 0.35);
-  const sc = 2.1 + Math.sin(C.t * 2.2) * 0.05, cx = PW * 0.66 + slide * slide * 260 + out * 90;
+  const sc = (foeLpc(C.type) ? 1.2 : 2.1) + Math.sin(C.t * 2.2) * 0.05, cx = PW * 0.66 + slide * slide * 260 + out * 90;
   const cy = PHt * 0.56 + 60;
   ctx.imageSmoothingEnabled = false;
   ctx.globalAlpha = a;
-  ctx.drawImage(img, 0, 0, 120, 120, R0(cx - 60 * sc), R0(cy - 112 * sc), R0(120 * sc), R0(120 * sc));
+  ctx.drawImage(img, 0, 0, img.width, img.height, R0(cx - img.fx * sc), R0(cy - img.fy * sc), R0(img.S * sc), R0(img.S * sc));
   ctx.globalAlpha = 1;
   // 三道斩线
   for (let i = 0; i < 3; i++) {
