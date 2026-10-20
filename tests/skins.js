@@ -2,19 +2,19 @@
 const { chromium } = require('playwright'); const { check, noErrors, report } = require('./lib');
 const path = require('path'); const GAME = 'file://' + path.resolve(__dirname, '../dist/chenxing.html');
 (async () => { const b = await chromium.launch(); const errs = []; const p = await b.newPage({ viewport: { width: 1000, height: 760 } }); p.on('pageerror', e => errs.push(e.message));
-await p.goto(GAME); await p.evaluate(() => localStorage.setItem('chenxing-td-v2', JSON.stringify({ tutorial: true, ver: 14, stars: new Array(19).fill(3), bonusStars: 0 }))); await p.reload();
+await p.goto(GAME); await p.evaluate(() => localStorage.setItem('chenxing-td-v2', JSON.stringify({ tutorial: true, ver: 14, stars: [], bonusStars: 70 }))); await p.reload();
 await p.waitForFunction(() => typeof lpcReady !== 'undefined' && lpcReady, null, { timeout: 15000 }).catch(() => {});
 const r = await p.evaluate(async () => {
   const out = {}; localStorage.setItem('chenxing-td-news', '12.0');
   out.defaults = UNITS.every(u => skinOwned(loadSave(), u.id, 0)) && UNITS.every(u => !skinOwned(loadSave(), u.id, 1));
   out.rules = UNITS.every(u => SKIN_DEF[u.id] && SKIN_DEF[u.id].names.length === 2 && (skinRule(u.id).stars || skinRule(u.id).win || skinRule(u.id).awk));
   // 星星兑换（剑士 20★）：先把现有星星花光再试
-  const left0 = starBank().left; editSave(d => { d.bonusStars = 0; }); const l1 = starBank().left; editSave(d => { d.bonusStars = Math.max(0, 19 - l1); }); out.shortErr = buySkin('sword');
-  editSave(d => { d.bonusStars += 5; }); const before = starBank().left; out.buyErr = buySkin('sword'); out.after = starBank().left; out.spentDelta = before - out.after; out.eq = SKIN_EQ.sword; out.bought = skinOwned(loadSave(), 'sword', 1);
+  out.startLeft = starBank().left; buySkin('star'); buySkin('lancer'); out.leftAfter = starBank().left;   // 70 − 40 − 20 = 10，不够 20
+  out.shortErr = buySkin('sword'); editSave(d => { d.bonusStars += 15; }); const before = starBank().left; out.buyErr = buySkin('sword'); out.after = starBank().left; out.spentDelta = before - out.after; out.eq = SKIN_EQ.sword; out.bought = skinOwned(loadSave(), 'sword', 1);
   out.again = buySkin('sword');
   // 胜场解锁（骑士通关 10 局）和觉醒解锁（机兵）
   out.knightLocked = !skinOwned(loadSave(), 'knight', 1); editSave(d => { d.use.knight = { ...(d.use.knight || {}), win: 10 }; }); out.knightOpen = skinOwned(loadSave(), 'knight', 1);
-  out.notOwnedWear = wearSkin('lancer', 1); out.wear = wearSkin('knight', 1) && SKIN_EQ.knight === 1;
+  out.notOwnedWear = wearSkin('gunner', 1); out.wear = wearSkin('knight', 1) && SKIN_EQ.knight === 1;
   // 存档清洗：乱写的外观字段会被丢掉，没资格的外观会退回原装
   editSave(d => { d.skin = { knight: 1, lancer: 1, foo: 1, mage: 7 }; d.skinBuy = ['sword:1', 'knight:1', 'zz:1', 'sword:2']; });
   const s = loadSave(); out.clean = JSON.stringify({ skin: s.skin, buy: s.skinBuy });

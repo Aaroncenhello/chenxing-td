@@ -18,7 +18,7 @@ const SKIN_DEF = {
   mech: { names: ["重装机甲", "合金战装"], rule: { awk: 1 } },
   star: { names: ["月幕法袍", "夜空长裙"], rule: { stars: 40 } },
   chrono: { names: ["沙漏长袍", "时砂薄裙"], rule: { win: 25 } },
-  marshal: { names: ["红缨军铠", "赤裙战装"], rule: { awk: 3 } },
+  marshal: { names: ["红缨军铠", "赤裙战装"], rule: { stars: 30 } },
   counter: { names: ["青铜轻甲", "蓝青战装"], rule: { stars: 30 } },
   hunter: { names: ["夜猎装", "紫罗短装"], rule: { win: 10 } },
   songstress: { names: ["潮歌和服", "海风短裙"], rule: { stars: 40 } },
