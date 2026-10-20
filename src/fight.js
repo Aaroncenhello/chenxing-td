@@ -2,7 +2,7 @@
 // ================= 战斗：伤害、出手、技能、每一步 =================
 // 画质档位：粒子数量倍率 k、同屏特效上限 cap、抖屏强度 shake、背景飘落物 amb。-1 = 自动（手机用中，电脑用高，再按实际帧率动态调）
 // lit：发光、暗角、地面痕迹、光斑这类光影效果（低档关掉，保持轻量）
-const GFX_LV = [{ name: "低", k: 0.3, cap: 160, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.5, cap: 280, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 560, shake: 1, amb: true, lit: true }];
+const GFX_LV = [{ name: "低", k: 0.3, cap: 160, shake: 0.5, amb: false, lit: false, glow: 0, rs: 1 }, { name: "中", k: 0.5, cap: 280, shake: 1, amb: true, lit: true, glow: 8, rs: 2 }, { name: "高", k: 1, cap: 560, shake: 1, amb: true, lit: true, glow: 20, rs: 3 }];
 // 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
 const OPT_KEY = "chenxing-td-opts";
 // 触屏设备（手机/平板）默认开「省电」：30 帧 + 文字层降分辨率，发热和耗电都小得多。旧存档里存的 eco 是旧默认值，ecoV 不是 2 的一律按新默认重来一次
@@ -11,10 +11,11 @@ const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) ||
 function setOpt(k, v) { OPT[k] = typeof v === "number" || Array.isArray(v) ? v : !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
+  const was = GFX;
   gfxSel = sel == null ? -1 : sel;
-  if (gfxSel >= 0) { GFX = GFX_LV[gfxSel]; return; }
-  if (autoIdx == null) autoIdx = TOUCH || (typeof isPhone === "function" && isPhone()) ? 1 : 2;
-  GFX = GFX_LV[autoIdx];
+  if (gfxSel >= 0) GFX = GFX_LV[gfxSel];
+  else { if (autoIdx == null) autoIdx = TOUCH || (typeof isPhone === "function" && isPhone()) ? 1 : 2; GFX = GFX_LV[autoIdx]; }
+  if (was !== GFX && was && typeof resizeSoon === "function") resizeSoon();   // 画质档位决定战场画布的渲染倍数，变了就重排一次
 }
 // 自动档位不是选完就定死：帧率持续偏低就自动降一档，回稳一阵子再谨慎升回去，别的画质选项不受影响
 let fpsEma = null, gfxAdaptCd = 2;

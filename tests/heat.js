@@ -21,4 +21,13 @@ await p.evaluate(() => { setOpt('eco', true); });
 // 打一阵：自动画质不能因为 30 帧封顶被判成卡而掉到「低」
 const lv = await p.evaluate(async () => { const S = __td.S; for (let i = 0; i < 30; i++) { S.crystal.hp = S.crystal.maxHp; await new Promise(r => setTimeout(r, 200)); } return GFX.name; });
 check(lv === '中', `连打 6 秒后自动画质仍是「中」（${lv}）`, lv);
+// 清晰度：战场画布按设备分辨率整数倍渲染（手机 ≥ 2 倍），低档回到 1 倍
+{
+  const r = await p.evaluate(() => ({ rs: RS, w: cv.width, pw: PW, gfx: GFX.name }));
+  check(r.rs >= 2 && r.w === Math.round(r.pw * r.rs), `手机默认画质下战场画布 ${r.rs} 倍渲染（${r.w} 宽）`, r);
+  await p.evaluate(() => applyGfx(0)); await p.waitForTimeout(300);
+  const lo = await p.evaluate(() => ({ rs: RS, w: cv.width, pw: PW }));
+  check(lo.rs === 1 && lo.w === lo.pw, '低档画质回到 1 倍渲染（省电）', lo);
+  await p.evaluate(() => applyGfx(-1)); await p.waitForTimeout(300);
+}
 noErrors(errs); report('heat'); await b.close(); })();

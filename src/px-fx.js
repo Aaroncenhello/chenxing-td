@@ -45,7 +45,19 @@ function drawStations(t) {
   line(ctx, x - 6, y + 11, x + 6, y + 11, "#f4ecd8");
   line(ctx, x, y + 6, x, y + 16, "#f4ecd8");
 }
-function shadow(x, y, w) { ctx.fillStyle = "rgba(0,0,0,.33)"; ctx.fillRect(R0(x - w / 2), R0(y - 1), R0(w), 2); ctx.fillRect(R0(x - w / 2 + 2), R0(y + 1), R0(w - 4), 1); }
+// 脚下的影子：预先画好的一张柔和椭圆，用的时候缩放（不再是两条硬邦邦的黑线）
+let shadowCv = null;
+function shadow(x, y, w) {
+  if (!shadowCv) {
+    shadowCv = document.createElement("canvas"); shadowCv.width = 64; shadowCv.height = 24;
+    const g = shadowCv.getContext("2d"); g.translate(32, 12); g.scale(1, 0.375);
+    const grad = g.createRadialGradient(0, 0, 0, 0, 0, 32); grad.addColorStop(0, "rgba(0,0,0,.5)"); grad.addColorStop(0.6, "rgba(0,0,0,.28)"); grad.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = grad; g.fillRect(-32, -32, 64, 64);
+  }
+  const sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(shadowCv, x - w * 0.62, y - w * 0.24, w * 1.24, w * 0.46);
+  ctx.imageSmoothingEnabled = sm;
+}
 function bar(x, y, w, frac, col, sub, subCol, gold) {
   // 血量颜色随血量变：绿 → 黄 → 红，低于 30% 红色闪烁
   if (col === "#6ee07a") col = frac < 0.3 ? (Math.sin(performance.now() / 110) > 0 ? "#ff4a3a" : "#c02a20") : frac < 0.6 ? "#f0c040" : col;
@@ -620,8 +632,9 @@ function glowSprite(color) {   // 预渲染好的径向渐变光斑，用的时�
   grad.addColorStop(0, hexA(color, 1)); grad.addColorStop(0.35, hexA(color, 0.45)); grad.addColorStop(1, hexA(color, 0));
   g.fillStyle = grad; g.fillRect(0, 0, 96, 96); return c;
 }
+let glowN = 0;   // 每帧发光次数的预算：发光是叠加混合，画布按设备分辨率渲染后填充面积是以前的 4 倍，不限制的话大波、首领战会很烫
 function addGlow(x, y, r, color, a) {
-  if (!GFX.lit || a <= 0.01) return;
+  if (!GFX.lit || a <= 0.01 || ++glowN > GFX.glow) return;
   ctx.globalAlpha = Math.min(1, a); ctx.globalCompositeOperation = "lighter";
   ctx.drawImage(glowSprite(color), x - r, y - r, r * 2, r * 2);
   ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1;
@@ -688,21 +701,22 @@ function drawDecals(now) {
 const renderSortBuf = [];
 function render(now) {
   now = now || performance.now();
-  const t = now / 1000;
+  const t = now / 1000; glowN = 0;
   if (mapFor !== mapKey()) { drawMap(); mapFor = mapKey(); }
-  ctx.imageSmoothingEnabled = false;
+  ctx.imageSmoothingEnabled = false;   // 底图、地面痕迹保持清晰的像素块；角色、怪物、光斑下面再打开平滑
   const amp = S.shake > 0 ? Math.min(6, 2 + S.shake * 10) * GFX.shake * (OPT.calm ? 0.25 : 1) : 0;
   const ox = amp ? R0((Math.random() - 0.5) * amp) : 0, oy = amp ? R0((Math.random() - 0.5) * amp) : 0;
   const zoom = 1 + (OPT.calm ? 0 : (S.zoomK || 0));   // 大招 / 击破首领：短促地往里顿一下镜头，加重打击感
-  ctx.setTransform(1, 0, 0, 1, 0, 0); rect(ctx, 0, 0, PW, PHt, TH().bg);
+  ctx.setTransform(RS, 0, 0, RS, 0, 0); rect(ctx, 0, 0, PW, PHt, TH().bg);
   const bx = PW / 2 * (1 - zoom) + ox, by = PHt / 2 * (1 - zoom) + oy;
-  ctx.setTransform(zoom, 0, 0, zoom, bx, by);
+  ctx.setTransform(zoom * RS, 0, 0, zoom * RS, bx * RS, by * RS);
   // 世界层（按格子画的东西）：竖屏大画面时整体转 90°，横版坐标 (X,Y) → 视图 (LH−Y, X)
   if (ROT) { ctx.transform(0, 1, -1, 0, LH, 0); WP = true; }
   ctx.drawImage(mapCv, 0, 0);
   if (GFX.lit) drawDecals(now);
   drawAmbient(now);
-  if (ROT) { ctx.setTransform(zoom, 0, 0, zoom, bx, by); WP = false; }
+  if (ROT) { ctx.setTransform(zoom * RS, 0, 0, zoom * RS, bx * RS, by * RS); WP = false; }
+  ctx.imageSmoothingEnabled = RS > 1;
   drawAmbientParticles(now);
   drawHazGround(t);
   drawGates(t);
@@ -747,7 +761,7 @@ function render(now) {
   drawHazAir(t);
   for (const s of S.shots) drawShot(s);
   for (const f of S.fx) if (f.kind !== "corpse" && f.kind !== "ucorpse" && f.kind !== "shatter") drawFx(f, now);
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.setTransform(RS, 0, 0, RS, 0, 0);
   drawWeather(t); drawTod();
   if (GFX.lit) drawVignette();
   if (S.hitFlash > 0 && !OPT.calm) { ctx.fillStyle = `rgba(255,40,40,${(S.hitFlash * 0.5).toFixed(3)})`; ctx.fillRect(0, 0, PW, 6); ctx.fillRect(0, PHt - 6, PW, 6); ctx.fillRect(0, 0, 6, PHt); ctx.fillRect(PW - 6, 0, 6, PHt); }

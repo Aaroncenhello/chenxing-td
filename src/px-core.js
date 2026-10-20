@@ -13,7 +13,7 @@ const tx = document.getElementById("tx"), tctx = tx.getContext("2d");
 cv.width = PW; cv.height = PHt;
 const mapCv = document.createElement("canvas"); mapCv.width = LW; mapCv.height = LH;
 const mctx = mapCv.getContext("2d");
-let DPR = 1, mapFor = -1;
+let DPR = 1, RS = 1, mapFor = -1;   // RS：战场画布的渲染倍数（整数）。画布按设备分辨率渲染，不再用 640×360 的小画布硬拉伸
 const mapKey = () => (S ? S.stage + ":" + ST.theme + ":" + (S.seed || 0) + ":" + (S.gen ? 1 : 0) + (ROT ? ":r" : "") : -1);   // 竖屏大画面的底图要把树、石头、墓碑单独转回直立，所以和横版是两份
 const OUT = "#1c1424";
 
@@ -21,7 +21,7 @@ const OUT = "#1c1424";
 function setRot(on) {
   on = !!on; if (on === ROT) return;
   ROT = on; PW = on ? LH : LW; PHt = on ? LW : LH; document.body.classList.toggle("big", on);
-  cv.width = PW; cv.height = PHt;
+  cv.width = Math.round(PW * RS); cv.height = Math.round(PHt * RS);
   for (const f of AMB) { f.x = Math.random() * PW; f.y = Math.random() * PHt; }
   if (typeof vigFor !== "undefined") vigFor = null;
 }
@@ -69,6 +69,12 @@ function resize() {
   // 竖屏时提示（新敌人、遗物……）弹在按钮区正上方，盖住的是信息区最下面的卡牌行，不挡战场和按钮
   if (port) { const hl = document.querySelector(ROT ? ".pinfo" : ".hud-l"); document.body.style.setProperty("--toast-bottom", Math.round(window.innerHeight - (hl ? hl.getBoundingClientRect().top : window.innerHeight * 0.6) + 6) + "px"); }
   DPR = Math.min(window.devicePixelRatio || 1, OPT.eco ? 1.5 : 2);   // 文字层是整屏大小的画布，省电模式下降到 1.5 倍
+  // 战场画布：取「刚好够用」的整数倍（屏幕上每个逻辑像素占多少设备像素，向上取整，最多 3 倍），再让浏览器平滑缩小到屏幕大小。
+  // 以前是 640×360 的小画布用最近邻硬拉伸到 1.85 倍之类的非整数倍，像素宽窄不均，看上去发糙、颗粒重
+  RS = Math.max(1, Math.min(GFX.rs || 2, Math.ceil(k * DPR - 0.02)));   // 低档 1 倍（省电省热），中档最多 2 倍，高档最多 3 倍
+  const cw_ = Math.round(PW * RS), ch_ = Math.round(PHt * RS);
+  if (cv.width !== cw_) cv.width = cw_; if (cv.height !== ch_) cv.height = ch_;
+  cv.style.imageRendering = RS > 1 ? "auto" : "";
   const tw = Math.round(PW * k * DPR), th_ = Math.round(PHt * k * DPR);
   if (tx.width !== tw) tx.width = tw; if (tx.height !== th_) tx.height = th_;   // 没变就别动：给画布赋宽高会清空并重新分配，iOS 上反复分配容易黑屏
   if (S && mapFor !== mapKey()) { drawMap(); mapFor = mapKey(); }
@@ -260,7 +266,7 @@ function drawMap() {
   const g = mctx, th = TH(), rnd = rng(9173 + S.stage * 101);
   LAVA.clear();
   rect(g, 0, 0, LW, LH, th.g[0]);
-  for (let i = 0; i < 9000; i++) dot(g, rnd() * LW, rnd() * LH, th.g[i % 4]);
+  for (let i = 0; i < 5200; i++) dot(g, rnd() * LW, rnd() * LH, th.g[i % 4]);   // 噪点别太密，颗粒感会很重
   for (let i = 0; i < 900; i++) { const x = rnd() * LW, y = rnd() * LH; rect(g, x, y, 1, 2, th.blade); dot(g, x + 1, y + 1, th.g[1]); }
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
     const ch = MAP[r][c], x = c * T, y = r * T;
@@ -280,7 +286,7 @@ function drawMap() {
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (isPath(c, r) && MAP[r][c] !== "=") {
     const x = c * T, y = r * T;
     rect(g, x, y, T, T, th.path[0]);
-    for (let i = 0; i < 220; i++) dot(g, x + rnd() * T, y + rnd() * T, th.path[1 + (i % 3)]);
+    for (let i = 0; i < 120; i++) dot(g, x + rnd() * T, y + rnd() * T, th.path[1 + (i % 3)]);
     for (let i = 0; i < 5; i++) { const px_ = x + 3 + rnd() * 32, py_ = y + 3 + rnd() * 32; rect(g, px_, py_, 3, 2, th.path[3]); rect(g, px_, py_ - 1, 2, 1, th.path[2]); }
     const edge = (ex, ey, w, h, tx_, ty_) => { rect(g, ex, ey, w, h, th.edge); for (let i = 0; i < 12; i++) rect(g, tx_(), ty_(), 1, 2, th.tuft); };
     if (!isPath(c, r - 1)) edge(x, y, T, 2, () => x + rnd() * T, () => y + 1);
