@@ -82,9 +82,8 @@ function drawBranchFront(u, fx, fy, t) {
 function drawUnit(u, now) {
   const D = u.def, [fx, fy] = unitFeet(u), t = now / 1000, pop = Math.min(1, u.age / 0.25);
   if (u.down > 0) { // 倒下：躺在地上，显示复活倒计时
-    const big = renderHero(D, { phase: "idle", face: u.face, lv: u.lv, branch: u.branch, t: 0 });
     ctx.globalAlpha = 0.5;
-    ctx.save(); ctx.translate(fx, fy - 2); ctx.rotate(-(u.face || 1) * Math.PI / 2); ctx.drawImage(big, -HOX * 2, -80); ctx.restore();
+    ctx.save(); ctx.translate(fx, fy - 2); ctx.rotate(-(u.face || 1) * Math.PI / 2); drawChibi(ctx, D, { t: 0, id: u.id, face: u.face, lv: u.lv, branch: u.branch, hurt: true }, 0, 0); ctx.restore();
     ctx.globalAlpha = 1;
     // 复活倒计时圆环：弧线一圈圈补满
     const k = 1 - u.down / (u.downMax || RULES.revive), n = 24;
@@ -111,11 +110,10 @@ function drawUnit(u, now) {
   let ph = heroPhase(D, u.atkT); if (ph === "idle" && u.hitT > 0.05) ph = "hurt";
   const walking = ph === "idle" && Math.hypot(u.x - u.tx, u.y - u.ty) > 0.08;
   const bob = walking ? Math.floor(now / 110 + u.id) % 2 : ph === "idle" ? Math.floor(now / 420 + u.id * 0.5) % 2 : ph === "hurt" ? 1 : 0;
-  const big = renderHero(D, { phase: ph, bob, flash: u.hitT > 0.05, face: u.face, skill: u.skillT > 0, lv: u.lv, branch: u.branch, t });
-  // 出手前蓄力后撤、出手瞬间前冲一小步（按整像素挪，不拉伸，保持像素风）
-  const kb = -R0(u.kb * 2) * u.face + (ph === "wind" ? -2 * u.face : ph === "strike" || ph === "release" ? 3 * u.face : 0), drop = R0((1 - pop) * 30) + (ph === "strike" || ph === "release" ? 1 : 0);
+  // 出手前蓄力后撤、出手瞬间前冲这些动作都在骨骼姿势里（身体前倾 lean），这里只处理击退和出场下落
+  const kb = -R0(u.kb * 2) * u.face, drop = R0((1 - pop) * 30);
   if (u.lv >= 4) drawBranchBack(u, fx, fy, t);
-  ctx.drawImage(big, fx - HOX * 2 + kb, fy - 80 - drop - (walking && bob ? 1 : 0));
+  drawChibi(ctx, D, { t: t + u.id * 0.37, id: u.id, face: u.face, atkT: u.atkT, walking, flash: u.hitT > 0.05, skill: u.skillT > 0, lv: u.lv, branch: u.branch, hurt: ph === "hurt" }, fx + kb, fy - drop, 1.1);
   if (u.lv >= 4) drawBranchFront(u, fx, fy, t);
   if (S.shieldT > 0) { ctx.globalAlpha = Math.min(1, S.shieldT); ring(ctx, fx, fy - 18, 16, 8, "#8fd0ff", (t * 8 | 0) % 2); ctx.globalAlpha = 1; }
   if (u.frozenT > 0) {
@@ -317,10 +315,10 @@ function drawFx(f, now) {
     ctx.globalAlpha = 1;
   } else if (f.kind === "ucorpse") {
     const [fx, fy] = unitFeet(f), flash = k < 0.35 && (f.t * 24 | 0) % 2 === 0;
-    const big = renderHero(f.def, { phase: "idle", flash, face: f.face, lv: f.lv, branch: f.branch, t: 0 });
+    const co = { t: 0, id: 1, face: f.face, lv: f.lv, branch: f.branch, flash, hurt: true };
     ctx.globalAlpha = k < 0.6 ? 1 : 1 - (k - 0.6) * 2.5;
-    if (k < 0.3) ctx.drawImage(big, fx - HOX * 2, fy - 80);
-    else { ctx.save(); ctx.translate(fx, fy - 2); ctx.rotate(-(f.face || 1) * Math.PI / 2 * Math.min(1, (k - 0.3) * 5)); ctx.drawImage(big, -HOX * 2, -80); ctx.restore(); }
+    if (k < 0.3) drawChibi(ctx, f.def, co, fx, fy);
+    else { ctx.save(); ctx.translate(fx, fy - 2); ctx.rotate(-(f.face || 1) * Math.PI / 2 * Math.min(1, (k - 0.3) * 5)); drawChibi(ctx, f.def, co, 0, 0); ctx.restore(); }
     ctx.globalAlpha = 1;
   }
 }
@@ -527,7 +525,7 @@ function drawSkillCut(f, k, s, txt) {
   tctx.globalAlpha = 1 - outK * 0.6;
   tctx.imageSmoothingEnabled = false;
   const D = UNITS.find(u => u.id === f.id), size = bh * 1.25;
-  if (D) tctx.drawImage(renderHero(D, { phase: "idle", face: 1, lv: f.lv, branch: f.branch }), HOX * 2 - 32, 22, 64, 64, x0 + 6 * s, cy - size * 0.62, size, size);
+  if (D) tctx.drawImage(heroPic(D, { face: 1, lv: f.lv, branch: f.branch }), 0, 0, 256, 256, x0 + 6 * s, cy - size * 0.62, size, size);
   tctx.textAlign = "left";
   txt(f.skill, x0 + size + 10 * s, cy + bh * 0.08, Math.min(18 * s, bh * 0.42), f.color);
   txt(f.name + (f.hero ? " · 英雄" : ""), x0 + size + 10 * s, cy - bh * 0.3, Math.min(9 * s, bh * 0.22), "#e8e0c8");
@@ -551,7 +549,7 @@ function drawCutin(f, k, s, txt) {
     const D = UNITS.find(u => u.id === id); if (!D) return;
     const slide = Math.max(0, 1 - Math.max(0, k * 6 - i * 0.35)), x = W * 0.5 - (n * size * 0.72) / 2 + i * size * 0.72 + slide * slide * W * 0.8, y = cy - size / 2 - (i - (n - 1) / 2) * sk * 0.35;
     tctx.fillStyle = D.color; tctx.globalAlpha = a * 0.35; tctx.fillRect(x + size * 0.12, y + size * 0.1, size * 0.76, size * 0.8); tctx.globalAlpha = a;
-    tctx.drawImage(renderHero(D, { phase: "idle", face: -1, lv: 4, branch: "A" }), HOX * 2 - 32, 22, 64, 64, x, y, size, size);
+    tctx.drawImage(heroPic(D, { face: -1, lv: 4, branch: "A" }), 0, 0, 256, 256, x, y, size, size);
   });
   const tk = Math.min(1, Math.max(0, k * 5 - 0.6));
   txt("晨星爆发", W / 2 + (1 - tk) * 200 * s, cy + bh / 2 - sk * 0.2 - 12 * s, 26 * s, "#fff0a0");

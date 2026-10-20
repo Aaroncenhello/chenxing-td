@@ -13,8 +13,7 @@ function drawBust(cvs, id, face, bob) {
     g.drawImage(big, 28, 50 - (bob ? 1 : 0), 64, 64, 0, 0, size, size);
   } else {
     const D = UNITS.find(u => u.id === id); if (!D) return;
-    const big = renderHero(D, { phase: "idle", face, bob: bob ? 1 : 0, lv: 1 });
-    g.drawImage(big, HOX * 2 - 32, 22, 64, 64, 0, 0, size, size);
+    g.drawImage(heroPic(D, { face, lv: 1 }), 0, 0, 256, 256, 0, bob ? -1 : 0, size, size);
   }
 }
 function playStory(lines, done, opts) {
@@ -177,11 +176,9 @@ function animRoster(now) {
   if (!rosterAnim || !menuOpen) return;
   const { D, cvs } = rosterAnim, t = (now - rosterAnim.t0) / 1000, cyc = t % 2.2, atkT = cyc - 1.2;
   if (cvs.width !== 240) { cvs.width = 240; cvs.height = 198; }
-  const g = cvs.getContext("2d"); g.imageSmoothingEnabled = false; g.clearRect(0, 0, 240, 198);
-  const ph = atkT < 0 ? "idle" : heroPhase(D, atkT), bob = ph === "idle" ? Math.floor(t * 2.4) % 2 : 0;
-  const big = renderHero(D, { phase: ph, face: 1, bob, t: atkT < 0 ? t : atkT, lv: 1, skill: false });
-  g.fillStyle = "rgba(0,0,0,.3)"; g.fillRect(120 - 36, 172, 72, 6);
-  g.drawImage(big, 8, 22, 80, 66, 0, 0, 240, 198);
+  const g = cvs.getContext("2d"); g.clearRect(0, 0, 240, 198);
+  g.fillStyle = "rgba(0,0,0,.3)"; g.beginPath(); g.ellipse(120, 176, 40, 7, 0, 0, 6.3); g.fill();
+  drawChibi(g, D, { t, id: 1, face: 1, atkT: atkT < 0 ? null : atkT, lv: 1 }, 120, 174, 3);
 }
 
 function expHtml(gains) {
