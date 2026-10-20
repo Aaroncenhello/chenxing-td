@@ -17,7 +17,7 @@ await p.evaluate(() => { closeOverlay(); });
 // 省电关掉就是 60 帧封顶
 await p.evaluate(() => { setOpt('eco', false); }); await p.waitForTimeout(200);
 const full = await rate(); check(full <= 62 && full > 36, `省电关掉后约 60 帧（${full.toFixed(0)}）`, full);
-await p.evaluate(() => { setOpt('eco', true); });
+await p.evaluate(() => { setOpt('eco', true); autoIdx = 1; applyGfx(-1); });   // 60 帧档下无头浏览器达不到目标帧率会自动降档，这里复位
 // 打一阵：自动画质不能因为 30 帧封顶被判成卡而掉到「低」
 const lv = await p.evaluate(async () => { const S = __td.S; for (let i = 0; i < 30; i++) { S.crystal.hp = S.crystal.maxHp; await new Promise(r => setTimeout(r, 200)); } return GFX.name; });
 check(lv === '中', `连打 6 秒后自动画质仍是「中」（${lv}）`, lv);
