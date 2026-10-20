@@ -1,6 +1,6 @@
 // 把 out/*.png 里每个角色的「面朝右、走路第 1 帧」拼成对照图，看搭配对不对：node tools/lpc/sheet.js [输出 png]
 const { chromium } = require('playwright'); const fs = require('fs'), path = require('path');
-const OUT = path.join(__dirname, 'out'), ids = Object.keys(require('./heroes.js')).filter(k => k !== 'ATK'); const dst = process.argv[2] || path.join(OUT, 'sheet.png');
+const SET = process.env.SET || 'heroes', OUT = path.join(__dirname, SET === 'heroes' ? 'out' : 'out-' + SET), ids = Object.keys(require('./' + SET + '.js')).filter(k => k !== 'ATK' && k !== 'META'); const dst = process.argv[2] || path.join(OUT, 'sheet.png');
 (async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1500, height: 900 } });
   const imgs = {}; for (const id of ids) imgs[id] = 'data:image/png;base64,' + fs.readFileSync(path.join(OUT, id + '.png')).toString('base64');
   await p.setContent('<body></body>');

@@ -9,8 +9,8 @@ function drawBust(cvs, id, face, bob) {
   const size = 128; if (cvs.width !== size) { cvs.width = size; cvs.height = size; }
   const g = cvs.getContext("2d"); g.imageSmoothingEnabled = true; cvs.style.imageRendering = "auto"; g.clearRect(0, 0, size, size);
   if (isVillain(id)) {
-    const big = renderFoe(SPEAKERS[id].foe, { face, t: 0 });
-    g.drawImage(big, 28, 50 - (bob ? 1 : 0), 64, 64, 0, 0, size, size);
+    const ft = SPEAKERS[id].foe, big = renderFoe(ft, { face, t: 0 }), [sx, sy, sw, sh] = foeBust(ft, big);
+    g.drawImage(big, sx, sy, sw, sh, 0, bob ? -1 : 0, size, size);
   } else {
     const D = UNITS.find(u => u.id === id); if (!D) return;
     g.drawImage(heroPic(D, { face, lv: 1 }), 0, 0, 256, 256, 0, bob ? -1 : 0, size, size);

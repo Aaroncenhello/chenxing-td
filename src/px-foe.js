@@ -167,12 +167,64 @@ function drawFoe(g, type, o) {
   }
 }
 
-// 1 倍画进 60×60（脚底 30,56）→ Scale2x 到 120×120（脚底 60,112），按帧缓存
+// ---------- 怪物的 LPC 精灵 ----------
+// 大部分怪物用 LPC 素材合成（tools/lpc/foes.js → lpc-foe-data.js），按类型一张图；史莱姆、沙虫、蝎子、机械蜘蛛、无人机没有合适的素材，仍用上面的像素图。
+// 战场放大系数 = LPC_K × FOE_KS[类型]（1 = 和角色一样大；取 2/3 的倍数，RS=2 时每个素材像素正好是整数个设备像素）
+let FOE_VER = 0;
+const FOE_KS = { goblin: 2 / 3, pilferer: 2 / 3, shaman: 2 / 3, bomber: 2 / 3, imp: 2 / 3, voidling: 2 / 3, emberling: 2 / 3,
+  orc: 4 / 3, frostgiant: 4 / 3, ashwalker: 4 / 3, golem: 4 / 3, warmech: 4 / 3, monolith: 4 / 3, bellkeeper: 4 / 3, wyvern: 4 / 3, starguard: 4 / 3, voidknight: 4 / 3,
+  boss: 5 / 3, sovereign: 5 / 3, stormlord: 5 / 3, devourer: 2, nameless: 2, silencer: 2 };
+const FOE_FLY = new Set(["ghost", "icewraith"]);
+const foeLpc = type => (LPC_FOE_PACK[type] && lpcOk(type, true) ? LPC_FOE_PACK[type] : null);
+const foeKs = type => FOE_KS[type] || 1;
+// 站着时的占位 [左, 上, 右, 下]，相对脚底（逻辑像素）
+function foeBox(type) {
+  const P = foeLpc(type);
+  if (P) { const k = LPC_K * foeKs(type), b = P.box; return [b[0] * k, b[1] * k, b[2] * k, b[3] * k]; }
+  const F = foeOf(type), w = F.frames[0][0].length; return [-w, -(F.h + (F.legs ? 2 : 0)) * 2, w, 0];
+}
+// 飞不飞
+const foeFly = type => (foeLpc(type) ? !!(ENEMIES[type] && ENEMIES[type].flying) || FOE_FLY.has(type) : !!foeOf(type).fly);
+const FOE_ID = {};
+// 直接画一帧到 (x, y)（脚底）。o: { t, face, atkT, walking, phase, flash, tint, sx, sy }
+function drawFoeFig(g, type, o, x, y) {
+  const sm = g.imageSmoothingEnabled; g.imageSmoothingEnabled = false;
+  o.foe = true; const ok = drawLpc(g, FOE_ID[type] || (FOE_ID[type] = { id: type }), o, x, y, foeKs(type)); g.imageSmoothingEnabled = sm; return ok;
+}
+// 静态图（图鉴图标、对话立绘、首领入场、碎裂）：站姿放大成 2× 分辨率的小画布，.S = 逻辑边长，.fx/.fy = 脚底（逻辑）
+const FOE_PIC = new Map(), FOE_PIC_POOL = [];
+function foePic(type, o) {
+  const b = foeBox(type), S = Math.ceil((Math.max(b[2] - b[0], -b[1]) + 24) / 8) * 8;
+  const key = [type, FOE_VER, o.flash ? 1 : 0, o.face || 1, o.elite ? 1 : 0, o.ph === "wind" ? 1 : 0].join("|");
+  let c = FOE_PIC.get(key); if (c) return c;
+  if (FOE_PIC.size >= 50) { for (const v of FOE_PIC.values()) FOE_PIC_POOL.push(v); FOE_PIC.clear(); }
+  let k = FOE_PIC_POOL.findIndex(v => v.width === S * 2); c = k >= 0 ? FOE_PIC_POOL.splice(k, 1)[0] : document.createElement("canvas");
+  c.width = S * 2; c.height = S * 2; c.S = S; c.fx = S / 2; c.fy = S - 8;   // 赋宽高顺便清空
+  const g = c.getContext("2d"); g.scale(2, 2);
+  drawFoeFig(g, type, { t: 0, face: o.face || 1, flash: o.flash, tint: o.elite ? ELITE_TINT : null, atkT: o.ph === "wind" ? 0.12 : 9 }, c.fx, c.fy);
+  FOE_PIC.set(key, c); return c;
+}
+const ELITE_TINT = "rgba(255,200,48,.28)";
+
+// 1 倍画进 60×60（脚底 30,56）→ Scale2x 到 120×120（脚底 60,112），按帧缓存。返回的画布带 .S（逻辑边长）、.fx/.fy（脚底，逻辑）
 function renderFoe(type, o) {
+  if (foeLpc(type)) return foePic(type, o);
   const sk = foeSkin(type);
   const moving = ["dmage", "boss", "garg", "ghost", "necro", "harpy", "wyvern", "sovereign"].includes(sk) || type === "drone";
   const tq = moving ? Math.floor((o.t || 0) * 6) % 12 : (sk === "bomber" ? Math.floor((o.t || 0) * 12) % 2 : 0);
   const key = [type, o.step || 0, o.ph || "", o.flash ? 1 : 0, o.face || 1, o.elite ? 1 : 0, o.fuse ? 1 : 0, o.broken ? 1 : 0, tq].join("|");
-  return cached2x("f:" + key, g => { g.translate(30, 56); g.scale(o.face || 1, 1); drawFoe(g, type, { ...o, t: moving ? tq / 6 : tq / 12 }); }, 60, 60);
+  const c = cached2x("f:" + key, g => { g.translate(30, 56); g.scale(o.face || 1, 1); drawFoe(g, type, { ...o, t: moving ? tq / 6 : tq / 12 }); }, 60, 60);
+  c.S = 120; c.fx = 60; c.fy = 112; return c;
 }
-const FOE_FOOT = [60, 112];
+// 图标 / 立绘要截的那一块（画布像素）：[sx, sy, 边长]，刚好框住身体
+function foeCrop(type, big) {
+  const q = big.width / big.S;
+  if (foeLpc(type)) { const b = foeBox(type), s = Math.max(b[2] - b[0], -b[1]) + 8; return [(big.fx + (b[0] + b[2]) / 2 - s / 2) * q, (big.fy - s + 4) * q, s * q]; }
+  const F = foeOf(type), s = Math.max(F.h * 2 + 8, F.frames[0][0].length * 2 + 4, 36); return [60 - s / 2, 115 - s, s];
+}
+// 对话立绘要截的那一块：LPC 的取头和上半身；旧像素图沿用原来的
+function foeBust(type, big) {
+  if (!foeLpc(type)) return [28, 50, 64, 64];
+  const b = foeBox(type), s = Math.min(-b[1], Math.max(-b[1] * 0.6, 44)), k = big.width / big.S;
+  return [(big.fx - s / 2) * k, (big.fy + b[1] - 2) * k, s * k, s * k];
+}

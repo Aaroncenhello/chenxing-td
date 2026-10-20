@@ -1,7 +1,8 @@
 // 用本地跑着的 Universal LPC 生成器（http://127.0.0.1:5199，vite dev）把 heroes.js 里的搭配渲染成精灵表，存到 tools/lpc/out/<id>.png
 // 用法：先在生成器仓库里 `npx vite --port 5199`，再 `node tools/lpc/build.js [id,id,...]`
 const { chromium } = require('playwright'); const fs = require('fs'), path = require('path');
-const HEROES = require('./heroes.js'); delete HEROES.ATK; const OUT = path.join(__dirname, 'out'); fs.mkdirSync(OUT, { recursive: true });
+const SET = process.env.SET || 'heroes';   // heroes = 20 名角色，foes = 怪物
+const HEROES = require('./' + SET + '.js'); delete HEROES.ATK; delete HEROES.META; const OUT = path.join(__dirname, SET === 'heroes' ? 'out' : 'out-' + SET); fs.mkdirSync(OUT, { recursive: true });
 (async () => {
   const only = process.argv[2] ? process.argv[2].split(',') : Object.keys(HEROES), b = await chromium.launch(), meta = fs.existsSync(path.join(OUT, 'meta.json')) ? JSON.parse(fs.readFileSync(path.join(OUT, 'meta.json'), 'utf8')) : {};
   for (const id of only) {

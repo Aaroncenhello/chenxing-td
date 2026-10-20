@@ -46,13 +46,13 @@ function burst(x, y, color, n, spd, life, size) {
 }
 // 像素碎裂：把敌人的像素图切成 8×8 的小块，每块带一个往外飞的速度，drawFx 里按重力画出来
 function shatterFx(e) {
-  const F = foeOf(e.type), w = F.frames[0][0].length, h = F.frames[0].length + (F.legs ? 2 : 0), bs = 8, blocks = [];
-  const x0 = (30 - Math.floor(w / 2)) * 2, y0 = (56 - h) * 2, cx = x0 + w, cy = y0 + h;
-  for (let sy = y0; sy < 112; sy += bs) for (let sx = x0; sx < x0 + w * 2; sx += bs) {
+  const b = foeBox(e.type), big = renderFoe(e.type, { face: 1, t: 0 }), blocks = [];   // 小块按逻辑像素算：从身体占位的左上到脚底；个头大的块也大，总数大约 50 块
+  const half = Math.max(-b[0], b[2]), x0 = big.fx - half, y0 = big.fy + b[1], w = half * 2, h = -b[1], cx = x0 + w / 2, cy = y0 + h / 2, bs = Math.max(8, Math.ceil(Math.sqrt(w * h / 50) / 4) * 4);
+  for (let sy = y0; sy < y0 + h; sy += bs) for (let sx = x0; sx < x0 + w; sx += bs) {
     const dx = sx + bs / 2 - cx, dy = sy + bs / 2 - cy, d = Math.hypot(dx, dy) || 1;
     blocks.push({ sx, sy, vx: dx / d * (40 + Math.random() * 70), vy: dy / d * 40 - 50 - Math.random() * 70, spin: Math.random() < 0.5 });
   }
-  return { kind: "shatter", type: e.type, elite: e.elite, face: e.face, x: e.x, y: e.y, fly: !!F.fly, blocks: blocks.slice(0, 64), life: 0.7 };
+  return { kind: "shatter", type: e.type, elite: e.elite, face: e.face, x: e.x, y: e.y, fly: foeFly(e.type), bs, blocks: blocks.slice(0, 80), life: 0.7 };
 }
 const faceTo = (o, tx) => { if (tx < o.x - 0.05) o.face = -1; else if (tx > o.x + 0.05) o.face = 1; };
 // 伤害数字：key = 挨打的对象，短时间内同一对象、同一颜色的数字合并成一个往上滚，不刷屏；
