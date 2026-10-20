@@ -4,6 +4,10 @@
 // 一起渲染的话出手那几帧衣服会消失（以前的「掉衣服」）。
 // t2 / t3 / t4 只写「新增」的那几件，生成时自动累加。名称和变体都经 catalog.js 查验，写错会直接报错。
 const { item: T } = require('./catalog');
+// 第 2 套外观偏性感：生成器里没有泳装 / 内衣，所以用「裁短」做出来——把背心、束腰裁成只剩胸口那一截（抹胸 / 紧身胸衣），
+// 把短裤、短裙裁成只剩腰胯那一截（比基尼裤 / 超短裙）。X(类型, 名称, 变体, 保留比例) 就是「只保留这件衣服自己高度的上 N%」。
+// 这些裁短的图层单独渲染（s1x0…），打包时叠在裸体身体上、其余衣服的下面（skinpack.js）。
+const X = (type, name, v, keep) => ({ tok: T(type, name, v), keep });
 const F = 'sex=female';
 const H = (hairName, hairV, ears) => ({ hair: T('hair', hairName, hairV), ears: ears });
 const sk = (t2, t3, t4) => ({ t2, t3, t4 });
@@ -74,13 +78,43 @@ module.exports = {
     sk([pants('black'), boots('black')], [long('black')], []),
     sk([shorts('black'), hose('black'), boots('black')], [corset('black')], [T('gloves', 'Gloves', 'cloth.black')])] },
 };
-// 渲染用的完整参数：part = 'nude' | 'weapon' | 's0t2' … 's1t4'
+// 第 2 套外观（偏性感）的搭配：抹胸 / 紧身胸衣 + 比基尼裤 / 超短裙 + 过膝袜 + 靴子，再按各自职业配披风、头盔、肩甲、手套
+const BIKINI = {
+  knight: sk([boots('white'), hose('white'), X('legs', 'Plain skirt', 'white', 0.42)], [X('clothes', 'Tanktop', 'white', 0.42), T('shoulders', 'Pauldrons', 'silver')], [T('hat', 'Tiara', 'tiara_silver'), T('cape', 'Solid', 'blue'), T('gloves', 'Gloves', 'silver')]),
+  sword: sk([boots('black'), hose('black'), X('legs', 'Short Shorts', 'black', 0.5)], [X('clothes', 'Tanktop', 'red', 0.42)], [T('bandana', 'Bandana', 'red'), T('cape', 'Tattered', 'maroon'), T('gloves', 'Gloves', 'cloth.black')]),
+  assassin: sk([boots('black'), hose('black'), X('legs', 'Short Shorts', 'black', 0.46)], [X('vest', 'Corset', 'black', 0.55)], [T('hat', 'Hood', 'black'), T('gloves', 'Gloves', 'cloth.black')]),
+  lancer: sk([T('shoes', 'Armour', 'steel'), hose('white'), X('legs', 'Plain skirt', 'blue', 0.42)], [X('clothes', 'Tanktop', 'blue', 0.42), T('shoulders', 'Pauldrons', 'steel')], [T('hat', 'Legion', 'steel'), T('cape', 'Solid', 'navy')]),
+  archer: sk([boots('brown'), hose('green'), X('legs', 'Short Shorts', 'brown', 0.5)], [X('clothes', 'Tanktop', 'forest', 0.42)], [T('gloves', 'Gloves', 'cloth.brown'), T('neck', 'Scarf', 'green')]),
+  mage: sk([boots('black'), hose('black'), X('legs', 'Plain skirt', 'purple', 0.42)], [X('vest', 'Corset', 'purple', 0.55)], [T('hat', 'Celestial Wizard Hat', 'blue'), T('gloves', 'Gloves', 'cloth.purple')]),
+  gunner: sk([boots('brown'), hose('black'), X('legs', 'Short Shorts', 'brown', 0.48)], [X('vest', 'Corset', 'orange', 0.55)], [T('belt', 'Leather Belt', 'brown'), T('gloves', 'Gloves', 'cloth.brown')]),
+  priest: sk([shoes('white'), hose('white'), X('legs', 'Plain skirt', 'white', 0.42)], [X('clothes', 'Tanktop', 'white', 0.42)], [T('hat', 'Hood', 'white'), T('neck', 'Scarf', 'sky')]),
+  frost: sk([boots('white'), hose('white'), X('legs', 'Slit skirt', 'sky', 0.5)], [X('clothes', 'Tanktop', 'sky', 0.42)], [T('neck', 'Scarf', 'white'), T('gloves', 'Gloves', 'cloth.white')]),
+  alchemist: sk([boots('brown'), hose('white'), X('legs', 'Short Shorts', 'brown', 0.48)], [X('vest', 'Corset', 'lavender', 0.55)], [T('apron', 'Apron full', 'white'), T('backpack', 'Backpack', 'blue')]),
+  bard: sk([boots('brown'), hose('white'), X('legs', 'Short Shorts', 'blue', 0.48)], [X('clothes', 'Tanktop', 'blue', 0.42)], [T('hat', 'Tricorne', 'blue'), T('cape', 'Solid', 'pink')]),
+  summoner: sk([boots('brown'), hose('black'), X('legs', 'Plain skirt', 'brown', 0.42)], [X('vest', 'Corset', 'walnut', 0.55)], [T('hat', 'Hood', 'brown'), T('neck', 'Scarf', 'orange')]),
+  mech: sk([T('shoes', 'Armour', 'steel'), X('legs', 'Short Shorts', 'black', 0.46)], [X('vest', 'Corset', 'gray', 0.55), T('gloves', 'Gloves', 'steel')], [T('shoulders', 'Pauldrons', 'steel'), T('hat', 'Barbuta', 'steel'), T('backpack', 'Jetpack', 'steel')]),
+  star: sk([boots('black'), hose('black'), X('legs', 'Slit skirt', 'black', 0.5)], [X('vest', 'Corset', 'black', 0.55)], [T('hat', 'Celestial Wizard Moon Hat', 'blue'), T('gloves', 'Gloves', 'cloth.black')]),
+  chrono: sk([boots('brown'), hose('white'), X('legs', 'Plain skirt', 'green', 0.42)], [X('clothes', 'Tanktop', 'green', 0.42)], [T('belt', 'Robe Belt', 'teal'), T('gloves', 'Gloves', 'cloth.white')]),
+  marshal: sk([T('shoes', 'Armour', 'steel'), hose('red'), T('legs', 'Legion skirt', 'red')], [X('vest', 'Corset', 'red', 0.55), T('shoulders', 'Legion', 'steel')], [T('hat', 'Legion', 'steel'), T('accessory', 'Legion Plumage', 'red'), T('cape', 'Solid', 'red')]),
+  counter: sk([boots('leather'), hose('black'), X('legs', 'Short Shorts', 'teal', 0.48)], [X('vest', 'Corset', 'leather', 0.55)], [T('gloves', 'Gloves', 'cloth.leather')]),
+  hunter: sk([boots('black'), hose('black'), X('legs', 'Short Shorts', 'black', 0.46)], [X('vest', 'Corset', 'purple', 0.55)], [T('hat', 'Hood', 'purple'), T('gloves', 'Gloves', 'cloth.black')]),
+  songstress: sk([shoes('white'), hose('white'), X('legs', 'Slit skirt', 'sky', 0.5)], [X('clothes', 'Tanktop', 'blue', 0.42)], [T('neck', 'Scarf', 'blue'), T('gloves', 'Gloves', 'cloth.white')]),
+  breaker: sk([boots('black'), hose('black'), X('legs', 'Short Shorts', 'black', 0.46)], [X('vest', 'Corset', 'black', 0.55)], [T('gloves', 'Gloves', 'cloth.black')]),
+};
+for (const id of Object.keys(BIKINI)) module.exports[id].s[1] = BIKINI[id];
+
+// 这套外观里裁短的图层：[{ i, tier, tok, keep }]，i 是它在这套外观里的序号（对应渲染部件 s1x<i>）
+module.exports.trims = id => { const out = []; ['t2', 't3', 't4'].forEach((k, ti) => { for (const g of module.exports[id].s[1][k]) if (g && g.tok) out.push({ i: out.length, tier: ti + 2, tok: g.tok, keep: g.keep }); }); return out; };
+// 渲染用的完整参数：part = 'nude'（裸体）| 'skin'（只有身体和脸，没有头发，打包时用来判断哪些像素是皮肤）| 'weapon' | 's0t2'…'s1t4'（身体 + 衣服）| 's1x<i>'（裁短图层单独渲染）
 module.exports.spec = (id, part) => {
   const H = module.exports[id], base = [F, 'body=Body_Color_' + H.color, 'head=Human_Female_' + H.color, ...(H.ears ? [H.ears] : []), H.hair];
   if (part === 'nude') return base.join('&');
+  if (part === 'skin') return [F, 'body=Body_Color_' + H.color, 'head=Human_Female_' + H.color].join('&');
   if (part === 'weapon') return [F, ...H.weapon].join('&');
+  const x = /^s1x(\d+)$/.exec(part); if (x) return [F, module.exports.trims(id)[+x[1]].tok].join('&');
   const m = /^s(\d)t(\d)$/.exec(part), s = H.s[+m[1]], tier = +m[2]; let gear = [];
-  for (let t = 2; t <= tier; t++) gear = gear.concat(s['t' + t]);
+  for (let t = 2; t <= tier; t++) gear = gear.concat(s['t' + t].filter(g => typeof g === 'string'));   // 裁短的图层不在这里渲染
   return base.concat(gear).join('&');
 };
-module.exports.PARTS = ['nude', 's0t2', 's0t3', 's0t4', 's1t2', 's1t3', 's1t4', 'weapon'];
+module.exports.PARTS = ['nude', 'skin', 's0t2', 's0t3', 's0t4', 's1t2', 's1t3', 's1t4', 'weapon'];
+module.exports.partsOf = id => module.exports.PARTS.concat(module.exports.trims(id).map(t => 's1x' + t.i));

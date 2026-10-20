@@ -2,10 +2,11 @@
 // 用法：先在生成器仓库里 `npx vite --port 5199`，再 `node tools/lpc/skinbuild.js [id,id,...] [part,part,...]`（不写 = 全部），3 个页面并行
 const { chromium } = require('playwright'); const fs = require('fs'), path = require('path');
 const SK = require('./skins.js'), OUT = path.join(__dirname, 'out-skins'); fs.mkdirSync(OUT, { recursive: true });
-const ids = process.argv[2] && process.argv[2] !== 'all' ? process.argv[2].split(',') : Object.keys(SK).filter(k => k !== 'spec' && k !== 'PARTS');
-const parts = process.argv[3] ? process.argv[3].split(',') : SK.PARTS;
+const ids = process.argv[2] && process.argv[2] !== 'all' ? process.argv[2].split(',') : Object.keys(SK).filter(k => SK[k] && SK[k].s);
+const arg = process.argv[3];   // 不写 = 全部；bikini = 第 2 套外观相关的（skin、s1t2–4、裁短图层）；也可以写部件名列表
+const partsFor = id => (!arg ? SK.partsOf(id) : arg === 'bikini' ? ['skin', 's1t2', 's1t3', 's1t4', ...SK.trims(id).map(t => 's1x' + t.i)] : arg.split(','));
 (async () => {
-  const b = await chromium.launch(), jobs = []; for (const id of ids) for (const part of parts) jobs.push([id, part]);
+  const b = await chromium.launch(), jobs = []; for (const id of ids) for (const part of partsFor(id)) jobs.push([id, part]);
   const metaFile = path.join(OUT, 'meta.json'), meta = fs.existsSync(metaFile) ? JSON.parse(fs.readFileSync(metaFile, 'utf8')) : {};
   let next = 0, done = 0;
   async function worker() {
