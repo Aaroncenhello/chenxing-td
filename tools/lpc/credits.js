@@ -1,5 +1,5 @@
 // 汇总 out/*.credits.csv → src/lpc-credits.js（游戏里「素材署名」页用）+ CREDITS-LPC.md（仓库根目录）
-const fs = require('fs'), path = require('path'); const OUTS = [path.join(__dirname, 'out'), path.join(__dirname, 'out-foes')].filter(d => fs.existsSync(d));
+const fs = require('fs'), path = require('path'); const OUTS = [path.join(__dirname, 'out'), path.join(__dirname, 'out-foes'), path.join(__dirname, 'out-skins')].filter(d => fs.existsSync(d));
 function parseCsv(t) { const rows = []; let row = [], cur = '', q = false; for (let i = 0; i < t.length; i++) { const c = t[i]; if (q) { if (c === '"' && t[i + 1] === '"') { cur += '"'; i++; } else if (c === '"') q = false; else cur += c; } else if (c === '"') q = true; else if (c === ',') { row.push(cur); cur = ''; } else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; } else if (c !== '\r') cur += c; } if (cur || row.length) { row.push(cur); rows.push(row); } return rows; }
 const seen = new Map(), authors = new Set(), licenses = new Set();
 for (const OUT of OUTS) for (const f of fs.readdirSync(OUT).filter(f => f.endsWith('.credits.csv'))) {

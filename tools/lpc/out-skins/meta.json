@@ -1,0 +1,82 @@
+{
+ "knight.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "knight.weapon": {
+  "w": 1664,
+  "h": 4992,
+  "custom": [
+   {
+    "name": "slash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   },
+   {
+    "name": "backslash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 13,
+    "frames": [
+     13,
+     13,
+     13,
+     13
+    ]
+   },
+   {
+    "name": "halfslash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   }
+  ]
+ },
+ "knight.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mage.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mage.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mage.weapon": {
+  "w": 1536,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ }
+}

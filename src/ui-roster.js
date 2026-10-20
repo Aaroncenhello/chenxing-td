@@ -13,7 +13,7 @@ function drawBust(cvs, id, face, bob) {
     g.drawImage(big, sx, sy, sw, sh, 0, bob ? -1 : 0, size, size);
   } else {
     const D = UNITS.find(u => u.id === id); if (!D) return;
-    g.drawImage(heroPic(D, { face, lv: 1 }), 0, 0, 256, 256, 0, bob ? -1 : 0, size, size);
+    g.drawImage(heroPic(D, { face }), 0, 0, 256, 256, 0, bob ? -1 : 0, size, size);
   }
 }
 function playStory(lines, done, opts) {
@@ -103,7 +103,7 @@ function showHeroPick(stage, opts) {
       <canvas class="pt" id="hp-${D.id}" aria-hidden="true"></canvas><span class="nm">${D.name}</span>
       <span class="meta">${D.cls} · ${D.place === "ground" ? "前排拦怪" : D.dmg === "heal" ? "治疗" : D.air ? "能打飞行" : "只打地面"}</span><span class="clv">Lv${lvs[D.id]}${awkOf(charExp(save, D.id)) ? "★" + awkOf(charExp(save, D.id)) : ""}</span></button>`).join("")}</div>
     <div class="btns"><button id="btn-menu">返回选关</button></div>`);
-  for (const D of open) drawPortrait(D, $("hp-" + D.id), 1);
+  for (const D of open) drawPortrait(D, $("hp-" + D.id));
 }
 
 // ---------- 角色养成 ----------
@@ -144,7 +144,7 @@ function showRoster(id) {
           <span class="nm">${open ? D.name : "？？？"}</span><span class="meta">${open ? `${D.cls} · Lv${L.lv}${awkOf(charExp(d, D.id)) ? " · 觉醒" + awkOf(charExp(d, D.id)) : ""}${masteryOf(d, D.id) ? ` · <b style="color:${MASTERY[masteryOf(d, D.id) - 1].c}">${MASTERY[masteryOf(d, D.id) - 1].name}</b>` : ""}` : `第 ${D.joinAt + 1} 关加入`}</span>
           ${open ? `<span class="xp"><i style="width:${pct}%"></i></span>` : ""}</button>`; }).join("")}</div>
       <div class="btns"><button id="btn-menu">返回选关</button></div>`);
-    for (const D of UNITS) { const c = $("rs-" + D.id); if (charOpen(D)) drawPortrait(D, c, 1); else { c.width = 40; c.height = 40; const g = c.getContext("2d"); g.fillStyle = "#1a1f2e"; g.fillRect(0, 0, 40, 40); } }
+    for (const D of UNITS) { const c = $("rs-" + D.id); if (charOpen(D)) drawPortrait(D, c); else { c.width = 40; c.height = 40; const g = c.getContext("2d"); g.fillStyle = "#1a1f2e"; g.fillRect(0, 0, 40, 40); } }
     return;
   }
   const D = UNITS.find(u => u.id === id), exp = charExp(d, id), { L, pct } = expBar(exp), k = (1 + PROG.perLv * (L.lv - 1)) * (1 + AWK.perLv * awkOf(exp)), tal = TALENTS[id];
@@ -188,4 +188,4 @@ function expHtml(gains) {
       <em>${up ? `Lv${g.before} → Lv${g.after.lv}${g.before < PROG.talentLv && g.after.lv >= PROG.talentLv ? " · 天赋解锁" : ""}` : `Lv${g.after.lv}`}${(() => { const a0 = awkOf(g.exp - g.gain), a1 = awkOf(g.exp); return a1 > a0 ? ` · <b style="color:#ffd860">觉醒 ${a1}！</b>` : a1 ? ` · 觉醒 ${a1}` : ""; })()}</em>
       <span class="xp"><i style="width:${pct}%"></i></span></div></div>`; }).join("")}</div>`;
 }
-function drawExpPortraits() { for (const c of $("ovbox").querySelectorAll("canvas[data-ept]")) drawPortrait(UNITS.find(u => u.id === c.dataset.ept), c, 1); }
+function drawExpPortraits() { for (const c of $("ovbox").querySelectorAll("canvas[data-ept]")) drawPortrait(UNITS.find(u => u.id === c.dataset.ept), c); }

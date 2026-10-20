@@ -81,6 +81,7 @@ function drawBranchFront(u, fx, fy, t) {
 // ---------- 角色 ----------
 function drawUnit(u, now) {
   const D = u.def, [fx, fy] = unitFeet(u), t = now / 1000, pop = Math.min(1, u.age / 0.25);
+  if (!u.lw && !u.summon) { u.lw = 1; lpcWantHero(D.id, true); }   // 上场的角色把 2、3 阶的衣服图也加载好
   if (u.down > 0) { // 倒下：躺在地上，显示复活倒计时
     ctx.globalAlpha = 0.5;
     drawHeroFig(ctx, D, { t: 0, id: u.id, face: u.face, lv: u.lv, branch: u.branch, down: true }, fx, fy);
