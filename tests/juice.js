@@ -136,7 +136,7 @@ const GFXcap = () => 800;   // 高画质上限 700，加上横幅等关键特效
     const out = { met: met && synHint(met), nova: nova && synHint(nova) };
     out.clean = JSON.stringify(S.cards) === before && S.units.length === nUnits;
     out.met = out.met && { id: out.met.g.id, done: out.met.done }; out.nova = out.nova && { id: out.nova.g.id, a: out.nova.a, b: out.nova.b, done: out.nova.done };
-    // 前排伙伴：加入一个地面角色让钢铁防线前进
+    // 前排伙伴：加入一个地面角色让前排阵前进
     const join = pool.find(x => x.join && x.def.place === 'ground'); const jh = join && synHint(join);
     out.join = jh && jh.g.id; out.cleanJoin = S.units.length === nUnits;
     S.offer = [met, nova].filter(Boolean); document.getElementById('levelup').dataset.k = ''; updateOffer();
@@ -145,11 +145,11 @@ const GFXcap = () => 800;   // 高画质上限 700，加上横幅等关键特效
     return out;
   });
   console.log('羁绊提示:', JSON.stringify(sh));
-  check(sh.met && sh.met.id === 'inferno' && sh.met.done, '已有烈焰环时，陨星雨提示「凑齐烈焰环绕」', sh.met);
-  check(!sh.nova || (sh.nova.id === 'frostbite' && sh.nova.a === 1 && sh.nova.b === 2 && !sh.nova.done), '冰霜新星提示极寒领域 1/2', sh.nova);
+  check(sh.met && sh.met.id === 'inferno' && sh.met.done, '已有烈焰环时，陨星雨提示「凑齐火系」', sh.met);
+  check(!sh.nova || (sh.nova.id === 'frostbite' && sh.nova.a === 1 && sh.nova.b === 2 && !sh.nova.done), '冰霜新星提示冰系 1/2', sh.nova);
   check(sh.clean && sh.cleanJoin, '计算提示不会改动牌组和队伍', sh);
   check(!sh.join || ['wall', 'arcane'].includes(sh.join), '招募前排伙伴提示队伍羁绊进度', sh.join);
-  check(sh.dom.some(t => /sh done:凑齐羁绊 · 烈焰环绕/.test(t)), '卡面上显示羁绊提示', sh.dom);
+  check(sh.dom.some(t => /sh done:凑齐羁绊 · 火系/.test(t)), '卡面上显示羁绊提示', sh.dom);
 
   // ---------- 结算页动画 ----------
   await p.evaluate(() => { __td.newRun(0, {}); const S = __td.S; S.pending = 0; S.offer = null; S.kills = 57; S.picks = ['a', 'b', 'c']; S.over = 'lose'; });

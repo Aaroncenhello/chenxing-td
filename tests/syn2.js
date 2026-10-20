@@ -17,6 +17,6 @@ const r = await p.evaluate(() => {
   return out; });
 console.log(JSON.stringify(r));
 check(r.a[0] === true && r.a[1] === false && r.b[1] === true && r.c[1] === false, '两张卡都 3 级才触发二档，掉级后收回', r);
-check(r.burnDps === 200 && r.burnDps1 === 150, '烈焰环绕二档灼烧 ×2，一档 ×1.5', r);
+check(r.burnDps === 200 && r.burnDps1 === 150, '火系二档灼烧 ×2，一档 ×1.5', r);
 check(r.guide && r.all2 === 8 && !r.nan, '羁绊一览显示二档；八条二档同时生效跑 20 秒无 NaN', r);
 noErrors(errs); report('syn2'); await b.close(); })();

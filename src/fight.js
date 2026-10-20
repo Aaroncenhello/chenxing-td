@@ -81,7 +81,7 @@ function addNum(x, y, v, color, big, key, maxHp) {
 function killEnemy(e, src) {
   e.dead = true; S.kills++;
   S.foeKill[e.type] = (S.foeKill[e.type] || 0) + 1;
-  if (e.elite || isBoss(e)) { S.eliteKills = (S.eliteKills || 0) + 1; if (cl("lg_hunt")) { S.huntT = 12; addFx({ kind: "text", x: e.x, y: e.y - 1, text: "猎手之誓 · 攻击 +8%", color: "#ffd860", life: 1.1, big: true }); } }
+  if (e.elite || isBoss(e)) { S.eliteKills = (S.eliteKills || 0) + 1; if (cl("lg_hunt")) { S.huntT = 12; addFx({ kind: "text", x: e.x, y: e.y - 1, text: "猎杀连击 · 攻击 +8%", color: "#ffd860", life: 1.1, big: true }); } }
   if (e === S.focus) S.focusKills = (S.focusKills || 0) + 1;
   addStat(src, "kills", 1);
   if (e.stolen) { const back = Math.round(e.stolen * 1.5); S.dust += back; addFx({ kind: "text", x: e.x, y: e.y - 0.8, text: "+" + back + " 星尘（追回）", color: "#ffd860", life: 1.2, big: true }); }
@@ -100,11 +100,11 @@ function killEnemy(e, src) {
   if (e.type === "treasure") {
     S.pending++; S.chest++; S.dust += 30;
     S.events.push({ type: "achv", id: "treasure" });
-    addFx({ kind: "banner", text: "宝箱打爆了！多翻一张牌 +30 星尘", life: 2 });
+    addFx({ kind: "banner", text: "宝箱打开：多翻一张牌，+30 星尘", life: 2 });
     for (let i = 0; i < 4; i++) addFx({ kind: "pillar", x: e.x + (i - 1.5) * 0.3, y: e.y, color: "#ffd860", life: 0.8 });
     burst(e.x, e.y, "#ffe040", 40, 3.4, 1, 0.09); S.shake = 0.4;
   }
-  // 传说卡「天罚」
+  // 传说卡「击杀落光」
   if (cl("lg_judge") && src && src.def && roll("fight") < 0.2 * cl("lg_judge")) {
     const t = S.enemies.filter(o => hittable(o) && o !== e).sort((a, b) => dist(a, e) - dist(b, e))[0];
     if (t) {
@@ -126,7 +126,7 @@ function killEnemy(e, src) {
   if ((e.elite || isBoss(e)) && S.slowCd <= 0) { S.slowmo = Math.max(S.slowmo, isBoss(e) ? 0.9 : 0.22); S.slowCd = 1.2; }
   if (isBoss(e)) { S.shake = 0.6; bossFanfare(e, "death"); if (S.boss === e) S.boss = null; if (e.type === "boss") S.events.push({ type: "achv", id: "boss" }); }
   if (e.d.split) for (let i = 0; i < e.d.split; i++) { const s = spawnNear("slime", e, false, true); s.stop = 0.2; s.hitT = 0.1; }
-  // 殉爆
+  // 死亡爆炸
   if (cl("boom") && roll("fight") < 0.18 * cl("boom") * (syn("bloodlust") ? 1.5 : 1)) {
     const dmg = 500 * cl("boom") * powerK() * (syn("bloodlust") ? (syn2("bloodlust") ? 1.8 : 1.5) : 1);
     addFx({ kind: "boom", x: e.x, y: e.y, r: 1.3, color: "#ff8a3a", life: 0.45 });
@@ -521,7 +521,7 @@ function summonGolem(u) {
   addFx({ kind: "pillar", x: g.x, y: g.y, color: "#7af0e0", life: 0.8 });
   addFx({ kind: "ring", x: g.x, y: g.y, color: "#b8845a", life: 0.6, r0: 0.2, r1: 1.2 });
   burst(g.x, g.y + 0.2, "#b8a890", 20, 2.2, 0.7, 0.07);
-  addFx({ kind: "text", x: g.x, y: g.y - 0.7, text: "咚咚！", color: "#7af0e0", life: 1.1, big: true });
+  addFx({ kind: "text", x: g.x, y: g.y - 0.7, text: "咚咚", color: "#7af0e0", life: 1.1, big: true });
   S.shake = Math.max(S.shake, 0.15);
   if (hasTal(u, "summoner")) for (const e of S.enemies) if (hittable(e) && !e.d.unstoppable && dist(e, g) <= 1.4) e.stunT = Math.max(e.stunT, 2);
   return true;

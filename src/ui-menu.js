@@ -86,15 +86,14 @@ function showNews() {
   let seen = ""; try { seen = localStorage.getItem("chenxing-td-news") || ""; } catch (e) { }
   if (seen === NEWS_VER || !loadSave().tutorial) return false;
   try { localStorage.setItem("chenxing-td-news", NEWS_VER); } catch (e) { }
-  openOverlay(`<h2>12.0 更新内容</h2><div class="tree">
-    <small><b>首领专属特性</b>　15 位首领各有一个机制（召唤、分裂、落雷、抹除……），血条旁会写出来</small>
-    <small><b>天气与昼夜</b>　每 5 波有 2 波天气，户外关会从白天走到夜里</small>
-    <small><b>自选契约</b>　选关页勾选额外难度，通关多拿星星</small>
-    <small><b>连败辅助</b>　同一关连败后晨星碑生命会增加</small>
-    <small><b>卡牌放逐</b>　翻牌时放逐不想要的牌；<b>第二法术槽</b>可换星盾、号令、时停</small>
-    <small><b>羁绊第二档、20 个事件、新敌人、商店新品</b></small>
-    <small><b>角色精通</b>　用同一角色多通关，脚下会亮起小标</small></div>
-    <p>战斗中点「羁绊」看板，可以随时查看本局规则。</p>
+  openOverlay(`<h2>更新说明</h2><div class="tree">
+    <small>首领各有一个专属机制，血条旁会写出来。</small>
+    <small>每 5 波有 2 波天气，户外关会从白天走到夜里。</small>
+    <small>选关页可以勾选额外难度（契约），通关多拿星星。</small>
+    <small>同一关连败后，晨星碑生命会增加。</small>
+    <small>翻牌时可以放逐不想要的牌；第二法术槽可以换。</small>
+    <small>新增羁绊第二档、20 个事件、新敌人和商店物品。</small></div>
+    <p>战斗中点「羁绊」看板，可以查看本局规则。</p>
     <div class="btns"><button class="primary" id="btn-newsok">知道了</button></div>`);
   return true;
 }
@@ -357,7 +356,7 @@ function startRun(i, opts) {
   newRun(i, { ...opts, perks: opts.perks || loadSave().perks, charLv: opts.charLv || charLevels(), charAwk: opts.charAwk || charAwks(), mast: opts.mast || charMasts(), charTal: opts.charTal || loadSave().tal, charOpen: opts.charOpen || openChars().map(u => u.id), formIdx: opts.formIdx == null ? loadSave().form : opts.formIdx, disk: opts.disk || loadSave().disk, autoWave: opts.autoWave == null ? loadSave().autoWave : opts.autoWave });
   acc = 0; shownOver = null; mapFor = -1; infoKey = ""; teamKey = ""; cardKey = "";
   setText("btn-speed", "1×"); setText("btn-pause", "暂停"); cycleForm(true);
-  if (S.assist) setTimeout(() => toast(`<b>连败辅助</b>晨星碑生命 +${Math.round(ASSIST[S.assist - 1].hp * 100)}%，加油！`), 600);
+  if (S.assist) setTimeout(() => toast(`<b>连败辅助</b>晨星碑生命 +${Math.round(ASSIST[S.assist - 1].hp * 100)}%`), 600);
   for (const el of document.querySelectorAll("[data-k]")) el.dataset.k = "";
   $("levelup").hidden = true; $("levelup").dataset.k = "";
   $("shopbox").hidden = true; $("shopbox").dataset.k = ""; $("eventbox").hidden = true; $("eventbox").dataset.k = ""; synKey = "";
@@ -372,7 +371,7 @@ const TUT = [
   ["打死敌人会攒经验，经验条满了就会暂停，让你翻牌。", () => S.level >= 2 || S.pending > 0 || S.picks.length],
   ["翻到的卡一整局都生效：属性、伙伴、自动技能都可以一直叠加。", () => S.picks.length >= 1],
   ["晨星碑的血被打光就输了。陨星术（Q）和圣愈之光（W）可以救急。", (tt) => S.usedSpell || tt > 40],
-  ["击杀还会给晨星之力充能，满了点上面那条金色的按钮（或按 E）放全屏大招。引导结束，祝你守住！", (tt) => S.usedUlt || tt > 30],
+  ["击杀还会给大招充能，满了点上面那条金色的按钮（或按 E）放全屏大招。引导结束。", (tt) => S.usedUlt || tt > 30],
 ];
 let tut = null;
 // 引导到哪一步，就让对应的按钮闪一下金边（步骤序号 → 要高亮的按钮）
@@ -500,7 +499,7 @@ function showResult(R) {
   const win = R.win, exp = expHtml(R.exp), tail = (R.bounty && R.bounty.length ? `<p class="stars bgot">悬赏完成：${R.bounty.join("、")} · +${R.bountyStars}★</p>` : "") + `<details class="rdet"${innerWidth <= 520 || innerHeight <= 520 ? "" : " open"}><summary>详细战报（伤害、卡牌、队员数据）</summary>${battleReport()}${cardsHtml()}${statsTable()}</details>` + exp;
   if (R.mode === "exped") {
     const rl_ = R.expRelic ? `<p style="color:#ffd860">精英战利品：遗物「${RELIC_BY[R.expRelic].name}」</p>` : "";
-    if (R.expDone) openOverlay(`<h2>远征完成！</h2><p class="stars">首领击破 +${R.expStars}★ · 本次远征共 ${R.expTotal}★</p>${rl_}${tail}<div class="btns"><button class="primary" id="btn-exped">再来一次远征</button><button id="btn-menu">选关</button></div>`);
+    if (R.expDone) openOverlay(`<h2>远征完成</h2><p class="stars">首领击破 +${R.expStars}★ · 本次远征共 ${R.expTotal}★</p>${rl_}${tail}<div class="btns"><button class="primary" id="btn-exped">再来一次远征</button><button id="btn-menu">选关</button></div>`);
     else if (win) openOverlay(`<h2>远征 · 第 ${R.expFloor} 层突破</h2><p class="stars">+${R.expStars}★</p>${rl_}<p>队伍、卡牌、遗物都带到下一层；晨星碑开局会回复一些。${expLoad() && expLoad().rest ? "<b>下一步可以休整一次。</b>" : ""}</p>${tail}<div class="btns"><button class="primary" id="btn-expgo">继续远征</button><button id="btn-menu">先回选关（进度保留）</button></div>`);
     else openOverlay(`<h2>远征结束</h2><p>倒在第 ${R.expFloor} 层 · ${ST.name}。本次远征共得 ${R.expTotal || 0}★。</p>${tail}<div class="btns"><button class="primary" id="btn-exped">重新远征</button><button id="btn-menu">选关</button></div>`);
   } else if (R.mode === "vigil") {
@@ -524,7 +523,7 @@ function showResult(R) {
     openOverlay(`<h2>${final ? "深渊之门封印了" : "晨星碑守住了"}</h2>${S.diff === 0 ? starHtml(S.stars) : `<p class="stars">${DIFFS[S.diff].name}通关${R.diffFirst ? " · 首通 +1★" : ""}</p>`}
       <p>第 ${S.stage + 1} 关 · ${ST.name}：击败 ${S.kills} 个敌人，升到 Lv ${S.level}，晨星碑还剩 ${Math.ceil(S.crystal.hp)}/${S.crystal.maxHp}。</p>
       <p style="color:#ffd860">${R.reward}</p>
-      ${final ? "<p>主线通关！可以继续挑战困难、噩梦、无尽和每日挑战，把角色都练到 10 级。</p>" : ""}${tail}
+      ${final ? "<p>主线通关。可以继续挑战困难、噩梦、无尽和每日挑战，把角色都练到 10 级。</p>" : ""}${tail}
       <div class="btns">${hasNext ? '<button class="primary" id="btn-next">下一关</button>' : ""}<button id="btn-retry">再玩一次</button><button id="btn-menu">选关</button></div>`);
   } else {
     openOverlay(`<h2>晨星碑碎了</h2><p>坚持到第 ${S.wave} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。换个英雄、或者优先翻伙伴和范围技能，再试一次吧。</p>

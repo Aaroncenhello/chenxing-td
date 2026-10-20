@@ -14,7 +14,7 @@ const ULT_DEF = {
   roar: { name: "深渊咆哮", cast: 3.2, cd: 17, need: 0.055, color: "#ff5a4a", tip: "全队会被重创" },
   smash: { name: "碎碑打击", cast: 3.6, cd: 20, need: 0.05, color: "#ffb040", tip: "晨星碑直接掉 9% 生命" },
   call: { name: "深渊召集", cast: 2.8, cd: 16, need: 0.042, color: "#b070ff", tip: "会召来一大群小怪" },
-  zero: { name: "绝对零度", cast: 3.0, cd: 16, need: 0.05, color: "#8fe0f0", tip: "全队会被冻住 2.5 秒" },
+  zero: { name: "冰霜新星·进化", cast: 3.0, cd: 16, need: 0.05, color: "#8fe0f0", tip: "全队会被冻住 2.5 秒" },
   mend: { name: "虚空回流", cast: 2.6, cd: 15, need: 0.035, color: "#7ee89c", tip: "首领会回满一大截血" },
   nova: { name: "星海坍缩", cast: 3.8, cd: 18, need: 0.06, color: "#c860ff", tip: "全场毁灭性爆炸" },
 };
@@ -39,7 +39,7 @@ function breakCast(e, why) {
   e.cast = null; e.brokenT = 6; e.stunT = Math.max(e.stunT, 1.2); e.ultCd = U.cd * 0.75;
   S.slowmo = 0.45; S.shake = 0.6;
   S.dust += 25; S.star = Math.min(ULT.max, S.star + 1);
-  addFx({ kind: "banner", text: `打断！${e.d.name} 破防了`, life: 1.8 });
+  addFx({ kind: "banner", text: `已打断：${e.d.name} 破防`, life: 1.8 });
   addFx({ kind: "text", x: e.x, y: e.y - 1.1, text: "破防 · 星尘 +25", color: "#ffd860", life: 1.4, big: true });
   addFx({ kind: "boom", x: e.x, y: e.y, r: 1.6, color: "#ffe38a", life: 0.5 });
   addFx({ kind: "flash", life: 0.3, color: "#ffffff" });
@@ -51,7 +51,7 @@ function breakCast(e, why) {
 }
 function fireUlt(e, U) {
   const k = ULT_OF[e.type], atk = eAtk(e);
-  addFx({ kind: "banner", text: `${U.name}！`, life: 1.5, danger: true });
+  addFx({ kind: "banner", text: U.name, life: 1.5, danger: true });
   S.shake = 0.7; S.hitFlash = 0.6;
   if (k === "roar" || k === "nova") {
     const mult = k === "nova" ? 2.2 : 1.8;

@@ -3,7 +3,7 @@
 // 专属卡：只有把这名角色选成「本局英雄」时，她的专属卡才会进牌堆
 const SIG = [
   // 伊莎贝拉 · 骑士
-  { id: "sg_kn1", hero: "knight", rare: 1, kind: "special", name: "圣域壁垒", max: 3, w: 9, desc: lv => `英雄阻挡 +${lv}，受到的伤害 −${12 * lv}%` },
+  { id: "sg_kn1", hero: "knight", rare: 1, kind: "special", name: "碑减伤", max: 3, w: 9, desc: lv => `英雄阻挡 +${lv}，受到的伤害 −${12 * lv}%` },
   { id: "sg_kn2", hero: "knight", rare: 2, kind: "skill", name: "誓约之光", max: 1, w: 7, desc: () => "英雄生命低于 50% 时展开护盾，吸收 30% 生命上限的伤害，每 15 秒一次" },
   // 赛拉 · 剑士
   { id: "sg_sw1", hero: "sword", rare: 1, kind: "stat", name: "剑风", max: 3, w: 9, desc: lv => `英雄攻速 +${15 * lv}%，攻击横扫范围 +${(0.2 * lv).toFixed(1)}` },

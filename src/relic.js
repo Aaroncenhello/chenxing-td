@@ -19,7 +19,7 @@ const RELICS = [
   { id: "rl_lodestone", name: "引力石", color: "#b070ff", desc: "陨星术、陨星雨、晨星爆发伤害 +50%" },
   { id: "rl_beads", name: "苦修念珠", color: "#d8b080", desc: "每波开始全队回复 25% 生命，倒下的人立刻站起来" },
   { id: "rl_glasses", name: "学者眼镜", color: "#8ac8ff", desc: "每次升级多给 1 次重抽" },
-  { id: "rl_twin", name: "双子星", color: "#fff0a0", desc: "晨星之力充能 +40%" },
+  { id: "rl_twin", name: "双子星", color: "#fff0a0", desc: "大招充能 +40%" },
   { id: "rl_key", name: "裂隙钥匙", color: "#c890ff", desc: "提前出击的星尘奖励翻倍，叠波时额外获得经验" },
   { id: "rl_banner", name: "战旗", color: "#e3b75c", desc: "场上每有 1 名伙伴，全队攻击 +4%" },
   { id: "rl_mirror", name: "镜之盾", color: "#cfe6ff", desc: "角色受到的伤害 −15%" },
@@ -61,7 +61,7 @@ function relicDrop(e) {
   if (e.summoned || S.relics.length >= RELIC_MAX) return;
   if (roll("relic") < relicChance(e)) {
     const id = gainRelic();
-    if (id) addFx({ kind: "text", x: e.x, y: e.y - 1, text: "掉落遗物！", color: RELIC_BY[id].color, life: 1.5, big: true });
+    if (id) addFx({ kind: "text", x: e.x, y: e.y - 1, text: "掉落遗物", color: RELIC_BY[id].color, life: 1.5, big: true });
   }
 }
 // 每帧：碑之心、雷鸣号角

@@ -65,7 +65,7 @@ function step(dt) {
     // 大波预警：潮汐 / 首领 / 精英波到来前 3 秒弹一次全屏横幅（画面上的红边和传送门脉动在 drawWavePreview 里）
     if (S.nextWaveIn <= 3 && S.warnWave !== S.wave) {
       S.warnWave = S.wave;
-      const info = nextWaveInfo(), txt = info && { boss: "首领将至！", tide: "潮汐来袭 · 敌人数量大增", elite: "精英来袭！" }[info.kind];
+      const info = nextWaveInfo(), txt = info && { boss: "首领将至", tide: "潮汐来袭，敌人数量大增", elite: "精英来袭" }[info.kind];
       if (txt) addFx({ kind: "banner", text: txt, life: 2.2, danger: true });
     }
     if (S.nextWaveIn <= 0) {

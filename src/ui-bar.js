@@ -86,7 +86,7 @@ function updateStats() {
   setText("btn-auto", S.autoWave ? "自动开波：开" : "自动开波：关");
   $("xp-fill").style.width = Math.min(100, S.xp / S.xpNeed * 100).toFixed(1) + "%";
   if (!S.goalT || S.t - S.goalT > 1) { S.goalT = S.t; S.goalTxt = nextGoal(); }
-  setText("xp-txt", `Lv ${S.level} · 经验 ${Math.floor(S.xp)}/${S.xpNeed}` + (S.pending > 0 ? "（可以翻牌！）" : "") + (S.goalTxt ? ` · 目标：${S.goalTxt}` : ""));
+  setText("xp-txt", `Lv ${S.level} · 经验 ${Math.floor(S.xp)}/${S.xpNeed}` + (S.pending > 0 ? "（可以翻牌）" : "") + (S.goalTxt ? ` · 目标：${S.goalTxt}` : ""));
   const wb = $("wavebar"), key = S.stage + ":" + S.wave + ":" + (waiting ? 1 : 0) + ":" + (S.daily ? 1 : 0);
   if (wb.dataset.k !== key) {
     wb.dataset.k = key;
@@ -95,7 +95,7 @@ function updateStats() {
     if (waiting) {
       const list = nextWaveSummary();
       wb.innerHTML = pre + `<span>第 ${S.wave + 1} 波预告：</span>` + list.map(x => `<span class="chip${x.elite ? " elite" : ""}">${x.elite ? "精英" : ""}${ENEMIES[x.type].name} ×${x.n}</span>`).join("");
-    } else wb.innerHTML = pre + (S.wave >= totalWaves() ? "<span>最后一波了，守住！</span>" : `<span>第 ${S.wave} 波进行中（敌人强度 ×${(stageHp() * S.waveHp).toFixed(2)}）</span>`);
+    } else wb.innerHTML = pre + (S.wave >= totalWaves() ? "<span>最后一波</span>" : `<span>第 ${S.wave} 波进行中（敌人强度 ×${(stageHp() * S.waveHp).toFixed(2)}）</span>`);
   }
 }
 // ---------- 队伍 ----------
@@ -139,7 +139,7 @@ function updateUlt() {
   b.dataset.k = key;
   b.classList.toggle("ready", ready); b.disabled = !ready;
   $("ult-fill").style.width = pct + "%";
-  setText("ult-txt", ready ? "晨星爆发！点这里或按 E" : `晨星之力 ${pct}%（击杀敌人充能）`);
+  setText("ult-txt", ready ? "大招就绪，点这里或按 E" : `大招 ${pct}%（击杀敌人充能）`);
 }
 $("ult").addEventListener("click", () => { if (!menuOpen && !dlg && !S.offer) castUlt(); });
 

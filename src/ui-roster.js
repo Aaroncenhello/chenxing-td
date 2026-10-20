@@ -59,7 +59,7 @@ function dlgJoin(id) {
   dlg.mode = "join"; dlg.shown = 0;
   const box = $("dlg-join"); box.hidden = false; $("dlgbox").hidden = true; $("bust-L").hidden = $("bust-R").hidden = true;
   box.style.setProperty("--c", D.color);
-  box.innerHTML = `<canvas aria-hidden="true"></canvas><div><small>新伙伴</small><b>${D.name} · ${D.cls}</b><p>${D.note}</p><p class="tip">加入了队伍！出战前可以在编队里选她。</p></div>`;
+  box.innerHTML = `<canvas aria-hidden="true"></canvas><div><small>新伙伴</small><b>${D.name} · ${D.cls}</b><p>${D.note}</p><p class="tip">加入了队伍。出战前可以在编队里选她。</p></div>`;
   drawBust(box.querySelector("canvas"), id, 1, false);
   if (openChars().length >= UNITS.length) unlockAchv("allchars");
 }
