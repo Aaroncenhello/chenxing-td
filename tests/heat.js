@@ -30,4 +30,17 @@ check(lv === '中', `连打 6 秒后自动画质仍是「中」（${lv}）`, lv)
   check(lo.rs === 1 && lo.w === lo.pw, '低档画质回到 1 倍渲染（省电）', lo);
   await p.evaluate(() => applyGfx(-1)); await p.waitForTimeout(300);
 }
+// 防黑屏：画面循环被判定停了 2.5 秒就由看门狗重开，并且帧里出错会在屏幕上留提示
+{
+  const id0 = await p.evaluate(() => loopId);
+  await p.evaluate(() => { window.__raf = window.requestAnimationFrame; window.requestAnimationFrame = () => 0; });   // 模拟循环断了
+  await p.waitForTimeout(3200);
+  await p.evaluate(() => { window.requestAnimationFrame = window.__raf; }); await p.waitForTimeout(4200);
+  const r = await p.evaluate(() => ({ id: loopId, alive: performance.now() - lastFrameAt < 1000 }));
+  check(r.id > id0 && r.alive, '画面循环停了会被看门狗重新拉起来', { id0, ...r });
+  await p.evaluate(() => { const o = window.updatePInfo; window.updatePInfo = () => { throw new Error('boom'); }; setTimeout(() => { window.updatePInfo = o; }, 400); });
+  await p.waitForTimeout(700);
+  check(await p.evaluate(() => !!errBanner && !errBanner.hidden && errBanner.textContent.includes('boom')), '帧里出错时屏幕上有提示');
+  for (let i = errs.length - 1; i >= 0; i--) if (errs[i] === 'boom') errs.splice(i, 1);
+}
 noErrors(errs); report('heat'); await b.close(); })();
