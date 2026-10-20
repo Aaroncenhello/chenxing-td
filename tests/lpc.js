@@ -6,7 +6,7 @@ await p.goto(GAME); await p.waitForFunction(() => typeof lpcReady !== 'undefined
 const r = await p.evaluate(() => {
   const bad = [], blank = [], same = [], missing = [];
   const c = document.createElement('canvas'); c.width = 260; c.height = 260; const g = c.getContext('2d', { willReadFrequently: true });
-  const states = [{}, { walking: true }, { atkT: 0.05 }, { atkT: 0.2 }, { atkT: 0.38 }, { hurt: true }, { flash: true }, { skill: true }, { down: true }, { lv: 3 }, { lv: 4, branch: 'A' }, { lv: 4, branch: 'B' }];
+  const states = [{}, { walking: true }, { atkT: 0.05 }, { atkT: 0.2 }, { atkT: 0.38 }, { hurt: true }, { flash: true }, { skill: true }, { cast: 0 }, { cast: 0.5 }, { cast: 0.95 }, { down: true }, { lv: 3 }, { lv: 4, branch: 'A' }, { lv: 4, branch: 'B' }];
   for (const D of UNITS) {
     if (!lpcOk(D.id)) { missing.push(D.id); continue; }
     for (const s of states) { try { g.clearRect(0, 0, 260, 260); const ok = drawLpc(g, D, { t: 1.3, id: 3, face: -1, ...s }, 130, 200, 1.5); if (!ok) bad.push(D.id + ':nodraw');

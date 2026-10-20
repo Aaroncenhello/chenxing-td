@@ -532,11 +532,12 @@ function canCast(u) {
   if (u.def.id === "alchemist") return !!densest(u, uRange(u));
   return true;
 }
+const CAST_POSE = 0.6;   // 放招的施法动作时长（秒），画面用
 function useSkill(u) {
   if (S.over || u.dead || u.down > 0 || u.summon || u.skillT > 0 || u.sp < u.def.sp || !canCast(u)) return;
   const D = u.def, R = uRange(u);
   if (D.id === "summoner" && !summonGolem(u)) return;
-  u.sp = 0;
+  u.sp = 0; u.castT = CAST_POSE;
   if (D.skill.dur) u.skillT = (D.skill.dur + (br(u, "sword", "B") ? 6 : 0) + (br(u, "bard", "A") ? 6 : 0)) * (tal(u, "t_focus") ? 1.3 : 1);
   const ground = () => S.enemies.filter(e => hittable(e) && !e.d.flying && dist(u, e) <= R);
   if (D.id === "knight") heal(u, u.maxHp * 0.3, false, u);
