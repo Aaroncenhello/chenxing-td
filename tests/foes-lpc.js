@@ -59,8 +59,11 @@ const cast = await p.evaluate(async () => {
   const g = document.createElement('canvas').getContext('2d'); g.canvas.width = 300; g.canvas.height = 300; const diff = [];
   const px = () => { const d = g.getImageData(0, 0, 300, 300).data; let h = 0; for (let i = 3; i < d.length; i += 4) h = (h * 31 + d[i]) | 0; return h; };
   for (const t of ['necro', 'shaman', 'boss', 'nullmage']) { const hs = new Set(); for (const c of [0, 0.3, 0.6, 0.9]) { g.clearRect(0, 0, 300, 300); drawFoeFig(g, t, { t: 0, face: 1, atkT: 9, cast: c }, 150, 250); hs.add(px()); } if (hs.size < 3) diff.push(t); }
-  return { before, during, after, diff };
+  const hh = o => { g.clearRect(0, 0, 300, 300); drawHeroFig(g, UNITS[0], { t: 0, id: 1, face: 1, ...o }, 150, 250, 1.5); return px(); };
+  const loops = hh({ skill: true }) === hh({});   // 持续型技能期间不再循环施法动作，只在放招那一下做一次
+  return { before, during, after, diff, loops };
 });
 check(cast.before === 0 && cast.during > 0.5 && cast.after <= 0, '英雄放招后进入施法动作并在 0.6 秒内结束', cast);
+check(cast.loops, '技能持续期间角色正常站立，不循环放招动作');
 check(cast.diff.length === 0, '怪物施法动作有多帧变化', cast.diff);
 noErrors(errs); report('foes-lpc'); await b.close(); })();

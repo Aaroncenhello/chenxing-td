@@ -71,8 +71,9 @@ function resize() {
   DPR = Math.min(window.devicePixelRatio || 1, OPT.eco ? 1.5 : 2);   // 文字层是整屏大小的画布，省电模式下降到 1.5 倍
   // 战场画布：取「刚好够用」的整数倍（屏幕上每个逻辑像素占多少设备像素，向上取整，最多 3 倍），再让浏览器平滑缩小到屏幕大小。
   // 以前是 640×360 的小画布用最近邻硬拉伸到 1.85 倍之类的非整数倍，像素宽窄不均，看上去发糙、颗粒重
-  RS = Math.max(1, Math.min(GFX.rs || 2, Math.ceil(k * DPR - 0.02)));   // 低档 1 倍（省电省热），中档最多 2 倍，高档最多 3 倍
+  RS = Math.max(1, Math.min(rsCap() || 2, Math.ceil(k * DPR - 0.02)));   // 低档 1 倍（省电省热），中档最多 2 倍，高档最多 3 倍
   const cw_ = Math.round(PW * RS), ch_ = Math.round(PHt * RS);
+  if (cv.width !== cw_ || cv.height !== ch_) diagLog("画布", `${cv.width}×${cv.height} → ${cw_}×${ch_}（${RS} 倍${ROT ? "，竖屏大画面" : ""}）`);
   if (cv.width !== cw_) cv.width = cw_; if (cv.height !== ch_) cv.height = ch_;
   cv.style.imageRendering = RS > 1 ? "auto" : "";
   const tw = Math.round(PW * k * DPR), th_ = Math.round(PHt * k * DPR);
@@ -88,7 +89,7 @@ function resizeSoon() { if (resizeQ) return; resizeQ = requestAnimationFrame(() 
 let mapGuardAt = 0;
 function mapGuard(now) {
   if (now - mapGuardAt < 2000) return; mapGuardAt = now;
-  try { if (mctx.getImageData((LW / 2) | 0, (LH / 2) | 0, 1, 1).data[3] === 0) mapFor = -1; } catch (e) { }
+  try { if (mctx.getImageData((LW / 2) | 0, (LH / 2) | 0, 1, 1).data[3] === 0) { mapFor = -1; diagLog("底图", "底图被系统清空，重画"); } } catch (e) { }
 }
 
 // ---------- 像素工具 ----------

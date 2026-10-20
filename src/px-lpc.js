@@ -30,9 +30,8 @@ function drawLpc(g, D, o, x, y, ks) {
   const atk = A.atk, atkLen = (P.atk === "slash_128" || P.atk === "slash_oversize" || P.atk === "slash") ? 0.42 : P.atk === "shoot" ? 0.36 : 0.4;
   if (o.down) { a = A.hurt; f = a.n - 1; }
   else if (o.hurt) { a = A.hurt; f = Math.min(2, a.n - 1); }
-  else if (o.cast != null && o.cast >= 0 && A.cast) { a = A.cast; f = Math.min(a.n - 1, Math.floor(o.cast * a.n)); bobY = -2.5 * Math.sin(Math.min(1, o.cast) * Math.PI); }   // 放招：施法动作播一遍，身子微微抬起
+  else if (o.cast != null && o.cast >= 0) { a = atk; f = Math.min(a.n - 1, Math.floor(o.cast * a.n)); bobY = -2.5 * Math.sin(Math.min(1, o.cast) * Math.PI); }   // 放招：用自己的出手动作（武器一直在手上）慢速做一遍，身子微微抬起
   else if (o.atkT != null && o.atkT >= 0 && o.atkT < atkLen) { a = atk; f = Math.min(a.n - 1, Math.floor(o.atkT / atkLen * a.n)); }
-  else if (o.skill) { a = A.cast; f = Math.floor(t * 9) % a.n; }
   else if (o.walking) { a = A.walk; f = 1 + Math.floor(o.phase != null ? o.phase : t * 11) % (a.n - 1); }
   else { a = A.walk; f = 0; bobY = Math.sin(t * 2.6 + (o.id || 0)) * 0.6; }   // 站着：轻轻起伏
   const k = LPC_K * (ks || 1), im = (o.foe ? LPC_FOE_IMG : LPC_IMG)[D.id].im;

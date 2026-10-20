@@ -18,7 +18,7 @@ function frame(now, id) {
   if (id != null && id !== loopId) return;   // 看门狗重开过循环，老的那条就不再排了
   lastFrameAt = performance.now();
   try { frameBody(now); frameErrRun = 0; } catch (e) {
-    frameErrRun++; if (frameErrs++ < 3) setTimeout(() => { throw e; });
+    frameErrRun++; diagLog("出错", e && e.message || e); if (frameErrs++ < 3) setTimeout(() => { throw e; });
     showErrBanner("画面出错：" + (e && e.message || e));
     if (frameErrRun === 5) { try { reviveView(true); } catch (e2) { } }   // 连着出错 5 帧：丢掉所有缓存画布重来一遍
   }
@@ -37,7 +37,7 @@ window.addEventListener("unhandledrejection", e => showErrBanner("出错：" + (
 // 看门狗：画面循环停了超过 2.5 秒（页面没在后台）就重新开一条，并重建所有缓存画布
 setInterval(() => {
   if (document.hidden || performance.now() - lastFrameAt < 2500) return;
-  loopId++; lastFrameAt = performance.now(); reviveView(true);
+  diagLog("卡住", "画面循环停了 2.5 秒，重开"); loopId++; lastFrameAt = performance.now(); reviveView(true);
   const me = loopId; requestAnimationFrame(t => frame(t, me));
 }, 1500);
 // 帧率策略（发热/耗电的主旋钮）：逻辑本来就是固定 30Hz，画得比 30 帧快手机上基本看不出区别，却要多烧一倍的电。
@@ -93,9 +93,9 @@ const reviveView = hard => {
   resizeSoon();
 };
 window.addEventListener("pageshow", () => reviveView());
-document.addEventListener("visibilitychange", () => { if (!document.hidden) reviveView(true); });
-cv.addEventListener("contextlost", e => { e.preventDefault(); });
-cv.addEventListener("contextrestored", () => reviveView(true));
+document.addEventListener("visibilitychange", () => { diagLog("页面", document.hidden ? "切到后台" : "回到前台"); if (!document.hidden) reviveView(true); });
+cv.addEventListener("contextlost", e => { diagLog("画布", "上下文丢失"); e.preventDefault(); });
+cv.addEventListener("contextrestored", () => { diagLog("画布", "上下文恢复"); reviveView(true); });
 document.addEventListener("visibilitychange", () => { if (document.hidden && S && !S.over && !S.paused && !menuOpen && !dlg && (S.wave > 0 || S.kills > 0)) togglePause(); });
 requestAnimationFrame(t => frame(t, loopId));
 </script>

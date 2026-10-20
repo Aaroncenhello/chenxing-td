@@ -10,25 +10,34 @@ const TOUCH = (() => { try { return matchMedia("(pointer: coarse)").matches || n
 const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: v.ecoV === 2 ? !!v.eco : TOUCH, ecoV: 2, calm: !!v.calm, pix: !!v.pix, fps: !!v.fps, big: v.big !== false, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: TOUCH, ecoV: 2, calm: false, pix: false, fps: false, big: true, sp2: 0, ct: [] }; } })();
 function setOpt(k, v) { OPT[k] = typeof v === "number" || Array.isArray(v) ? v : !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
+// 诊断记录：最近 60 条（画质升降、画布重排、出错、卡住、切后台），菜单「诊断信息」里看；黑屏时截一张图就能看到原因
+const DIAG = [], DIAG_T0 = Date.now();
+function diagLog(kind, msg) { try { DIAG.push([((Date.now() - DIAG_T0) / 1000).toFixed(1), kind, String(msg).slice(0, 90)]); if (DIAG.length > 60) DIAG.shift(); } catch (e) { } }
 function applyGfx(sel) {
-  const was = GFX;
+  const was = GFX, wasRs = rsCap();
   gfxSel = sel == null ? -1 : sel;
   if (gfxSel >= 0) GFX = GFX_LV[gfxSel];
-  else { if (autoIdx == null) autoIdx = TOUCH || (typeof isPhone === "function" && isPhone()) ? 1 : 2; GFX = GFX_LV[autoIdx]; }
-  if (was !== GFX && was && typeof resizeSoon === "function") resizeSoon();   // 画质档位决定战场画布的渲染倍数，变了就重排一次
+  else { if (autoIdx == null) autoIdx = TOUCH || (typeof isPhone === "function" && isPhone()) ? 1 : 2; GFX = GFX_LV[autoIdx]; if (autoRS == null) autoRS = GFX.rs; }
+  if (gfxSel >= 0) autoRS = null;
+  if (was !== GFX && was) diagLog("画质", `${was.name} → ${GFX.name}（${gfxSel >= 0 ? "手选" : "自动"}）`);
+  if (rsCap() !== wasRs && typeof resizeSoon === "function") resizeSoon();   // 只有渲染倍数变了才重排：给战场画布赋宽高会清空并重新分配，反复来会闪黑屏
 }
-// 自动档位不是选完就定死：帧率持续偏低就自动降一档，回稳一阵子再谨慎升回去，别的画质选项不受影响
-let fpsEma = null, gfxAdaptCd = 2;
+// 战场画布的渲染倍数上限：手选画质按档位；自动档在一局里固定不变（自动升降只调粒子、光影这类特效，不再动画布大小——
+// 以前自动降档 / 升档都会把画布销毁重建，一降一升就会「黑一下、恢复、过几秒又黑」）
+let autoRS = null;
+const rsCap = () => (gfxSel >= 0 ? GFX.rs : autoRS || GFX.rs);
+// 自动档位不是选完就定死：帧率持续偏低就自动降一档；降过之后不再升回去（升降来回抖会让画面反复重绘）
+let fpsEma = null, gfxAdaptCd = 2, gfxDropped = false;
 function adaptGfx(dt, target) {
   if (gfxSel >= 0 || !dt || target < 20 || dt >= 0.099) return;   // 菜单/暂停这类低帧率时段、以及切后台/卡住后的一次性大间隔（dt 被截在 0.1）都不参与判断
   const rel = (1 / Math.max(dt, 1e-3)) / target;   // 实际帧率 / 目标帧率：省电模式 30 帧封顶时不能被误判成「卡」
   fpsEma = fpsEma == null ? rel : fpsEma * 0.9 + rel * 0.1;
   gfxAdaptCd -= dt;
   if (gfxAdaptCd > 0) return;
-  // 预测式降档：场上怪多 / 特效多的时候（大波、首领战）门槛抬高，不用等真的卡了才降；这种时候也不急着升回去
+  // 预测式降档：场上怪多 / 特效多的时候（大波、首领战）门槛抬高，不用等真的卡了才降
   const heavy = !!S && (S.enemies.length > 36 || S.fx.length > GFX.cap * 0.6);
-  if (fpsEma < (heavy ? 0.83 : 0.7) && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
-  else if (fpsEma > 0.93 && !heavy && autoIdx < autoMax()) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
+  if (fpsEma < (heavy ? 0.83 : 0.7) && autoIdx > 0) { autoIdx--; gfxDropped = true; applyGfx(-1); gfxAdaptCd = 3; }
+  else if (fpsEma > 0.93 && !heavy && !gfxDropped && autoIdx < autoMax()) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
 }
 // 触屏设备自动档最高只到「中」（高档在手机上几乎看不出区别，却更烫）
 const autoMax = () => (TOUCH ? 1 : GFX_LV.length - 1);
@@ -620,8 +629,7 @@ function useSkill(u) {
   S.fx = S.fx.filter(f => f.kind !== "skillcut");
   addFx({ kind: "skillcut", id: D.id, lv: u.lv, branch: u.branch, name: D.name, skill: D.skill.name, color: D.color, hero: !!u.hero, life: 1.1 });
   if (u.hero) addFx({ kind: "flash", life: 0.18, color: D.color });
-  // 出手强调：定格一小下 + 镜头往里推一点 + 一圈向外的冲击线
-  if (!OPT.calm) { S.hitStop = Math.max(S.hitStop || 0, u.hero ? 0.06 : 0.03); S.zoomK = Math.max(S.zoomK || 0, u.hero ? 0.025 : 0.012); }
+  // 出手强调：一圈向外的冲击线（不停顿、不推镜头）
   addFx({ kind: "burstlines", x: u.x, y: u.y, color: D.color, life: 0.35 });
   if (cl("lg_tide")) for (const a of S.units) if (alive(a)) { heal(a, a.maxHp * 0.06, true, null); if (a !== u) a.sp = Math.min(a.def.sp, a.sp + 8); }
 }
