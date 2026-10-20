@@ -547,7 +547,7 @@ function useSkill(u) {
   const D = u.def, R = uRange(u);
   if (D.id === "summoner" && !summonGolem(u)) return;
   u.sp = 0; u.castT = CAST_POSE;
-  if (D.skill.dur) u.skillT = (D.skill.dur + (br(u, "sword", "B") ? 6 : 0) + (br(u, "bard", "A") ? 6 : 0)) * (tal(u, "t_focus") ? 1.3 : 1);
+  if (D.skill.dur) { u.skillT = (D.skill.dur + (br(u, "sword", "B") ? 6 : 0) + (br(u, "bard", "A") ? 6 : 0)) * (tal(u, "t_focus") ? 1.3 : 1); u.skillMax = u.skillT; }
   const ground = () => S.enemies.filter(e => hittable(e) && !e.d.flying && dist(u, e) <= R);
   if (D.id === "knight") heal(u, u.maxHp * 0.3, false, u);
   if (D.id === "mage") { for (const e of S.enemies) if (hittable(e) && dist(u, e) <= R) hurt(e, calc(uAtk(u) * 3, "magic", eDef(e), eRes(e)), "magic", false, u); S.shake = 0.3; if (hasTal(u, "mage")) u.sp = D.sp * 0.4; }
@@ -620,6 +620,7 @@ function useSkill(u) {
       burst(at[0], at[1], "#c8f070", 22, 2.6, 0.7, 0.07);
     }
   }
+  skillFx(u, D, R);
   addFx({ kind: "ring", x: u.x, y: u.y, color: D.color, life: 0.6, r0: 0.3, r1: R });
   addFx({ kind: "ring", x: u.x, y: u.y, color: "#ffffff", life: 0.4, r0: 0.2, r1: R * 0.6 });
   addFx({ kind: "pillar", x: u.x, y: u.y, color: D.color, life: 0.7 });
