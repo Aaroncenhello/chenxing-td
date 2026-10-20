@@ -2,31 +2,35 @@
 // ================= 战斗：伤害、出手、技能、每一步 =================
 // 画质档位：粒子数量倍率 k、同屏特效上限 cap、抖屏强度 shake、背景飘落物 amb。-1 = 自动（手机用中，电脑用高，再按实际帧率动态调）
 // lit：发光、暗角、地面痕迹、光斑这类光影效果（低档关掉，保持轻量）
-const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true, lit: true }];
+const GFX_LV = [{ name: "低", k: 0.3, cap: 160, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.5, cap: 280, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 560, shake: 1, amb: true, lit: true }];
 // 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
 const OPT_KEY = "chenxing-td-opts";
-const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, fps: !!v.fps, big: v.big !== false, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, fps: false, big: true, sp2: 0, ct: [] }; } })();
+// 触屏设备（手机/平板）默认开「省电」：30 帧 + 文字层降分辨率，发热和耗电都小得多。旧存档里存的 eco 是旧默认值，ecoV 不是 2 的一律按新默认重来一次
+const TOUCH = (() => { try { return matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0; } catch (e) { return false; } })();
+const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: v.ecoV === 2 ? !!v.eco : TOUCH, ecoV: 2, calm: !!v.calm, pix: !!v.pix, fps: !!v.fps, big: v.big !== false, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: TOUCH, ecoV: 2, calm: false, pix: false, fps: false, big: true, sp2: 0, ct: [] }; } })();
 function setOpt(k, v) { OPT[k] = typeof v === "number" || Array.isArray(v) ? v : !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
   gfxSel = sel == null ? -1 : sel;
   if (gfxSel >= 0) { GFX = GFX_LV[gfxSel]; return; }
-  if (autoIdx == null) autoIdx = typeof isPhone === "function" && isPhone() ? 1 : 2;
+  if (autoIdx == null) autoIdx = TOUCH || (typeof isPhone === "function" && isPhone()) ? 1 : 2;
   GFX = GFX_LV[autoIdx];
 }
 // 自动档位不是选完就定死：帧率持续偏低就自动降一档，回稳一阵子再谨慎升回去，别的画质选项不受影响
 let fpsEma = null, gfxAdaptCd = 2;
-function adaptGfx(dt) {
-  if (gfxSel >= 0 || !dt) return;
-  const fps = 1 / Math.max(dt, 1e-3);
-  fpsEma = fpsEma == null ? fps : fpsEma * 0.9 + fps * 0.1;
+function adaptGfx(dt, target) {
+  if (gfxSel >= 0 || !dt || target < 20) return;   // 菜单/暂停这类低帧率时段不参与判断
+  const rel = (1 / Math.max(dt, 1e-3)) / target;   // 实际帧率 / 目标帧率：省电模式 30 帧封顶时不能被误判成「卡」
+  fpsEma = fpsEma == null ? rel : fpsEma * 0.9 + rel * 0.1;
   gfxAdaptCd -= dt;
   if (gfxAdaptCd > 0) return;
-  // 预测式降档：场上怪多 / 特效多的时候（大波、首领战）门槛抬高到 50 帧，不用等真的卡了才降；这种时候也不急着升回去
+  // 预测式降档：场上怪多 / 特效多的时候（大波、首领战）门槛抬高，不用等真的卡了才降；这种时候也不急着升回去
   const heavy = !!S && (S.enemies.length > 36 || S.fx.length > GFX.cap * 0.6);
-  if (fpsEma < (heavy ? 50 : 42) && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
-  else if (fpsEma > 56 && !heavy && autoIdx < GFX_LV.length - 1) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
+  if (fpsEma < (heavy ? 0.83 : 0.7) && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
+  else if (fpsEma > 0.93 && !heavy && autoIdx < autoMax() && TOUCH === false) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
 }
+// 触屏设备自动档最高只到「中」（高档在手机上几乎看不出区别，却更烫）
+const autoMax = () => (TOUCH ? 1 : GFX_LV.length - 1);
 // 特效满了就先丢掉装饰性的（粒子、伤害数字），横幅、演出、环这类关键反馈照常加
 const fxCheap = f => f.kind === "parts" || (f.kind === "text" && !f.big);
 function addFx(f) { f.t = 0; if (S.fx.length >= GFX.cap && fxCheap(f)) return; S.fx.push(f); if (f.kind === "boom" && f.r >= 0.9 && GFX.lit) stampDecal(f.x, f.y, f.r, f.color); }
@@ -77,7 +81,7 @@ function addNum(x, y, v, color, big, key, maxHp) {
 function killEnemy(e, src) {
   e.dead = true; S.kills++;
   S.foeKill[e.type] = (S.foeKill[e.type] || 0) + 1;
-  if (e.elite || isBoss(e)) { S.eliteKills = (S.eliteKills || 0) + 1; if (cl("lg_hunt")) { S.huntT = 12; addFx({ kind: "text", x: e.x, y: e.y - 1, text: "猎手之誓 · 攻击 +8%", color: "#ffd860", life: 1.1, big: true }); } }
+  if (e.elite || isBoss(e)) { S.eliteKills = (S.eliteKills || 0) + 1; if (cl("lg_hunt")) { S.huntT = 12; addFx({ kind: "text", x: e.x, y: e.y - 1, text: "猎杀连击 · 攻击 +8%", color: "#ffd860", life: 1.1, big: true }); } }
   if (e === S.focus) S.focusKills = (S.focusKills || 0) + 1;
   addStat(src, "kills", 1);
   if (e.stolen) { const back = Math.round(e.stolen * 1.5); S.dust += back; addFx({ kind: "text", x: e.x, y: e.y - 0.8, text: "+" + back + " 星尘（追回）", color: "#ffd860", life: 1.2, big: true }); }
@@ -96,11 +100,11 @@ function killEnemy(e, src) {
   if (e.type === "treasure") {
     S.pending++; S.chest++; S.dust += 30;
     S.events.push({ type: "achv", id: "treasure" });
-    addFx({ kind: "banner", text: "宝箱打爆了！多翻一张牌 +30 星尘", life: 2 });
+    addFx({ kind: "banner", text: "宝箱打开：多翻一张牌，+30 星尘", life: 2 });
     for (let i = 0; i < 4; i++) addFx({ kind: "pillar", x: e.x + (i - 1.5) * 0.3, y: e.y, color: "#ffd860", life: 0.8 });
     burst(e.x, e.y, "#ffe040", 40, 3.4, 1, 0.09); S.shake = 0.4;
   }
-  // 传说卡「天罚」
+  // 传说卡「击杀落光」
   if (cl("lg_judge") && src && src.def && roll("fight") < 0.2 * cl("lg_judge")) {
     const t = S.enemies.filter(o => hittable(o) && o !== e).sort((a, b) => dist(a, e) - dist(b, e))[0];
     if (t) {
@@ -122,7 +126,7 @@ function killEnemy(e, src) {
   if ((e.elite || isBoss(e)) && S.slowCd <= 0) { S.slowmo = Math.max(S.slowmo, isBoss(e) ? 0.9 : 0.22); S.slowCd = 1.2; }
   if (isBoss(e)) { S.shake = 0.6; bossFanfare(e, "death"); if (S.boss === e) S.boss = null; if (e.type === "boss") S.events.push({ type: "achv", id: "boss" }); }
   if (e.d.split) for (let i = 0; i < e.d.split; i++) { const s = spawnNear("slime", e, false, true); s.stop = 0.2; s.hitT = 0.1; }
-  // 殉爆
+  // 死亡爆炸
   if (cl("boom") && roll("fight") < 0.18 * cl("boom") * (syn("bloodlust") ? 1.5 : 1)) {
     const dmg = 500 * cl("boom") * powerK() * (syn("bloodlust") ? (syn2("bloodlust") ? 1.8 : 1.5) : 1);
     addFx({ kind: "boom", x: e.x, y: e.y, r: 1.3, color: "#ff8a3a", life: 0.45 });
@@ -517,7 +521,7 @@ function summonGolem(u) {
   addFx({ kind: "pillar", x: g.x, y: g.y, color: "#7af0e0", life: 0.8 });
   addFx({ kind: "ring", x: g.x, y: g.y, color: "#b8845a", life: 0.6, r0: 0.2, r1: 1.2 });
   burst(g.x, g.y + 0.2, "#b8a890", 20, 2.2, 0.7, 0.07);
-  addFx({ kind: "text", x: g.x, y: g.y - 0.7, text: "咚咚！", color: "#7af0e0", life: 1.1, big: true });
+  addFx({ kind: "text", x: g.x, y: g.y - 0.7, text: "咚咚", color: "#7af0e0", life: 1.1, big: true });
   S.shake = Math.max(S.shake, 0.15);
   if (hasTal(u, "summoner")) for (const e of S.enemies) if (hittable(e) && !e.d.unstoppable && dist(e, g) <= 1.4) e.stunT = Math.max(e.stunT, 2);
   return true;

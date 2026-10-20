@@ -38,7 +38,7 @@ const EVENTS = [
     opts: [
       { name: "观测敌人", desc: "接下来 4 波敌人移动速度 −20%，且受到的伤害 +10%", on: () => { S.slowWaves = 4; S.weakWaves = 4; } },
       { name: "观测自己", desc: "全队技力回复 +45%，出场立刻攒满一半技力", on: () => { buffAll({ sp: 1.45 }); for (const u of S.units) if (!u.summon) u.sp = Math.max(u.sp, u.def.sp * 0.5); } },
-      { name: "观测星辰", desc: "晨星之力立刻充满，之后充能 +30%", on: () => { S.star = ULT.max; S.ultK = (S.ultK || 1) * 1.3; } },
+      { name: "观测星辰", desc: "大招立刻充满，之后充能 +30%", on: () => { S.star = ULT.max; S.ultK = (S.ultK || 1) * 1.3; } },
     ] },
   { id: "drill", name: "临时训练场", text: "半个下午的空档，够练一件事。",
     opts: [
@@ -170,7 +170,7 @@ function riftRaid() {
     spawnAt(type, p.x, p.y, true).hitT = 0.2;
   }
   S.riftDust = 150;
-  addFx({ kind: "banner", text: "裂缝里冲出了精英！", life: 2, danger: true });
+  addFx({ kind: "banner", text: "裂缝里冲出一只精英", life: 2, danger: true });
 }
 
 // ---------- 流程 ----------

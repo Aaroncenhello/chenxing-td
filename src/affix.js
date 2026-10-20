@@ -14,7 +14,7 @@ const AFFIX = [
   { id: "splitting", name: "分裂", desc: "死的时候裂成两只小怪", color: "#58b84a", tip: "留着范围伤害，裂出来的小怪血量只有四分之一。" },
   { id: "harden", name: "钢化", desc: "受到的物理伤害 −25%", color: "#c8ccd4", tip: "换法术或技能伤害，物理平 A 只有四分之三效果。" },
   { id: "warp", name: "扭曲", desc: "用法术攻击它会反弹 15% 伤害给攻击者", color: "#c890ff", tip: "它的反弹只针对法术攻击，改用物理输出。" },
-  { id: "venom", name: "剧毒", desc: "攻击附带中毒，持续掉血", color: "#9ae040", tip: "带上圣光或战地医疗，被打中后会持续掉血。" },
+  { id: "venom", name: "剧毒", desc: "攻击附带中毒，持续掉血", color: "#9ae040", tip: "带上圣光或持续回血，被打中后会持续掉血。" },
 ];
 const AFFIX_BY = Object.fromEntries(AFFIX.map(a => [a.id, a]));
 const hasAfx = (e, id) => !!(e.afx && e.afx.includes(id));

@@ -103,7 +103,7 @@ function updateOffer() {
   $("cards3").classList.toggle("n4", S.offer.length > 3);
   $("cards3").classList.toggle("banishing", banishMode);   // 混入诅咒卡时变成 2x2 的 4 选 1
   $("lu-tip").innerHTML = S.offer.length > 3 ? "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> 选卡，<kbd>R</kbd> 重抽，<kbd>X</kbd> 放逐" : "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 选卡，<kbd>R</kbd> 重抽，<kbd>X</kbd> 放逐";
-  const title = S.offerRare ? "稀有货架！选一张" : S.level <= 1 && !S.kills ? "开局翻牌！选一张" : `升到 Lv ${S.level}！选一张卡`;
+  const title = S.offerRare ? "稀有货架，选一张" : S.level <= 1 && !S.kills ? "开局翻牌，选一张" : `升到 Lv ${S.level}，选一张卡`;
   setText("lu-title", title + (S.pending > 1 ? `（还有 ${S.pending - 1} 次）` : ""));
   $("cards3").innerHTML = S.offer.map((p, i) => {
     const c = cardInfo(p), r = p.rare || 0, R = RARITY[r] || { name: "诅咒", color: CURSE_COLOR };
@@ -435,7 +435,7 @@ function updatePInfo() {
   if (!S || !box.offsetHeight) return;   // 只在竖屏全屏时可见
   // 状态行：这一波的进度 + 大号连杀
   const waiting = S.wave < totalWaves() && !S.spawnQueue.length, info = waiting ? nextWaveInfo() : null;
-  const tag = info && { boss: "首领！", tide: "潮汐！", elite: "精英！" }[info.kind];
+  const tag = info && { boss: "首领", tide: "潮汐", elite: "精英" }[info.kind];
   let wtxt = S.over ? "" : waiting ? `下一波 ${S.autoWave !== false ? Math.ceil(Math.max(0, S.nextWaveIn)) + " 秒" : "等你出击"}${tag ? ` · <span class="warn">${tag}</span>` : ""}`
     : S.spawnQueue.length ? `第 ${S.wave} 波 · 还有 ${S.spawnQueue.length} 只要出场` : `第 ${S.wave} 波 · 场上 ${S.enemies.length}`;
   const fo = focusFoe(), ftxt = fo ? ` · <span class="warn">集火 ${fo.d.name} ${Math.ceil(fo.hp / fo.maxHp * 100)}%</span>` : "";

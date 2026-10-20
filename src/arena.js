@@ -237,7 +237,7 @@ function knock(e, amt) {
 // ---------- 统计 ----------
 const statKey = src => (src && src.summon ? src.owner.def.id : src && src.def ? src.def.id : src && src.key) || null;
 const statName = k => { const u = UNITS.find(x => x.id === k), c = typeof ANY_CARD === "function" ? ANY_CARD(k) : null;
-  return u ? u.name : c ? c.name : ({ meteor: "陨星术", heal: "圣愈之光", ult: "晨星爆发", boom: "殉爆", thorn: "荆棘", haz: "场地机关", burn: "灼烧" })[k] || k || ""; };
+  return u ? u.name : c ? c.name : ({ meteor: "陨星术", heal: "圣愈之光", ult: "晨星爆发", boom: "死亡爆炸", thorn: "荆棘", haz: "场地机关", burn: "灼烧" })[k] || k || ""; };
 function addStat(src, k, v) {
   const key = statKey(src); if (!key || !(v > 0)) return;
   const s = S.stats[key] || (S.stats[key] = { dmg: 0, heal: 0, kills: 0, taken: 0 });
@@ -376,7 +376,7 @@ function knockOut(u) {
 function reviveUnit(u) {
   u.down = 0; u.hp = Math.round(u.maxHp * 0.5); u.atkCd = 0.4; u.age = 0;
   addFx({ kind: "pillar", x: u.x, y: u.y, color: "#7ee89c", life: 0.7 });
-  addFx({ kind: "text", x: u.x, y: u.y - 0.5, text: "归队！", color: "#7ee89c", life: 1, big: true });
+  addFx({ kind: "text", x: u.x, y: u.y - 0.5, text: "归队", color: "#7ee89c", life: 1, big: true });
 }
 
 // ---------- 经验和翻牌 ----------
@@ -391,7 +391,7 @@ function cardPool(minRare) {
   const out = [];
   for (const c of CARDS) {
     if (c.filler || cl(c.id) >= c.max) continue;
-    if (c.need && !c.need()) continue;   // 有前提的卡（没暴击的会心强化、没技能的疾风节拍）不满足就不进牌堆，免得白占一个选项
+    if (c.need && !c.need()) continue;   // 有前提的卡（没暴击的暴击伤害、没技能的技能冷却）不满足就不进牌堆，免得白占一个选项
     if (minRare && (c.rare || 0) < minRare) continue;
     if (c.id === "lg_army" && S.mod === "solo") continue;
     if (c.evo) { if (cl(c.evo) >= CARD_BY[c.evo].max) out.push({ id: c.id, w: c.w, card: c, rare: 2 }); continue; }   // 进化卡权重固定，不随稀有度打折
@@ -626,7 +626,7 @@ function startWave(append) {
   if (rl("rl_beads")) for (const u of S.units) { if (u.down > 0) reviveUnit(u); heal(u, u.maxHp * 0.25, true, null); }
   S.log.push({ w: S.wave, hp: S.crystal.maxHp ? S.crystal.hp / S.crystal.maxHp : 1, kills: S.kills, lv: S.level, units: S.units.filter(u => !u.summon).length });
   S.waveHp = S.vigil ? Math.pow(1 + VIGIL.hpStep, S.wave - 1) : 1 + 0.095 * (S.wave - 1) + (S.endless ? 0.004 * (S.wave - 1) ** 2 : 0);
-  // 每波结束前的收尾：永恒壁垒回血、守望之战补给、商店
+  // 每波结束前的收尾：碑体强化回血、守望之战补给、商店
   if (cl("lg_aegis") && S.wave > 1) { S.crystal.hp = Math.min(S.crystal.maxHp, S.crystal.hp + S.crystal.maxHp * 0.08 * cl("lg_aegis")); addFx({ kind: "pillar", x: CRYSTAL.x, y: CRYSTAL.y, color: "#62b4ff", life: 0.8 }); }
   if (dk("ks_eco") && S.wave > 1 && (S.wave - 1) % 5 === 0) { S.pending++; S.dust += 30; addFx({ kind: "banner", text: "点金 · 多翻一张牌 · 星尘 +30", life: 1.8 }); }
   if (S.vigil && VIGIL.supplyAt.includes(S.wave)) { S.pending++; addFx({ kind: "banner", text: "补给到了 · 多翻一张牌", life: 1.8 }); }

@@ -68,7 +68,7 @@ function resize() {
   document.body.style.setProperty("--fw", Math.floor(PW * k) + "px");   // 横屏全屏时左右黑边的宽度靠它算（羁绊看板）
   // 竖屏时提示（新敌人、遗物……）弹在按钮区正上方，盖住的是信息区最下面的卡牌行，不挡战场和按钮
   if (port) { const hl = document.querySelector(ROT ? ".pinfo" : ".hud-l"); document.body.style.setProperty("--toast-bottom", Math.round(window.innerHeight - (hl ? hl.getBoundingClientRect().top : window.innerHeight * 0.6) + 6) + "px"); }
-  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  DPR = Math.min(window.devicePixelRatio || 1, OPT.eco ? 1.5 : 2);   // 文字层是整屏大小的画布，省电模式下降到 1.5 倍
   const tw = Math.round(PW * k * DPR), th_ = Math.round(PHt * k * DPR);
   if (tx.width !== tw) tx.width = tw; if (tx.height !== th_) tx.height = th_;   // 没变就别动：给画布赋宽高会清空并重新分配，iOS 上反复分配容易黑屏
   if (S && mapFor !== mapKey()) { drawMap(); mapFor = mapKey(); }

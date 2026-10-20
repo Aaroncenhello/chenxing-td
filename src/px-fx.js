@@ -105,7 +105,6 @@ function drawUnit(u, now) {
   if (u.lv >= 4) drawBranchBack(u, fx, fy, t);
   ctx.drawImage(big, fx - HOX * 2 + kb, fy - 80 - drop - (walking && bob ? 1 : 0));
   if (u.lv >= 4) drawBranchFront(u, fx, fy, t);
-  if (u.skillT > 0) addGlow(fx, fy - 22, 30, D.color, 0.4);
   if (S.shieldT > 0) { ctx.globalAlpha = Math.min(1, S.shieldT); ring(ctx, fx, fy - 18, 16, 8, "#8fd0ff", (t * 8 | 0) % 2); ctx.globalAlpha = 1; }
   if (u.frozenT > 0) {
     ctx.fillStyle = "rgba(170,230,255,.45)"; ctx.fillRect(fx - 12, fy - 40, 24, 41);
@@ -149,8 +148,7 @@ function drawEnemy(e, now) {
   else ctx.drawImage(big, fx - FOE_FOOT[0] + kb + lunge, fy - FOE_FOOT[1] - lift + R0((1 - born) * 8));
   ctx.globalAlpha = 1;
   if (!F.fly && (e.elite || isBoss(e))) { const rr = isBoss(e) ? 22 : 14, c1 = isBoss(e) ? (e.enraged ? "#ff4a3a" : "#c890ff") : "#ffc830"; ring(ctx, fx, fy, rr, rr * 0.4, c1, (t * 6 | 0) % 2); if (isBoss(e)) ring(ctx, fx, fy, rr + 5, (rr + 5) * 0.4, c1, (t * 4 | 0) % 2 === 0); }
-  if (isBoss(e)) addGlow(fx, fy - 30 - lift, 46, e.enraged ? "#ff4a3a" : "#b070ff", 0.22 + Math.sin(t * 3) * 0.05);
-  else if (e.elite) addGlow(fx, fy - 14 - lift, 22, "#ffc830", 0.2);
+  if (isBoss(e) && e.enraged) addGlow(fx, fy - 30 - lift, 46, "#ff4a3a", 0.2);   // 只有首领狂暴才亮红光，平时不加光晕
   const top = fy - hh - lift;
   if (e.stunT > 0) for (let i = 0; i < 3; i++) { const a = t * 6 + i * 2.1; rect(ctx, fx + Math.cos(a) * 9, top - 4 + Math.sin(a) * 3, 2, 2, "#ffe060"); }
   if (e.corrode && e.corrode.t > 0) for (let i = 0; i < 2; i++) { const k = (t * 1.2 + i * 0.5 + e.id * 0.17) % 1; rect(ctx, fx - 7 + i * 12, top + 4 + k * 14, 2, 2, k < 0.7 ? "#a8d848" : "#e0ff9a"); }
@@ -449,7 +447,7 @@ function drawOverlay() {
     if (f.kind === "skillcut") { drawSkillCut(f, k, s, txt); continue; }
     if (f.kind === "combo") {
       const a = k < 0.15 ? k / 0.15 : k > 0.7 ? (1 - k) / 0.3 : 1, sc = 1 + Math.max(0, 0.3 - k) * 1.5;
-      tctx.globalAlpha = a; txt(`连杀 ${f.n}！经验 +${f.dp}`, tx.width / 2, (72 - k * 16) * s, 17 * s * sc * tk, "#ffd860"); tctx.globalAlpha = 1;
+      tctx.globalAlpha = a; txt(`连杀 ${f.n}，经验 +${f.dp}`, tx.width / 2, (72 - k * 16) * s, 17 * s * sc * tk, "#ffd860"); tctx.globalAlpha = 1;
       continue;
     }
     if (f.kind === "banner") {
@@ -544,7 +542,7 @@ function drawCutin(f, k, s, txt) {
     tctx.drawImage(renderHero(D, { phase: "idle", face: -1, lv: 4, branch: "A" }), HOX * 2 - 32, 22, 64, 64, x, y, size, size);
   });
   const tk = Math.min(1, Math.max(0, k * 5 - 0.6));
-  txt("晨星爆发！", W / 2 + (1 - tk) * 200 * s, cy + bh / 2 - sk * 0.2 - 12 * s, 26 * s, "#fff0a0");
+  txt("晨星爆发", W / 2 + (1 - tk) * 200 * s, cy + bh / 2 - sk * 0.2 - 12 * s, 26 * s, "#fff0a0");
   tctx.restore();
 }
 
@@ -612,17 +610,6 @@ function drawBossMood(t) {
     ctx.fillStyle = "#000"; ctx.fillRect(0, 0, PW, h); ctx.fillRect(0, PHt - h, PW, h);
   }
 }
-function drawComboGlow(t) {
-  if (S.combo < 10 || S.comboT <= 0 || S.over) return;
-  const tier = S.combo >= 80 ? 3 : S.combo >= 50 ? 2 : S.combo >= 25 ? 1 : 0;
-  const rgb = ["255,216,96", "255,176,64", "255,106,90", "255,58,138"][tier], w = 4 + tier * 3;
-  const a = (0.18 + tier * 0.07) * (0.7 + Math.sin(t * (6 + tier * 3)) * 0.3) * Math.min(1, S.comboT / 0.8);
-  for (let i = 0; i < w; i++) {
-    ctx.fillStyle = `rgba(${rgb},${(a * (1 - i / w)).toFixed(3)})`;
-    ctx.fillRect(i, i, PW - i * 2, 1); ctx.fillRect(i, PHt - 1 - i, PW - i * 2, 1); ctx.fillRect(i, i, 1, PHt - i * 2); ctx.fillRect(PW - 1 - i, i, 1, PHt - i * 2);
-  }
-}
-
 // ---------- 光影：发光 / 暗角 / 地面痕迹 / 光斑 ----------
 const hexA = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
 const GLOW_CACHE = {};
@@ -696,10 +683,6 @@ function drawDecals(now) {
   if (now - decalFadeAt > 500) { decalFadeAt = now; const g = decalCv.getContext("2d"); g.globalCompositeOperation = "destination-out"; g.fillStyle = "rgba(0,0,0,.05)"; g.fillRect(0, 0, LW, LH); g.globalCompositeOperation = "source-over"; }
   ctx.drawImage(decalCv, 0, 0);
 }
-// 光斑：几块缓慢飘过的暖光，给地面一点光照变化
-function drawDapples(t) {
-  for (let i = 0; i < 2; i++) addGlow((t * (6 + i * 3) + i * 330) % (LW + 160) - 80, 100 + i * 140 + Math.sin(t * 0.3 + i) * 18, 80, "#fff2c0", 0.07);
-}
 
 // ---------- 每帧绘制 ----------
 const renderSortBuf = [];
@@ -717,7 +700,7 @@ function render(now) {
   // 世界层（按格子画的东西）：竖屏大画面时整体转 90°，横版坐标 (X,Y) → 视图 (LH−Y, X)
   if (ROT) { ctx.transform(0, 1, -1, 0, LH, 0); WP = true; }
   ctx.drawImage(mapCv, 0, 0);
-  if (GFX.lit) { drawDecals(now); drawDapples(t); }
+  if (GFX.lit) drawDecals(now);
   drawAmbient(now);
   if (ROT) { ctx.setTransform(zoom, 0, 0, zoom, bx, by); WP = false; }
   drawAmbientParticles(now);
@@ -736,8 +719,8 @@ function render(now) {
   }
   // 觉醒 3 级以上的角色脚下一圈金色光环
   for (const u of S.units) if (!u.dead && !u.summon && u.down <= 0 && awk(u.def.id) >= AWK.auraLv) {
-    const [x, y] = tpx(u.x, u.y), r = 11 + Math.sin(t * 3 + u.id) * 1.5;
-    ctx.globalAlpha = 0.22; disc(ctx, x, y + 12, r, "#ffd860"); ctx.globalAlpha = 0.7; ring(ctx, x, y + 12, r, r * 0.45, "#ffe8a0", (t * 4 | 0) % 2); ctx.globalAlpha = 1;
+    const [x, y] = tpx(u.x, u.y);
+    ctx.globalAlpha = 0.6; ring(ctx, x, y + 12, 11, 5, "#e8d49a"); ctx.globalAlpha = 1;   // 一圈细线，不发光不闪
   }
   // 精通徽章：参与通关越多，脚下的小菱形越多、颜色越亮（只是外观）
   for (const u of S.units) { const m = S.mast && S.mast[u.def.id]; if (!m || u.dead || u.summon || u.down > 0) continue;
@@ -772,7 +755,6 @@ function render(now) {
   if (!OPT.calm) for (const f of S.fx) if (f.kind === "flash") { ctx.globalAlpha = 0.75 * (1 - f.t / f.life); ctx.fillStyle = f.color || "#fff8d2"; ctx.fillRect(0, 0, PW, PHt); ctx.globalAlpha = 1; }   // 以前忽略 color，诅咒的红闪也是米白
   if (S.star >= ULT.max && !S.over) { const a = 0.25 + Math.sin(t * 5) * 0.15; ctx.fillStyle = `rgba(255,224,128,${a.toFixed(3)})`; ctx.fillRect(0, 0, PW, 3); ctx.fillRect(0, PHt - 3, PW, 3); }
   if ((S.paused || S.offer) && !S.over) { ctx.fillStyle = "rgba(8,10,16,.45)"; ctx.fillRect(0, 0, PW, PHt); }
-  drawComboGlow(t);
   drawBossMood(t);
   drawCine();
   drawOverlay();

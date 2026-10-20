@@ -20,7 +20,7 @@ const DAILY_MODS = [
   { id: "rich", name: "天赋异禀", desc: "经验获得 +50%，但晨星碑生命减半" },
 ];
 
-// 晨星之力：击杀充能，满 100 放全屏大招
+// 大招：击杀充能，满 100 放全屏大招
 const ULT = { max: 100, kill: 2, elite: 6, boss: 20, bossHit: 0.08, stun: 2 };
 // 连杀：2.5 秒内接着杀就算连杀
 const COMBO = { window: 2.5, marks: [10, 25, 50, 80, 120, 200], xp: [10, 20, 35, 60, 90, 140] };
@@ -146,7 +146,7 @@ const ACHV = [
   { id: "chapter3", name: "第三章完结", desc: "通关第 12 关" },
   { id: "nameless", name: "叫出它的名字", desc: "通关第 16 关，击败无名者" },
   { id: "chapter5", name: "第五章完结", desc: "通关第 20 关，击败静默者" },
-  { id: "allchars16", name: "全员集结", desc: "解锁全部角色（含第五章的新伙伴）" },
+  { id: "allchars16", name: "二十人到齐", desc: "解锁全部角色（含第五章的新伙伴）" },
   { id: "exped", name: "远征归来", desc: "完成一次远征（打赢最后一层的首领）" },
   { id: "relics", name: "遗物收藏家", desc: "图鉴里集齐全部遗物" },
   { id: "cards", name: "博览群牌", desc: "图鉴里集齐全部通用升级卡（不含专属卡、诅咒卡和补充卡）" },
@@ -162,7 +162,7 @@ const ENEMY_DESC = {
   stormhound: "雷云里养出来的兽，速度是全场最快的，法抗也高。",
   nullmage: "会给周围的敌人回血，先打掉它。",
   voidknight: "把名字交出去换来的护盾，护盾破掉之后就只是个骑士。",
-  stormlord: "雷云里的那个声音。会读条放「绝对零度」，读条时集火可以打断。",
+  stormlord: "雷云里的那个声音。会读条放「冰霜新星·进化」，读条时集火可以打断。",
   nameless: "没有名字，也不肯有。四个形态，会放「星海坍缩」——一定要打断。",
   crab: "背着厚厚的贝壳甲，物理伤害打不动，用法术或持续输出；首领战时会周期性重新凝甲。",
   siren: "会飞，歌声让队伍很难集火，需要能打飞行的角色。",
@@ -170,7 +170,7 @@ const ENEMY_DESC = {
   tidecaller: "不断召唤溺亡者，法抗很高，要优先集火。",
   bellkeeper: "体型庞大的守钟人，防御极高；首领战时会敲钟，让所有敌人加速加攻。",
   mirrorknight: "举着镜盾，被法术打中会反弹一部分伤害；先打碎它的护盾。",
-  silencer: "把每一声呼喊都按下去。四个形态，会放「绝对零度」冻结全队，还会抹掉队员的技力——读条时一定要打断。",
+  silencer: "把每一声呼喊都按下去。四个形态，会放「冰霜新星·进化」冻结全队，还会抹掉队员的技力——读条时一定要打断。",
   slime: "最基础的敌人。", bigslime: "血厚，死后分裂成两只史莱姆。", goblin: "数量多，速度中等。",
   wolf: "跑得很快，容易冲到晨星碑。", orc: "防御 300，物理攻击打不太动，用法术更好。",
   garg: "会飞，不会被近战拦住，直接飞向晨星碑。只有能打飞行的角色和技能能打到。",
@@ -206,7 +206,7 @@ const SHOP = { everyWaves: 4, dustPerKill: 1, dustElite: 4, dustBoss: 25, start:
     { id: "heal", name: "碑石修复", desc: "晨星碑回复 30% 生命", cost: 40 },
     { id: "revive", name: "全员急救", desc: "倒下的角色立刻站起，全队回满生命", cost: 35 },
     { id: "reroll", name: "占卜罗盘", desc: "重抽次数 +2", cost: 30 },
-    { id: "ult", name: "晨星充能", desc: "晨星之力立刻充满", cost: 55 },
+    { id: "ult", name: "晨星充能", desc: "大招立刻充满", cost: 55 },
     { id: "banish", name: "放逐许可", desc: "放逐次数 +1（翻牌时把一张卡永久移出牌堆）", cost: 35 },
     { id: "relicbox", name: "遗物宝匣", desc: "随机获得一件遗物", cost: 150 },
     { id: "recycle", name: "回炉重造", desc: "随机一张卡降 1 级，换一次翻牌", cost: 25 },
@@ -238,38 +238,38 @@ const BANISH_N = 2;   // 每局可以放逐几次卡牌
 // 羁绊：满足条件就一直生效。prog() 返回 [已有, 需要]，选牌时用它提示「再拿这张就凑齐」
 const synCount = f => S.units.filter(u => !u.dead && !u.summon && f(u)).length;
 const SYNERGY = [
-  { id: "wall", name: "钢铁防线", need: "3 名前排伙伴", desc: "全队防御 +35%，晨星碑受到的伤害 −15%", color: "#8fb3e0",
+  { id: "wall", name: "前排阵", need: "3 名前排伙伴", desc: "全队防御 +35%，晨星碑受到的伤害 −15%", color: "#8fb3e0",
     prog: () => [synCount(u => u.def.place === "ground"), 3] },
-  { id: "arcane", name: "奥术回响", need: "3 名法术角色", desc: "法术伤害 +25%，技力回复 +25%", color: "#b18ae8",
+  { id: "arcane", name: "法师队", need: "3 名法术角色", desc: "法术伤害 +25%，技力回复 +25%", color: "#b18ae8",
     prog: () => [S.units.filter(u => !u.dead && u.def.dmg === "magic").length, 3] },
-  { id: "volley", name: "齐射阵线", need: "3 名远程伙伴", desc: "远程角色攻速 +25%、射程 +0.4", color: "#6fcf8e",
+  { id: "volley", name: "远程阵", need: "3 名远程伙伴", desc: "远程角色攻速 +25%、射程 +0.4", color: "#6fcf8e",
     prog: () => [S.units.filter(u => !u.dead && u.def.place === "high" && u.def.dmg !== "heal").length, 3] },
-  { id: "inferno", name: "烈焰环绕", need: "烈焰环 + 陨星雨", desc: "火焰技能伤害 +50%，被烧的敌人防御 −20%", color: "#ff8a3a",
+  { id: "inferno", name: "火系", need: "烈焰环 + 陨星雨", desc: "火焰技能伤害 +50%，被烧的敌人防御 −20%", color: "#ff8a3a",
     prog: () => [(cl("sk_fire") > 0) + (cl("sk_meteor") > 0), 2] },
-  { id: "frostbite", name: "极寒领域", need: "冰霜新星 + 寒霜之心", desc: "冻结时间 +50%，对冻结的敌人伤害 +40%", color: "#8fe0f0",
+  { id: "frostbite", name: "冰系", need: "冰霜新星 + 冰冻", desc: "冻结时间 +50%，对冻结的敌人伤害 +40%", color: "#8fe0f0",
     prog: () => [(cl("sk_nova") > 0) + (cl("freeze") > 0), 2] },
-  { id: "bloodlust", name: "嗜血", need: "吸血 + 殉爆", desc: "吸血翻倍，殉爆范围和伤害 +50%", color: "#e0676a",
+  { id: "bloodlust", name: "嗜血", need: "吸血 + 死亡爆炸", desc: "吸血翻倍，死亡爆炸范围和伤害 +50%", color: "#e0676a",
     prog: () => [(cl("vamp") > 0) + (cl("boom") > 0), 2] },
-  { id: "scholar", name: "群星学派", need: "5 张属性卡", desc: "全队攻击 +15%、生命 +15%", color: "#ffd860",
+  { id: "scholar", name: "属性齐全", need: "5 张属性卡", desc: "全队攻击 +15%、生命 +15%", color: "#ffd860",
     prog: () => [CARDS.filter(c => c.kind === "stat" && cl(c.id) > 0).length, 5] },
-  { id: "legendary", name: "传说之证", need: "2 张传说卡", desc: "全队攻击 +20%，晨星之力充能 +30%", color: "#ffb340",
+  { id: "legendary", name: "双传说", need: "2 张传说卡", desc: "全队攻击 +20%，大招充能 +30%", color: "#ffb340",
     prog: () => [CARDS.filter(c => c.rare === 2 && !c.evo && cl(c.id) > 0).length, 2] },
-  { id: "shockwave", name: "雷霆战阵", need: "落雷之枪 + 追猎箭雨", desc: "被眩晕的敌人受到的伤害 +30%", color: "#ffe860",
+  { id: "shockwave", name: "雷电", need: "落雷枪 + 箭雨", desc: "被眩晕的敌人受到的伤害 +30%", color: "#ffe860",
     prog: () => [(cl("sk_spear") > 0) + (cl("sk_gale") > 0), 2] },
-  { id: "wardguard", name: "秘法壁垒", need: "奥术护壁 + 心灵屏障", desc: "受到的法术伤害再 −10%，全队法抗额外 +10", color: "#b8e0ff",
+  { id: "wardguard", name: "双重法抗", need: "法术抗性 + 法术减伤", desc: "受到的法术伤害再 −10%，全队法抗额外 +10", color: "#b8e0ff",
     prog: () => [(cl("res") > 0) + (cl("wardmind") > 0), 2] },
-  { id: "corrosive", name: "锈蚀猎手", need: "剧毒喷雾 + 破甲", desc: "中毒/被腐蚀的敌人防御再 −15%", color: "#a8d848",
+  { id: "corrosive", name: "腐蚀", need: "毒雾 + 破甲", desc: "中毒/被腐蚀的敌人防御再 −15%", color: "#a8d848",
     prog: () => [(cl("sk_toxic") > 0) + (cl("pierce") > 0), 2] },
-  { id: "tidebell", name: "潮钟共鸣", need: "潮汐涌动 + 钟鸣", desc: "潮水减速时间 +50%，钟鸣眩晕时间 +50%", color: "#5ab8e8",
+  { id: "tidebell", name: "潮与钟", need: "潮汐涌动 + 钟鸣", desc: "潮水减速时间 +50%，钟鸣眩晕时间 +50%", color: "#5ab8e8",
     prog: () => [(cl("sk_tide") > 0) + (cl("sk_bell") > 0), 2] },
-  { id: "silentecho", name: "静默回响", need: "静默领域 + 回声", desc: "正在读条的敌人受到的伤害 +30%", color: "#c8d4ff",
+  { id: "silentecho", name: "静默与回声", need: "静默领域 + 回声", desc: "正在读条的敌人受到的伤害 +30%", color: "#c8d4ff",
     prog: () => [(cl("silence") > 0) + (cl("echo") > 0), 2] },
 ];
 // 羁绊第二档：两张卡都升到 3 级时，原来的效果再加强一档
 const SYN_T2 = {
   inferno: { cards: ["sk_fire", "sk_meteor"], desc: "灼烧伤害 ×2（原 ×1.5），被烧的敌人防御 −30%（原 −20%）" },
   frostbite: { cards: ["sk_nova", "freeze"], desc: "对冻结、减速的敌人伤害 +60%（原 +40%）" },
-  bloodlust: { cards: ["vamp", "boom"], desc: "吸血 ×3（原 ×2），殉爆伤害 +80%、范围更大（原 +50%）" },
+  bloodlust: { cards: ["vamp", "boom"], desc: "吸血 ×3（原 ×2），死亡爆炸伤害 +80%、范围更大（原 +50%）" },
   shockwave: { cards: ["sk_spear", "sk_gale"], desc: "被眩晕的敌人受到的伤害 +50%（原 +30%）" },
   wardguard: { cards: ["res", "wardmind"], desc: "法术伤害 −15%（原 −10%），全队法抗 +20（原 +10）" },
   tidebell: { cards: ["sk_tide", "sk_bell"], desc: "潮水击退 +50%（1.4 → 2.1 格），钟鸣伤害 +50%（原效果保留）" },

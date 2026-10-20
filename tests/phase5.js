@@ -18,7 +18,7 @@ const { check, noErrors, report } = require('./lib');
     S.cards.sk_meteor = 4; out.before = evoIn();
     S.cards.sk_meteor = 5; out.after = evoIn();
     out.rare = cardPool(2).some(c => c.id === 'ev_meteor');
-    T.pickCard('ev_meteor', true); out.banner = S.fx.some(f => f.kind === 'banner' && /进化 · 天罚陨星/.test(f.text));
+    T.pickCard('ev_meteor', true); out.banner = S.fx.some(f => f.kind === 'banner' && /进化 · 陨星雨·进化/.test(f.text));
     out.gone = !evoIn().includes('ev_meteor');
     out.legendSyn = SYNERGY.find(g => g.id === 'legendary').prog()[0]; out.legends = S.legends;
     // 陨星：三处敌群各砸一颗
@@ -40,12 +40,12 @@ const { check, noErrors, report } = require('./lib');
   console.log('进化:', JSON.stringify(ev));
   check(ev.before.length === 0 && ev.after.includes('ev_meteor'), '技能卡满级前不出进化卡，满级后才进牌堆', ev);
   check(ev.rare && ev.banner && ev.gone, '进化卡能在稀有货架出现；拿了有横幅，之后不再出现', ev);
-  check(ev.legendSyn === 0 && ev.legends === 0, '进化卡不算传说卡（不触发传说之证）', ev);
-  check(ev.meteors === 3 && ev.burn, '天罚陨星：一次砸 3 颗并附带灼烧', ev);
-  check(ev.nova[0] >= 1.9 && ev.nova[1], '绝对零度：4.4 格外的敌人也被冻 2 秒', ev.nova);
-  check(ev.chain.every(t => t >= 0.35), '雷霆风暴：被闪电击中的敌人麻痹', ev.chain);
-  check(ev.blades[1] === ev.blades[0] + 2, '剑刃风暴：多 2 把飞刃', ev.blades);
-  check(!ev.holy[0] && ev.holy[1], '神圣审判：进化前圣光不伤普通敌人，进化后会', ev.holy);
+  check(ev.legendSyn === 0 && ev.legends === 0, '进化卡不算传说卡（不触发双传说）', ev);
+  check(ev.meteors === 3 && ev.burn, '陨星雨·进化：一次砸 3 颗并附带灼烧', ev);
+  check(ev.nova[0] >= 1.9 && ev.nova[1], '冰霜新星·进化：4.4 格外的敌人也被冻 2 秒', ev.nova);
+  check(ev.chain.every(t => t >= 0.35), '闪电链·进化：被闪电击中的敌人麻痹', ev.chain);
+  check(ev.blades[1] === ev.blades[0] + 2, '飞刃·进化：多 2 把飞刃', ev.blades);
+  check(!ev.holy[0] && ev.holy[1], '圣光·进化：进化前圣光不伤普通敌人，进化后会', ev.holy);
 
   // ---------- 集火 ----------
   await fresh(2);

@@ -578,6 +578,20 @@ body.imm .hud-syn{max-height:44%}
   body.imm.big .pu b,body.imm.big .pu .lv{display:none}
   body.imm.big .pu i{height:3px}
 }
+/* 朴素克制：去掉扫光、旋转光芒、脉冲发光和大片光晕，稀有度只靠边框颜色区分，需要提示的地方用静态描边 */
+.pcard.r1::after,.pcard.r2::after,.levelup.lg::before,.ovbox.res .mvp::after{display:none}
+.pcard.r1{box-shadow:0 0 0 2px rgba(98,180,255,.55)}
+.pcard.sig{box-shadow:0 0 0 2px rgba(214,184,96,.7)}
+.pcard.r2{box-shadow:0 0 0 2px #c8923a;animation:flipin .34s cubic-bezier(.2,.8,.3,1.15) backwards}
+.pcard.r3{box-shadow:0 0 0 2px #a8485c;animation:flipin .34s cubic-bezier(.2,.8,.3,1.15) backwards}
+.pcard .sh.done,.tuthl,.ult.ready,.pu.rdy,.cbar.low,.cardbar .maxed canvas{animation:none}
+.tuthl{box-shadow:0 0 0 3px #ffd860}
+.cbar.hit,.cbar.low{box-shadow:0 0 0 2px #ff4a3a}
+.cardbar .maxed canvas{box-shadow:0 0 0 2px #ffd860}
+.ovbox.res .stars>.on{text-shadow:2px 2px 0 #000}
+.ovbox.res .mvp{animation:repin .4s ease-out 1.1s backwards}
+.lvcard.next{box-shadow:var(--bevel),0 0 0 2px #ffd860}
+.exf.now{box-shadow:0 0 0 2px #ffd860}
 </style>
 
 <div class="app">
@@ -624,7 +638,7 @@ body.imm .hud-syn{max-height:44%}
     </div>
     <div class="cele" id="cele"></div>
     <div class="levelup" id="levelup" hidden>
-      <h3 id="lu-title">升级！选一张卡</h3>
+      <h3 id="lu-title">升级，选一张卡</h3>
       <div class="cards3" id="cards3"></div>
       <div class="lubar"><button id="btn-reroll">重抽（剩 3 次）</button><button id="btn-banish" title="点一下，再点一张卡：这张卡这局不会再出现（快捷键 X）">放逐（剩 2 次）</button><span class="tip" id="lu-tip">按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 选卡，<kbd>R</kbd> 重抽</span></div>
     </div>
@@ -667,7 +681,7 @@ body.imm .hud-syn{max-height:44%}
 
   <div class="dock">
     <div class="left">
-      <button class="ult" id="ult" disabled><i id="ult-fill" style="width:0%"></i><span id="ult-txt">晨星之力 0%</span></button>
+      <button class="ult" id="ult" disabled><i id="ult-fill" style="width:0%"></i><span id="ult-txt">大招 0%</span></button>
       <div class="spells" id="spells"></div>
       <div class="syns" id="syns"></div>
       <div class="team" id="team"></div>
@@ -681,7 +695,7 @@ body.imm .hud-syn{max-height:44%}
   <p class="hint">
     每局只带 <b>1 个英雄</b> 上场，全程自动战斗。敌人从四周的传送门冲向中间的<b>晨星碑</b>，晨星碑血量打空就结束。
     打死敌人会攒<b>经验</b>，升级时游戏暂停，从 3 张卡里<b>翻 1 张</b>：属性、伙伴、自动技能或者特殊效果，整局一直叠加。
-    角色倒下不会永久死，过一会儿会自己站起来。击杀还会给<b>晨星之力</b>充能，满了可以放全屏大招。
+    角色倒下不会永久死，过一会儿会自己站起来。击杀还会给<b>大招</b>充能，满了可以放全屏大招。
     <b>点一下敌人</b>可以<b>集火</b>：全队够得着就优先打它，它受到的伤害 +15%，再点一下取消。自动技能卡升到满级后会出现<b>进化卡</b>。
     卡分<b>普通 / 稀有 / 传说</b>三档，等级越高越容易翻到好卡；不满意可以<b>重抽</b>。凑齐条件会触发<b>羁绊</b>（下面那一排），效果一直生效。
     击杀掉<b>星尘</b>，每 4 波会开一次<b>商店</b>，可以买卡、修碑、救人。地图上的<b>喷发口、旋转光束、地刺</b>只伤敌人，<b>开合传送门</b>关着时不出怪。偶尔会刷<b>宝箱怪</b>，打爆多翻一张牌。
@@ -1098,7 +1112,7 @@ const DAILY_MODS = [
   { id: "rich", name: "天赋异禀", desc: "经验获得 +50%，但晨星碑生命减半" },
 ];
 
-// 晨星之力：击杀充能，满 100 放全屏大招
+// 大招：击杀充能，满 100 放全屏大招
 const ULT = { max: 100, kill: 2, elite: 6, boss: 20, bossHit: 0.08, stun: 2 };
 // 连杀：2.5 秒内接着杀就算连杀
 const COMBO = { window: 2.5, marks: [10, 25, 50, 80, 120, 200], xp: [10, 20, 35, 60, 90, 140] };
@@ -1224,7 +1238,7 @@ const ACHV = [
   { id: "chapter3", name: "第三章完结", desc: "通关第 12 关" },
   { id: "nameless", name: "叫出它的名字", desc: "通关第 16 关，击败无名者" },
   { id: "chapter5", name: "第五章完结", desc: "通关第 20 关，击败静默者" },
-  { id: "allchars16", name: "全员集结", desc: "解锁全部角色（含第五章的新伙伴）" },
+  { id: "allchars16", name: "二十人到齐", desc: "解锁全部角色（含第五章的新伙伴）" },
   { id: "exped", name: "远征归来", desc: "完成一次远征（打赢最后一层的首领）" },
   { id: "relics", name: "遗物收藏家", desc: "图鉴里集齐全部遗物" },
   { id: "cards", name: "博览群牌", desc: "图鉴里集齐全部通用升级卡（不含专属卡、诅咒卡和补充卡）" },
@@ -1240,7 +1254,7 @@ const ENEMY_DESC = {
   stormhound: "雷云里养出来的兽，速度是全场最快的，法抗也高。",
   nullmage: "会给周围的敌人回血，先打掉它。",
   voidknight: "把名字交出去换来的护盾，护盾破掉之后就只是个骑士。",
-  stormlord: "雷云里的那个声音。会读条放「绝对零度」，读条时集火可以打断。",
+  stormlord: "雷云里的那个声音。会读条放「冰霜新星·进化」，读条时集火可以打断。",
   nameless: "没有名字，也不肯有。四个形态，会放「星海坍缩」——一定要打断。",
   crab: "背着厚厚的贝壳甲，物理伤害打不动，用法术或持续输出；首领战时会周期性重新凝甲。",
   siren: "会飞，歌声让队伍很难集火，需要能打飞行的角色。",
@@ -1248,7 +1262,7 @@ const ENEMY_DESC = {
   tidecaller: "不断召唤溺亡者，法抗很高，要优先集火。",
   bellkeeper: "体型庞大的守钟人，防御极高；首领战时会敲钟，让所有敌人加速加攻。",
   mirrorknight: "举着镜盾，被法术打中会反弹一部分伤害；先打碎它的护盾。",
-  silencer: "把每一声呼喊都按下去。四个形态，会放「绝对零度」冻结全队，还会抹掉队员的技力——读条时一定要打断。",
+  silencer: "把每一声呼喊都按下去。四个形态，会放「冰霜新星·进化」冻结全队，还会抹掉队员的技力——读条时一定要打断。",
   slime: "最基础的敌人。", bigslime: "血厚，死后分裂成两只史莱姆。", goblin: "数量多，速度中等。",
   wolf: "跑得很快，容易冲到晨星碑。", orc: "防御 300，物理攻击打不太动，用法术更好。",
   garg: "会飞，不会被近战拦住，直接飞向晨星碑。只有能打飞行的角色和技能能打到。",
@@ -1284,7 +1298,7 @@ const SHOP = { everyWaves: 4, dustPerKill: 1, dustElite: 4, dustBoss: 25, start:
     { id: "heal", name: "碑石修复", desc: "晨星碑回复 30% 生命", cost: 40 },
     { id: "revive", name: "全员急救", desc: "倒下的角色立刻站起，全队回满生命", cost: 35 },
     { id: "reroll", name: "占卜罗盘", desc: "重抽次数 +2", cost: 30 },
-    { id: "ult", name: "晨星充能", desc: "晨星之力立刻充满", cost: 55 },
+    { id: "ult", name: "晨星充能", desc: "大招立刻充满", cost: 55 },
     { id: "banish", name: "放逐许可", desc: "放逐次数 +1（翻牌时把一张卡永久移出牌堆）", cost: 35 },
     { id: "relicbox", name: "遗物宝匣", desc: "随机获得一件遗物", cost: 150 },
     { id: "recycle", name: "回炉重造", desc: "随机一张卡降 1 级，换一次翻牌", cost: 25 },
@@ -1316,38 +1330,38 @@ const BANISH_N = 2;   // 每局可以放逐几次卡牌
 // 羁绊：满足条件就一直生效。prog() 返回 [已有, 需要]，选牌时用它提示「再拿这张就凑齐」
 const synCount = f => S.units.filter(u => !u.dead && !u.summon && f(u)).length;
 const SYNERGY = [
-  { id: "wall", name: "钢铁防线", need: "3 名前排伙伴", desc: "全队防御 +35%，晨星碑受到的伤害 −15%", color: "#8fb3e0",
+  { id: "wall", name: "前排阵", need: "3 名前排伙伴", desc: "全队防御 +35%，晨星碑受到的伤害 −15%", color: "#8fb3e0",
     prog: () => [synCount(u => u.def.place === "ground"), 3] },
-  { id: "arcane", name: "奥术回响", need: "3 名法术角色", desc: "法术伤害 +25%，技力回复 +25%", color: "#b18ae8",
+  { id: "arcane", name: "法师队", need: "3 名法术角色", desc: "法术伤害 +25%，技力回复 +25%", color: "#b18ae8",
     prog: () => [S.units.filter(u => !u.dead && u.def.dmg === "magic").length, 3] },
-  { id: "volley", name: "齐射阵线", need: "3 名远程伙伴", desc: "远程角色攻速 +25%、射程 +0.4", color: "#6fcf8e",
+  { id: "volley", name: "远程阵", need: "3 名远程伙伴", desc: "远程角色攻速 +25%、射程 +0.4", color: "#6fcf8e",
     prog: () => [S.units.filter(u => !u.dead && u.def.place === "high" && u.def.dmg !== "heal").length, 3] },
-  { id: "inferno", name: "烈焰环绕", need: "烈焰环 + 陨星雨", desc: "火焰技能伤害 +50%，被烧的敌人防御 −20%", color: "#ff8a3a",
+  { id: "inferno", name: "火系", need: "烈焰环 + 陨星雨", desc: "火焰技能伤害 +50%，被烧的敌人防御 −20%", color: "#ff8a3a",
     prog: () => [(cl("sk_fire") > 0) + (cl("sk_meteor") > 0), 2] },
-  { id: "frostbite", name: "极寒领域", need: "冰霜新星 + 寒霜之心", desc: "冻结时间 +50%，对冻结的敌人伤害 +40%", color: "#8fe0f0",
+  { id: "frostbite", name: "冰系", need: "冰霜新星 + 冰冻", desc: "冻结时间 +50%，对冻结的敌人伤害 +40%", color: "#8fe0f0",
     prog: () => [(cl("sk_nova") > 0) + (cl("freeze") > 0), 2] },
-  { id: "bloodlust", name: "嗜血", need: "吸血 + 殉爆", desc: "吸血翻倍，殉爆范围和伤害 +50%", color: "#e0676a",
+  { id: "bloodlust", name: "嗜血", need: "吸血 + 死亡爆炸", desc: "吸血翻倍，死亡爆炸范围和伤害 +50%", color: "#e0676a",
     prog: () => [(cl("vamp") > 0) + (cl("boom") > 0), 2] },
-  { id: "scholar", name: "群星学派", need: "5 张属性卡", desc: "全队攻击 +15%、生命 +15%", color: "#ffd860",
+  { id: "scholar", name: "属性齐全", need: "5 张属性卡", desc: "全队攻击 +15%、生命 +15%", color: "#ffd860",
     prog: () => [CARDS.filter(c => c.kind === "stat" && cl(c.id) > 0).length, 5] },
-  { id: "legendary", name: "传说之证", need: "2 张传说卡", desc: "全队攻击 +20%，晨星之力充能 +30%", color: "#ffb340",
+  { id: "legendary", name: "双传说", need: "2 张传说卡", desc: "全队攻击 +20%，大招充能 +30%", color: "#ffb340",
     prog: () => [CARDS.filter(c => c.rare === 2 && !c.evo && cl(c.id) > 0).length, 2] },
-  { id: "shockwave", name: "雷霆战阵", need: "落雷之枪 + 追猎箭雨", desc: "被眩晕的敌人受到的伤害 +30%", color: "#ffe860",
+  { id: "shockwave", name: "雷电", need: "落雷枪 + 箭雨", desc: "被眩晕的敌人受到的伤害 +30%", color: "#ffe860",
     prog: () => [(cl("sk_spear") > 0) + (cl("sk_gale") > 0), 2] },
-  { id: "wardguard", name: "秘法壁垒", need: "奥术护壁 + 心灵屏障", desc: "受到的法术伤害再 −10%，全队法抗额外 +10", color: "#b8e0ff",
+  { id: "wardguard", name: "双重法抗", need: "法术抗性 + 法术减伤", desc: "受到的法术伤害再 −10%，全队法抗额外 +10", color: "#b8e0ff",
     prog: () => [(cl("res") > 0) + (cl("wardmind") > 0), 2] },
-  { id: "corrosive", name: "锈蚀猎手", need: "剧毒喷雾 + 破甲", desc: "中毒/被腐蚀的敌人防御再 −15%", color: "#a8d848",
+  { id: "corrosive", name: "腐蚀", need: "毒雾 + 破甲", desc: "中毒/被腐蚀的敌人防御再 −15%", color: "#a8d848",
     prog: () => [(cl("sk_toxic") > 0) + (cl("pierce") > 0), 2] },
-  { id: "tidebell", name: "潮钟共鸣", need: "潮汐涌动 + 钟鸣", desc: "潮水减速时间 +50%，钟鸣眩晕时间 +50%", color: "#5ab8e8",
+  { id: "tidebell", name: "潮与钟", need: "潮汐涌动 + 钟鸣", desc: "潮水减速时间 +50%，钟鸣眩晕时间 +50%", color: "#5ab8e8",
     prog: () => [(cl("sk_tide") > 0) + (cl("sk_bell") > 0), 2] },
-  { id: "silentecho", name: "静默回响", need: "静默领域 + 回声", desc: "正在读条的敌人受到的伤害 +30%", color: "#c8d4ff",
+  { id: "silentecho", name: "静默与回声", need: "静默领域 + 回声", desc: "正在读条的敌人受到的伤害 +30%", color: "#c8d4ff",
     prog: () => [(cl("silence") > 0) + (cl("echo") > 0), 2] },
 ];
 // 羁绊第二档：两张卡都升到 3 级时，原来的效果再加强一档
 const SYN_T2 = {
   inferno: { cards: ["sk_fire", "sk_meteor"], desc: "灼烧伤害 ×2（原 ×1.5），被烧的敌人防御 −30%（原 −20%）" },
   frostbite: { cards: ["sk_nova", "freeze"], desc: "对冻结、减速的敌人伤害 +60%（原 +40%）" },
-  bloodlust: { cards: ["vamp", "boom"], desc: "吸血 ×3（原 ×2），殉爆伤害 +80%、范围更大（原 +50%）" },
+  bloodlust: { cards: ["vamp", "boom"], desc: "吸血 ×3（原 ×2），死亡爆炸伤害 +80%、范围更大（原 +50%）" },
   shockwave: { cards: ["sk_spear", "sk_gale"], desc: "被眩晕的敌人受到的伤害 +50%（原 +30%）" },
   wardguard: { cards: ["res", "wardmind"], desc: "法术伤害 −15%（原 −10%），全队法抗 +20（原 +10）" },
   tidebell: { cards: ["sk_tide", "sk_bell"], desc: "潮水击退 +50%（1.4 → 2.1 格），钟鸣伤害 +50%（原效果保留）" },
@@ -1390,11 +1404,11 @@ const CARDS = [
   { id: "armor", rare: 0, kind: "stat", name: "铁甲", max: 4, w: 7, desc: lv => `全队防御 +30%、法抗 +8（当前 +${30 * lv}% / +${8 * lv}）` },
   { id: "sp", rare: 0, kind: "stat", name: "冥想", max: 4, w: 7, desc: lv => `技力回复速度 +30%（当前 +${30 * lv}%）` },
   { id: "xp", rare: 0, kind: "stat", name: "学者", max: 4, w: 7, desc: lv => `获得的经验 +20%（当前 +${20 * lv}%）` },
-  { id: "shield", rare: 1, kind: "stat", name: "碑之守护", max: 4, w: 8, desc: lv => `晨星碑生命上限 +20% 并立即回复 20%（当前 +${20 * lv}%）` },
-  { id: "regen", rare: 1, kind: "stat", name: "战地医疗", max: 4, w: 8, desc: lv => `全队每秒回复 1.2% 生命（当前 ${(1.2 * lv).toFixed(1)}%）` },
-  { id: "critdmg", rare: 1, kind: "stat", name: "会心强化", max: 4, w: 7, need: () => cl("crit") > 0 || dk("crit") > 0 || cu("cu_moon") > 0, desc: lv => `暴击伤害倍数 +${15 * lv}%（当前 2 → ${(2 + 0.15 * lv).toFixed(2)} 倍）` },
-  { id: "res", rare: 1, kind: "stat", name: "奥术护壁", max: 4, w: 7, desc: lv => `全队法抗额外 +${10 * lv}（不叠加铁甲的法抗）` },
-  { id: "loot", rare: 0, kind: "stat", name: "掠夺", max: 4, w: 7, desc: lv => `击杀获得的星尘 +${15 * lv}%` },
+  { id: "shield", rare: 1, kind: "stat", name: "碑护盾", max: 4, w: 8, desc: lv => `晨星碑生命上限 +20% 并立即回复 20%（当前 +${20 * lv}%）` },
+  { id: "regen", rare: 1, kind: "stat", name: "持续回血", max: 4, w: 8, desc: lv => `全队每秒回复 1.2% 生命（当前 ${(1.2 * lv).toFixed(1)}%）` },
+  { id: "critdmg", rare: 1, kind: "stat", name: "暴击伤害", max: 4, w: 7, need: () => cl("crit") > 0 || dk("crit") > 0 || cu("cu_moon") > 0, desc: lv => `暴击伤害倍数 +${15 * lv}%（当前 2 → ${(2 + 0.15 * lv).toFixed(2)} 倍）` },
+  { id: "res", rare: 1, kind: "stat", name: "法术抗性", max: 4, w: 7, desc: lv => `全队法抗额外 +${10 * lv}（不叠加铁甲的法抗）` },
+  { id: "loot", rare: 0, kind: "stat", name: "多掉星尘", max: 4, w: 7, desc: lv => `击杀获得的星尘 +${15 * lv}%` },
 
   { id: "sk_meteor", rare: 1, kind: "skill", name: "陨星雨", max: 5, w: 7, desc: lv => `每 ${(9 - lv * 0.8).toFixed(1)} 秒在敌人最多的地方砸下陨星` },
   { id: "sk_chain", rare: 1, kind: "skill", name: "闪电链", max: 5, w: 7, desc: lv => `每 ${(6 - lv * 0.5).toFixed(1)} 秒放出闪电，在 ${2 + lv} 个敌人之间跳跃` },
@@ -1403,56 +1417,56 @@ const CARDS = [
   { id: "sk_fire", rare: 1, kind: "skill", name: "烈焰环", max: 5, w: 7, desc: lv => `每 ${(8 - lv * 0.6).toFixed(1)} 秒喷出火环，烧伤范围内的敌人` },
   { id: "sk_spike", rare: 0, kind: "skill", name: "地刺阵", max: 4, w: 6, desc: lv => `晨星碑周围一圈地刺，站在上面的地面敌人每秒受伤` },
   { id: "sk_holy", rare: 1, kind: "skill", name: "圣光", max: 4, w: 6, desc: lv => `每 ${12 - lv} 秒全队回血，并对亡灵造成伤害` },
-  { id: "sk_spear", rare: 1, kind: "skill", name: "落雷之枪", max: 5, w: 6, desc: lv => `每 ${(7 - lv * 0.5).toFixed(1)} 秒对离晨星碑最近的敌人猛击一枪，并眩晕 ${(0.8 + lv * 0.15).toFixed(2)} 秒` },
-  { id: "sk_toxic", rare: 1, kind: "skill", name: "剧毒喷雾", max: 5, w: 6, desc: lv => `每 ${(8 - lv * 0.5).toFixed(1)} 秒在晨星碑周围喷出毒雾，中毒的敌人持续掉血、防御下降` },
-  { id: "sk_gale", rare: 0, kind: "skill", name: "追猎箭雨", max: 5, w: 6, desc: lv => `每 ${(5.5 - lv * 0.3).toFixed(1)} 秒对 ${2 + Math.floor(lv / 2)} 个随机敌人各射一箭` },
+  { id: "sk_spear", rare: 1, kind: "skill", name: "落雷枪", max: 5, w: 6, desc: lv => `每 ${(7 - lv * 0.5).toFixed(1)} 秒对离晨星碑最近的敌人猛击一枪，并眩晕 ${(0.8 + lv * 0.15).toFixed(2)} 秒` },
+  { id: "sk_toxic", rare: 1, kind: "skill", name: "毒雾", max: 5, w: 6, desc: lv => `每 ${(8 - lv * 0.5).toFixed(1)} 秒在晨星碑周围喷出毒雾，中毒的敌人持续掉血、防御下降` },
+  { id: "sk_gale", rare: 0, kind: "skill", name: "箭雨", max: 5, w: 6, desc: lv => `每 ${(5.5 - lv * 0.3).toFixed(1)} 秒对 ${2 + Math.floor(lv / 2)} 个随机敌人各射一箭` },
 
   { id: "vamp", rare: 1, kind: "special", name: "吸血", max: 4, w: 7, desc: lv => `攻击时回复造成伤害 ${6 * lv}% 的生命` },
   { id: "thorn", rare: 0, kind: "special", name: "荆棘", max: 4, w: 6, desc: lv => `被近战攻击时反弹 ${25 * lv}% 的伤害` },
-  { id: "boom", rare: 1, kind: "special", name: "殉爆", max: 4, w: 7, desc: lv => `击杀敌人时 ${18 * lv}% 几率引发爆炸` },
-  { id: "slow", rare: 0, kind: "special", name: "迟缓光环", max: 4, w: 7, desc: lv => `晨星碑 3.5 范围内的敌人速度 −${12 * lv}%` },
-  { id: "hunter", rare: 1, kind: "special", name: "猎王者", max: 3, w: 6, desc: lv => `对精英和首领的伤害 +${25 * lv}%` },
-  { id: "resonance", rare: 1, kind: "special", name: "晨星共鸣", max: 3, w: 6, desc: lv => `晨星之力充能速度 +${40 * lv}%` },
-  { id: "revive", rare: 0, kind: "special", name: "不屈", max: 3, w: 6, desc: lv => `角色倒下后的复活时间 −${25 * lv}%` },
-  { id: "freeze", rare: 1, kind: "special", name: "寒霜之心", max: 3, w: 6, desc: lv => `攻击有 ${6 * lv}% 几率冻结敌人 0.8 秒` },
+  { id: "boom", rare: 1, kind: "special", name: "死亡爆炸", max: 4, w: 7, desc: lv => `击杀敌人时 ${18 * lv}% 几率引发爆炸` },
+  { id: "slow", rare: 0, kind: "special", name: "减速光环", max: 4, w: 7, desc: lv => `晨星碑 3.5 范围内的敌人速度 −${12 * lv}%` },
+  { id: "hunter", rare: 1, kind: "special", name: "猎杀精英", max: 3, w: 6, desc: lv => `对精英和首领的伤害 +${25 * lv}%` },
+  { id: "resonance", rare: 1, kind: "special", name: "大招充能", max: 3, w: 6, desc: lv => `大招充能速度 +${40 * lv}%` },
+  { id: "revive", rare: 0, kind: "special", name: "复活加速", max: 3, w: 6, desc: lv => `角色倒下后的复活时间 −${25 * lv}%` },
+  { id: "freeze", rare: 1, kind: "special", name: "冰冻", max: 3, w: 6, desc: lv => `攻击有 ${6 * lv}% 几率冻结敌人 0.8 秒` },
   { id: "pierce", rare: 1, kind: "special", name: "破甲", max: 3, w: 6, desc: lv => `攻击无视敌人 ${15 * lv}% 的防御` },
-  { id: "dodge", rare: 1, kind: "special", name: "闪避步", max: 3, w: 6, desc: lv => `每次受到攻击有 ${7 * lv}% 几率完全闪避` },
-  { id: "cdr", rare: 1, kind: "special", name: "疾风节拍", max: 3, w: 6, need: () => CARDS.some(k => k.kind === "skill" && !k.evo && cl(k.id) > 0), desc: lv => `自动技能冷却额外 −${8 * lv}%` },
-  { id: "wardmind", rare: 1, kind: "special", name: "心灵屏障", max: 3, w: 6, desc: lv => `受到的法术伤害 −${8 * lv}%` },
+  { id: "dodge", rare: 1, kind: "special", name: "闪避", max: 3, w: 6, desc: lv => `每次受到攻击有 ${7 * lv}% 几率完全闪避` },
+  { id: "cdr", rare: 1, kind: "special", name: "技能冷却", max: 3, w: 6, need: () => CARDS.some(k => k.kind === "skill" && !k.evo && cl(k.id) > 0), desc: lv => `自动技能冷却额外 −${8 * lv}%` },
+  { id: "wardmind", rare: 1, kind: "special", name: "法术减伤", max: 3, w: 6, desc: lv => `受到的法术伤害 −${8 * lv}%` },
   // ---- 传说卡（每局最多见到几张，效果很强）----
-  { id: "lg_twin", rare: 2, kind: "skill", name: "双生奥义", max: 1, w: 5, desc: () => "所有自动技能冷却 −40%、威力 +35%" },
+  { id: "lg_twin", rare: 2, kind: "skill", name: "技能强化", max: 1, w: 5, desc: () => "所有自动技能冷却 −40%、威力 +35%" },
   { id: "lg_time", rare: 2, kind: "skill", name: "时间停滞", max: 2, w: 5, desc: lv => `每 ${22 - lv * 4} 秒把全场敌人定住 ${(1.6 + lv * 0.4).toFixed(1)} 秒` },
-  { id: "lg_judge", rare: 2, kind: "skill", name: "天罚", max: 2, w: 5, desc: lv => `击杀敌人时 ${20 * lv}% 几率召下审判之光，重创附近的敌人` },
-  { id: "lg_phoenix", rare: 2, kind: "special", name: "不死鸟", max: 1, w: 5, desc: () => "角色倒下 3 秒就复活，站起时回满生命并震开周围敌人" },
-  { id: "lg_avatar", rare: 2, kind: "special", name: "晨星化身", max: 1, w: 5, desc: () => "英雄攻击 +100%、生命 +60%、攻击范围 +0.8" },
-  { id: "lg_army", rare: 2, kind: "ally", name: "万军之阵", max: 1, w: 5, desc: () => "伙伴上限 +2，场上所有伙伴立刻升 1 阶" },
-  { id: "lg_aegis", rare: 2, kind: "stat", name: "永恒壁垒", max: 2, w: 5, desc: lv => `晨星碑生命上限 +${40 * lv}%，每波结束回复 ${8 * lv}%` },
-  { id: "lg_greed", rare: 2, kind: "stat", name: "星尘洪流", max: 1, w: 5, desc: () => "经验和星尘获得翻倍" },
+  { id: "lg_judge", rare: 2, kind: "skill", name: "击杀落光", max: 2, w: 5, desc: lv => `击杀敌人时 ${20 * lv}% 几率召下审判之光，重创附近的敌人` },
+  { id: "lg_phoenix", rare: 2, kind: "special", name: "快速复活", max: 1, w: 5, desc: () => "角色倒下 3 秒就复活，站起时回满生命并震开周围敌人" },
+  { id: "lg_avatar", rare: 2, kind: "special", name: "英雄强化", max: 1, w: 5, desc: () => "英雄攻击 +100%、生命 +60%、攻击范围 +0.8" },
+  { id: "lg_army", rare: 2, kind: "ally", name: "扩编", max: 1, w: 5, desc: () => "伙伴上限 +2，场上所有伙伴立刻升 1 阶" },
+  { id: "lg_aegis", rare: 2, kind: "stat", name: "碑体强化", max: 2, w: 5, desc: lv => `晨星碑生命上限 +${40 * lv}%，每波结束回复 ${8 * lv}%` },
+  { id: "lg_greed", rare: 2, kind: "stat", name: "双倍收益", max: 1, w: 5, desc: () => "经验和星尘获得翻倍" },
   { id: "sk_tide", rare: 1, kind: "skill", name: "潮汐涌动", max: 5, w: 6, desc: lv => `每 ${(11 - lv * 0.8).toFixed(1)} 秒涌起一道潮水：地面敌人被推回 1.4 格，减速 ${(1.8 + lv * 0.2).toFixed(1)} 秒，并受到法术伤害` },
   { id: "sk_bell", rare: 1, kind: "skill", name: "钟鸣", max: 5, w: 6, desc: lv => `每 ${(13 - lv).toFixed(0)} 秒敲响一次钟：晨星碑 ${(3 + lv * 0.2).toFixed(1)} 格内的敌人眩晕 ${(0.8 + lv * 0.15).toFixed(2)} 秒并受到法术伤害` },
   { id: "echo", rare: 1, kind: "special", name: "回声", max: 3, w: 6, need: () => cl("crit") > 0 || dk("crit") > 0 || cu("cu_moon") > 0, desc: lv => `暴击时有 ${25 * lv}% 几率再回响一次，造成 50% 的伤害` },
   { id: "silence", rare: 1, kind: "special", name: "静默领域", max: 3, w: 6, desc: lv => `首领和精英读条大招所需的打断伤害 −${20 * lv}%` },
   { id: "salvage", rare: 0, kind: "special", name: "打捞", max: 4, w: 6, desc: lv => `每波开始获得 ${3 * lv} 星尘，每过 4 波再多 ${lv} 星尘` },
   { id: "mirrorarmor", rare: 1, kind: "stat", name: "镜面护甲", max: 3, w: 6, desc: lv => `队员受到远程敌人的伤害 −${10 * lv}%` },
-  { id: "lg_tide", rare: 2, kind: "special", name: "潮汐之心", max: 1, w: 5, desc: () => "任何队员释放技能后，全队回复 6% 生命，其他队员技力 +8" },
-  { id: "lg_hunt", rare: 2, kind: "special", name: "猎手之誓", max: 1, w: 5, desc: () => "对精英和首领伤害 +30%；击杀精英或首领后，全队攻击 +8%，持续 12 秒" },
-  { id: "lg_bond", rare: 2, kind: "stat", name: "誓约之环", max: 1, w: 5, need: () => S.mod !== "solo", desc: () => "全队攻击和生命上限随伙伴数量提升：每有一名伙伴在场 +8%，没有上限" },
-  { id: "lg_ward", rare: 2, kind: "stat", name: "圣域壁垒", max: 1, w: 5, desc: () => "晨星碑受到的伤害 −20%" },
-  { id: "lg_focus", rare: 2, kind: "special", name: "焚天之力", max: 1, w: 5, desc: () => "对集火目标的伤害额外 +25%" },
+  { id: "lg_tide", rare: 2, kind: "special", name: "潮汐回复", max: 1, w: 5, desc: () => "任何队员释放技能后，全队回复 6% 生命，其他队员技力 +8" },
+  { id: "lg_hunt", rare: 2, kind: "special", name: "猎杀连击", max: 1, w: 5, desc: () => "对精英和首领伤害 +30%；击杀精英或首领后，全队攻击 +8%，持续 12 秒" },
+  { id: "lg_bond", rare: 2, kind: "stat", name: "人多势众", max: 1, w: 5, need: () => S.mod !== "solo", desc: () => "全队攻击和生命上限随伙伴数量提升：每有一名伙伴在场 +8%，没有上限" },
+  { id: "lg_ward", rare: 2, kind: "stat", name: "碑减伤", max: 1, w: 5, desc: () => "晨星碑受到的伤害 −20%" },
+  { id: "lg_focus", rare: 2, kind: "special", name: "集火加伤", max: 1, w: 5, desc: () => "对集火目标的伤害额外 +25%" },
   // ---- 进化卡：自动技能升到满级后才会进牌堆，拿了技能形态大变（按传说卡的样子显示，但不算「传说卡」）----
-  { id: "ev_meteor", evo: "sk_meteor", rare: 2, kind: "evo", name: "天罚陨星", max: 1, w: 8, desc: () => "陨星雨进化：每次同时砸下 3 颗陨星（落在不同的敌群），爆炸范围 +30%，被砸中的敌人会灼烧 3 秒" },
-  { id: "ev_chain", evo: "sk_chain", rare: 2, kind: "evo", name: "雷霆风暴", max: 1, w: 8, desc: () => "闪电链进化：跳跃次数翻倍、伤害不再衰减，被击中的敌人麻痹 0.4 秒" },
-  { id: "ev_nova", evo: "sk_nova", rare: 2, kind: "evo", name: "绝对零度", max: 1, w: 8, desc: () => "冰霜新星进化：范围扩大到 5 格，冻结 2 秒，伤害 +30%" },
-  { id: "ev_blade", evo: "sk_blade", rare: 2, kind: "evo", name: "剑刃风暴", max: 1, w: 8, desc: () => "飞刃进化：多 2 把飞刃，轨道忽远忽近扫过更大范围，伤害 +30%，出手更快" },
-  { id: "ev_fire", evo: "sk_fire", rare: 2, kind: "evo", name: "炼狱火环", max: 1, w: 8, desc: () => "烈焰环进化：范围扩大到 5 格，灼烧伤害 +60%、持续 5 秒" },
-  { id: "ev_spike", evo: "sk_spike", rare: 2, kind: "evo", name: "荆棘王座", max: 1, w: 8, desc: () => "地刺阵进化：地刺范围扩大一圈，伤害 +40%，被刺中的敌人减速 40%" },
-  { id: "ev_holy", evo: "sk_holy", rare: 2, kind: "evo", name: "神圣审判", max: 1, w: 8, desc: () => "圣光进化：回血量 +30%，对范围内所有敌人造成伤害（亡灵受到双倍）" },
-  { id: "ev_spear", evo: "sk_spear", rare: 2, kind: "evo", name: "雷神之矛", max: 1, w: 8, desc: () => "落雷之枪进化：同时击中离晨星碑最近的 3 个敌人，眩晕时间翻倍，伤害 +30%" },
-  { id: "ev_toxic", evo: "sk_toxic", rare: 2, kind: "evo", name: "瘟疫之云", max: 1, w: 8, desc: () => "剧毒喷雾进化：范围扩大到 5 格，毒伤 +60%、持续更久，防御下降翻倍" },
-  { id: "ev_gale", evo: "sk_gale", rare: 2, kind: "evo", name: "万箭齐发", max: 1, w: 8, desc: () => "追猎箭雨进化：每次射击的目标数翻倍，伤害 +20%，被射中的敌人减速" },
+  { id: "ev_meteor", evo: "sk_meteor", rare: 2, kind: "evo", name: "陨星雨·进化", max: 1, w: 8, desc: () => "陨星雨进化：每次同时砸下 3 颗陨星（落在不同的敌群），爆炸范围 +30%，被砸中的敌人会灼烧 3 秒" },
+  { id: "ev_chain", evo: "sk_chain", rare: 2, kind: "evo", name: "闪电链·进化", max: 1, w: 8, desc: () => "闪电链进化：跳跃次数翻倍、伤害不再衰减，被击中的敌人麻痹 0.4 秒" },
+  { id: "ev_nova", evo: "sk_nova", rare: 2, kind: "evo", name: "冰霜新星·进化", max: 1, w: 8, desc: () => "冰霜新星进化：范围扩大到 5 格，冻结 2 秒，伤害 +30%" },
+  { id: "ev_blade", evo: "sk_blade", rare: 2, kind: "evo", name: "飞刃·进化", max: 1, w: 8, desc: () => "飞刃进化：多 2 把飞刃，轨道忽远忽近扫过更大范围，伤害 +30%，出手更快" },
+  { id: "ev_fire", evo: "sk_fire", rare: 2, kind: "evo", name: "烈焰环·进化", max: 1, w: 8, desc: () => "烈焰环进化：范围扩大到 5 格，灼烧伤害 +60%、持续 5 秒" },
+  { id: "ev_spike", evo: "sk_spike", rare: 2, kind: "evo", name: "地刺阵·进化", max: 1, w: 8, desc: () => "地刺阵进化：地刺范围扩大一圈，伤害 +40%，被刺中的敌人减速 40%" },
+  { id: "ev_holy", evo: "sk_holy", rare: 2, kind: "evo", name: "圣光·进化", max: 1, w: 8, desc: () => "圣光进化：回血量 +30%，对范围内所有敌人造成伤害（亡灵受到双倍）" },
+  { id: "ev_spear", evo: "sk_spear", rare: 2, kind: "evo", name: "落雷枪·进化", max: 1, w: 8, desc: () => "落雷枪进化：同时击中离晨星碑最近的 3 个敌人，眩晕时间翻倍，伤害 +30%" },
+  { id: "ev_toxic", evo: "sk_toxic", rare: 2, kind: "evo", name: "毒雾·进化", max: 1, w: 8, desc: () => "毒雾进化：范围扩大到 5 格，毒伤 +60%、持续更久，防御下降翻倍" },
+  { id: "ev_gale", evo: "sk_gale", rare: 2, kind: "evo", name: "箭雨·进化", max: 1, w: 8, desc: () => "箭雨进化：每次射击的目标数翻倍，伤害 +20%，被射中的敌人减速" },
   // ---- 补充卡：牌堆快抽空时才出现，可以无限叠加 ----
   { id: "fl_atk", rare: 0, kind: "stat", name: "淬炼", max: 999, w: 10, filler: true, desc: lv => `全队攻击 +6%、生命 +6%（可以无限叠加，当前 +${6 * lv}%）` },
-  { id: "fl_crystal", rare: 0, kind: "stat", name: "碑石修补", max: 999, w: 6, filler: true, desc: () => "晨星碑立即回复 20% 生命" },
+  { id: "fl_crystal", rare: 0, kind: "stat", name: "修碑", max: 999, w: 6, filler: true, desc: () => "晨星碑立即回复 20% 生命" },
   { id: "fl_dust", rare: 0, kind: "stat", name: "战利品", max: 999, w: 6, filler: true, desc: () => "立即获得 60 星尘，重抽次数 +1" },
 ];
 const CARD_BY = Object.fromEntries(CARDS.map(c => [c.id, c]));
@@ -1562,7 +1576,7 @@ const DISK = [
   { id: "lucky", line: "eco", name: "时运", max: 5, base: 3, step: 1, desc: lv => `翻牌时稀有卡、传说卡出现的几率 +${8 * lv}%`, per: "每级 +8%" },
   { id: "mentor", line: "eco", name: "名师", max: 5, base: 2, step: 1, desc: lv => `一局结束时角色得到的养成经验 +${15 * lv}%`, per: "每级 +15%" },
   { id: "arcane", line: "arc", name: "法术精通", max: 6, base: 2, step: 1, desc: lv => `手动法术（陨星术、圣愈之光）冷却时间 −${5 * lv}%`, per: "每级 −5%" },
-  { id: "ult", line: "arc", name: "星能", max: 5, base: 3, step: 1, desc: lv => `晨星之力（全屏大招）充能速度 +${6 * lv}%`, per: "每级 +6%" },
+  { id: "ult", line: "arc", name: "星能", max: 5, base: 3, step: 1, desc: lv => `大招（全屏大招）充能速度 +${6 * lv}%`, per: "每级 +6%" },
   { id: "supply", line: "arc", name: "开局补给", max: 2, base: 5, step: 4, desc: lv => `开局直接白送 ${lv} 张随机升级卡`, per: "每级 +1 张" },
   { id: "prep", line: "arc", name: "有备而来", max: 2, base: 5, step: 4, desc: lv => `开局多翻 ${lv} 次牌（自己挑）`, per: "每级 +1 次" },
   { id: "relic", line: "arc", name: "寻宝", max: 4, base: 3, step: 2, desc: lv => `击败精英、首领时掉落遗物的几率 +${10 * lv}%`, per: "每级 +10%" },
@@ -1683,7 +1697,7 @@ const RELICS = [
   { id: "rl_lodestone", name: "引力石", color: "#b070ff", desc: "陨星术、陨星雨、晨星爆发伤害 +50%" },
   { id: "rl_beads", name: "苦修念珠", color: "#d8b080", desc: "每波开始全队回复 25% 生命，倒下的人立刻站起来" },
   { id: "rl_glasses", name: "学者眼镜", color: "#8ac8ff", desc: "每次升级多给 1 次重抽" },
-  { id: "rl_twin", name: "双子星", color: "#fff0a0", desc: "晨星之力充能 +40%" },
+  { id: "rl_twin", name: "双子星", color: "#fff0a0", desc: "大招充能 +40%" },
   { id: "rl_key", name: "裂隙钥匙", color: "#c890ff", desc: "提前出击的星尘奖励翻倍，叠波时额外获得经验" },
   { id: "rl_banner", name: "战旗", color: "#e3b75c", desc: "场上每有 1 名伙伴，全队攻击 +4%" },
   { id: "rl_mirror", name: "镜之盾", color: "#cfe6ff", desc: "角色受到的伤害 −15%" },
@@ -1725,7 +1739,7 @@ function relicDrop(e) {
   if (e.summoned || S.relics.length >= RELIC_MAX) return;
   if (roll("relic") < relicChance(e)) {
     const id = gainRelic();
-    if (id) addFx({ kind: "text", x: e.x, y: e.y - 1, text: "掉落遗物！", color: RELIC_BY[id].color, life: 1.5, big: true });
+    if (id) addFx({ kind: "text", x: e.x, y: e.y - 1, text: "掉落遗物", color: RELIC_BY[id].color, life: 1.5, big: true });
   }
 }
 // 每帧：碑之心、雷鸣号角
@@ -1762,7 +1776,7 @@ function drawRelicIcon(cvs, id, size) {
 // 专属卡：只有把这名角色选成「本局英雄」时，她的专属卡才会进牌堆
 const SIG = [
   // 伊莎贝拉 · 骑士
-  { id: "sg_kn1", hero: "knight", rare: 1, kind: "special", name: "圣域壁垒", max: 3, w: 9, desc: lv => `英雄阻挡 +${lv}，受到的伤害 −${12 * lv}%` },
+  { id: "sg_kn1", hero: "knight", rare: 1, kind: "special", name: "碑减伤", max: 3, w: 9, desc: lv => `英雄阻挡 +${lv}，受到的伤害 −${12 * lv}%` },
   { id: "sg_kn2", hero: "knight", rare: 2, kind: "skill", name: "誓约之光", max: 1, w: 7, desc: () => "英雄生命低于 50% 时展开护盾，吸收 30% 生命上限的伤害，每 15 秒一次" },
   // 赛拉 · 剑士
   { id: "sg_sw1", hero: "sword", rare: 1, kind: "stat", name: "剑风", max: 3, w: 9, desc: lv => `英雄攻速 +${15 * lv}%，攻击横扫范围 +${(0.2 * lv).toFixed(1)}` },
@@ -2544,7 +2558,7 @@ function knock(e, amt) {
 // ---------- 统计 ----------
 const statKey = src => (src && src.summon ? src.owner.def.id : src && src.def ? src.def.id : src && src.key) || null;
 const statName = k => { const u = UNITS.find(x => x.id === k), c = typeof ANY_CARD === "function" ? ANY_CARD(k) : null;
-  return u ? u.name : c ? c.name : ({ meteor: "陨星术", heal: "圣愈之光", ult: "晨星爆发", boom: "殉爆", thorn: "荆棘", haz: "场地机关", burn: "灼烧" })[k] || k || ""; };
+  return u ? u.name : c ? c.name : ({ meteor: "陨星术", heal: "圣愈之光", ult: "晨星爆发", boom: "死亡爆炸", thorn: "荆棘", haz: "场地机关", burn: "灼烧" })[k] || k || ""; };
 function addStat(src, k, v) {
   const key = statKey(src); if (!key || !(v > 0)) return;
   const s = S.stats[key] || (S.stats[key] = { dmg: 0, heal: 0, kills: 0, taken: 0 });
@@ -2683,7 +2697,7 @@ function knockOut(u) {
 function reviveUnit(u) {
   u.down = 0; u.hp = Math.round(u.maxHp * 0.5); u.atkCd = 0.4; u.age = 0;
   addFx({ kind: "pillar", x: u.x, y: u.y, color: "#7ee89c", life: 0.7 });
-  addFx({ kind: "text", x: u.x, y: u.y - 0.5, text: "归队！", color: "#7ee89c", life: 1, big: true });
+  addFx({ kind: "text", x: u.x, y: u.y - 0.5, text: "归队", color: "#7ee89c", life: 1, big: true });
 }
 
 // ---------- 经验和翻牌 ----------
@@ -2698,7 +2712,7 @@ function cardPool(minRare) {
   const out = [];
   for (const c of CARDS) {
     if (c.filler || cl(c.id) >= c.max) continue;
-    if (c.need && !c.need()) continue;   // 有前提的卡（没暴击的会心强化、没技能的疾风节拍）不满足就不进牌堆，免得白占一个选项
+    if (c.need && !c.need()) continue;   // 有前提的卡（没暴击的暴击伤害、没技能的技能冷却）不满足就不进牌堆，免得白占一个选项
     if (minRare && (c.rare || 0) < minRare) continue;
     if (c.id === "lg_army" && S.mod === "solo") continue;
     if (c.evo) { if (cl(c.evo) >= CARD_BY[c.evo].max) out.push({ id: c.id, w: c.w, card: c, rare: 2 }); continue; }   // 进化卡权重固定，不随稀有度打折
@@ -2933,7 +2947,7 @@ function startWave(append) {
   if (rl("rl_beads")) for (const u of S.units) { if (u.down > 0) reviveUnit(u); heal(u, u.maxHp * 0.25, true, null); }
   S.log.push({ w: S.wave, hp: S.crystal.maxHp ? S.crystal.hp / S.crystal.maxHp : 1, kills: S.kills, lv: S.level, units: S.units.filter(u => !u.summon).length });
   S.waveHp = S.vigil ? Math.pow(1 + VIGIL.hpStep, S.wave - 1) : 1 + 0.095 * (S.wave - 1) + (S.endless ? 0.004 * (S.wave - 1) ** 2 : 0);
-  // 每波结束前的收尾：永恒壁垒回血、守望之战补给、商店
+  // 每波结束前的收尾：碑体强化回血、守望之战补给、商店
   if (cl("lg_aegis") && S.wave > 1) { S.crystal.hp = Math.min(S.crystal.maxHp, S.crystal.hp + S.crystal.maxHp * 0.08 * cl("lg_aegis")); addFx({ kind: "pillar", x: CRYSTAL.x, y: CRYSTAL.y, color: "#62b4ff", life: 0.8 }); }
   if (dk("ks_eco") && S.wave > 1 && (S.wave - 1) % 5 === 0) { S.pending++; S.dust += 30; addFx({ kind: "banner", text: "点金 · 多翻一张牌 · 星尘 +30", life: 1.8 }); }
   if (S.vigil && VIGIL.supplyAt.includes(S.wave)) { S.pending++; addFx({ kind: "banner", text: "补给到了 · 多翻一张牌", life: 1.8 }); }
@@ -3207,7 +3221,7 @@ const ULT_DEF = {
   roar: { name: "深渊咆哮", cast: 3.2, cd: 17, need: 0.055, color: "#ff5a4a", tip: "全队会被重创" },
   smash: { name: "碎碑打击", cast: 3.6, cd: 20, need: 0.05, color: "#ffb040", tip: "晨星碑直接掉 9% 生命" },
   call: { name: "深渊召集", cast: 2.8, cd: 16, need: 0.042, color: "#b070ff", tip: "会召来一大群小怪" },
-  zero: { name: "绝对零度", cast: 3.0, cd: 16, need: 0.05, color: "#8fe0f0", tip: "全队会被冻住 2.5 秒" },
+  zero: { name: "冰霜新星·进化", cast: 3.0, cd: 16, need: 0.05, color: "#8fe0f0", tip: "全队会被冻住 2.5 秒" },
   mend: { name: "虚空回流", cast: 2.6, cd: 15, need: 0.035, color: "#7ee89c", tip: "首领会回满一大截血" },
   nova: { name: "星海坍缩", cast: 3.8, cd: 18, need: 0.06, color: "#c860ff", tip: "全场毁灭性爆炸" },
 };
@@ -3232,7 +3246,7 @@ function breakCast(e, why) {
   e.cast = null; e.brokenT = 6; e.stunT = Math.max(e.stunT, 1.2); e.ultCd = U.cd * 0.75;
   S.slowmo = 0.45; S.shake = 0.6;
   S.dust += 25; S.star = Math.min(ULT.max, S.star + 1);
-  addFx({ kind: "banner", text: `打断！${e.d.name} 破防了`, life: 1.8 });
+  addFx({ kind: "banner", text: `已打断：${e.d.name} 破防`, life: 1.8 });
   addFx({ kind: "text", x: e.x, y: e.y - 1.1, text: "破防 · 星尘 +25", color: "#ffd860", life: 1.4, big: true });
   addFx({ kind: "boom", x: e.x, y: e.y, r: 1.6, color: "#ffe38a", life: 0.5 });
   addFx({ kind: "flash", life: 0.3, color: "#ffffff" });
@@ -3244,7 +3258,7 @@ function breakCast(e, why) {
 }
 function fireUlt(e, U) {
   const k = ULT_OF[e.type], atk = eAtk(e);
-  addFx({ kind: "banner", text: `${U.name}！`, life: 1.5, danger: true });
+  addFx({ kind: "banner", text: U.name, life: 1.5, danger: true });
   S.shake = 0.7; S.hitFlash = 0.6;
   if (k === "roar" || k === "nova") {
     const mult = k === "nova" ? 2.2 : 1.8;
@@ -3517,7 +3531,7 @@ const EVENTS = [
     opts: [
       { name: "观测敌人", desc: "接下来 4 波敌人移动速度 −20%，且受到的伤害 +10%", on: () => { S.slowWaves = 4; S.weakWaves = 4; } },
       { name: "观测自己", desc: "全队技力回复 +45%，出场立刻攒满一半技力", on: () => { buffAll({ sp: 1.45 }); for (const u of S.units) if (!u.summon) u.sp = Math.max(u.sp, u.def.sp * 0.5); } },
-      { name: "观测星辰", desc: "晨星之力立刻充满，之后充能 +30%", on: () => { S.star = ULT.max; S.ultK = (S.ultK || 1) * 1.3; } },
+      { name: "观测星辰", desc: "大招立刻充满，之后充能 +30%", on: () => { S.star = ULT.max; S.ultK = (S.ultK || 1) * 1.3; } },
     ] },
   { id: "drill", name: "临时训练场", text: "半个下午的空档，够练一件事。",
     opts: [
@@ -3649,7 +3663,7 @@ function riftRaid() {
     spawnAt(type, p.x, p.y, true).hitT = 0.2;
   }
   S.riftDust = 150;
-  addFx({ kind: "banner", text: "裂缝里冲出了精英！", life: 2, danger: true });
+  addFx({ kind: "banner", text: "裂缝里冲出一只精英", life: 2, danger: true });
 }
 
 // ---------- 流程 ----------
@@ -3699,7 +3713,7 @@ const AFFIX = [
   { id: "splitting", name: "分裂", desc: "死的时候裂成两只小怪", color: "#58b84a", tip: "留着范围伤害，裂出来的小怪血量只有四分之一。" },
   { id: "harden", name: "钢化", desc: "受到的物理伤害 −25%", color: "#c8ccd4", tip: "换法术或技能伤害，物理平 A 只有四分之三效果。" },
   { id: "warp", name: "扭曲", desc: "用法术攻击它会反弹 15% 伤害给攻击者", color: "#c890ff", tip: "它的反弹只针对法术攻击，改用物理输出。" },
-  { id: "venom", name: "剧毒", desc: "攻击附带中毒，持续掉血", color: "#9ae040", tip: "带上圣光或战地医疗，被打中后会持续掉血。" },
+  { id: "venom", name: "剧毒", desc: "攻击附带中毒，持续掉血", color: "#9ae040", tip: "带上圣光或持续回血，被打中后会持续掉血。" },
 ];
 const AFFIX_BY = Object.fromEntries(AFFIX.map(a => [a.id, a]));
 const hasAfx = (e, id) => !!(e.afx && e.afx.includes(id));
@@ -3786,31 +3800,35 @@ function drawAfxPips(e, fx, top) {
 // ================= 战斗：伤害、出手、技能、每一步 =================
 // 画质档位：粒子数量倍率 k、同屏特效上限 cap、抖屏强度 shake、背景飘落物 amb。-1 = 自动（手机用中，电脑用高，再按实际帧率动态调）
 // lit：发光、暗角、地面痕迹、光斑这类光影效果（低档关掉，保持轻量）
-const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true, lit: true }];
+const GFX_LV = [{ name: "低", k: 0.3, cap: 160, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.5, cap: 280, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 560, shake: 1, amb: true, lit: true }];
 // 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
 const OPT_KEY = "chenxing-td-opts";
-const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, fps: !!v.fps, big: v.big !== false, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, fps: false, big: true, sp2: 0, ct: [] }; } })();
+// 触屏设备（手机/平板）默认开「省电」：30 帧 + 文字层降分辨率，发热和耗电都小得多。旧存档里存的 eco 是旧默认值，ecoV 不是 2 的一律按新默认重来一次
+const TOUCH = (() => { try { return matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0; } catch (e) { return false; } })();
+const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: v.ecoV === 2 ? !!v.eco : TOUCH, ecoV: 2, calm: !!v.calm, pix: !!v.pix, fps: !!v.fps, big: v.big !== false, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: TOUCH, ecoV: 2, calm: false, pix: false, fps: false, big: true, sp2: 0, ct: [] }; } })();
 function setOpt(k, v) { OPT[k] = typeof v === "number" || Array.isArray(v) ? v : !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
   gfxSel = sel == null ? -1 : sel;
   if (gfxSel >= 0) { GFX = GFX_LV[gfxSel]; return; }
-  if (autoIdx == null) autoIdx = typeof isPhone === "function" && isPhone() ? 1 : 2;
+  if (autoIdx == null) autoIdx = TOUCH || (typeof isPhone === "function" && isPhone()) ? 1 : 2;
   GFX = GFX_LV[autoIdx];
 }
 // 自动档位不是选完就定死：帧率持续偏低就自动降一档，回稳一阵子再谨慎升回去，别的画质选项不受影响
 let fpsEma = null, gfxAdaptCd = 2;
-function adaptGfx(dt) {
-  if (gfxSel >= 0 || !dt) return;
-  const fps = 1 / Math.max(dt, 1e-3);
-  fpsEma = fpsEma == null ? fps : fpsEma * 0.9 + fps * 0.1;
+function adaptGfx(dt, target) {
+  if (gfxSel >= 0 || !dt || target < 20) return;   // 菜单/暂停这类低帧率时段不参与判断
+  const rel = (1 / Math.max(dt, 1e-3)) / target;   // 实际帧率 / 目标帧率：省电模式 30 帧封顶时不能被误判成「卡」
+  fpsEma = fpsEma == null ? rel : fpsEma * 0.9 + rel * 0.1;
   gfxAdaptCd -= dt;
   if (gfxAdaptCd > 0) return;
-  // 预测式降档：场上怪多 / 特效多的时候（大波、首领战）门槛抬高到 50 帧，不用等真的卡了才降；这种时候也不急着升回去
+  // 预测式降档：场上怪多 / 特效多的时候（大波、首领战）门槛抬高，不用等真的卡了才降；这种时候也不急着升回去
   const heavy = !!S && (S.enemies.length > 36 || S.fx.length > GFX.cap * 0.6);
-  if (fpsEma < (heavy ? 50 : 42) && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
-  else if (fpsEma > 56 && !heavy && autoIdx < GFX_LV.length - 1) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
+  if (fpsEma < (heavy ? 0.83 : 0.7) && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
+  else if (fpsEma > 0.93 && !heavy && autoIdx < autoMax() && TOUCH === false) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
 }
+// 触屏设备自动档最高只到「中」（高档在手机上几乎看不出区别，却更烫）
+const autoMax = () => (TOUCH ? 1 : GFX_LV.length - 1);
 // 特效满了就先丢掉装饰性的（粒子、伤害数字），横幅、演出、环这类关键反馈照常加
 const fxCheap = f => f.kind === "parts" || (f.kind === "text" && !f.big);
 function addFx(f) { f.t = 0; if (S.fx.length >= GFX.cap && fxCheap(f)) return; S.fx.push(f); if (f.kind === "boom" && f.r >= 0.9 && GFX.lit) stampDecal(f.x, f.y, f.r, f.color); }
@@ -3861,7 +3879,7 @@ function addNum(x, y, v, color, big, key, maxHp) {
 function killEnemy(e, src) {
   e.dead = true; S.kills++;
   S.foeKill[e.type] = (S.foeKill[e.type] || 0) + 1;
-  if (e.elite || isBoss(e)) { S.eliteKills = (S.eliteKills || 0) + 1; if (cl("lg_hunt")) { S.huntT = 12; addFx({ kind: "text", x: e.x, y: e.y - 1, text: "猎手之誓 · 攻击 +8%", color: "#ffd860", life: 1.1, big: true }); } }
+  if (e.elite || isBoss(e)) { S.eliteKills = (S.eliteKills || 0) + 1; if (cl("lg_hunt")) { S.huntT = 12; addFx({ kind: "text", x: e.x, y: e.y - 1, text: "猎杀连击 · 攻击 +8%", color: "#ffd860", life: 1.1, big: true }); } }
   if (e === S.focus) S.focusKills = (S.focusKills || 0) + 1;
   addStat(src, "kills", 1);
   if (e.stolen) { const back = Math.round(e.stolen * 1.5); S.dust += back; addFx({ kind: "text", x: e.x, y: e.y - 0.8, text: "+" + back + " 星尘（追回）", color: "#ffd860", life: 1.2, big: true }); }
@@ -3880,11 +3898,11 @@ function killEnemy(e, src) {
   if (e.type === "treasure") {
     S.pending++; S.chest++; S.dust += 30;
     S.events.push({ type: "achv", id: "treasure" });
-    addFx({ kind: "banner", text: "宝箱打爆了！多翻一张牌 +30 星尘", life: 2 });
+    addFx({ kind: "banner", text: "宝箱打开：多翻一张牌，+30 星尘", life: 2 });
     for (let i = 0; i < 4; i++) addFx({ kind: "pillar", x: e.x + (i - 1.5) * 0.3, y: e.y, color: "#ffd860", life: 0.8 });
     burst(e.x, e.y, "#ffe040", 40, 3.4, 1, 0.09); S.shake = 0.4;
   }
-  // 传说卡「天罚」
+  // 传说卡「击杀落光」
   if (cl("lg_judge") && src && src.def && roll("fight") < 0.2 * cl("lg_judge")) {
     const t = S.enemies.filter(o => hittable(o) && o !== e).sort((a, b) => dist(a, e) - dist(b, e))[0];
     if (t) {
@@ -3906,7 +3924,7 @@ function killEnemy(e, src) {
   if ((e.elite || isBoss(e)) && S.slowCd <= 0) { S.slowmo = Math.max(S.slowmo, isBoss(e) ? 0.9 : 0.22); S.slowCd = 1.2; }
   if (isBoss(e)) { S.shake = 0.6; bossFanfare(e, "death"); if (S.boss === e) S.boss = null; if (e.type === "boss") S.events.push({ type: "achv", id: "boss" }); }
   if (e.d.split) for (let i = 0; i < e.d.split; i++) { const s = spawnNear("slime", e, false, true); s.stop = 0.2; s.hitT = 0.1; }
-  // 殉爆
+  // 死亡爆炸
   if (cl("boom") && roll("fight") < 0.18 * cl("boom") * (syn("bloodlust") ? 1.5 : 1)) {
     const dmg = 500 * cl("boom") * powerK() * (syn("bloodlust") ? (syn2("bloodlust") ? 1.8 : 1.5) : 1);
     addFx({ kind: "boom", x: e.x, y: e.y, r: 1.3, color: "#ff8a3a", life: 0.45 });
@@ -4301,7 +4319,7 @@ function summonGolem(u) {
   addFx({ kind: "pillar", x: g.x, y: g.y, color: "#7af0e0", life: 0.8 });
   addFx({ kind: "ring", x: g.x, y: g.y, color: "#b8845a", life: 0.6, r0: 0.2, r1: 1.2 });
   burst(g.x, g.y + 0.2, "#b8a890", 20, 2.2, 0.7, 0.07);
-  addFx({ kind: "text", x: g.x, y: g.y - 0.7, text: "咚咚！", color: "#7af0e0", life: 1.1, big: true });
+  addFx({ kind: "text", x: g.x, y: g.y - 0.7, text: "咚咚", color: "#7af0e0", life: 1.1, big: true });
   S.shake = Math.max(S.shake, 0.15);
   if (hasTal(u, "summoner")) for (const e of S.enemies) if (hittable(e) && !e.d.unstoppable && dist(e, g) <= 1.4) e.stunT = Math.max(e.stunT, 2);
   return true;
@@ -4719,7 +4737,7 @@ function step(dt) {
     // 大波预警：潮汐 / 首领 / 精英波到来前 3 秒弹一次全屏横幅（画面上的红边和传送门脉动在 drawWavePreview 里）
     if (S.nextWaveIn <= 3 && S.warnWave !== S.wave) {
       S.warnWave = S.wave;
-      const info = nextWaveInfo(), txt = info && { boss: "首领将至！", tide: "潮汐来袭 · 敌人数量大增", elite: "精英来袭！" }[info.kind];
+      const info = nextWaveInfo(), txt = info && { boss: "首领将至", tide: "潮汐来袭，敌人数量大增", elite: "精英来袭" }[info.kind];
       if (txt) addFx({ kind: "banner", text: txt, life: 2.2, danger: true });
     }
     if (S.nextWaveIn <= 0) {
@@ -5086,7 +5104,7 @@ function resize() {
   document.body.style.setProperty("--fw", Math.floor(PW * k) + "px");   // 横屏全屏时左右黑边的宽度靠它算（羁绊看板）
   // 竖屏时提示（新敌人、遗物……）弹在按钮区正上方，盖住的是信息区最下面的卡牌行，不挡战场和按钮
   if (port) { const hl = document.querySelector(ROT ? ".pinfo" : ".hud-l"); document.body.style.setProperty("--toast-bottom", Math.round(window.innerHeight - (hl ? hl.getBoundingClientRect().top : window.innerHeight * 0.6) + 6) + "px"); }
-  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  DPR = Math.min(window.devicePixelRatio || 1, OPT.eco ? 1.5 : 2);   // 文字层是整屏大小的画布，省电模式下降到 1.5 倍
   const tw = Math.round(PW * k * DPR), th_ = Math.round(PHt * k * DPR);
   if (tx.width !== tw) tx.width = tw; if (tx.height !== th_) tx.height = th_;   // 没变就别动：给画布赋宽高会清空并重新分配，iOS 上反复分配容易黑屏
   if (S && mapFor !== mapKey()) { drawMap(); mapFor = mapKey(); }
@@ -5729,105 +5747,128 @@ function drawAmbientParticles(now) {
 }
 
 // ---------- 像素角色：1 倍画好后用 Scale2x 放大 ----------
-const HEAD = [
-  "....KKKKKK....", "..KKHHHHHHKK..", ".KHHHLLHHHHHK.", ".KHHLLHHHHHHK.", "KHHHHHHHHHHHHK", "KHHHHHHHHHHHHK", "KHHSHHSSHHSHHK",
-  "KHSSSSSSSSSSHK", "KHSKKSSSSKKSHK", "KhSEWSSSSEWShK", "KhSEeSSSSEeShK", ".KSMSSSmSSMSK.", "..KKSSSSSSKK..", "....KKKKKK....",
-];
-const BASE_PAL = { K: OUT, S: "#ffdcc4", s: "#f0b898", W: "#ffffff", e: OUT, M: "#f49090", m: "#c05050" };
+// 魔兽风格：头小、肩宽、重甲大肩甲（头 10 : 身体 10 : 腿 7），不再是大头 Q 版。
+// 角色 = 头 + 身体 + 腿 + 披风/背饰/头饰。头、身体、饰品用 mk() 按矩形一层层涂出来，最后自动描黑边（空位旁边有颜色就变黑线），
+// 所以每个形状要离画布边缘留 1 格。调色盘字母：H/h/L 头发(主/暗/亮) S/s 皮肤(主/暗) E 眼睛 q 嘴 M/m/l 肩甲金属(主/暗/亮)
+// A/a 胸甲或衣服(主/暗) B 衬布 Y 镶边 P/p 长袍(主/暗) X/c 兜帽(主/暗) G 护目镜
+function mk(w, h, ops) {
+  const g = Array.from({ length: h }, () => Array(w).fill("."));
+  for (const [c, x, y, ww, hh] of ops) for (let j = y; j < y + (hh || 1); j++) for (let i = x; i < x + (ww || 1); i++) if (j >= 0 && j < h && i >= 0 && i < w) g[j][i] = c;
+  const o = g.map(r => r.slice());
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (g[j][i] === ".") {
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const a = g[j + dy] && g[j + dy][i + dx]; if (a && a !== ".") { o[j][i] = "K"; break; } }
+  }
+  return o.map(r => r.join(""));
+}
+const HW = 11, HH = 10, BW = 17, BH = 10;   // 头、身体画布大小
+// 脸的位置都一样：眼睛在 (3,5) 和 (7,5)，受击时在这里画眯眼
+const FACE_EYES = [[3, 5], [7, 5]];
+const HEADS = {
+  // 女性长发（发型靠 hairBack 往肩上垂）
+  hair: mk(HW, HH, [["H", 1, 1, 9, 3], ["H", 1, 4, 1, 5], ["H", 9, 4, 1, 5], [".", 1, 1], [".", 9, 1], ["L", 3, 1, 3, 1], ["S", 2, 4, 7, 4], ["S", 3, 8, 5, 1], ["h", 1, 8], ["h", 9, 8], ["h", 3, 4], ["h", 7, 4],
+    ["E", 3, 5], ["E", 7, 5], ["s", 5, 6], ["q", 5, 7], ["s", 2, 7], ["s", 8, 7]]),
+  // 敞脸头盔
+  helm: mk(HW, HH, [["T", 1, 1, 9, 4], ["T", 1, 5, 2, 4], ["T", 8, 5, 2, 4], [".", 1, 1], [".", 9, 1], ["u", 3, 1, 3, 1], ["u", 2, 2], ["t", 2, 4, 7, 1], ["S", 3, 5, 5, 3], ["S", 4, 8, 3, 1], ["t", 5, 5, 1, 2],
+    ["E", 3, 5], ["E", 7, 5], ["q", 5, 7], ["t", 2, 8], ["t", 8, 8]]),
+  // 兜帽（露出脸）
+  hood: mk(HW, HH, [["X", 1, 1, 9, 8], [".", 1, 1], [".", 9, 1], ["c", 3, 3, 5, 1], ["c", 2, 4, 1, 4], ["c", 8, 4, 1, 4], ["S", 3, 4, 5, 4], ["E", 3, 5], ["E", 7, 5], ["q", 5, 7], ["X", 4, 8, 3, 1], ["c", 1, 8, 9, 1], ["u", 3, 1, 3, 1]]),
+  // 兜帽 + 面罩（刺客）
+  mask: mk(HW, HH, [["X", 1, 1, 9, 8], [".", 1, 1], [".", 9, 1], ["c", 3, 3, 5, 1], ["c", 2, 4, 1, 4], ["c", 8, 4, 1, 4], ["S", 3, 4, 5, 2], ["E", 3, 5], ["E", 7, 5], ["c", 3, 6, 5, 3], ["X", 4, 7, 3, 1], ["u", 3, 1, 3, 1]]),
+};
+const BODIES = {
+  plate: mk(BW, BH, [["M", 1, 1, 5, 3], ["M", 11, 1, 5, 3], [".", 1, 1], [".", 15, 1], ["l", 2, 1, 2, 1], ["m", 1, 3, 5, 1], ["m", 11, 3, 5, 1], ["A", 6, 1, 5, 2], ["M", 2, 4, 2, 4], ["m", 2, 7, 2, 1],
+    ["A", 4, 3, 9, 5], ["a", 11, 3, 2, 5], ["l", 5, 3, 1, 3], ["Y", 8, 3, 1, 3], ["Y", 7, 4, 3, 1], ["Y", 4, 6, 9, 1], ["B", 6, 7, 5, 3], ["Y", 8, 8, 1, 2]]),
+  leather: mk(BW, BH, [["M", 2, 1, 4, 3], ["M", 11, 1, 4, 3], [".", 2, 1], [".", 14, 1], ["l", 3, 1, 2, 1], ["B", 6, 1, 5, 2], ["A", 2, 4, 3, 4], ["a", 2, 7, 3, 1],
+    ["A", 5, 2, 7, 6], ["a", 11, 2, 1, 6], ["l", 5, 2, 1, 4], ["B", 5, 4, 7, 1], ["Y", 5, 6, 7, 1], ["B", 6, 7, 5, 3], ["a", 8, 7, 1, 3]]),
+  robe: mk(BW, BH, [["P", 2, 1, 13, 3], [".", 2, 1], [".", 14, 1], ["Y", 6, 1, 5, 1], ["P", 4, 3, 9, 7], ["P", 3, 7, 11, 3], ["p", 11, 3, 2, 7], ["p", 12, 7, 2, 3], ["l", 4, 2, 3, 1], ["Y", 4, 6, 9, 1], ["p", 8, 4, 1, 6], ["Y", 3, 9, 11, 1],
+    ["p", 2, 3, 2, 5], ["P", 2, 4, 2, 4]]),
+  mech: mk(BW, BH, [["M", 1, 1, 5, 4], ["M", 11, 1, 5, 4], [".", 1, 1], [".", 15, 1], ["l", 2, 1, 2, 1], ["m", 1, 4, 5, 1], ["m", 11, 4, 5, 1], ["Y", 3, 2, 1, 1], ["Y", 13, 2, 1, 1], ["A", 6, 1, 5, 2],
+    ["A", 4, 3, 9, 5], ["a", 4, 3, 1, 5], ["a", 11, 3, 2, 5], ["E", 7, 4, 3, 2], ["Y", 7, 6, 3, 1], ["m", 5, 7, 7, 1], ["B", 6, 8, 5, 2], ["M", 2, 5, 2, 3]]),
+};
+const BODY_LEGS = { plate: 7, leather: 7, robe: 2, mech: 7 };
+// 头饰 / 背饰（相对头的左上角摆放）
+const mkItem = (w, h, ops) => mk(w, h, ops);
+const IT = {
+  wizHat: mkItem(17, 12, [["P", 1, 8, 15, 2], ["P", 4, 6, 9, 2], ["P", 5, 4, 7, 2], ["P", 6, 2, 5, 2], ["P", 8, 1, 3, 1], ["Y", 4, 7, 9, 1], ["p", 1, 9, 15, 1], ["l", 5, 5, 2, 1]]),
+  plumeR: mkItem(7, 8, [["R", 2, 1, 3, 5], ["R", 1, 3, 1, 3], ["R", 5, 2, 1, 4], ["r", 3, 1, 1, 2]]),
+  wings: mkItem(15, 7, [["l", 1, 1, 3, 2], ["l", 2, 3, 3, 1], ["l", 11, 1, 3, 2], ["l", 10, 3, 3, 1], ["Y", 4, 4, 1, 1], ["Y", 10, 4, 1, 1], ["m", 3, 2, 1, 1], ["m", 11, 2, 1, 1]]),
+  goggles: mkItem(11, 3, [["G", 1, 0, 9, 1], ["l", 2, 1, 2, 2], ["l", 7, 1, 2, 2], ["m", 4, 1, 3, 1]]),
+  featherCap: mkItem(15, 10, [["X", 1, 5, 11, 3], ["c", 1, 7, 11, 1], ["X", 3, 3, 7, 3], ["F", 9, 0, 2, 6], ["F", 11, 1, 2, 3], ["l", 9, 1, 1, 3]]),
+  crown: mkItem(11, 6, [["l", 1, 3, 9, 2], ["l", 1, 1, 1, 2], ["l", 5, 0, 1, 3], ["l", 9, 1, 1, 2], ["Y", 3, 4, 1, 1], ["Y", 7, 4, 1, 1]]),
+  starTiara: mkItem(11, 7, [["Y", 5, 0, 1, 3], ["Y", 4, 1, 3, 1], ["Y", 3, 3, 5, 1], ["E", 5, 1, 1, 1]]),
+  hourglass: mkItem(9, 9, [["Y", 1, 1, 7, 1], ["l", 2, 2, 5, 2], ["Y", 4, 4, 1, 1], ["E", 4, 5, 1, 1], ["l", 3, 6, 3, 1], ["Y", 1, 8, 7, 1], ["E", 2, 7, 5, 1]]),
+  horns: mkItem(15, 7, [["l", 1, 0, 2, 3], ["l", 2, 3, 2, 2], ["l", 12, 0, 2, 3], ["l", 11, 3, 2, 2]]),
+  bandana: mkItem(11, 3, [["Y", 1, 0, 9, 1], ["Y", 9, 1, 2, 2]]),
+  helmSpike: mkItem(5, 6, [["l", 2, 0, 1, 4], ["m", 1, 3, 3, 1]]),
+};
+const BACKS = {
+  capeRed: mk(15, 14, [["R", 1, 0, 13, 13], ["r", 1, 9, 13, 4], ["Y", 1, 0, 13, 1], [".", 1, 12, 2], [".", 12, 12, 2]]),
+  quiver: mk(5, 12, [["N", 1, 1, 3, 9], ["Y", 1, 1, 3, 1], ["W", 1, 0, 1, 2], ["W", 3, 0, 1, 2], ["n", 1, 8, 3, 2]]),
+  banner: mk(9, 20, [["N", 1, 0, 1, 19], ["R", 2, 1, 6, 8], ["r", 2, 7, 6, 2], ["Y", 4, 3, 2, 3], [".", 6, 9, 2, 1], ["l", 1, 0, 1, 1]]),
+  tanks: mk(15, 10, [["G", 1, 1, 4, 7], ["G", 10, 1, 4, 7], ["l", 2, 2, 1, 3], ["l", 11, 2, 1, 3], ["m", 1, 4, 4, 1], ["m", 10, 4, 4, 1], ["Y", 5, 3, 5, 1]]),
+  cannons: mk(21, 10, [["M", 1, 2, 4, 6], ["M", 16, 2, 4, 6], ["m", 1, 4, 4, 1], ["m", 16, 4, 4, 1], ["Y", 2, 1, 2, 1], ["Y", 17, 1, 2, 1], ["E", 2, 6, 2, 1], ["E", 17, 6, 2, 1]]),
+  totem: mk(7, 12, [["N", 2, 1, 3, 10], ["E", 3, 2, 1, 1], ["Y", 2, 4, 3, 1], ["E", 3, 6, 1, 1], ["Y", 1, 8, 5, 1]]),
+};
+const BASE_PAL = { K: OUT, S: "#ffdcc4", s: "#f0b898", E: "#241830", q: "#c06060", W: "#f0ece0", N: "#8a5a30", n: "#5a3a1a", Y: "#e8c050", l: "#ffffff", u: "#ffffff", G: "#6a7078", T: "#c8d0dc", t: "#8a94a8", R: "#c83a4a", r: "#8a2030", F: "#f07aa8" };
+const SHIELD_K = mk(10, 13, [["Y", 1, 1, 8, 8], ["Y", 2, 9, 6, 1], ["Y", 3, 10, 4, 1], ["A", 2, 2, 6, 6], ["A", 3, 8, 4, 1], ["A", 4, 9, 2, 1], ["Y", 4, 3, 2, 6], ["Y", 3, 5, 4, 1], ["a", 7, 2, 1, 6]]);
+const SHIELD_C = mk(9, 9, [["M", 1, 1, 7, 7], [".", 1, 1], [".", 7, 1], [".", 1, 7], [".", 7, 7], ["A", 2, 2, 5, 5], ["Y", 4, 3, 1, 3], ["Y", 3, 4, 3, 1]]);
 const HERO = {
-  knight: { pal: { H: "#f4d070", h: "#c89a38", L: "#fff0b0", E: "#3a70d8", A: "#d8e0ec", a: "#8a98b0", B: "#3a5cc0", Y: "#f0c040", R: "#3a60c8" },
-    body: [".KKKKKKKK.", "KAAKBBKAAK", "KAaKBBKaAK", ".KAKBYKAK.", ".KAKBBKAK.", ".KaKBBKaK.", ".KKKKKKKK."],
-    back: { x: -3, y: 1, rows: ["..RR.", ".KRRK", "KHHHK", "KHHK.", "KhHK.", "KhHK.", ".KhK.", ".KhK.", "..K.."] },
-    sleeve: "#d8e0ec", boot: "#b8c0d0", weapon: "sword", blade: 8 },
-  sword: { pal: { H: "#d83848", h: "#8a1c2c", L: "#ff8090", E: "#e89830", D: "#4a3038", d: "#2e1e24", R: "#d83040", r: "#8a2030", Y: "#f0c040" },
-    body: [".KKKKKKKK.", "KDDDRRDDDK", "KDdDRRDdDK", ".KDDDDDDK.", ".KRRRRRRK.", "KRRrRRrRRK", "KKKKKKKKKK"],
-    back: { x: -4, y: -1, rows: ["...KKK.", "..KHHHK", ".KHHHK.", ".KHHK..", "KHHHK..", "KHHK...", "KHhK...", "KHhK...", "KhhK...", ".KhK...", ".KhK...", ".KhK...", "..K...."] },
-    sleeve: "#4a3038", boot: "#3a2a2a", weapon: "sword", blade: 11 },
-  assassin: { pal: { H: "#2e4450", h: "#1a2830", L: "#5a7a88", E: "#40e0c0", D: "#2e3440", d: "#1c2028", T: "#4fc0b0", t: "#2f8078" },
-    body: [".KKKKKKKK.", "KTTTTTTTTK", "KDTtTTtTDK", ".KDDDDDDK.", ".KDdDDdDK.", ".KDDDDDDK.", ".KKKKKKKK."],
-    back: { x: -3, y: 11, rows: ["KK...", "KTK..", "KTTK.", ".KTTK", "..KK."] },
-    top: { x: 2, y: 11, rows: ["KTTTTTTTTK"] },
-    sleeve: "#2e3440", boot: "#1c2028", weapon: "dagger" },
-  archer: { pal: { H: "#f6e6a8", h: "#c8b070", L: "#fffbe0", E: "#38b060", G: "#4fa050", g: "#2f6a38", N: "#8a5a30", W: "#f0ece0" },
-    body: [".KKKKKKKK.", "KGGKWWKGGK", "KGgGWWGgGK", ".KGGGGGGK.", ".KNNNNNNK.", ".KGgGGgGK.", ".KKKKKKKK."],
-    hairBack: 10, ears: true, pin: "#6fd07a", sleeve: "#4fa050", boot: "#6a4428", weapon: "bow" },
-  mage: { pal: { H: "#9058c8", h: "#5a3088", L: "#c090f0", E: "#c060f0", P: "#7a4cc0", p: "#4a2c80", Y: "#f0c040" },
-    body: ["..KKKKKKKK..", ".KPPPYYPPPK.", ".KPpPPPPpPK.", ".KPPPYPPPPK.", "KPPPPPPPPPPK", "KPpPPYPPPpPK", "KYYYYYYYYYYK", ".KKKKKKKKKK."],
-    hairBack: 6, robe: true,
-    top: { x: -3, y: -7, rows: ["............KK......", "...........KPPK.....", "..........KPPK......", ".........KPPPK......", "........KPPPPK......",
-      ".......KPPPPPK......", "......KPPPPPPK......", "....KKYYYYYYYYKK....", "..KKPPPPPPPPPPPPKK..", "KKPPPPPPPPPPPPPPPPKK", "KppppppppppppppppppK", ".KKKKKKKKKKKKKKKKKK."] },
-    sleeve: "#7a4cc0", boot: "#4a2c70", weapon: "staff", orb: "mage" },
-  gunner: { pal: { H: "#e8783a", h: "#a84818", L: "#ffb080", E: "#3a8ad8", O: "#8a5a30", o: "#5a3a1a", A: "#e08a3a", G: "#3a3a44", g: "#8ad0f0", Y: "#f0c040" },
-    body: [".KKKKKKKK.", "KOOKAAKOOK", "KOoOAAOoOK", ".KOOYYOOK.", ".KAAAAAAK.", ".KOoOOoOK.", ".KKKKKKKK."],
-    back: { x: -2, y: 7, rows: ["KHK", "KhK", "KHK", "KhK", ".K."] }, backR: { x: 13, y: 7, rows: ["KHK", "KhK", "KHK", "KhK", ".K."] },
-    top: { x: 2, y: 4, rows: ["GGgGGGGgGG"] },
-    sleeve: "#8a5a30", boot: "#5a3a1a", weapon: "cannon" },
-  priest: { pal: { H: "#c8905a", h: "#8a5a30", L: "#e8b888", E: "#d8a030", V: "#f8f4ec", v: "#d0c8b8", Y: "#e8b830" },
-    body: ["..KKKKKKKK..", ".KVVVYYVVVK.", ".KVvVYYVvVK.", ".KVVYYYYVVK.", "KVVVVYYVVVVK", "KVvVVYYVVvVK", "KYYYYYYYYYYK", ".KKKKKKKKKK."],
-    hairBack: 11, veilBack: true, robe: true,
-    top: { x: -1, y: -1, rows: ["....KKKKKKKK....", "..KKVVVVVVVVKK..", ".KVVVVVYVVVVVVK.", "KVVVVVYYYVVVVVVK", "KVVVVVVYVVVVVVVK", "KVYYYYYYYYYYYYVK",
-      "KVK..........KVK", "KVK..........KVK", "KVK..........KVK", "KVK..........KVK", "KVVK........KVVK", "KVVK........KVVK", ".KVVK......KVVK.", "..KK........KK.."] },
-    sleeve: "#f8f4ec", boot: "#f0ece0", weapon: "staff", orb: "priest" },
-  frost: { pal: { H: "#e8f4fc", h: "#a8c8dc", L: "#ffffff", E: "#40b8e8", I: "#9adcf6", i: "#4f98c8", V: "#ffffff", w: "#ffffff", C: "#80d8f8" },
-    body: ["..KKKKKKKK..", ".KVVVIIVVVK.", ".KIiIIIIiIK.", ".KIIIwwIIIK.", "KIIIIIIIIIIK", "KIiIIIIIIiIK", "KVVVVVVVVVVK", ".KKKKKKKKKK."],
-    hairBack: 11, ears: true, robe: true, top: { x: 3, y: -2, rows: ["..C..C..", ".CwCCwC.", "KCCCCCCK"] },
-    sleeve: "#9adcf6", boot: "#f0f8ff", weapon: "wand", orb: "frost" },
-  lancer: { pal: { H: "#3a4a88", h: "#232c5a", L: "#6a80c8", E: "#e8b030", S: "#f2caa6", s: "#dca482", A: "#e0c070", a: "#a88838", T: "#40a8a0", t: "#28706a", R: "#d83a4a" },
-    body: [".KKKKKKKK.", "KAAKTTKAAK", "KAaKTTKaAK", ".KTTRRTTK.", ".KAAAAAAK.", ".KTtTTtTK.", ".KKKKKKKK."],
-    back: { x: -3, y: 0, rows: [".KK..", "KHHK.", "KHHK.", "KHhK.", ".KhHK", ".KhHK", "..KhK", "..KhK", "...K."] },
-    top: { x: 0, y: -2, rows: ["KK..........KK", "KAK........KAK", ".KAK......KAK."] },
-    sleeve: "#40a8a0", boot: "#a88838", weapon: "lance" },
-  alchemist: { pal: { H: "#e87aa0", h: "#a84a70", L: "#ffb4cc", E: "#3ab870", C: "#8a5a3a", c: "#5a3a22", W: "#f0e8d8", w: "#c8bca8", G: "#60e080", P: "#b070f0", Y: "#e0b040", O: "#8ad8f0" },
-    body: [".KKKKKKKK.", "KCCKWWKCCK", "KCcKWWKcCK", ".KCYYYYCK.", ".KCGWWPCK.", ".KCWwwWCK.", ".KKKKKKKK."],
-    hairBack: 8, top: { x: 2, y: 3, rows: ["KKKKKKKKKK", "KOOKKKKOOK", ".KK....KK."] },
-    sleeve: "#8a5a3a", boot: "#5a3a22", weapon: "flask" },
-  bard: { pal: { H: "#a8603a", h: "#6a3a20", L: "#e0a070", E: "#4a8ae8", B: "#5a9ae0", b: "#3a6ab0", W: "#f8f4ec", Y: "#f0c040", F: "#f07aa8", f: "#b84a78" },
-    body: [".KKKKKKKK.", "KBBKWWKBBK", "KBbKWWKbBK", ".KBBYYBBK.", ".KWWWWWWK.", ".KBbBBbBK.", ".KKKKKKKK."],
-    hairBack: 7, top: { x: 1, y: -2, rows: ["..........FF..", "...KKKKKKKFfK.", "..KBBBBBBBBKF.", ".KBBBBBBBBBBK.", "..KKKKKKKKKK.."] },
-    sleeve: "#5a9ae0", boot: "#6a4428", weapon: "lute" },
-  summoner: { pal: { H: "#c0a8e8", h: "#8a70b8", L: "#ece0ff", E: "#e0a040", O: "#b8845a", o: "#7a5434", C: "#7af0e0", c: "#3ab0a8", W: "#f0e8d8", Y: "#e0c060" },
-    body: ["..KKKKKKKK..", ".KOOOCCOOOK.", ".KOoOOOOoOK.", ".KOOOYOOOOK.", "KOOOOOOOOOOK", "KOoOOYOOOoOK", "KWWWWWWWWWWK", ".KKKKKKKKKK."],
-    robe: true,
-    back: { x: -3, y: 6, rows: ["KK.", "KHK", "KHK", "KHK", "KhK", "KhK", ".K."] }, backR: { x: 14, y: 6, rows: [".KK", "KHK", "KHK", "KHK", "KhK", "KhK", ".K."] },
-    top: { x: 9, y: 0, rows: [".C.", "CcC", ".C."] },
-    sleeve: "#b8845a", boot: "#7a5434", weapon: "book" },
-  mech: { pal: { H: "#d8a020", h: "#a06a10", L: "#ffe060", E: "#ff8a30", M: "#8a8c9c", m: "#5a5c68", A: "#c8a030", a: "#8a6a10", R: "#ff5030", W: "#e8e8f0" },
-    body: [".KKKKKKKK.", "KMMKAAKMMK", "KMmKAAKmMK", ".KMAARAMK.", ".KAAAAAAK.", ".KMmMMmMK.", ".KKKKKKKK."],
-    back: { x: -3, y: 2, rows: ["KMK", "KmK", "KMK", "KRK", ".K."] }, backR: { x: 13, y: 2, rows: ["KMK", "KmK", "KMK", "KRK", ".K."] },
-    top: { x: 2, y: 3, rows: ["KMMMMMMMMK", "KLKKKKKKLK"] },
-    sleeve: "#8a8c9c", boot: "#5a5c68", weapon: "lance" },
-  star: { pal: { H: "#c8d0ff", h: "#8a92c8", L: "#ffffff", E: "#a0b8ff", P: "#3a4478", p: "#242c50", V: "#c890ff", Y: "#ffe060", W: "#e8ecff" },
-    body: ["..KKKKKKKK..", ".KPPPVVPPPK.", ".KPpPPPPpPK.", ".KPPPYPPPPK.", "KPPPPPPPPPPK", "KPpPPVPPPpPK", "KWWWWWWWWWWK", ".KKKKKKKKKK."],
-    hairBack: 12, robe: true, ears: true,
-    top: { x: 1, y: -4, rows: ["...V....V...", "..VEV..VEV..", "...V.KK.V...", "....KEEK....", "...KEVVEK...", "..KEVVVVEK..", "...KKKKKK..."] },
-    sleeve: "#3a4478", boot: "#242c50", weapon: "staff", orb: "star" },
-  chrono: { pal: { H: "#8ae8d8", h: "#4aa898", L: "#c8fff4", E: "#ffd040", P: "#2e6a70", p: "#1c4448", V: "#7ae0d0", Y: "#ffe060", W: "#e8fffa" },
-    body: ["..KKKKKKKK..", ".KPPPVVPPPK.", ".KPpPPPPpPK.", ".KPPPYPPPPK.", "KPPPPPPPPPPK", "KPpPPVPPPpPK", "KWWWWWWWWWWK", ".KKKKKKKKKK."],
-    hairBack: 9, robe: true, ears: true,
-    top: { x: 3, y: -3, rows: ["..Y..Y..", ".YVYYVY.", "KVVVVVVK"] },
-    sleeve: "#2e6a70", boot: "#1c4448", weapon: "staff", orb: "frost" },
-  marshal: { pal: { H: "#e8c070", h: "#a88838", L: "#fff0c0", E: "#c83a4a", A: "#e0d8c8", a: "#9a9284", B: "#b83a48", b: "#8a2a38", Y: "#ffe060", R: "#d8b040" },
-    body: [".KKKKKKKK.", "KAAKBBKAAK", "KAaKBBKaAK", ".KAKBYKAK.", ".KABBBBAK.", ".KaKBBKaK.", ".KKKKKKKK."],
-    back: { x: -5, y: -2, rows: ["KKKK.", "KBBBK", "KBYBK", "KBbBK", "KBBBK", ".KBK.", ".KBK.", ".KBK.", ".KBK.", "..K.."] },
-    top: { x: 2, y: 3, rows: ["KYYYYYYYYK"] },
-    sleeve: "#e0d8c8", boot: "#9a9284", weapon: "lance" },
-  counter: { pal: { H: "#7a4a30", h: "#4a2a18", L: "#b07a50", E: "#58c0b0", A: "#c89860", a: "#7a5a30", B: "#2a8a88", Y: "#ffd860", R: "#1a6a68" },
-    body: [".KKKKKKKK.", "KAAKBBKAAK", "KAaKBBKaAK", ".KAKBYKAK.", ".KABBBBAK.", ".KaKBBKaK.", ".KKKKKKKK."],
-    back: { x: -5, y: 1, rows: ["KKKKK", "KBBBK", "KBYBK", "KBBBK", "KBbBK", ".KBK.", "..K.."] },
-    sleeve: "#c89860", boot: "#7a5a30", weapon: "sword", blade: 7 },
-  hunter: { pal: { H: "#d8dce8", h: "#9a9eb0", L: "#ffffff", E: "#e04a4a", G: "#5a4a7a", g: "#3a2e56", N: "#8a5a30", W: "#e0d8f0" },
-    body: [".KKKKKKKK.", "KGGKWWKGGK", "KGgGWWGgGK", ".KGGGGGGK.", ".KNNNNNNK.", ".KGgGGgGK.", ".KKKKKKKK."],
-    hairBack: 10, pin: "#e04a4a", sleeve: "#5a4a7a", boot: "#3a2a1a", weapon: "bow" },
-  songstress: { pal: { H: "#58b8e8", h: "#2a78b0", L: "#c8f0ff", E: "#ffd040", P: "#2a6a9a", p: "#164868", V: "#7ae0f0", Y: "#ffe060", W: "#e8fbff" },
-    body: ["..KKKKKKKK..", ".KPPPVVPPPK.", ".KPpPPPPpPK.", ".KPPPYPPPPK.", "KPPPPPPPPPPK", "KPpPPVPPPpPK", "KWWWWWWWWWWK", ".KKKKKKKKKK."],
-    hairBack: 9, robe: true,
-    top: { x: 3, y: -3, rows: ["..Y..Y..", ".YVYYVY.", "KVVVVVVK"] },
-    sleeve: "#2a6a9a", boot: "#164868", weapon: "wand", orb: "frost" },
-  breaker: { pal: { H: "#e8e8f8", h: "#a8a8c0", L: "#ffffff", E: "#a0b0ff", D: "#3a3e5a", d: "#262a40", T: "#8a96e0", t: "#4a56a0" },
-    body: [".KKKKKKKK.", "KTTTTTTTTK", "KDTtTTtTDK", ".KDDDDDDK.", ".KDdDDdDK.", ".KDDDDDDK.", ".KKKKKKKK."],
-    back: { x: -3, y: 11, rows: ["KK...", "KTK..", "KTTK.", ".KTTK", "..KK."] },
-    top: { x: 2, y: 11, rows: ["KTTTTTTTTK"] },
-    sleeve: "#3a3e5a", boot: "#262a40", weapon: "dagger" },
+  knight: { head: "helm", body: "plate", hairBack: 7, legs: "#4a5a8a", boot: "#b8c0d0", sleeve: "#e8c050", weapon: "sword", blade: 9, shield: SHIELD_K,
+    back: [{ it: "capeRed", x: -2, y: 5 }],
+    pal: { H: "#f0c860", h: "#b88a30", L: "#fff0a0", T: "#d8e0ec", t: "#8a98b0", u: "#ffffff", M: "#e8c050", m: "#a8802a", l: "#fff4c0", A: "#3a5cc0", a: "#26408c", B: "#f0f0f8", Y: "#ffe070", R: "#3a5cc0", r: "#26408c" } },
+  sword: { head: "hair", body: "leather", hairBack: 6, legs: "#4a3038", boot: "#2a1c1c", sleeve: "#7a2a30", weapon: "sword", blade: 11,
+    top: [{ it: "bandana", x: 0, y: 2 }],
+    pal: { H: "#d83848", h: "#8a1c2c", L: "#ff8090", M: "#6a6a78", m: "#44444e", l: "#c0c0d0", A: "#8a2a34", a: "#5a1a22", B: "#4a3038", Y: "#d83040" } },
+  assassin: { head: "mask", body: "leather", legs: "#2e3440", boot: "#1c2028", sleeve: "#2e3440", weapon: "dagger",
+    pal: { X: "#2e4450", c: "#1a2830", u: "#5a7a88", M: "#2e4450", m: "#1a2830", l: "#5a7a88", A: "#2e3440", a: "#1c2028", B: "#2a8a7c", Y: "#4fc0b0", E: "#40e0c0" } },
+  lancer: { head: "helm", body: "plate", hairBack: 6, legs: "#2c6a66", boot: "#a88838", sleeve: "#2c7f7a", weapon: "lance",
+    top: [{ it: "wings", x: -2, y: 1 }], back: [{ it: "capeRed", x: -2, y: 5 }],
+    pal: { H: "#3a4a88", h: "#232c5a", L: "#6a80c8", T: "#e0c070", t: "#a88838", u: "#fff0b0", M: "#e0c070", m: "#a88838", l: "#fff0b0", A: "#2c7f7a", a: "#1c5450", B: "#3a4a88", Y: "#e8c050", R: "#3a4a88", r: "#232c5a" } },
+  archer: { head: "hair", body: "leather", hairBack: 9, ears: true, legs: "#5a6a38", boot: "#6a4428", sleeve: "#4fa050", weapon: "bow",
+    back: [{ it: "quiver", x: 9, y: 4 }],
+    pal: { H: "#f6e6a8", h: "#c8b070", L: "#fffbe0", M: "#6a4428", m: "#4a2c18", l: "#9a6a34", A: "#4fa050", a: "#2f6a38", B: "#8a5a30", Y: "#d8b050" } },
+  mage: { head: "hair", body: "robe", hairBack: 7, legs: "#4a2c70", boot: "#4a2c70", sleeve: "#7a4cc0", weapon: "staff", orb: "mage",
+    top: [{ it: "wizHat", x: -3, y: -6 }],
+    pal: { H: "#9058c8", h: "#5a3088", L: "#c090f0", P: "#7a4cc0", p: "#4a2c80", Y: "#f0c040", l: "#b090f0" } },
+  gunner: { head: "hair", body: "leather", hairBack: 5, legs: "#5a3a1a", boot: "#3a2410", sleeve: "#8a5a30", weapon: "cannon",
+    top: [{ it: "goggles", x: 0, y: 2 }],
+    pal: { H: "#e8783a", h: "#a84818", L: "#ffb080", M: "#8a5a30", m: "#5a3a1a", l: "#c8905a", A: "#e08a3a", a: "#a85a1a", B: "#5a3a1a", Y: "#f0c040", G: "#8ad0f0" } },
+  priest: { head: "hood", body: "robe", legs: "#d8d0c0", boot: "#d8d0c0", sleeve: "#f8f4ec", weapon: "staff", orb: "priest",
+    pal: { S: "#d8a070", s: "#a8703c", X: "#f8f4ec", c: "#d0c8b8", u: "#ffffff", P: "#f8f4ec", p: "#d0c8b8", Y: "#e8b830", l: "#ffffff", E: "#3a2418" } },
+  frost: { head: "hair", body: "robe", hairBack: 9, ears: true, legs: "#9adcf6", boot: "#f0f8ff", sleeve: "#9adcf6", weapon: "wand", orb: "frost",
+    top: [{ it: "crown", x: 0, y: -2 }],
+    pal: { S: "#dcefff", s: "#a8c8e8", H: "#e8f4fc", h: "#a8c8dc", L: "#ffffff", P: "#9adcf6", p: "#4f98c8", Y: "#ffffff", l: "#80d8f8", E: "#2a78b0" } },
+  alchemist: { head: "hair", body: "leather", hairBack: 6, legs: "#5a3a22", boot: "#3a2414", sleeve: "#8a5a3a", weapon: "flask",
+    top: [{ it: "goggles", x: 0, y: 2 }], back: [{ it: "tanks", x: -2, y: 7 }],
+    pal: { H: "#e87aa0", h: "#a84a70", L: "#ffb4cc", M: "#8a5a3a", m: "#5a3a22", l: "#c8905a", A: "#8a5a3a", a: "#5a3a22", B: "#f0e8d8", Y: "#e0b040", G: "#60e080" } },
+  bard: { head: "hair", body: "leather", hairBack: 5, legs: "#3a5a9a", boot: "#6a4428", sleeve: "#5a9ae0", weapon: "lute",
+    top: [{ it: "featherCap", x: -2, y: -3 }],
+    pal: { H: "#a8603a", h: "#6a3a20", L: "#e0a070", X: "#5a9ae0", c: "#3a6ab0", F: "#f07aa8", M: "#3a6ab0", m: "#26467a", l: "#8ac0f0", A: "#5a9ae0", a: "#3a6ab0", B: "#f8f4ec", Y: "#f0c040" } },
+  summoner: { head: "hood", body: "robe", legs: "#7a5434", boot: "#7a5434", sleeve: "#b8845a", weapon: "book",
+    back: [{ it: "totem", x: -6, y: 0 }],
+    pal: { X: "#b8845a", c: "#7a5434", u: "#e0b080", P: "#b8845a", p: "#7a5434", Y: "#7af0e0", l: "#e0b080", E: "#7af0e0", N: "#6a4428", n: "#3a2414" } },
+  mech: { head: "helm", body: "mech", legs: "#5a5c68", boot: "#3a3c48", sleeve: "#8a8c9c", weapon: "lance",
+    top: [{ it: "goggles", x: 0, y: 2 }], back: [{ it: "cannons", x: -5, y: 3 }],
+    pal: { T: "#8a8c9c", t: "#5a5c68", u: "#d8dae8", M: "#8a8c9c", m: "#5a5c68", l: "#d8dae8", A: "#c8a030", a: "#8a6a10", Y: "#e8c050", B: "#5a5c68", E: "#ff8a30", G: "#ff8a30" } },
+  star: { head: "hair", body: "robe", hairBack: 11, ears: true, legs: "#242c50", boot: "#242c50", sleeve: "#3a4478", weapon: "staff", orb: "star",
+    top: [{ it: "starTiara", x: 0, y: -4 }],
+    pal: { H: "#c8d0ff", h: "#8a92c8", L: "#ffffff", P: "#3a4478", p: "#242c50", Y: "#ffe060", l: "#8a92c8", E: "#6a78e0" } },
+  chrono: { head: "hair", body: "robe", hairBack: 8, ears: true, legs: "#1c4448", boot: "#1c4448", sleeve: "#2e6a70", weapon: "staff", orb: "frost",
+    top: [{ it: "hourglass", x: 1, y: -3 }],
+    pal: { H: "#8ae8d8", h: "#4aa898", L: "#c8fff4", P: "#2e6a70", p: "#1c4448", Y: "#ffd040", l: "#8ae8d8", E: "#ffd040" } },
+  marshal: { head: "helm", body: "plate", legs: "#6a2a34", boot: "#9a9284", sleeve: "#b83a48", weapon: "lance",
+    top: [{ it: "plumeR", x: 2, y: -5 }], back: [{ it: "banner", x: 12, y: -10 }],
+    pal: { T: "#e0d8c8", t: "#9a9284", u: "#ffffff", M: "#b83a48", m: "#8a2a38", l: "#e86a78", A: "#e0d8c8", a: "#9a9284", B: "#b83a48", Y: "#e8c050", R: "#c83a4a", r: "#8a2030", N: "#6a4428", E: "#4a2030" } },
+  counter: { head: "hair", body: "plate", hairBack: 5, legs: "#5a4224", boot: "#7a5a30", sleeve: "#c89860", weapon: "sword", blade: 8, shield: SHIELD_C,
+    pal: { S: "#b07a50", s: "#7a5030", H: "#5a3420", h: "#3a2010", L: "#9a6a44", M: "#c89860", m: "#7a5a30", l: "#f0d090", A: "#2a8a88", a: "#1a6a68", B: "#c89860", Y: "#ffd860", E: "#58c0b0" } },
+  hunter: { head: "hood", body: "leather", legs: "#3a2e56", boot: "#3a2a1a", sleeve: "#5a4a7a", weapon: "bow",
+    back: [{ it: "quiver", x: 9, y: 4 }],
+    pal: { X: "#5a4a7a", c: "#3a2e56", u: "#9a8ac0", M: "#3a2e56", m: "#241c3a", l: "#9a8ac0", A: "#5a4a7a", a: "#3a2e56", B: "#8a5a30", Y: "#e04a4a", E: "#e04a4a" } },
+  songstress: { head: "hair", body: "robe", hairBack: 9, legs: "#164868", boot: "#164868", sleeve: "#2a6a9a", weapon: "wand", orb: "frost",
+    top: [{ it: "crown", x: 0, y: -2 }],
+    pal: { H: "#58b8e8", h: "#2a78b0", L: "#c8f0ff", P: "#2a6a9a", p: "#164868", Y: "#e8fbff", l: "#c8f0ff", E: "#2a5a8a" } },
+  breaker: { head: "hair", body: "leather", hairBack: 6, legs: "#262a40", boot: "#262a40", sleeve: "#3a3e5a", weapon: "dagger",
+    pal: { H: "#e8e8f8", h: "#a8a8c0", L: "#ffffff", M: "#3a3e5a", m: "#262a40", l: "#8a96e0", A: "#3a3e5a", a: "#262a40", B: "#8a96e0", Y: "#8a96e0", E: "#a0b0ff" } },
 };
 // 米拉的石像守卫「咚咚」
 const GOLEM_PAL = { K: "#1c1a24", S: "#9ab0c8", s: "#6a7a94", L: "#c8d6e6", C: "#7af0e0", c: "#3ab0a8", E: "#7af0e0", M: "#6aa858" };
@@ -5835,8 +5876,7 @@ const GOLEM_ROWS = [".....KKKKKK.....", "...KKSSLLSSKK...", "..KSSLLLSSMSSK..", 
   ".KKKsSSSSSSsKKK.", "KSSKKKKKKKKKKSSK", "KSLSKSSCCSSKSLSK", "KSSSKSCCCcSKSSsK", "KsSsKSSCcSSKsSsK", ".KKKKSSSSSSKKKK.", "....KsSSSSsK....",
   "...KSSK..KSSK...", "...KssK..KssK...", "...KKKK..KKKK..."];
 for (const id in HERO) HERO[id].pal = Object.assign({}, BASE_PAL, HERO[id].pal);
-const SHIELD = ["KKKKKK", "KBBYBK", "KBYYYK", "KBBYBK", "KBBYBK", ".KBBK.", "..KK.."];
-const EAR_L = ["KK..", "KSSK", ".KSK", "..K."], EAR_R = ["..KK", "KSSK", "KSK.", ".K.."];
+const EAR_L = ["K...", "KSK.", ".KSK", "..KK"], EAR_R = ["...K", ".KSK", "KSK.", "KK.."];
 const LV3_OUT = "#7a4a08";
 
 // ---------- 9.0：4 阶转职换外观 ----------
@@ -5852,7 +5892,7 @@ const BR_LOOK = {
   A: { tint: "#eaf2ff", k: 0.3, trim: "#ffe060", glow: "#bfe0ff", out: "#1a4aa0" },
   B: { tint: "#6a1018", k: 0.32, trim: "#ff5a3a", glow: "#ff7a5a", out: "#901a1a" },
 };
-const SKIN_KEYS = "SsWMme";
+const SKIN_KEYS = "SsEq";
 const BR_HERO = {};
 function branchHero(id, branch) {
   const b = branch === "B" ? "B" : "A", k = id + b;
@@ -5891,17 +5931,16 @@ function drawBranchCrown(g, D, o, hx, ht, bx, bt, bw, topY) {
   const C = c => (W ? "#ffffff" : c);
   ht += Math.min(0, topY || 0);
   // 肩甲
-  rect(g, bx - 2, bt, 4, 3, C(OUT)); rect(g, bx + bw - 2, bt, 4, 3, C(OUT));
-  rect(g, bx - 1, bt + 1, 3, 1, C(L.trim)); rect(g, bx + bw - 1, bt + 1, 3, 1, C(L.trim));
+  rect(g, bx + 1, bt + 1, 5, 1, C(L.trim)); rect(g, bx + bw - 6, bt + 1, 5, 1, C(L.trim));   // 肩甲镶边
   if (branch === "A") {
     // 光环：贴着头顶的一圈细光
     const b = Math.round(Math.sin(t * 3) * 0.5);
-    ring(g, hx + 6, ht - 3 + b, 5, 2, C(L.trim));
-    if (!W) { dot(g, hx + 6, ht - 5 + b, "#ffffff"); dot(g, hx + 1, ht - 3 + b, "#ffffff"); dot(g, hx + 11, ht - 3 + b, "#ffffff"); }
+    ring(g, hx + 5, ht - 3 + b, 5, 2, C(L.trim));
+    if (!W) { dot(g, hx + 5, ht - 5 + b, "#ffffff"); dot(g, hx, ht - 3 + b, "#ffffff"); dot(g, hx + 10, ht - 3 + b, "#ffffff"); }
   } else {
     // 犄角：从头顶两侧长出来
     for (const i of [0, 1]) {
-      const x = hx + (i ? 10 : 3), dx = i ? 1 : -1;
+      const x = hx + (i ? 8 : 2), dx = i ? 1 : -1;
       rect(g, x, ht, 2, 2, C(OUT));
       rect(g, x + dx, ht - 2, 2, 2, C(OUT));
       dot(g, x + dx, ht - 1, C(L.trim));
@@ -5922,32 +5961,28 @@ function drawHero(g, D, o) {
   const ol = lv >= 4 ? (o.branch === "B" ? "#901a1a" : "#1a4aa0") : lv >= 3 ? LV3_OUT : null, key = D.id + (ol ? ol : "");
   const melee = H.weapon === "sword" || H.weapon === "dagger";
   const lean = (ph === "wind" && melee) || ph === "hurt" ? -1 : (ph === "strike" || ph === "release") ? 1 : 0;
-  const bw = H.body[0].length, bh = H.body.length, by = o.bob || 0;
-  const bt = -3 - bh + by, ht = bt - 13, bx = -Math.floor(bw / 2) + lean, hx = -7 + lean;
-  const lh = H.robe ? 2 : 3, fwd = ph === "strike" ? 1 : 0;
-  rect(g, -4, -lh, 3, lh, C(ol || OUT)); rect(g, 1 + fwd, -lh, 3, lh, C(ol || OUT));
-  rect(g, -3, -lh, 2, lh - 1, C(H.boot)); rect(g, 2 + fwd, -lh, 2, lh - 1, C(H.boot));
+  const bw = BW, bh = BH, by = o.bob || 0, lh = BODY_LEGS[H.body];
+  const bt = -lh - bh + 2 + by, ht = bt - 7, bx = -Math.floor(bw / 2) + lean, hx = -Math.floor(HW / 2) + lean;
+  const fwd = ph === "strike" ? 1 : 0, out = C(ol || OUT);
+  // 腿和靴子
+  rect(g, -4, -lh, 3, lh, out); rect(g, 1 + fwd, -lh, 3, lh, out);
+  rect(g, -3, -lh, 2, lh - 1, C(H.legs || H.boot)); rect(g, 2 + fwd, -lh, 2, lh - 1, C(H.legs || H.boot));
+  rect(g, -3, -2, 2, 1, C(H.boot)); rect(g, 2 + fwd, -2, 2, 1, C(H.boot));
   if (H.hairBack) {
-    const x = hx - 1, y = ht + 6, w = 16, h = H.hairBack + 4;
-    rect(g, x, y, w, h, C(ol || OUT));
-    rect(g, x + 1, y, w - 2, h - 1, C(H.veilBack ? P.V : P.H));
-    rect(g, x + 1, y + h - 3, w - 2, 2, C(H.veilBack ? P.v : P.h));
-    if (H.veilBack) rect(g, x + 1, y + h - 2, w - 2, 1, C(P.Y));
+    const x = hx, y = ht + 4, w = HW, h = H.hairBack + 3;
+    rect(g, x, y, w, h, out); rect(g, x + 1, y, w - 2, h - 1, C(P.H)); rect(g, x + 1, y + h - 3, w - 2, 2, C(P.h));
   }
   if (lv4) drawBranchGear(g, D, o, hx, ht, bx, bt, bw, lean);
-  if (H.back) g.drawImage(sprite(key + ":back", H.back.rows, P, W, ol), hx + H.back.x, ht + H.back.y);
-  if (H.backR) g.drawImage(sprite(key + ":backR", H.backR.rows, P, W, ol), hx + H.backR.x, ht + H.backR.y);
-  if (D.id === "knight") g.drawImage(sprite(key + ":shield", SHIELD, P, W, ol), bx - 4, bt - 1);
-  g.drawImage(sprite(key + ":body", H.body, P, W, ol), bx, bt);
-  if (!melee) rect(g, bx - 1, bt + 3, 2, 2, C(P.S));
-  if (H.weapon === "dagger") line(g, bx, bt + 4, bx - 3, bt + 7, C("#cfd8e4"));
-  g.drawImage(sprite(key + ":head", HEAD, P, W, ol), hx, ht);
-  if (H.ears) { g.drawImage(sprite(key + ":el", EAR_L, P, W, ol), hx - 3, ht + 7); g.drawImage(sprite(key + ":er", EAR_R, P, W, ol), hx + 13, ht + 7); }
-  if (H.pin) { dot(g, hx + 10, ht + 2, C(H.pin)); dot(g, hx + 11, ht + 1, C(H.pin)); }
-  if (ph === "hurt" && !W) for (const ex of [3, 9]) { rect(g, hx + ex, ht + 8, 2, 3, P.S); rect(g, hx + ex, ht + 9, 2, 1, OUT); dot(g, hx + ex + (ex === 3 ? 0 : 1), ht + 8, OUT); }
-  if (H.top) g.drawImage(sprite(key + ":top", H.top.rows, P, W, ol), hx + H.top.x, ht + H.top.y);
-  if (lv4) drawBranchCrown(g, D, o, hx, ht, bx, bt, bw, H.top ? H.top.y : 0);
-  heroWeapon(g, D, H, ph === "hurt" ? "idle" : ph, bx + bw - 2, bt + 2, W, o);
+  (H.back || []).forEach((b, i) => g.drawImage(sprite(key + ":bk" + i, BACKS[b.it], P, W, ol), hx + b.x, ht + b.y));
+  if (H.shield) g.drawImage(sprite(key + ":shield", H.shield, P, W, ol), bx - 3, bt + 3);
+  g.drawImage(sprite(key + ":body", BODIES[H.body], P, W, ol), bx, bt);
+  if (H.weapon === "dagger") line(g, bx + 3, bt + 6, bx, bt + 9, C("#cfd8e4"));
+  g.drawImage(sprite(key + ":head", HEADS[H.head], P, W, ol), hx, ht);
+  if (H.ears) { g.drawImage(sprite(key + ":el", EAR_L, P, W, ol), hx - 3, ht + 3); g.drawImage(sprite(key + ":er", EAR_R, P, W, ol), hx + HW - 1, ht + 3); }
+  if (ph === "hurt" && !W) for (const [ex, ey] of FACE_EYES) rect(g, hx + ex - 1, ht + ey, 3, 1, OUT);   // 受击：眯眼
+  (H.top || []).forEach((t, i) => g.drawImage(sprite(key + ":top" + i, IT[t.it], P, W, ol), hx + t.x, ht + t.y));
+  if (lv4) drawBranchCrown(g, D, o, hx, ht, bx, bt, bw, 0);
+  heroWeapon(g, D, H, ph === "hurt" ? "idle" : ph, bx + bw - 3, bt + 3, W, o);
 }
 
 function heroWeapon(g, D, H, ph, sx, sy, W, o) {
@@ -5972,8 +6007,9 @@ function heroWeapon(g, D, H, ph, sx, sy, W, o) {
     const r = ang * Math.PI / 180, cx = Math.cos(r), cy = Math.sin(r), ex = hx + cx * L, ey = hy + cy * L;
     const glow = o.skill && (D.id === "sword" || D.id === "assassin");
     const bl = glow ? (D.id === "sword" ? ["#ff8a8a", "#ffe0e0"] : ["#6ff0e0", "#e0fff8"]) : ["#dfe6f2", "#ffffff"];
-    line(g, hx + cx * 2, hy + cy * 2, ex, ey, C(bl[0]));
-    if (!dag) line(g, hx + cx * 2 - cy, hy + cy * 2 + cx, ex - cy, ey + cx, C(bl[1])); else dot(g, ex, ey, C(bl[1]));
+    line(g, hx + cx * 2 - 1, hy + cy * 2 - 1, ex - 1, ey - 1, C(OUT), 4);   // 黑边
+    line(g, hx + cx * 2, hy + cy * 2, ex, ey, C(bl[0]), 2);
+    line(g, hx + cx * 2, hy + cy * 2, ex, ey, C(bl[1]), 1);
     line(g, hx + cx * 1.5 - cy * 2, hy + cy * 1.5 + cx * 2, hx + cx * 1.5 + cy * 2, hy + cy * 1.5 - cx * 2, C(dag ? "#4fc0b0" : "#f0c040"));
     dot(g, hx - cx, hy - cy, C("#5a3a22"));
   } else if (H.weapon === "bow") {
@@ -6100,7 +6136,7 @@ function drawPortrait(D, canvas, lv, branch) {
   g.fillStyle = D.color; g.fillRect(0, 0, cvs.width, cvs.height);
   g.fillStyle = "rgba(0,0,0,.16)"; for (let y = 0; y < cvs.height; y += Math.max(2, dpr * 2)) g.fillRect(0, y, cvs.width, Math.max(1, dpr));
   const big = renderHero(D, { phase: "idle", face: 1, lv: lv || 1, branch });
-  g.drawImage(big, 18 + (HOX - 20) * 2, 20, 44, 44, 0, 0, cvs.width, cvs.height);
+  g.drawImage(big, 18 + (HOX - 20) * 2, 28, 44, 44, 0, 0, cvs.width, cvs.height);
 }
 
 // ---------- 像素敌人 ----------
@@ -6387,7 +6423,6 @@ function drawUnit(u, now) {
   if (u.lv >= 4) drawBranchBack(u, fx, fy, t);
   ctx.drawImage(big, fx - HOX * 2 + kb, fy - 80 - drop - (walking && bob ? 1 : 0));
   if (u.lv >= 4) drawBranchFront(u, fx, fy, t);
-  if (u.skillT > 0) addGlow(fx, fy - 22, 30, D.color, 0.4);
   if (S.shieldT > 0) { ctx.globalAlpha = Math.min(1, S.shieldT); ring(ctx, fx, fy - 18, 16, 8, "#8fd0ff", (t * 8 | 0) % 2); ctx.globalAlpha = 1; }
   if (u.frozenT > 0) {
     ctx.fillStyle = "rgba(170,230,255,.45)"; ctx.fillRect(fx - 12, fy - 40, 24, 41);
@@ -6431,8 +6466,7 @@ function drawEnemy(e, now) {
   else ctx.drawImage(big, fx - FOE_FOOT[0] + kb + lunge, fy - FOE_FOOT[1] - lift + R0((1 - born) * 8));
   ctx.globalAlpha = 1;
   if (!F.fly && (e.elite || isBoss(e))) { const rr = isBoss(e) ? 22 : 14, c1 = isBoss(e) ? (e.enraged ? "#ff4a3a" : "#c890ff") : "#ffc830"; ring(ctx, fx, fy, rr, rr * 0.4, c1, (t * 6 | 0) % 2); if (isBoss(e)) ring(ctx, fx, fy, rr + 5, (rr + 5) * 0.4, c1, (t * 4 | 0) % 2 === 0); }
-  if (isBoss(e)) addGlow(fx, fy - 30 - lift, 46, e.enraged ? "#ff4a3a" : "#b070ff", 0.22 + Math.sin(t * 3) * 0.05);
-  else if (e.elite) addGlow(fx, fy - 14 - lift, 22, "#ffc830", 0.2);
+  if (isBoss(e) && e.enraged) addGlow(fx, fy - 30 - lift, 46, "#ff4a3a", 0.2);   // 只有首领狂暴才亮红光，平时不加光晕
   const top = fy - hh - lift;
   if (e.stunT > 0) for (let i = 0; i < 3; i++) { const a = t * 6 + i * 2.1; rect(ctx, fx + Math.cos(a) * 9, top - 4 + Math.sin(a) * 3, 2, 2, "#ffe060"); }
   if (e.corrode && e.corrode.t > 0) for (let i = 0; i < 2; i++) { const k = (t * 1.2 + i * 0.5 + e.id * 0.17) % 1; rect(ctx, fx - 7 + i * 12, top + 4 + k * 14, 2, 2, k < 0.7 ? "#a8d848" : "#e0ff9a"); }
@@ -6731,7 +6765,7 @@ function drawOverlay() {
     if (f.kind === "skillcut") { drawSkillCut(f, k, s, txt); continue; }
     if (f.kind === "combo") {
       const a = k < 0.15 ? k / 0.15 : k > 0.7 ? (1 - k) / 0.3 : 1, sc = 1 + Math.max(0, 0.3 - k) * 1.5;
-      tctx.globalAlpha = a; txt(`连杀 ${f.n}！经验 +${f.dp}`, tx.width / 2, (72 - k * 16) * s, 17 * s * sc * tk, "#ffd860"); tctx.globalAlpha = 1;
+      tctx.globalAlpha = a; txt(`连杀 ${f.n}，经验 +${f.dp}`, tx.width / 2, (72 - k * 16) * s, 17 * s * sc * tk, "#ffd860"); tctx.globalAlpha = 1;
       continue;
     }
     if (f.kind === "banner") {
@@ -6826,7 +6860,7 @@ function drawCutin(f, k, s, txt) {
     tctx.drawImage(renderHero(D, { phase: "idle", face: -1, lv: 4, branch: "A" }), HOX * 2 - 32, 22, 64, 64, x, y, size, size);
   });
   const tk = Math.min(1, Math.max(0, k * 5 - 0.6));
-  txt("晨星爆发！", W / 2 + (1 - tk) * 200 * s, cy + bh / 2 - sk * 0.2 - 12 * s, 26 * s, "#fff0a0");
+  txt("晨星爆发", W / 2 + (1 - tk) * 200 * s, cy + bh / 2 - sk * 0.2 - 12 * s, 26 * s, "#fff0a0");
   tctx.restore();
 }
 
@@ -6894,17 +6928,6 @@ function drawBossMood(t) {
     ctx.fillStyle = "#000"; ctx.fillRect(0, 0, PW, h); ctx.fillRect(0, PHt - h, PW, h);
   }
 }
-function drawComboGlow(t) {
-  if (S.combo < 10 || S.comboT <= 0 || S.over) return;
-  const tier = S.combo >= 80 ? 3 : S.combo >= 50 ? 2 : S.combo >= 25 ? 1 : 0;
-  const rgb = ["255,216,96", "255,176,64", "255,106,90", "255,58,138"][tier], w = 4 + tier * 3;
-  const a = (0.18 + tier * 0.07) * (0.7 + Math.sin(t * (6 + tier * 3)) * 0.3) * Math.min(1, S.comboT / 0.8);
-  for (let i = 0; i < w; i++) {
-    ctx.fillStyle = `rgba(${rgb},${(a * (1 - i / w)).toFixed(3)})`;
-    ctx.fillRect(i, i, PW - i * 2, 1); ctx.fillRect(i, PHt - 1 - i, PW - i * 2, 1); ctx.fillRect(i, i, 1, PHt - i * 2); ctx.fillRect(PW - 1 - i, i, 1, PHt - i * 2);
-  }
-}
-
 // ---------- 光影：发光 / 暗角 / 地面痕迹 / 光斑 ----------
 const hexA = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
 const GLOW_CACHE = {};
@@ -6978,10 +7001,6 @@ function drawDecals(now) {
   if (now - decalFadeAt > 500) { decalFadeAt = now; const g = decalCv.getContext("2d"); g.globalCompositeOperation = "destination-out"; g.fillStyle = "rgba(0,0,0,.05)"; g.fillRect(0, 0, LW, LH); g.globalCompositeOperation = "source-over"; }
   ctx.drawImage(decalCv, 0, 0);
 }
-// 光斑：几块缓慢飘过的暖光，给地面一点光照变化
-function drawDapples(t) {
-  for (let i = 0; i < 2; i++) addGlow((t * (6 + i * 3) + i * 330) % (LW + 160) - 80, 100 + i * 140 + Math.sin(t * 0.3 + i) * 18, 80, "#fff2c0", 0.07);
-}
 
 // ---------- 每帧绘制 ----------
 const renderSortBuf = [];
@@ -6999,7 +7018,7 @@ function render(now) {
   // 世界层（按格子画的东西）：竖屏大画面时整体转 90°，横版坐标 (X,Y) → 视图 (LH−Y, X)
   if (ROT) { ctx.transform(0, 1, -1, 0, LH, 0); WP = true; }
   ctx.drawImage(mapCv, 0, 0);
-  if (GFX.lit) { drawDecals(now); drawDapples(t); }
+  if (GFX.lit) drawDecals(now);
   drawAmbient(now);
   if (ROT) { ctx.setTransform(zoom, 0, 0, zoom, bx, by); WP = false; }
   drawAmbientParticles(now);
@@ -7018,8 +7037,8 @@ function render(now) {
   }
   // 觉醒 3 级以上的角色脚下一圈金色光环
   for (const u of S.units) if (!u.dead && !u.summon && u.down <= 0 && awk(u.def.id) >= AWK.auraLv) {
-    const [x, y] = tpx(u.x, u.y), r = 11 + Math.sin(t * 3 + u.id) * 1.5;
-    ctx.globalAlpha = 0.22; disc(ctx, x, y + 12, r, "#ffd860"); ctx.globalAlpha = 0.7; ring(ctx, x, y + 12, r, r * 0.45, "#ffe8a0", (t * 4 | 0) % 2); ctx.globalAlpha = 1;
+    const [x, y] = tpx(u.x, u.y);
+    ctx.globalAlpha = 0.6; ring(ctx, x, y + 12, 11, 5, "#e8d49a"); ctx.globalAlpha = 1;   // 一圈细线，不发光不闪
   }
   // 精通徽章：参与通关越多，脚下的小菱形越多、颜色越亮（只是外观）
   for (const u of S.units) { const m = S.mast && S.mast[u.def.id]; if (!m || u.dead || u.summon || u.down > 0) continue;
@@ -7054,7 +7073,6 @@ function render(now) {
   if (!OPT.calm) for (const f of S.fx) if (f.kind === "flash") { ctx.globalAlpha = 0.75 * (1 - f.t / f.life); ctx.fillStyle = f.color || "#fff8d2"; ctx.fillRect(0, 0, PW, PHt); ctx.globalAlpha = 1; }   // 以前忽略 color，诅咒的红闪也是米白
   if (S.star >= ULT.max && !S.over) { const a = 0.25 + Math.sin(t * 5) * 0.15; ctx.fillStyle = `rgba(255,224,128,${a.toFixed(3)})`; ctx.fillRect(0, 0, PW, 3); ctx.fillRect(0, PHt - 3, PW, 3); }
   if ((S.paused || S.offer) && !S.over) { ctx.fillStyle = "rgba(8,10,16,.45)"; ctx.fillRect(0, 0, PW, PHt); }
-  drawComboGlow(t);
   drawBossMood(t);
   drawCine();
   drawOverlay();
@@ -7278,7 +7296,7 @@ function updateStats() {
   setText("btn-auto", S.autoWave ? "自动开波：开" : "自动开波：关");
   $("xp-fill").style.width = Math.min(100, S.xp / S.xpNeed * 100).toFixed(1) + "%";
   if (!S.goalT || S.t - S.goalT > 1) { S.goalT = S.t; S.goalTxt = nextGoal(); }
-  setText("xp-txt", `Lv ${S.level} · 经验 ${Math.floor(S.xp)}/${S.xpNeed}` + (S.pending > 0 ? "（可以翻牌！）" : "") + (S.goalTxt ? ` · 目标：${S.goalTxt}` : ""));
+  setText("xp-txt", `Lv ${S.level} · 经验 ${Math.floor(S.xp)}/${S.xpNeed}` + (S.pending > 0 ? "（可以翻牌）" : "") + (S.goalTxt ? ` · 目标：${S.goalTxt}` : ""));
   const wb = $("wavebar"), key = S.stage + ":" + S.wave + ":" + (waiting ? 1 : 0) + ":" + (S.daily ? 1 : 0);
   if (wb.dataset.k !== key) {
     wb.dataset.k = key;
@@ -7287,7 +7305,7 @@ function updateStats() {
     if (waiting) {
       const list = nextWaveSummary();
       wb.innerHTML = pre + `<span>第 ${S.wave + 1} 波预告：</span>` + list.map(x => `<span class="chip${x.elite ? " elite" : ""}">${x.elite ? "精英" : ""}${ENEMIES[x.type].name} ×${x.n}</span>`).join("");
-    } else wb.innerHTML = pre + (S.wave >= totalWaves() ? "<span>最后一波了，守住！</span>" : `<span>第 ${S.wave} 波进行中（敌人强度 ×${(stageHp() * S.waveHp).toFixed(2)}）</span>`);
+    } else wb.innerHTML = pre + (S.wave >= totalWaves() ? "<span>最后一波</span>" : `<span>第 ${S.wave} 波进行中（敌人强度 ×${(stageHp() * S.waveHp).toFixed(2)}）</span>`);
   }
 }
 // ---------- 队伍 ----------
@@ -7331,7 +7349,7 @@ function updateUlt() {
   b.dataset.k = key;
   b.classList.toggle("ready", ready); b.disabled = !ready;
   $("ult-fill").style.width = pct + "%";
-  setText("ult-txt", ready ? "晨星爆发！点这里或按 E" : `晨星之力 ${pct}%（击杀敌人充能）`);
+  setText("ult-txt", ready ? "大招就绪，点这里或按 E" : `大招 ${pct}%（击杀敌人充能）`);
 }
 $("ult").addEventListener("click", () => { if (!menuOpen && !dlg && !S.offer) castUlt(); });
 
@@ -7477,7 +7495,7 @@ function updateOffer() {
   $("cards3").classList.toggle("n4", S.offer.length > 3);
   $("cards3").classList.toggle("banishing", banishMode);   // 混入诅咒卡时变成 2x2 的 4 选 1
   $("lu-tip").innerHTML = S.offer.length > 3 ? "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> 选卡，<kbd>R</kbd> 重抽，<kbd>X</kbd> 放逐" : "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 选卡，<kbd>R</kbd> 重抽，<kbd>X</kbd> 放逐";
-  const title = S.offerRare ? "稀有货架！选一张" : S.level <= 1 && !S.kills ? "开局翻牌！选一张" : `升到 Lv ${S.level}！选一张卡`;
+  const title = S.offerRare ? "稀有货架，选一张" : S.level <= 1 && !S.kills ? "开局翻牌，选一张" : `升到 Lv ${S.level}，选一张卡`;
   setText("lu-title", title + (S.pending > 1 ? `（还有 ${S.pending - 1} 次）` : ""));
   $("cards3").innerHTML = S.offer.map((p, i) => {
     const c = cardInfo(p), r = p.rare || 0, R = RARITY[r] || { name: "诅咒", color: CURSE_COLOR };
@@ -7809,7 +7827,7 @@ function updatePInfo() {
   if (!S || !box.offsetHeight) return;   // 只在竖屏全屏时可见
   // 状态行：这一波的进度 + 大号连杀
   const waiting = S.wave < totalWaves() && !S.spawnQueue.length, info = waiting ? nextWaveInfo() : null;
-  const tag = info && { boss: "首领！", tide: "潮汐！", elite: "精英！" }[info.kind];
+  const tag = info && { boss: "首领", tide: "潮汐", elite: "精英" }[info.kind];
   let wtxt = S.over ? "" : waiting ? `下一波 ${S.autoWave !== false ? Math.ceil(Math.max(0, S.nextWaveIn)) + " 秒" : "等你出击"}${tag ? ` · <span class="warn">${tag}</span>` : ""}`
     : S.spawnQueue.length ? `第 ${S.wave} 波 · 还有 ${S.spawnQueue.length} 只要出场` : `第 ${S.wave} 波 · 场上 ${S.enemies.length}`;
   const fo = focusFoe(), ftxt = fo ? ` · <span class="warn">集火 ${fo.d.name} ${Math.ceil(fo.hp / fo.maxHp * 100)}%</span>` : "";
@@ -7942,7 +7960,7 @@ function dlgJoin(id) {
   dlg.mode = "join"; dlg.shown = 0;
   const box = $("dlg-join"); box.hidden = false; $("dlgbox").hidden = true; $("bust-L").hidden = $("bust-R").hidden = true;
   box.style.setProperty("--c", D.color);
-  box.innerHTML = `<canvas aria-hidden="true"></canvas><div><small>新伙伴</small><b>${D.name} · ${D.cls}</b><p>${D.note}</p><p class="tip">加入了队伍！出战前可以在编队里选她。</p></div>`;
+  box.innerHTML = `<canvas aria-hidden="true"></canvas><div><small>新伙伴</small><b>${D.name} · ${D.cls}</b><p>${D.note}</p><p class="tip">加入了队伍。出战前可以在编队里选她。</p></div>`;
   drawBust(box.querySelector("canvas"), id, 1, false);
   if (openChars().length >= UNITS.length) unlockAchv("allchars");
 }
@@ -8163,15 +8181,14 @@ function showNews() {
   let seen = ""; try { seen = localStorage.getItem("chenxing-td-news") || ""; } catch (e) { }
   if (seen === NEWS_VER || !loadSave().tutorial) return false;
   try { localStorage.setItem("chenxing-td-news", NEWS_VER); } catch (e) { }
-  openOverlay(`<h2>12.0 更新内容</h2><div class="tree">
-    <small><b>首领专属特性</b>　15 位首领各有一个机制（召唤、分裂、落雷、抹除……），血条旁会写出来</small>
-    <small><b>天气与昼夜</b>　每 5 波有 2 波天气，户外关会从白天走到夜里</small>
-    <small><b>自选契约</b>　选关页勾选额外难度，通关多拿星星</small>
-    <small><b>连败辅助</b>　同一关连败后晨星碑生命会增加</small>
-    <small><b>卡牌放逐</b>　翻牌时放逐不想要的牌；<b>第二法术槽</b>可换星盾、号令、时停</small>
-    <small><b>羁绊第二档、20 个事件、新敌人、商店新品</b></small>
-    <small><b>角色精通</b>　用同一角色多通关，脚下会亮起小标</small></div>
-    <p>战斗中点「羁绊」看板，可以随时查看本局规则。</p>
+  openOverlay(`<h2>更新说明</h2><div class="tree">
+    <small>首领各有一个专属机制，血条旁会写出来。</small>
+    <small>每 5 波有 2 波天气，户外关会从白天走到夜里。</small>
+    <small>选关页可以勾选额外难度（契约），通关多拿星星。</small>
+    <small>同一关连败后，晨星碑生命会增加。</small>
+    <small>翻牌时可以放逐不想要的牌；第二法术槽可以换。</small>
+    <small>新增羁绊第二档、20 个事件、新敌人和商店物品。</small></div>
+    <p>战斗中点「羁绊」看板，可以查看本局规则。</p>
     <div class="btns"><button class="primary" id="btn-newsok">知道了</button></div>`);
   return true;
 }
@@ -8199,7 +8216,7 @@ function showLevels() {
     <p class="chaprog">${ch.name} · 本章星级 ${chStars}/${ids.length * 3}</p><div class="chbar" style="--cc:${CH_COL[chapSel] || "#8fb3e0"}"><i style="width:${Math.round(chStars / (ids.length * 3) * 100)}%"></i></div><p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
     ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
     ${contractHtml()}
-    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="最多 30 帧，手机更省电、更不烫">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-sp2" title="${SPELL2[OPT.sp2].desc}。第二个法术槽（W）用哪个，点一下换">第二法术 · ${SPELL2[OPT.sp2].name}</button><button id="btn-pix" title="整数倍缩放，像素粗细均匀。窗口放不下合适的整数倍时自动不生效">像素完美 · ${OPT.pix ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button><button id="btn-fps" title="左上角显示帧率和当前画质，卡顿时截图反馈给我很有用">显示帧率 · ${OPT.fps ? "开" : "关"}</button><button id="btn-big" title="手机竖屏时把战场转成竖版，画面更大；关掉就是原来的横版画面">竖屏大画面 · ${OPT.big ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
+    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="30 帧 + 文字层降分辨率，手机更省电、更不烫（手机默认开）">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-sp2" title="${SPELL2[OPT.sp2].desc}。第二个法术槽（W）用哪个，点一下换">第二法术 · ${SPELL2[OPT.sp2].name}</button><button id="btn-pix" title="整数倍缩放，像素粗细均匀。窗口放不下合适的整数倍时自动不生效">像素完美 · ${OPT.pix ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button><button id="btn-fps" title="左上角显示帧率和当前画质，卡顿时截图反馈给我很有用">显示帧率 · ${OPT.fps ? "开" : "关"}</button><button id="btn-big" title="手机竖屏时把战场转成竖版，画面更大；关掉就是原来的横版画面">竖屏大画面 · ${OPT.big ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
     <div class="levels">` +
     ids.map(i => { const st = STAGES[i];
       const open = unlocked(i), cleared = (save.stars[i] || 0) > 0, dc = save.diffClear[i] || [];
@@ -8343,7 +8360,7 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-week") { const wi = weekInfo(); beginStage(wi.stage, { week: wi, diff: wi.diff }); }
   else if (b.dataset.chap != null) { chapSel = +b.dataset.chap; showLevels(); }
   else if (b.id === "btn-save") showSaveBox();
-  else if (b.id === "btn-eco") { setOpt("eco", !OPT.eco); showLevels(); }
+  else if (b.id === "btn-eco") { setOpt("eco", !OPT.eco); resize(); showLevels(); }
   else if (b.id === "btn-sp2") { setOpt("sp2", (OPT.sp2 + 1) % SPELL2.length); applySpell2(OPT.sp2); buildSpells(); showLevels(); }
   else if (b.id === "btn-pix") { setOpt("pix", !OPT.pix); resize(); showLevels(); }
   else if (b.id === "btn-calm") { setOpt("calm", !OPT.calm); showLevels(); }
@@ -8434,7 +8451,7 @@ function startRun(i, opts) {
   newRun(i, { ...opts, perks: opts.perks || loadSave().perks, charLv: opts.charLv || charLevels(), charAwk: opts.charAwk || charAwks(), mast: opts.mast || charMasts(), charTal: opts.charTal || loadSave().tal, charOpen: opts.charOpen || openChars().map(u => u.id), formIdx: opts.formIdx == null ? loadSave().form : opts.formIdx, disk: opts.disk || loadSave().disk, autoWave: opts.autoWave == null ? loadSave().autoWave : opts.autoWave });
   acc = 0; shownOver = null; mapFor = -1; infoKey = ""; teamKey = ""; cardKey = "";
   setText("btn-speed", "1×"); setText("btn-pause", "暂停"); cycleForm(true);
-  if (S.assist) setTimeout(() => toast(`<b>连败辅助</b>晨星碑生命 +${Math.round(ASSIST[S.assist - 1].hp * 100)}%，加油！`), 600);
+  if (S.assist) setTimeout(() => toast(`<b>连败辅助</b>晨星碑生命 +${Math.round(ASSIST[S.assist - 1].hp * 100)}%`), 600);
   for (const el of document.querySelectorAll("[data-k]")) el.dataset.k = "";
   $("levelup").hidden = true; $("levelup").dataset.k = "";
   $("shopbox").hidden = true; $("shopbox").dataset.k = ""; $("eventbox").hidden = true; $("eventbox").dataset.k = ""; synKey = "";
@@ -8449,7 +8466,7 @@ const TUT = [
   ["打死敌人会攒经验，经验条满了就会暂停，让你翻牌。", () => S.level >= 2 || S.pending > 0 || S.picks.length],
   ["翻到的卡一整局都生效：属性、伙伴、自动技能都可以一直叠加。", () => S.picks.length >= 1],
   ["晨星碑的血被打光就输了。陨星术（Q）和圣愈之光（W）可以救急。", (tt) => S.usedSpell || tt > 40],
-  ["击杀还会给晨星之力充能，满了点上面那条金色的按钮（或按 E）放全屏大招。引导结束，祝你守住！", (tt) => S.usedUlt || tt > 30],
+  ["击杀还会给大招充能，满了点上面那条金色的按钮（或按 E）放全屏大招。引导结束。", (tt) => S.usedUlt || tt > 30],
 ];
 let tut = null;
 // 引导到哪一步，就让对应的按钮闪一下金边（步骤序号 → 要高亮的按钮）
@@ -8577,7 +8594,7 @@ function showResult(R) {
   const win = R.win, exp = expHtml(R.exp), tail = (R.bounty && R.bounty.length ? `<p class="stars bgot">悬赏完成：${R.bounty.join("、")} · +${R.bountyStars}★</p>` : "") + `<details class="rdet"${innerWidth <= 520 || innerHeight <= 520 ? "" : " open"}><summary>详细战报（伤害、卡牌、队员数据）</summary>${battleReport()}${cardsHtml()}${statsTable()}</details>` + exp;
   if (R.mode === "exped") {
     const rl_ = R.expRelic ? `<p style="color:#ffd860">精英战利品：遗物「${RELIC_BY[R.expRelic].name}」</p>` : "";
-    if (R.expDone) openOverlay(`<h2>远征完成！</h2><p class="stars">首领击破 +${R.expStars}★ · 本次远征共 ${R.expTotal}★</p>${rl_}${tail}<div class="btns"><button class="primary" id="btn-exped">再来一次远征</button><button id="btn-menu">选关</button></div>`);
+    if (R.expDone) openOverlay(`<h2>远征完成</h2><p class="stars">首领击破 +${R.expStars}★ · 本次远征共 ${R.expTotal}★</p>${rl_}${tail}<div class="btns"><button class="primary" id="btn-exped">再来一次远征</button><button id="btn-menu">选关</button></div>`);
     else if (win) openOverlay(`<h2>远征 · 第 ${R.expFloor} 层突破</h2><p class="stars">+${R.expStars}★</p>${rl_}<p>队伍、卡牌、遗物都带到下一层；晨星碑开局会回复一些。${expLoad() && expLoad().rest ? "<b>下一步可以休整一次。</b>" : ""}</p>${tail}<div class="btns"><button class="primary" id="btn-expgo">继续远征</button><button id="btn-menu">先回选关（进度保留）</button></div>`);
     else openOverlay(`<h2>远征结束</h2><p>倒在第 ${R.expFloor} 层 · ${ST.name}。本次远征共得 ${R.expTotal || 0}★。</p>${tail}<div class="btns"><button class="primary" id="btn-exped">重新远征</button><button id="btn-menu">选关</button></div>`);
   } else if (R.mode === "vigil") {
@@ -8601,7 +8618,7 @@ function showResult(R) {
     openOverlay(`<h2>${final ? "深渊之门封印了" : "晨星碑守住了"}</h2>${S.diff === 0 ? starHtml(S.stars) : `<p class="stars">${DIFFS[S.diff].name}通关${R.diffFirst ? " · 首通 +1★" : ""}</p>`}
       <p>第 ${S.stage + 1} 关 · ${ST.name}：击败 ${S.kills} 个敌人，升到 Lv ${S.level}，晨星碑还剩 ${Math.ceil(S.crystal.hp)}/${S.crystal.maxHp}。</p>
       <p style="color:#ffd860">${R.reward}</p>
-      ${final ? "<p>主线通关！可以继续挑战困难、噩梦、无尽和每日挑战，把角色都练到 10 级。</p>" : ""}${tail}
+      ${final ? "<p>主线通关。可以继续挑战困难、噩梦、无尽和每日挑战，把角色都练到 10 级。</p>" : ""}${tail}
       <div class="btns">${hasNext ? '<button class="primary" id="btn-next">下一关</button>' : ""}<button id="btn-retry">再玩一次</button><button id="btn-menu">选关</button></div>`);
   } else {
     openOverlay(`<h2>晨星碑碎了</h2><p>坚持到第 ${S.wave} 波，击败 ${S.kills} 个敌人，升到 Lv ${S.level}。换个英雄、或者优先翻伙伴和范围技能，再试一次吧。</p>
@@ -8928,7 +8945,7 @@ function fpsTick(now, ms) {
   if (!OPT.fps) { if (!el.hidden) el.hidden = true; return; }
   el.hidden = false; fpsN++; fpsMs += ms; fpsMax = Math.max(fpsMax, ms);
   if (now - fpsT < 500) return;
-  el.textContent = `${Math.round(fpsN * 1000 / Math.max(1, now - fpsT))} FPS · 平均 ${(fpsMs / fpsN).toFixed(1)}ms · 最差 ${fpsMax.toFixed(0)}ms\n画质 ${GFX.name}${gfxSel < 0 ? "（自动）" : ""} · 敌 ${S.enemies.length} · 特效 ${S.fx.length}`;
+  el.textContent = `${Math.round(fpsN * 1000 / Math.max(1, now - fpsT))} 帧/秒（目标 ${Math.round(1000 / frameGap())}） · 平均 ${(fpsMs / fpsN).toFixed(1)}ms · 最差 ${fpsMax.toFixed(0)}ms\n画质 ${GFX.name}${gfxSel < 0 ? "（自动）" : ""} · 敌 ${S.enemies.length} · 特效 ${S.fx.length}`;
   fpsT = now; fpsN = 0; fpsMs = 0; fpsMax = 0;
 }
 // 一帧里哪怕出了错也要接着排下一帧，否则画面会整个停住（看上去就是黑屏 / 卡死）；错误只在控制台里报，前 3 次
@@ -8937,10 +8954,20 @@ function frame(now) {
   try { frameBody(now); } catch (e) { if (frameErrs++ < 3) setTimeout(() => { throw e; }); }
   requestAnimationFrame(frame);
 }
+// 帧率策略（发热/耗电的主旋钮）：逻辑本来就是固定 30Hz，画得比 30 帧快手机上基本看不出区别，却要多烧一倍的电。
+// 战斗中：省电模式 30 帧，否则 60 帧封顶（120Hz 屏也只画 60）；战场被面板盖住或暂停时降到 8~15 帧
+function frameGap() {
+  if (!S || menuOpen || S.over || S.offer || S.shop || S.event) return 1000 / 8;   // （剧情对话要打字机效果，不降）
+  if (S.paused) return 1000 / 15;
+  return OPT.eco ? 1000 / 30 : 1000 / 60;
+}
+// 界面文字、血条、按钮状态不用每帧刷：每 100ms 一次足够（战场画面仍然每帧画）
+let uiAt = 0;
 function frameBody(now) {
-  if (OPT.eco && now - last < 30) return;   // 省电：最多 30 帧
+  const gap = frameGap();
+  if (now - last < gap - 3) return;
   const dt = Math.min(0.1, (now - last) / 1000); fpsTick(now, (now - last)); last = now;
-  adaptGfx(dt);
+  adaptGfx(dt, 1000 / gap);
   if (S.slowCd > 0) S.slowCd -= dt;
   let k = 1; if (S.slowmo > 0) { S.slowmo -= dt; k = 0.3; }
   if (S.hitStopCd > 0) S.hitStopCd -= dt;
@@ -8952,7 +8979,9 @@ function frameBody(now) {
   }
   if (!S.offer && !S.shop && !S.cine && !S.event && S.pending > 0 && !S.over && !dlg && !menuOpen) { const mr = S.forceRare || 0; S.forceRare = 0; openOffer(mr, true); }
   handleEvents();
-  fitCheck(now); mapGuard(now); render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateUnitCards(now); updateCrystalBars(); updateTut(dt); updateDlg(dt); animRoster(now);
+  fitCheck(now); mapGuard(now); render(now);
+  if (now - uiAt >= 100 || gap > 100) { uiAt = now; updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateUnitCards(now); updateCrystalBars(); }
+  updateTut(dt); updateDlg(dt); animRoster(now);
   if (!dlg) checkOver();
 }
 
