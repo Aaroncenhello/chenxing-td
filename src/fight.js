@@ -2,31 +2,35 @@
 // ================= 战斗：伤害、出手、技能、每一步 =================
 // 画质档位：粒子数量倍率 k、同屏特效上限 cap、抖屏强度 shake、背景飘落物 amb。-1 = 自动（手机用中，电脑用高，再按实际帧率动态调）
 // lit：发光、暗角、地面痕迹、光斑这类光影效果（低档关掉，保持轻量）
-const GFX_LV = [{ name: "低", k: 0.3, cap: 200, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.6, cap: 400, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 700, shake: 1, amb: true, lit: true }];
+const GFX_LV = [{ name: "低", k: 0.3, cap: 160, shake: 0.5, amb: false, lit: false }, { name: "中", k: 0.5, cap: 280, shake: 1, amb: true, lit: true }, { name: "高", k: 1, cap: 560, shake: 1, amb: true, lit: true }];
 // 显示选项：省电（限制 30 帧）、减少闪光（去掉全屏闪白/红边，抖屏减弱）。单独存一个键，不进主存档
 const OPT_KEY = "chenxing-td-opts";
-const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: !!v.eco, calm: !!v.calm, pix: !!v.pix, fps: !!v.fps, big: v.big !== false, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: false, calm: false, pix: false, fps: false, big: true, sp2: 0, ct: [] }; } })();
+// 触屏设备（手机/平板）默认开「省电」：30 帧 + 文字层降分辨率，发热和耗电都小得多。旧存档里存的 eco 是旧默认值，ecoV 不是 2 的一律按新默认重来一次
+const TOUCH = (() => { try { return matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0; } catch (e) { return false; } })();
+const OPT = (() => { try { const v = JSON.parse(localStorage.getItem(OPT_KEY) || "{}"); return { eco: v.ecoV === 2 ? !!v.eco : TOUCH, ecoV: 2, calm: !!v.calm, pix: !!v.pix, fps: !!v.fps, big: v.big !== false, sp2: Math.max(0, Math.min(3, v.sp2 | 0)), ct: Array.isArray(v.ct) ? v.ct.filter(id => typeof id === "string").slice(0, 8) : [] }; } catch (e) { return { eco: TOUCH, ecoV: 2, calm: false, pix: false, fps: false, big: true, sp2: 0, ct: [] }; } })();
 function setOpt(k, v) { OPT[k] = typeof v === "number" || Array.isArray(v) ? v : !!v; try { localStorage.setItem(OPT_KEY, JSON.stringify(OPT)); } catch (e) { } }
 let GFX = GFX_LV[2], gfxSel = -1, autoIdx = null;
 function applyGfx(sel) {
   gfxSel = sel == null ? -1 : sel;
   if (gfxSel >= 0) { GFX = GFX_LV[gfxSel]; return; }
-  if (autoIdx == null) autoIdx = typeof isPhone === "function" && isPhone() ? 1 : 2;
+  if (autoIdx == null) autoIdx = TOUCH || (typeof isPhone === "function" && isPhone()) ? 1 : 2;
   GFX = GFX_LV[autoIdx];
 }
 // 自动档位不是选完就定死：帧率持续偏低就自动降一档，回稳一阵子再谨慎升回去，别的画质选项不受影响
 let fpsEma = null, gfxAdaptCd = 2;
-function adaptGfx(dt) {
-  if (gfxSel >= 0 || !dt) return;
-  const fps = 1 / Math.max(dt, 1e-3);
-  fpsEma = fpsEma == null ? fps : fpsEma * 0.9 + fps * 0.1;
+function adaptGfx(dt, target) {
+  if (gfxSel >= 0 || !dt || target < 20) return;   // 菜单/暂停这类低帧率时段不参与判断
+  const rel = (1 / Math.max(dt, 1e-3)) / target;   // 实际帧率 / 目标帧率：省电模式 30 帧封顶时不能被误判成「卡」
+  fpsEma = fpsEma == null ? rel : fpsEma * 0.9 + rel * 0.1;
   gfxAdaptCd -= dt;
   if (gfxAdaptCd > 0) return;
-  // 预测式降档：场上怪多 / 特效多的时候（大波、首领战）门槛抬高到 50 帧，不用等真的卡了才降；这种时候也不急着升回去
+  // 预测式降档：场上怪多 / 特效多的时候（大波、首领战）门槛抬高，不用等真的卡了才降；这种时候也不急着升回去
   const heavy = !!S && (S.enemies.length > 36 || S.fx.length > GFX.cap * 0.6);
-  if (fpsEma < (heavy ? 50 : 42) && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
-  else if (fpsEma > 56 && !heavy && autoIdx < GFX_LV.length - 1) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
+  if (fpsEma < (heavy ? 0.83 : 0.7) && autoIdx > 0) { autoIdx--; applyGfx(-1); gfxAdaptCd = 3; }
+  else if (fpsEma > 0.93 && !heavy && autoIdx < autoMax() && TOUCH === false) { autoIdx++; applyGfx(-1); gfxAdaptCd = 6; }
 }
+// 触屏设备自动档最高只到「中」（高档在手机上几乎看不出区别，却更烫）
+const autoMax = () => (TOUCH ? 1 : GFX_LV.length - 1);
 // 特效满了就先丢掉装饰性的（粒子、伤害数字），横幅、演出、环这类关键反馈照常加
 const fxCheap = f => f.kind === "parts" || (f.kind === "text" && !f.big);
 function addFx(f) { f.t = 0; if (S.fx.length >= GFX.cap && fxCheap(f)) return; S.fx.push(f); if (f.kind === "boom" && f.r >= 0.9 && GFX.lit) stampDecal(f.x, f.y, f.r, f.color); }

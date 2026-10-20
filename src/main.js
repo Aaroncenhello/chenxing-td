@@ -9,7 +9,7 @@ function fpsTick(now, ms) {
   if (!OPT.fps) { if (!el.hidden) el.hidden = true; return; }
   el.hidden = false; fpsN++; fpsMs += ms; fpsMax = Math.max(fpsMax, ms);
   if (now - fpsT < 500) return;
-  el.textContent = `${Math.round(fpsN * 1000 / Math.max(1, now - fpsT))} FPS · 平均 ${(fpsMs / fpsN).toFixed(1)}ms · 最差 ${fpsMax.toFixed(0)}ms\n画质 ${GFX.name}${gfxSel < 0 ? "（自动）" : ""} · 敌 ${S.enemies.length} · 特效 ${S.fx.length}`;
+  el.textContent = `${Math.round(fpsN * 1000 / Math.max(1, now - fpsT))} 帧/秒（目标 ${Math.round(1000 / frameGap())}） · 平均 ${(fpsMs / fpsN).toFixed(1)}ms · 最差 ${fpsMax.toFixed(0)}ms\n画质 ${GFX.name}${gfxSel < 0 ? "（自动）" : ""} · 敌 ${S.enemies.length} · 特效 ${S.fx.length}`;
   fpsT = now; fpsN = 0; fpsMs = 0; fpsMax = 0;
 }
 // 一帧里哪怕出了错也要接着排下一帧，否则画面会整个停住（看上去就是黑屏 / 卡死）；错误只在控制台里报，前 3 次
@@ -18,10 +18,20 @@ function frame(now) {
   try { frameBody(now); } catch (e) { if (frameErrs++ < 3) setTimeout(() => { throw e; }); }
   requestAnimationFrame(frame);
 }
+// 帧率策略（发热/耗电的主旋钮）：逻辑本来就是固定 30Hz，画得比 30 帧快手机上基本看不出区别，却要多烧一倍的电。
+// 战斗中：省电模式 30 帧，否则 60 帧封顶（120Hz 屏也只画 60）；战场被面板盖住或暂停时降到 8~15 帧
+function frameGap() {
+  if (!S || menuOpen || S.over || S.offer || S.shop || S.event) return 1000 / 8;   // （剧情对话要打字机效果，不降）
+  if (S.paused) return 1000 / 15;
+  return OPT.eco ? 1000 / 30 : 1000 / 60;
+}
+// 界面文字、血条、按钮状态不用每帧刷：每 100ms 一次足够（战场画面仍然每帧画）
+let uiAt = 0;
 function frameBody(now) {
-  if (OPT.eco && now - last < 30) return;   // 省电：最多 30 帧
+  const gap = frameGap();
+  if (now - last < gap - 3) return;
   const dt = Math.min(0.1, (now - last) / 1000); fpsTick(now, (now - last)); last = now;
-  adaptGfx(dt);
+  adaptGfx(dt, 1000 / gap);
   if (S.slowCd > 0) S.slowCd -= dt;
   let k = 1; if (S.slowmo > 0) { S.slowmo -= dt; k = 0.3; }
   if (S.hitStopCd > 0) S.hitStopCd -= dt;
@@ -33,7 +43,9 @@ function frameBody(now) {
   }
   if (!S.offer && !S.shop && !S.cine && !S.event && S.pending > 0 && !S.over && !dlg && !menuOpen) { const mr = S.forceRare || 0; S.forceRare = 0; openOffer(mr, true); }
   handleEvents();
-  fitCheck(now); mapGuard(now); render(now); updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateUnitCards(now); updateCrystalBars(); updateTut(dt); updateDlg(dt); animRoster(now);
+  fitCheck(now); mapGuard(now); render(now);
+  if (now - uiAt >= 100 || gap > 100) { uiAt = now; updateStats(); updateTeam(); updateCardbar(); updateSpells(); updateUlt(); updateInfo(); updateOffer(); updateShop(); updateEvent(); updateSynBar(); updateHud(); updatePInfo(); updateUnitCards(now); updateCrystalBars(); }
+  updateTut(dt); updateDlg(dt); animRoster(now);
   if (!dlg) checkOver();
 }
 

@@ -67,7 +67,7 @@ for (const [w, h, wantRot] of [[390, 844, true], [844, 390, false]]) {
   await p.waitForTimeout(2600);
   check(await p.evaluate(() => mctx.getImageData((LW / 2) | 0, (LH / 2) | 0, 1, 1).data[3] === 255), '底图被清空后会自动重画（防 iOS 回收画布导致地图变黑）');
   // 黑屏防护 2：某一帧里出错，后面的帧照样继续
-  const n = await p.evaluate(async () => { let n = 0; const o = window.updatePInfo; window.updatePInfo = () => { n++; throw new Error('boom'); }; await new Promise(r => setTimeout(r, 400)); window.updatePInfo = o; return n; });
+  const n = await p.evaluate(async () => { let n = 0; const o = window.updatePInfo; window.updatePInfo = () => { n++; throw new Error('boom'); }; await new Promise(r => setTimeout(r, 900)); window.updatePInfo = o; return n; });
   check(n >= 5, `帧里报错后主循环没有停（出错帧数 ${n}）`, n);
   await p.context().close();
 }
