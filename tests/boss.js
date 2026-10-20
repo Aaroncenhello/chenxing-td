@@ -52,9 +52,9 @@ const { check, noErrors, report } = require('./lib');
     // 4 阶外观：确认每个英雄 lv4 两个分支都能画出来且不同
     const px = [];
     for (const u of T.UNITS) {
-      const a = renderHero(u, {phase:'idle', face:1, lv:4, branch:'A'});
-      const b2 = renderHero(u, {phase:'idle', face:1, lv:4, branch:'B'});
-      const c1 = renderHero(u, {phase:'idle', face:1, lv:1});
+      const a = heroPic(u, {face:1, lv:4, branch:'A'});
+      const b2 = heroPic(u, {face:1, lv:4, branch:'B'});
+      const c1 = heroPic(u, {face:1, lv:1});
       const da = a.toDataURL(), db = b2.toDataURL(), dc = c1.toDataURL();
       if (da === db || da === dc) px.push(u.id);
     }
