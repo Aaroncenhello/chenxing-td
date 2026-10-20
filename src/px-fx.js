@@ -81,6 +81,7 @@ function drawBranchFront(u, fx, fy, t) {
 // ---------- 角色 ----------
 function drawUnit(u, now) {
   const D = u.def, [fx, fy] = unitFeet(u), t = now / 1000, pop = Math.min(1, u.age / 0.25);
+  if (!u.lw && !u.summon) { u.lw = 1; lpcWantHero(D.id, true); }   // 上场的角色把 2、3 阶的衣服图也加载好
   if (u.down > 0) { // 倒下：躺在地上，显示复活倒计时
     ctx.globalAlpha = 0.5;
     drawHeroFig(ctx, D, { t: 0, id: u.id, face: u.face, lv: u.lv, branch: u.branch, down: true }, fx, fy);
@@ -92,10 +93,6 @@ function drawUnit(u, now) {
     return;
   }
   shadow(fx, fy, 22);
-  if (u.skillT > 0) {
-    ring(ctx, fx, fy, 17, 6, D.color, (t * 10 | 0) % 2); ring(ctx, fx, fy, 13, 4, "#ffffff", true);
-    for (let i = 0; i < 6; i++) { const k = (t * 1.2 + i / 6) % 1; rect(ctx, fx - 14 + i * 5, fy - k * 50, 2, 2, k < 0.7 ? D.color : "#ffffff"); }
-  }
   if (u.summon) {
     const ph = u.atkT < 0.13 ? "wind" : u.atkT < 0.3 ? "strike" : "idle", blink = u.life < 3 && (t * 6 | 0) % 2;
     const big = renderHero(D, { phase: ph, bob: ph === "idle" ? Math.floor(now / 500 + u.id) % 2 : 0, flash: u.hitT > 0.05, face: u.face, t });
@@ -156,7 +153,7 @@ function drawEnemy(e, now) {
   const squash = e.hitT > 0.08 && !OPT.calm, q = e.kb > 1.2 ? 0.88 : 0.93;
   if (L) {
     const tint = e.fuse > 0 ? ((t * 12 | 0) % 2 ? "rgba(255,50,30,.42)" : null) : isBoss(e) && e.enraged ? "rgba(255,60,40,.22)" : e.elite ? ELITE_TINT : null;
-    drawFoeFig(ctx, e.type, { t: frozen ? 0 : t, id: e.id, face: e.face, atkT: frozen ? 9 : e.atkT, cast: frozen || e.stunT > 0 ? -1 : e.cast ? Math.min(0.85, e.cast.t / 0.6) : e.skT > 0 ? 1 - e.skT / 0.7 : -1, walking: moving, phase: e.walk * 6, flash: e.hitT > 0.06, tint, sx: squash ? 1 / q * 0.97 : 1, sy: squash ? q : 1 },
+    drawFoeFig(ctx, e.type, { t: frozen ? 0 : t, id: e.id, face: e.face, atkT: frozen ? 9 : e.atkT, cast: frozen || e.stunT > 0 ? -1 : e.cast ? 0.32 + Math.sin(t * 9) * 0.04 : e.skT > 0 ? 1 - e.skT / 0.7 : -1, walking: moving, phase: e.walk * 6, flash: e.hitT > 0.06, tint, sx: squash ? 1 / q * 0.97 : 1, sy: squash ? q : 1 },
       fx + kb + lunge, fy - lift + R0((1 - born) * 8));
   } else {
     const big = renderFoe(e.type, { step: moving ? Math.floor(e.walk * 7) % 2 : 0, ph, flash: e.hitT > 0.06, face: e.face, elite: e.elite, fuse: e.fuse > 0, broken: e.maxShield > 0 && e.shield <= 0, t: frozen ? 0 : t });
@@ -170,6 +167,7 @@ function drawEnemy(e, now) {
   if (e.stunT > 0) for (let i = 0; i < 3; i++) { const a = t * 6 + i * 2.1; rect(ctx, fx + Math.cos(a) * 9, top - 4 + Math.sin(a) * 3, 2, 2, "#ffe060"); }
   if (e.corrode && e.corrode.t > 0) for (let i = 0; i < 2; i++) { const k = (t * 1.2 + i * 0.5 + e.id * 0.17) % 1; rect(ctx, fx - 7 + i * 12, top + 4 + k * 14, 2, 2, k < 0.7 ? "#a8d848" : "#e0ff9a"); }
   if (e.burn > 0) for (let i = 0; i < 3; i++) { const k = (t * 2.2 + i / 3 + e.id * 0.11) % 1; rect(ctx, fx - 7 + i * 6, top + 8 - k * 16, 2, 2, k < 0.5 ? "#ff8a3a" : "#ffe060"); }
+  if (e.huntMark > S.t) drawHuntMark(fx, fy - lift, top, t);
   if (e.mark > 0) { const a = t * 3; for (let i = 0; i < 4; i++) { const b = a + i * 1.57; dot(ctx, fx + Math.cos(b) * 8, top - 2 + Math.sin(b) * 4, "#c890ff"); } }
   if (e.poison && e.poison.t > 0 && (t * 4 | 0) % 2) { rect(ctx, fx - 6, top + 6, 2, 2, "#9cf07a"); rect(ctx, fx + 5, top + 10, 2, 2, "#6ad050"); }
   if (frozen) {
@@ -217,6 +215,7 @@ function drawShot(s) {
 // ---------- 特效 ----------
 const overlayTexts = [];
 function drawFx(f, now) {
+  if (f.t < 0) return;   // 延迟出现的特效（addFxLater）
   const k = f.t / f.life, t = now / 1000;
   if (f.kind === "text") {
     if (/^\+?\d+$/.test(f.text)) {
@@ -304,6 +303,8 @@ function drawFx(f, now) {
     for (let i = 1; i < 6; i++) rect(ctx, sx + i * 8 - 2, sy - i * 13 - 2, 5 - (i >> 1), 5 - (i >> 1), i < 3 ? "#ffb040" : "#ff6a2a");
     disc(ctx, sx, sy, 7, "#ff6a2a"); disc(ctx, sx - 1, sy + 1, 4, "#ffd060"); rect(ctx, sx - 2, sy, 3, 3, "#ffffff");
     addGlow(sx, sy, 30, mc, 0.8);
+  } else if (f.kind === "skfx") {
+    drawSkFx(f, k, t);
   } else if (f.kind === "corpse") {
     const [fx, fy] = foeFeet(f), flash = k < 0.3 && (f.t * 24 | 0) % 2 === 0;
     const sy = k < 0.3 ? 1 : 1 - (k - 0.3) / 0.7 * 0.8, lift = foeFly(f.type) ? R0(22 * (1 - Math.min(1, k * 2))) : 0;
@@ -761,6 +762,7 @@ function render(now) {
   for (const f of S.fx) if (f.kind === "corpse" || f.kind === "ucorpse" || f.kind === "shatter") drawFx(f, now);
   for (const e of S.enemies) if (e.d.flying) withFace(e, drawEnemy, now);
   drawBlades(t);
+  drawSkillAuras(now);
   drawFocus(t);
   drawHazAir(t);
   for (const s of S.shots) drawShot(s);

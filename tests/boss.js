@@ -49,14 +49,14 @@ const { check, noErrors, report } = require('./lib');
     out.eliteCine = S2.cine ? S2.cine.name + '/' + S2.cine.title : null;
     out.eliteUlt = !!ultOf(e2);
     S2.cine = null;
-    // 4 阶外观：确认每个英雄 lv4 两个分支都能画出来且不同
+    // 4 阶外观：确认每个英雄 4 阶（穿齐）和 1 阶（裸体）画出来不同
     const px = [];
     for (const u of T.UNITS) {
       const a = heroPic(u, {face:1, lv:4, branch:'A'});
       const b2 = heroPic(u, {face:1, lv:4, branch:'B'});
       const c1 = heroPic(u, {face:1, lv:1});
       const da = a.toDataURL(), db = b2.toDataURL(), dc = c1.toDataURL();
-      if (da === db || da === dc) px.push(u.id);
+      if (da === dc) px.push(u.id);   // 4 阶（穿齐衣服）和 1 阶（裸体）必须不同
     }
     out.sameLook = px;
     return out;

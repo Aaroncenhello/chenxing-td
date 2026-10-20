@@ -29,5 +29,5 @@ function drawPortrait(D, canvas, lv, branch) {
   const g = cvs.getContext("2d"); g.imageSmoothingEnabled = true; cvs.style.imageRendering = "auto";   // 头像用平滑缩放，不要最近邻硬拉伸
   g.fillStyle = D.color; g.fillRect(0, 0, cvs.width, cvs.height);
   g.fillStyle = "rgba(0,0,0,.16)"; for (let y = 0; y < cvs.height; y += Math.max(2, dpr * 2)) g.fillRect(0, y, cvs.width, Math.max(1, dpr));
-  g.drawImage(heroPic(D, { face: 1, lv: lv || 1, branch }), 40, 14, 176, 176, 0, 0, cvs.width, cvs.height);
+  g.drawImage(heroPic(D, { face: 1, lv, branch }), 40, 14, 176, 176, 0, 0, cvs.width, cvs.height);
 }

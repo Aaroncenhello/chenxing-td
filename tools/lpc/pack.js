@@ -13,7 +13,7 @@ const STD = { walk: { row: 11, n: 9 }, cast: { row: 3, n: 7 }, thrust: { row: 7,
       let y = 3456; for (const c of custom) { all[c.name] = { sy: y + 3 * c.fs, fw: c.fs, fh: c.fs, n: c.frames[3] }; y += c.fs * c.rows; }
       // 游戏里只要这几行：行走（有大尺寸行走就用它，武器才完整）、受击、正面站姿、施法、出手
       if (!all[atkName]) throw new Error('没有这段动画：' + atkName + '（可用：' + Object.keys(all).join(',') + '）');
-      const pick = foes ? { walk: all.walk_128 || all.walk, cast: all.cast, atk: all[atkName] } : { walk: all.walk_128 || all.walk, hurt: all.hurt, front: all.front, cast: all.cast, atk: all[atkName] };   // 怪物只要行走、施法（放大招、治疗、召唤时用）和出手
+      const pick = foes ? { walk: all.walk_128 || all.walk, atk: all[atkName] } : { walk: all.walk_128 || all.walk, hurt: all.hurt, front: all.front, cast: all.cast, atk: all[atkName] };   // 怪物只要行走和出手（放大招、治疗、召唤也用出手动作）
       const rows = Object.entries(pick).map(([name, r]) => ({ name, ...r }));
       const W = Math.max(...rows.map(r => r.fw * r.n)), H = rows.reduce((a, r) => a + r.fh, 0); const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'); let dy = 0; const out = {};
       for (const r of rows) { g.drawImage(im, 0, r.sy, r.fw * r.n, r.fh, 0, dy, r.fw * r.n, r.fh); out[r.name] = { y: dy, fw: r.fw, fh: r.fh, n: r.n, ax: r.fw / 2, ay: r.fh / 2 + 26 }; dy += r.fh; }

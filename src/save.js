@@ -4,7 +4,7 @@
 const SAVE_KEY = "chenxing-td-v2", BACKUP_KEY = SAVE_KEY + "-backup";
 // 存档版本：改存档结构时 +1，并在 SAVE_MIGRATE 末尾加一步升级。旧存档读进来会按顺序补跑还没跑过的步骤。
 // 新加存档字段还要在 loadSave 的白名单里声明（带类型清洗），否则下次写存档就被丢掉。
-const SAVE_VER = 13;
+const SAVE_VER = 14;
 const SAVE_MIGRATE = [
   // 5.0：角色等级上线，按已通关关卡数补发初始角色经验
   [5, d => { const cleared = d.stars.filter(x => x > 0).length; for (const u of UNITS) if (!u.joinAt) { const c = d.chars[u.id] || (d.chars[u.id] = { exp: 0 }); c.exp = Math.max(c.exp || 0, cleared * 150); } }],
@@ -14,6 +14,8 @@ const SAVE_MIGRATE = [
   [12, () => { }],
   // 13：连败辅助计数 lose（各主线关卡连续失败次数）
   [13, () => { }],
+  // 14：角色外观 skin / skinBuy（新字段，没有就是原装外观）
+  [14, () => { }],
 ];
 // 清洗用的小工具：数字夹在范围内、只留认识的 id，这样导入被改坏的存档也不会让页面出错
 const isObj = x => !!x && typeof x === "object" && !Array.isArray(x);
@@ -46,6 +48,8 @@ function loadSave(noBackup) {
     disk: Object.fromEntries(Object.entries(numMap(v.disk, 0)).filter(([k]) => k in diskMax).map(([k, n]) => [k, Math.min(diskMax[k], Math.floor(n))])),
     abyss: Object.fromEntries(Object.entries(numMap(v.abyss, 0, ABYSS_MAX)).map(([k, n]) => [k, Math.floor(n)])),
     week: objMap(v.week, r => ({ clear: !!r.clear, best: Math.floor(clampN(r.best, 0)) })),
+    skin: Object.fromEntries(Object.entries(numMap(v.skin, 0, 1)).filter(([k]) => UNITS.some(u => u.id === k)).map(([k, n]) => [k, Math.floor(n)])),
+    skinBuy: idList(v.skinBuy, id => /^[a-z]+:1$/.test(id) && !!(SKIN_DEF[id.split(":")[0]] && SKIN_DEF[id.split(":")[0]].rule.stars)),
     gfx: Number.isInteger(v.gfx) && v.gfx >= -1 && v.gfx <= 2 ? v.gfx : -1,   // 画质：-1 自动，0 低 1 中 2 高
     relicSeen: idList(v.relicSeen, id => !!RELIC_BY[id]), exped: { best: Math.floor(clampN((v.exped || {}).best, 0, 99)), clears: Math.floor(clampN((v.exped || {}).clears, 0)), runs: Math.floor(clampN((v.exped || {}).runs, 0)) }, bounty: { date: typeof (v.bounty || {}).date === "string" ? v.bounty.date.slice(0, 10) : "", done: idList((v.bounty || {}).done).slice(0, 3) }, cardSeen: idList(v.cardSeen, id => !!ANY_CARD(id)), bonusStars: Math.floor(clampN(v.bonusStars, 0)), refunded: Math.floor(clampN(v.refunded, 0)),
     ver: Number.isInteger(v.ver) ? v.ver : legacyVer(v),
@@ -90,7 +94,7 @@ function starBank() {
   const abyssEarned = Object.values(d.abyss).reduce((n, top) => { for (let l = 1; l <= top; l++) n += abyssStars(l); return n; }, 0);
   const weekEarned = Object.keys(d.week).filter(k => d.week[k] && d.week[k].clear).length * WEEK_STARS;
   const total = earned + abyssEarned + weekEarned + d.bonusStars + codexProgress(d).stars;
-  const spent = diskSpent(d.disk);
+  const spent = diskSpent(d.disk) + skinSpent(d);
   return { earned: total, spent, left: total - spent, perks: d.perks, disk: d.disk };
 }
 const unlocked = i => i === 0 || (loadSave().stars[i - 1] || 0) > 0;
@@ -127,5 +131,6 @@ function importSave(code) {
   if (cur) backupSave(cur, "导入存档之前的进度");
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); } catch (e) { return "浏览器不让写入存档（可能是隐私模式或空间满了）。"; }
   writeSave(loadSave(true));   // 读一遍：补跑版本升级、清洗掉类型不对的字段，再存回去
+  try { syncSkins(); } catch (e) { }
   return null;
 }

@@ -1,0 +1,1005 @@
+{
+ "knight.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "knight.weapon": {
+  "w": 1664,
+  "h": 4992,
+  "custom": [
+   {
+    "name": "slash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   },
+   {
+    "name": "backslash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 13,
+    "frames": [
+     13,
+     13,
+     13,
+     13
+    ]
+   },
+   {
+    "name": "halfslash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   }
+  ]
+ },
+ "knight.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mage.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mage.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mage.weapon": {
+  "w": 1536,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "knight.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "knight.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "knight.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "knight.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "knight.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "sword.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "sword.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "sword.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "sword.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "sword.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "sword.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "sword.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "sword.weapon": {
+  "w": 1152,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "slash_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   }
+  ]
+ },
+ "assassin.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "assassin.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "assassin.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "assassin.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "assassin.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "assassin.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "assassin.weapon": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "assassin.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "lancer.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "lancer.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "lancer.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "lancer.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "lancer.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "lancer.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "lancer.weapon": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "archer.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "lancer.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "archer.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "archer.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "archer.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "archer.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "archer.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "archer.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "archer.weapon": {
+  "w": 1152,
+  "h": 3968,
+  "custom": [
+   {
+    "name": "walk_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 9,
+    "frames": [
+     9,
+     9,
+     9,
+     9
+    ]
+   }
+  ]
+ },
+ "mage.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mage.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mage.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mage.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mage.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "gunner.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "gunner.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "gunner.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "gunner.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "gunner.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "gunner.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "gunner.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "gunner.weapon": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "priest.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "priest.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "priest.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "priest.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "priest.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "priest.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "priest.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "priest.weapon": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "frost.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "frost.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "frost.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "frost.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "frost.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "frost.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "frost.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "frost.weapon": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "alchemist.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "alchemist.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "alchemist.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "alchemist.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "alchemist.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "alchemist.weapon": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "alchemist.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "alchemist.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "bard.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "bard.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "bard.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "bard.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "bard.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "bard.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "bard.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "bard.weapon": {
+  "w": 1152,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "slash_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   }
+  ]
+ },
+ "summoner.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "summoner.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "summoner.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "summoner.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "summoner.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "summoner.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "summoner.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "summoner.weapon": {
+  "w": 1536,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "mech.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mech.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mech.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mech.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mech.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mech.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mech.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mech.weapon": {
+  "w": 1536,
+  "h": 4992,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   },
+   {
+    "name": "slash_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   }
+  ]
+ },
+ "star.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "star.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "star.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "star.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "star.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "star.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "star.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "chrono.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "star.weapon": {
+  "w": 1536,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "chrono.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "chrono.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "chrono.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "chrono.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "chrono.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "chrono.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "chrono.weapon": {
+  "w": 1536,
+  "h": 4224,
+  "custom": [
+   {
+    "name": "thrust_oversize",
+    "fs": 192,
+    "rows": 4,
+    "cols": 8,
+    "frames": [
+     8,
+     8,
+     8,
+     8
+    ]
+   }
+  ]
+ },
+ "marshal.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "marshal.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "marshal.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "marshal.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "marshal.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "marshal.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "marshal.weapon": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "counter.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "marshal.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "counter.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "counter.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "counter.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "counter.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "counter.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "counter.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "counter.weapon": {
+  "w": 1664,
+  "h": 4992,
+  "custom": [
+   {
+    "name": "slash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   },
+   {
+    "name": "backslash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 13,
+    "frames": [
+     13,
+     13,
+     13,
+     13
+    ]
+   },
+   {
+    "name": "halfslash_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 6,
+    "frames": [
+     6,
+     6,
+     6,
+     6
+    ]
+   }
+  ]
+ },
+ "hunter.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "hunter.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "hunter.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "hunter.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "hunter.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "hunter.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "hunter.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "hunter.weapon": {
+  "w": 1152,
+  "h": 3968,
+  "custom": [
+   {
+    "name": "walk_128",
+    "fs": 128,
+    "rows": 4,
+    "cols": 9,
+    "frames": [
+     9,
+     9,
+     9,
+     9
+    ]
+   }
+  ]
+ },
+ "songstress.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "songstress.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "songstress.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "songstress.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "songstress.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "songstress.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "songstress.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "songstress.weapon": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "breaker.nude": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "breaker.s0t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "breaker.s0t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "breaker.s0t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "breaker.s1t2": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "breaker.s1t3": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "breaker.s1t4": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "breaker.weapon": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ }
+}

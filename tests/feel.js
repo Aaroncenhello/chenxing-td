@@ -21,7 +21,7 @@ const r = await p.evaluate(() => {
 console.log(JSON.stringify(r));
 check(r.stop1 > 0 && r.stop1 < 0.06 && r.stop2 === 0, '精英暴击轻顿帧，冷却内不重复', { a: r.stop1, b: r.stop2 });
 check(r.knock > 0.1, '普通怪暴击被推开', r.knock);
-check(r.cast.stop > 0 && r.cast.lines, '技能出手有定格和冲击线', r.cast);
+check(r.cast.stop === 0 && r.cast.lines, '技能出手有冲击线、不停顿', r.cast);
 check(r.healTxt && r.healTxt.startsWith('+'), '治疗数字带加号', r.healTxt);
 check(!r.err, '压扁、暴击描边、冲击线绘制不报错', r.err);
 check(r.calm === 0, '「减少闪光」开着时不顿帧', r.calm);

@@ -35,8 +35,8 @@ const path = require("path");
   await p.waitForTimeout(200);
   check((await p.locator("#ovbox").innerText()).includes("连败"), "输了之后有连败提示", "");
   // 旧存档升级：版本 12 的存档读入后 lose 为空
-  const old = await p.evaluate(() => { localStorage.setItem(SAVE_KEY, JSON.stringify({ ver: 12, stars: [1] })); const d = loadSave(); return [d.ver, JSON.stringify(d.lose)]; });
-  check(old[0] === 13 && old[1] === "{}", "旧版（12）存档升级到 13", old);
+  const old = await p.evaluate(() => { localStorage.setItem(SAVE_KEY, JSON.stringify({ ver: 12, stars: [1] })); const d = loadSave(); return [d.ver, JSON.stringify(d.lose), SAVE_VER]; });
+  check(old[0] === old[2] && old[1] === "{}", "旧版（12）存档升级到最新版本", old);
   noErrors(errs);
   await b.close(); report("c3");
 })();

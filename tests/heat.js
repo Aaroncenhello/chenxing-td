@@ -43,4 +43,21 @@ check(lv === '中', `连打 6 秒后自动画质仍是「中」（${lv}）`, lv)
   check(await p.evaluate(() => !!errBanner && !errBanner.hidden && errBanner.textContent.includes('boom')), '帧里出错时屏幕上有提示');
   for (let i = errs.length - 1; i >= 0; i--) if (errs[i] === 'boom') errs.splice(i, 1);
 }
+// 自动画质升降不能动战场画布（以前一降一升就把画布销毁重建，画面反复黑一下）
+{
+  const r = await p.evaluate(() => {
+    setOpt('eco', true); autoIdx = 1; gfxDropped = false; autoRS = null; fpsEma = null; gfxAdaptCd = 0; applyGfx(-1); resizeSoon();
+    return new Promise(res => setTimeout(() => {
+      const size0 = cv.width + 'x' + cv.height, log0 = DIAG.length, rs0 = RS;
+      for (let i = 0; i < 400; i++) adaptGfx(1 / 12, 30);          // 持续很卡：降档
+      const dropped = GFX.name;
+      for (let i = 0; i < 1500; i++) adaptGfx(1 / 30, 30);          // 之后一直流畅：不应该再升回去
+      res({ size0, size1: cv.width + 'x' + cv.height, rs0, rs1: RS, dropped, after: GFX.name, canvasLogs: DIAG.slice(log0).filter(r => r[1] === '画布').length });
+    }, 400));
+  });
+  check(r.dropped === '低' && r.after === '低', '卡了会降到「低」，之后不再来回升降', r);
+  check(r.size0 === r.size1 && r.rs0 === r.rs1 && r.canvasLogs === 0, '自动升降画质时战场画布大小和倍数不变', r);
+  const d = await p.evaluate(() => { showDiag(); const t = document.getElementById('ovbox').innerText; closeOverlay(); return t; });
+  check(d.includes('诊断信息') && d.includes('战场画布') && d.includes('画质'), '菜单里有「诊断信息」页，能看到画布和画质记录');
+}
 noErrors(errs); report('heat'); await b.close(); })();

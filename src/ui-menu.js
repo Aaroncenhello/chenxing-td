@@ -91,6 +91,16 @@ function showCredits() {
     ${C.items.map(i => `<small>${esc(i.file)} — ${esc(i.authors)}（${esc(i.licenses)}）${i.urls ? "　" + esc(i.urls.split(", ")[0]) : ""}</small>`).join("")}</div>
     <div class="btns"><button class="primary" id="btn-newsok">返回</button></div>`);
 }
+function showDiag() {
+  const esc = t => String(t).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const sheets = (m, l) => `${Object.values(l).filter(e => e.ready).length}/${Object.keys(m).length}`;
+  const info = [`屏幕 ${innerWidth}×${innerHeight} · 像素比 ${window.devicePixelRatio}`, `战场画布 ${cv.width}×${cv.height}（${RS} 倍）· ${ROT ? "竖屏大画面" : "普通布局"}`, `画质 ${GFX.name}${gfxSel >= 0 ? "（手选）" : "（自动）"} · ${OPT.eco ? "省电 30 帧" : "不限帧"}`,
+    `素材 角色 ${sheets(LPC_PACK, LPC_IMG)} · 怪物 ${sheets(LPC_FOE_PACK, LPC_FOE_IMG)}`, `版本 ${NEWS_VER} · 已运行 ${((Date.now() - DIAG_T0) / 60000).toFixed(1)} 分钟`];
+  openOverlay(`<h2>诊断信息</h2><div class="tree" style="text-align:left;max-height:60vh;overflow:auto">
+    <small>黑屏、卡顿时先别刷新，打开这一页截图发给我。</small>${info.map(t => `<small>${esc(t)}</small>`).join("")}
+    <small><b>最近记录（秒 · 类型 · 内容）</b></small>${DIAG.slice().reverse().map(r => `<small>${r[0]}s · ${esc(r[1])} · ${esc(r[2])}</small>`).join("") || "<small>还没有记录</small>"}</div>
+    <div class="btns"><button class="primary" id="btn-newsok">返回</button></div>`);
+}
 function showNews() {
   let seen = ""; try { seen = localStorage.getItem("chenxing-td-news") || ""; } catch (e) { }
   if (seen === NEWS_VER || !loadSave().tutorial) return false;
@@ -130,7 +140,7 @@ function showLevels() {
     <p class="chaprog">${ch.name} · 本章星级 ${chStars}/${ids.length * 3}</p><div class="chbar" style="--cc:${CH_COL[chapSel] || "#8fb3e0"}"><i style="width:${Math.round(chStars / (ids.length * 3) * 100)}%"></i></div><p>${DIFFS[diffSel].desc}${diffSel ? `。要先在普通难度通关；首次通关 +1★，之后每次通关 +${1 + DIFF_BONUS[diffSel]}★（普通是 +1★）。` : "。"}</p>
     ${abyssOpen(save) > 0 && save.stars.some(x => x > 0) ? abyssHtml(save) : ""}
     ${contractHtml()}
-    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-credits">素材署名</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="30 帧 + 文字层降分辨率，手机更省电、更不烫（手机默认开）">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-sp2" title="${SPELL2[OPT.sp2].desc}。第二个法术槽（W）用哪个，点一下换">第二法术 · ${SPELL2[OPT.sp2].name}</button><button id="btn-pix" title="整数倍缩放，像素粗细均匀。窗口放不下合适的整数倍时自动不生效">像素完美 · ${OPT.pix ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button><button id="btn-fps" title="左上角显示帧率和当前画质，卡顿时截图反馈给我很有用">显示帧率 · ${OPT.fps ? "开" : "关"}</button><button id="btn-big" title="手机竖屏时把战场转成竖版，画面更大；关掉就是原来的横版画面">竖屏大画面 · ${OPT.big ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
+    <div class="btns"><button id="btn-roster">角色 · ${openChars().length}/${UNITS.length}</button><button id="btn-perks">天赋星盘 · 可用 <span class="starbank">${bank.left}★</span></button><button id="btn-codex">图鉴 ${save.seen.length}/${Object.keys(ENEMIES).length}</button><button id="btn-achv">成就 ${save.achv.length}/${ACHV.length}</button><button id="btn-save">存档</button><button id="btn-credits">素材署名</button><button id="btn-diag">诊断信息</button><button id="btn-gfx" title="特效太多手机卡的话调低">画质 · ${gfxSel >= 0 ? GFX.name : "自动（" + GFX.name + "）"}</button><button id="btn-eco" title="30 帧 + 文字层降分辨率，手机更省电、更不烫（手机默认开）">省电 · ${OPT.eco ? "开" : "关"}</button><button id="btn-sp2" title="${SPELL2[OPT.sp2].desc}。第二个法术槽（W）用哪个，点一下换">第二法术 · ${SPELL2[OPT.sp2].name}</button><button id="btn-pix" title="整数倍缩放，像素粗细均匀。窗口放不下合适的整数倍时自动不生效">像素完美 · ${OPT.pix ? "开" : "关"}</button><button id="btn-calm" title="去掉全屏闪白和红边，抖屏减弱，对光敏感的玩家更友好">减少闪光 · ${OPT.calm ? "开" : "关"}</button><button id="btn-fps" title="左上角显示帧率和当前画质，卡顿时截图反馈给我很有用">显示帧率 · ${OPT.fps ? "开" : "关"}</button><button id="btn-big" title="手机竖屏时把战场转成竖版，画面更大；关掉就是原来的横版画面">竖屏大画面 · ${OPT.big ? "开" : "关"}</button>${running ? '<button id="btn-resume">继续当前关卡</button>' : ""}</div>
     <div class="levels">` +
     ids.map(i => { const st = STAGES[i];
       const open = unlocked(i), cleared = (save.stars[i] || 0) > 0, dc = save.diffClear[i] || [];
@@ -309,6 +319,10 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.dataset.hero && heroCtx) { const { stage, opts } = heroCtx; heroCtx = null; editSave(d => { d.hero = b.dataset.hero; }); if (opts.expedStart) expStart(b.dataset.hero); else startRun(stage, { ...opts, hero: b.dataset.hero }); }
   else if (b.dataset.ros) showRoster(b.dataset.ros);
   else if (b.dataset.rnav) showRoster(b.dataset.rnav);
+  else if (b.dataset.rskin != null) { rosterSkin = +b.dataset.rskin; showRoster(rosterFor); }
+  else if (b.dataset.rtier != null) { rosterTier = +b.dataset.rtier; for (const t of document.querySelectorAll(".tierb")) t.classList.toggle("on", +t.dataset.rtier === rosterTier); }
+  else if (b.dataset.rwear != null) { wearSkin(rosterFor, +b.dataset.rwear); showRoster(rosterFor); }
+  else if (b.dataset.rbuy != null) { const err = buySkin(rosterFor); if (err) toast("<b>不能兑换</b>" + err); else { rosterSkin = 1; toast("<b>已兑换</b>新外观已经穿上"); } showRoster(rosterFor); }
   else if (b.id === "btn-roster") showRoster();
   else if (b.dataset.perk) { const p = PERKS.find(x => x.id === b.dataset.perk); if (p && starBank().left >= p.cost) editSave(d => { if (!d.perks.includes(p.id)) d.perks.push(p.id); }); showPerks(); }
   else if (b.id === "btn-perks") showPerks();
@@ -329,6 +343,7 @@ $("ovbox").addEventListener("click", ev => {
   else if (b.id === "btn-menu") { heroCtx = null; showLevels(); }
   else if (b.id === "btn-newsok") showLevels();
   else if (b.id === "btn-credits") showCredits();
+  else if (b.id === "btn-diag") showDiag();
 });
 let lastOpts = {};
 // 进关流程：第一次玩先看剧情，然后选英雄
