@@ -113,7 +113,7 @@ function drawUnit(u, now) {
   // 出手前蓄力后撤、出手瞬间前冲这些动作都在骨骼姿势里（身体前倾 lean），这里只处理击退和出场下落
   const kb = -R0(u.kb * 2) * u.face, drop = R0((1 - pop) * 30);
   if (u.lv >= 4) drawBranchBack(u, fx, fy, t);
-  drawHeroFig(ctx, D, { t: t + u.id * 0.37, id: u.id, face: u.face, atkT: u.atkT, walking, flash: u.hitT > 0.05, skill: u.skillT > 0, lv: u.lv, branch: u.branch, hurt: ph === "hurt" }, fx + kb, fy - drop);
+  drawHeroFig(ctx, D, { t: t + u.id * 0.37, id: u.id, face: u.face, atkT: u.atkT, walking, flash: u.hitT > 0.05, skill: u.skillT > 0, cast: u.castT > 0 ? 1 - u.castT / CAST_POSE : -1, lv: u.lv, branch: u.branch, hurt: ph === "hurt" }, fx + kb, fy - drop);
   if (u.lv >= 4) drawBranchFront(u, fx, fy, t);
   if (S.shieldT > 0) { ctx.globalAlpha = Math.min(1, S.shieldT); ring(ctx, fx, fy - 18, 16, 8, "#8fd0ff", (t * 8 | 0) % 2); ctx.globalAlpha = 1; }
   if (u.frozenT > 0) {
@@ -156,7 +156,7 @@ function drawEnemy(e, now) {
   const squash = e.hitT > 0.08 && !OPT.calm, q = e.kb > 1.2 ? 0.88 : 0.93;
   if (L) {
     const tint = e.fuse > 0 ? ((t * 12 | 0) % 2 ? "rgba(255,50,30,.42)" : null) : isBoss(e) && e.enraged ? "rgba(255,60,40,.22)" : e.elite ? ELITE_TINT : null;
-    drawFoeFig(ctx, e.type, { t: frozen ? 0 : t, id: e.id, face: e.face, atkT: frozen ? 9 : e.atkT, walking: moving, phase: e.walk * 6, flash: e.hitT > 0.06, tint, sx: squash ? 1 / q * 0.97 : 1, sy: squash ? q : 1 },
+    drawFoeFig(ctx, e.type, { t: frozen ? 0 : t, id: e.id, face: e.face, atkT: frozen ? 9 : e.atkT, cast: frozen || e.stunT > 0 ? -1 : e.cast ? Math.min(0.85, e.cast.t / 0.6) : e.skT > 0 ? 1 - e.skT / 0.7 : -1, walking: moving, phase: e.walk * 6, flash: e.hitT > 0.06, tint, sx: squash ? 1 / q * 0.97 : 1, sy: squash ? q : 1 },
       fx + kb + lunge, fy - lift + R0((1 - born) * 8));
   } else {
     const big = renderFoe(e.type, { step: moving ? Math.floor(e.walk * 7) % 2 : 0, ph, flash: e.hitT > 0.06, face: e.face, elite: e.elite, fuse: e.fuse > 0, broken: e.maxShield > 0 && e.shield <= 0, t: frozen ? 0 : t });

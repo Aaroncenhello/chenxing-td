@@ -11,7 +11,7 @@ const r = await p.evaluate(() => {
   for (const t of types) {
     if (!foeLpc(t)) { old.push(t); continue; }
     const b = foeBox(t); if (!(b[2] - b[0] > 8 && -b[1] > 8)) noBox.push(t);
-    for (const o of [{}, { walking: true, phase: 3 }, { atkT: 0.05 }, { atkT: 0.2 }, { atkT: 0.38 }, { flash: true }, { tint: ELITE_TINT }, { sx: 1.1, sy: 0.9 }, { sy: 0.4 }]) {
+    for (const o of [{}, { walking: true, phase: 3 }, { atkT: 0.05 }, { atkT: 0.2 }, { atkT: 0.38 }, { cast: 0 }, { cast: 0.5 }, { cast: 0.95 }, { flash: true }, { tint: ELITE_TINT }, { sx: 1.1, sy: 0.9 }, { sy: 0.4 }]) {
       g.clearRect(0, 0, 400, 400); if (!drawFoeFig(g, t, { t: 1.1, id: 2, face: -1, ...o }, 200, 330)) { nodraw.push(t); continue; }
       if (px(c) < 40) blank.push(t + JSON.stringify(o));
     }
@@ -51,4 +51,16 @@ for (const t of ['boss', 'sovereign', 'devourer', 'nameless', 'silencer', 'storm
   const ok = await p.evaluate(async t => { const S = __td.S; S.enemies.length = 0; S.cine = null; spawnAt(t, 6, 4, false); await new Promise(r => setTimeout(r, 300)); const had = !!S.cine; for (let i = 0; i < 60; i++) { S.cine = null; S.shop = null; S.event = null; S.offer = null; __td.step(1 / 30); } await new Promise(r => setTimeout(r, 200)); S.enemies.length = 0; return true; }, t);
   check(ok, '首领 ' + t + ' 入场、战斗中不报错');
 }
+// 放招动作：英雄用技能后 castT > 0 并且画的是施法动作；会放大招/治疗/召唤的怪也有施法动作
+const cast = await p.evaluate(async () => {
+  closeOverlay(); startRun(3, { hero: 'knight', charOpen: UNITS.map(u => u.id) }); const S = __td.S; S.offer = null; S.pending = 0;
+  const u = S.units[0]; u.sp = u.def.sp; const before = u.castT || 0; __td.useSkill(u); const during = u.castT;
+  for (let i = 0; i < 30; i++) __td.step(1 / 30); const after = u.castT;
+  const g = document.createElement('canvas').getContext('2d'); g.canvas.width = 300; g.canvas.height = 300; const diff = [];
+  const px = () => { const d = g.getImageData(0, 0, 300, 300).data; let h = 0; for (let i = 3; i < d.length; i += 4) h = (h * 31 + d[i]) | 0; return h; };
+  for (const t of ['necro', 'shaman', 'boss', 'nullmage']) { const hs = new Set(); for (const c of [0, 0.3, 0.6, 0.9]) { g.clearRect(0, 0, 300, 300); drawFoeFig(g, t, { t: 0, face: 1, atkT: 9, cast: c }, 150, 250); hs.add(px()); } if (hs.size < 3) diff.push(t); }
+  return { before, during, after, diff };
+});
+check(cast.before === 0 && cast.during > 0.5 && cast.after <= 0, '英雄放招后进入施法动作并在 0.6 秒内结束', cast);
+check(cast.diff.length === 0, '怪物施法动作有多帧变化', cast.diff);
 noErrors(errs); report('foes-lpc'); await b.close(); })();

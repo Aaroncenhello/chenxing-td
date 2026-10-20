@@ -160,6 +160,7 @@ function step(dt) {
     }
     if (br(u, "knight", "A") && !cu("cu_blood")) heal(u, u.maxHp * 0.02 * dt, true, u);
     if (u.def.id === "bard" && u.skillT > 0) for (const a of S.units) if (a !== u && alive(a) && dist(u, a) <= uRange(u)) heal(a, a.maxHp * 0.02 * dt, true, u);
+    if (u.castT > 0) u.castT -= dt;
     if (u.stop > 0) { u.stop -= dt; continue; }
     u.atkT += dt;
     if (!u.summon) {
@@ -219,7 +220,7 @@ function step(dt) {
       continue;
     }
     if (e.stop > 0) { e.stop -= dt; continue; }
-    e.atkT += dt;
+    e.atkT += dt; if (e.skT > 0) e.skT -= dt;
     if (e.d.aoe) {
       e.aoeCd -= dt;
       if (e.aoeCd <= 0 && e.freezeT <= 0 && e.stunT <= 0) {
@@ -227,13 +228,13 @@ function step(dt) {
         for (const u of [...S.units]) if (alive(u) && dist(u, e) <= e.d.aoe.radius) hurtUnit(u, calc(eAtk(e) * e.d.aoe.mult, "phys", uDef(u), uRes(u)), "phys", e);
         const col = e.type === "sovereign" ? "#b070ff" : "#ff5a3a";
         addFx({ kind: "boom", x: e.x, y: e.y, r: e.d.aoe.radius, color: col, life: 0.6 });
-        burst(e.x, e.y, e.type === "sovereign" ? "#c890ff" : "#ff7a4f", 24, 3.2, 0.7, 0.08); S.shake = 0.35; e.atkT = 0;
+        burst(e.x, e.y, e.type === "sovereign" ? "#c890ff" : "#ff7a4f", 24, 3.2, 0.7, 0.08); S.shake = 0.35; e.atkT = 0; e.skT = 0.7;
       }
     }
     if (e.d.heal) {
       e.healCd -= dt;
       if (e.healCd <= 0) {
-        e.healCd = e.d.heal.every; e.atkT = 0;
+        e.healCd = e.d.heal.every; e.atkT = 0; e.skT = 0.7;
         for (const o of S.enemies) if (!o.dead && dist(o, e) <= e.d.heal.radius && o.hp < o.maxHp) {
           const got = Math.min(e.d.heal.amount * stageHp() * e.hpK * S.diffK.hp, o.maxHp - o.hp); o.hp += got; addNum(o.x, o.y, got, "#7ee89c");
         }
@@ -243,7 +244,7 @@ function step(dt) {
     if (e.d.summon && e.freezeT <= 0 && e.stunT <= 0) {
       e.summonCd -= dt;
       if (e.summonCd <= 0) {
-        e.summonCd = e.d.summon.every; e.atkT = 0;
+        e.summonCd = e.d.summon.every; e.atkT = 0; e.skT = 0.7;
         for (let i = 0; i < e.d.summon.n; i++) spawnNear("skeleton", e, false, true).hitT = 0.2;
         addFx({ kind: "ring", x: e.x, y: e.y, color: "#b070ff", life: 0.6, r0: 0.1, r1: 1 });
         burst(e.x, e.y, "#b070ff", 14, 2, 0.6, 0.06);
