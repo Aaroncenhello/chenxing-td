@@ -6045,8 +6045,7 @@ function drawFoe(g, type, o) {
 // 战场放大系数 = LPC_K × FOE_KS[类型]（1 = 和角色一样大；取 2/3 的倍数，RS=2 时每个素材像素正好是整数个设备像素）
 let FOE_VER = 0;
 const FOE_KS = { goblin: 2 / 3, pilferer: 2 / 3, shaman: 2 / 3, bomber: 2 / 3, imp: 2 / 3, voidling: 2 / 3, emberling: 2 / 3,
-  orc: 4 / 3, frostgiant: 4 / 3, ashwalker: 4 / 3, golem: 4 / 3, warmech: 4 / 3, monolith: 4 / 3, bellkeeper: 4 / 3, wyvern: 4 / 3, starguard: 4 / 3, voidknight: 4 / 3,
-  boss: 5 / 3, sovereign: 5 / 3, stormlord: 5 / 3, devourer: 2, nameless: 2, silencer: 2 };
+  boss: 4 / 3, sovereign: 4 / 3, stormlord: 4 / 3, devourer: 5 / 3, nameless: 5 / 3, silencer: 5 / 3 };
 const FOE_FLY = new Set(["ghost", "icewraith"]);
 const foeLpc = type => (LPC_FOE_PACK[type] && lpcOk(type, true) ? LPC_FOE_PACK[type] : null);
 const foeKs = type => FOE_KS[type] || 1;
@@ -6072,7 +6071,7 @@ function foePic(type, o) {
   let c = FOE_PIC.get(key); if (c) return c;
   if (FOE_PIC.size >= 50) { for (const v of FOE_PIC.values()) FOE_PIC_POOL.push(v); FOE_PIC.clear(); }
   let k = FOE_PIC_POOL.findIndex(v => v.width === S * 2); c = k >= 0 ? FOE_PIC_POOL.splice(k, 1)[0] : document.createElement("canvas");
-  c.width = S * 2; c.height = S * 2; c.S = S; c.fx = S / 2; c.fy = S - 8;   // 赋宽高顺便清空
+  c.width = S * 2; c.height = S * 2; c.S = S; c.fx = S / 2 - (b[0] + b[2]) / 2; c.fy = S - 8;   // 赋宽高顺便清空
   const g = c.getContext("2d"); g.scale(2, 2);
   drawFoeFig(g, type, { t: 0, face: o.face || 1, flash: o.flash, tint: o.elite ? ELITE_TINT : null, atkT: o.ph === "wind" ? 0.12 : 9 }, c.fx, c.fy);
   FOE_PIC.set(key, c); return c;

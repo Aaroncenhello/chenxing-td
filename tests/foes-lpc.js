@@ -29,6 +29,10 @@ check(r.badCrop.length === 0, '图标截取框都在画布里', r.badCrop.slice(
 check(r.old.length <= 8 && r.old.every(t => ['slime', 'bigslime', 'treasure', 'sandworm', 'scorpion', 'crab', 'mechspider', 'drone'].includes(t)), '只有 8 种怪物还用旧像素图', r.old);
 check(r.oldOk, '旧像素图的静态图尺寸信息正确（S=120，脚底 60）');
 check(r.fly.every(Boolean) && !r.walk, '飞行怪判断正确', r.fly);
+// 剧情里的反派立绘、图鉴图标
+const bust = await p.evaluate(() => { const bad = []; const c = document.createElement('canvas'); for (const id in SPEAKERS) { if (!SPEAKERS[id].foe) continue; drawBust(c, id, -1, false); const d = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 40) n++; if (n < 800) bad.push(id + ':' + n);
+  const ic = document.createElement('canvas'); drawFoeIcon(ic, SPEAKERS[id].foe); const e = ic.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, 52, 52).data; let m = 0; for (let i = 3; i < e.length; i += 4) if (e[i] > 40) m++; if (m < 150) bad.push('icon ' + id + ':' + m); } return bad; });
+check(bust.length === 0, '反派对话立绘和图鉴图标都画得出来', bust);
 // 战场里：全部敌人刷出来、走几步、挨打、被打死（碎裂/倒下）、精英、首领入场演出
 const run = await p.evaluate(async () => {
   closeOverlay(); startRun(10, { hero: 'knight', charOpen: UNITS.map(u => u.id) }); const S = __td.S; S.offer = null; S.pending = 0; S.enemies.length = 0;
