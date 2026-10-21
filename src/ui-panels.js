@@ -106,13 +106,16 @@ function updateOffer() {
   $("lu-tip").innerHTML = S.offer.length > 3 ? "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> 选卡，<kbd>R</kbd> 重抽，<kbd>X</kbd> 放逐" : "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 选卡，<kbd>R</kbd> 重抽，<kbd>X</kbd> 放逐";
   const title = S.offerRare ? "稀有货架，选一张" : S.level <= 1 && !S.kills ? "开局翻牌，选一张" : `升到 Lv ${S.level} · 等级加成 +${Math.round(BAL.levelBonus * (S.level - 1) * 100)}%，选一张卡`;
   setText("lu-title", title + (S.pending > 1 ? `（还有 ${S.pending - 1} 次）` : ""));
+  let recId = null; { const js = S.offer.filter(p => p.join).map(p => [p, joinScore(p.def.id)]).sort((x, y) => y[1] - x[1]); if (js.length && js[0][1] >= 3 && (js.length === 1 || js[0][1] > js[1][1])) recId = js[0][0].id; }   // 升档最多的那张伙伴卡打上「推荐」
   $("cards3").innerHTML = S.offer.map((p, i) => {
     const c = cardInfo(p), r = p.rare || 0, R = RARITY[r] || { name: "诅咒", color: CURSE_COLOR };
     const tag = p.card && p.card.evo ? `<span class="rt" style="background:#ffd860">进化</span>` : r ? `<span class="rt" style="background:${R.color}">${R.name}</span>` : "";
     const body = c.curse ? `<span>${p.curse.good}<em class="bad">代价：${p.curse.bad}</em></span>` : `<span>${c.desc}</span>`;
-    const th = p.join ? traitHint(p.def.id).filter(x => x.from >= 1 || x.up) : [], thHtml = th.length ? `<em class="sh th">${th.map(x => `<span style="color:${x.color}">${x.name} ${x.from}→${x.to}${x.up ? " ▲" : ""}</span>`).join("　")}</em>` : "";
+    const th = p.join ? traitHint(p.def.id).filter(x => x.from >= 1 || x.up) : [], ph = p.join ? pairHint(p.def.id) : [];
+    const thHtml = p.join ? `<em class="trh"><span class="tags">${tagHtml(p.def.id)}</span></em>` + th.map(x => `<em class="trh"><b style="color:${x.color}">${x.name} ${x.from}→${x.to}${x.up ? " ▲" : ""}</b> ${x.up ? x.desc : x.nextN ? `（${x.nextN} 人档：${x.nextDesc}）` : "已满档"}</em>`).join("") + ph.map(x => `<em class="trh pr"><b>搭档 · ${x.p.name}</b> ${x.name}在队，加入后：${x.p.desc}</em>`).join("") : "";
+    const rec = p.join && recId === p.id ? `<span class="rt rec">推荐</span>` : "";
     const h = synHint(p), hint = thHtml + (h ? `<em class="sh${h.done ? " done" : ""}" style="--g:${h.g.color}">${h.done ? "凑齐羁绊 · " + h.g.name : `羁绊 ${h.g.name} ${h.a}/${h.b}`}</em>` : "");
-    return `<button class="pcard r${r}${c.sig ? " sig" : ""}" data-pick="${p.id}" style="--c:${c.color}"><span class="key">${i + 1}</span>${tag}<canvas id="lu-${i}" aria-hidden="true"></canvas>
+    return `<button class="pcard r${r}${c.sig ? " sig" : ""}" data-pick="${p.id}" style="--c:${c.color}"><span class="key">${i + 1}</span>${tag}${rec}<canvas id="lu-${i}" aria-hidden="true"></canvas>
       <div><small>${KIND_NAME[c.kind] || "诅咒"}</small><b>${c.name}</b>${body}${hint}</div></button>`;
   }).join("");
   const rb = $("btn-reroll");
@@ -187,13 +190,13 @@ function traitState() {
 }
 function traitChips(max) {
   const list = traitState().filter(x => x.k > 0 || x.n >= 2).sort((a, b) => (b.k > 0) - (a.k > 0) || b.k - a.k || b.n - a.n);
-  const pairs = PAIRS.filter(p => S && S.trPairs && S.trPairs[p.id]).map(p => `<span class="sc on pair" style="--c:#e8c860" title="搭档 · ${p.desc}">${p.name.slice(0, 2)}<u>${p.name.slice(2)}</u></span>`).join("");
-  return list.map(x => `<span class="sc${x.k ? " on" : ""}" style="--c:${x.t.color}" title="${x.t.axis} · ${x.t.id}：${x.k ? x.t.tiers[x.k - 1].desc : "再来 " + (x.nx - x.n) + " 人：" + x.t.tiers[0].desc}">${x.t.id.slice(0, 2)}<u>${x.t.id.slice(2)}</u><i>${x.n}${x.nx ? "/" + x.nx : "✓"}</i></span>`).slice(0, max || 99).join("") + (max ? "" : pairs);
+  const pairs = PAIRS.filter(p => S && S.trPairs && S.trPairs[p.id]).map(p => `<span class="sc on pair" data-pop="p:${p.id}" style="--c:#e8c860" title="搭档 · ${p.desc}">${p.name.slice(0, 2)}<u>${p.name.slice(2)}</u></span>`).join("");
+  return list.map(x => `<span class="sc${x.k ? " on" : ""}" data-pop="t:${x.t.id}" style="--c:${x.t.color}" title="${x.t.axis} · ${x.t.id}：${x.k ? x.t.tiers[x.k - 1].desc : "再来 " + (x.nx - x.n) + " 人：" + x.t.tiers[0].desc}">${x.t.id.slice(0, 2)}<u>${x.t.id.slice(2)}</u><i>${x.n}${x.nx ? "/" + x.nx : "✓"}</i></span>`).slice(0, max || 99).join("") + (max ? "" : pairs);
 }
 function synChips(max) {
   const list = synState().filter(x => x.on || x.a > 0).sort((x, y) => (y.on - x.on) || (x.b - x.a) - (y.b - y.a));
   if (max) return traitChips(max) || `<span class="sc none">还没有羁绊</span>`;
-  return (traitChips() + list.map(x => `<span class="sc${x.on ? " on" : ""}" style="--c:${x.g.color}" title="${x.g.need}：${x.g.desc}">${x.on ? "✓" : ""}${x.g.name.slice(0, 2)}<u>${x.g.name.slice(2)}</u>${x.on2 ? "Ⅱ" : ""}${x.on ? "" : `<i>${x.a}/${x.b}</i>`}</span>`).join(""))
+  return (traitChips() + list.map(x => `<span class="sc${x.on ? " on" : ""}" data-pop="s:${x.g.id}" style="--c:${x.g.color}" title="${x.g.need}：${x.g.desc}">${x.on ? "✓" : ""}${x.g.name.slice(0, 2)}<u>${x.g.name.slice(2)}</u>${x.on2 ? "Ⅱ" : ""}${x.on ? "" : `<i>${x.a}/${x.b}</i>`}</span>`).join(""))
     || `<span class="sc none">还没有羁绊</span>`;
 }
 let synKey = "";
@@ -240,7 +243,34 @@ function showSynGuide() {
   openOverlay(`<h2>本局规则与羁绊</h2>${rulesHtml()}<p>每名英雄带阵营、职业、特质三个标签，队里同标签的人越多，效果越强。技能羁绊靠拿齐技能卡。条件不满足（例如有人倒下）时效果会暂时消失，数字是这局现在的进度。</p>
     ${traitGuideHtml(true)}${synGuideHtml(true)}<div class="btns"><button class="primary" id="btn-synback">返回战斗</button></div>`);
 }
-document.addEventListener("click", ev => { if (ev.target.closest("[data-synhelp], .syns, #pi-syn, #h-syn")) showSynGuide(); });
+// 羁绊小卡：点看板里的芯片弹出（不暂停战斗），写清当前档加成、下一档、成员（在队的亮、不在队的灰）；点别处收起，7 秒后自动收起
+let popT = 0;
+function hidePop() { const el = $("trpop"); if (el) el.hidden = true; clearTimeout(popT); }
+function showPop(spec) {
+  const el = $("trpop"); if (!el || !S) return; const [kind, id] = [spec.slice(0, 1), spec.slice(2)], here = S.units.filter(u => !u.dead && !u.summon).map(u => u.def.id), canvases = [];
+  const mem = ids => `<div class="pmem">${ids.map(i => { const D = UNITS.find(u => u.id === i); if (!D) return ""; const inn = here.includes(i), open = (S.charOpen || []).includes(i); canvases.push(D);
+    return `<span class="${inn ? "in" : open ? "" : "lock"}"><canvas id="pp-${i}" aria-hidden="true"></canvas><em>${D.name}</em><small>${inn ? "在队" : open ? "可招募" : "未解锁"}</small></span>`; }).join("")}</div>`;
+  let html = "";
+  if (kind === "t") {
+    const t = TRAIT_BY[id], n = (S.trN && S.trN[id]) || 0, k = (S.tr && S.tr[id]) || 0; if (!t) return;
+    html = `<b style="color:${t.color}">${t.id}<small>${t.axis}羁绊 · 队里 ${n} 人</small></b>${t.tiers.map((x, i) => `<p class="${k === i + 1 ? "cur" : k > i + 1 ? "past" : ""}">${k === i + 1 ? "✓ " : ""}${x.n} 人：${x.desc}${k < i + 1 && n < x.n ? `<em>（还差 ${x.n - n} 人）</em>` : ""}</p>`).join("")}${mem(UNITS.filter(u => tagsOf(u.id).includes(id)).map(u => u.id))}`;
+  } else if (kind === "p") {
+    const p = PAIRS.find(x => x.id === id); if (!p) return; const on = S.trPairs && S.trPairs[p.id];
+    html = `<b style="color:#e8c860">搭档 · ${p.name}<small>${on ? "已生效" : "两人同时在场才生效"}</small></b><p class="${on ? "cur" : ""}">${p.desc}</p>${mem(p.ids)}`;
+  } else {
+    const g = SYNERGY.find(x => x.id === id); if (!g) return; const [a, b] = g.prog(), on = S.syn && S.syn[g.id];
+    html = `<b style="color:${g.color}">${g.name}<small>技能羁绊 · ${on ? "已生效" : a + "/" + b}</small></b><p class="${on ? "cur" : ""}">条件：${g.need}</p><p>效果：${g.desc}</p>${g.t2 ? `<p>强化 Ⅱ：${g.t2.desc}</p>` : ""}`;
+  }
+  el.innerHTML = html + `<button class="x" data-popx aria-label="关闭">×</button>`; el.hidden = false;
+  for (const D of canvases) { const c = $("pp-" + D.id); if (c) drawPortrait(D, c, 1); }
+  clearTimeout(popT); popT = setTimeout(hidePop, 7000);
+}
+document.addEventListener("click", ev => {
+  const pop = ev.target.closest("[data-pop]"); if (pop) { showPop(pop.dataset.pop); return; }
+  if (ev.target.closest("#trpop")) { if (ev.target.closest("[data-popx]")) hidePop(); return; }
+  hidePop();
+  if (ev.target.closest("[data-synhelp], .syns, #pi-syn, #h-syn")) showSynGuide();
+});
 // 进入新一幕：全屏金色闪一下，晨星碑周围一圈光
 function actFlash(a) {
   const el = $("cele"); if (!el) return;
@@ -482,7 +512,7 @@ function updatePInfo() {
   const team = S.units.filter(u => !u.summon), key = team.map(u => u.id + u.def.id + ":" + u.lv + (u.branch || "")).join(",");
   if (key !== piTeamKey) {
     piTeamKey = key;
-    $("pi-team").innerHTML = team.map(u => `<button class="pu${u.hero ? " hero" : ""}" data-pu="${u.id}" style="--c:${u.def.color}"><canvas id="pu-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b><small class="lv">Lv${clv(u.def.id)} · ${u.lv >= 4 ? "转职" : u.lv + "阶"}</small><i class="hp"><s></s></i><i class="sp"><s></s></i></button>`).join("");
+    $("pi-team").innerHTML = team.map(u => `<button class="pu${u.hero ? " hero" : ""}" data-pu="${u.id}" style="--c:${u.def.color}"><canvas id="pu-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b>${tagDots(u.def.id)}<small class="lv">Lv${clv(u.def.id)} · ${u.lv >= 4 ? "转职" : u.lv + "阶"}</small><i class="hp"><s></s></i><i class="sp"><s></s></i></button>`).join("");
     for (const u of team) drawPortrait(u.def, $("pu-" + u.id), u.lv, u.branch);
   }
   for (const u of team) {

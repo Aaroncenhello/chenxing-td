@@ -41,6 +41,7 @@ function handleEvents() {
   while (S.events.length) {
     const ev = S.events.shift();
     if (ev.type === "achv") unlockAchv(ev.id);
+    else if (ev.type === "trait") toast(`<b>羁绊 · ${ev.name}${ev.n ? " " + ev.n + " 人档" : ""}</b>${ev.desc}`);
     else if (ev.type === "relic") { const R = RELIC_BY[ev.id]; editSave(d => { if (!d.relicSeen.includes(ev.id)) d.relicSeen.push(ev.id); }); toast(`<b>遗物 · ${R.name}</b>${R.desc}（${S.relics.length}/${RELIC_MAX}）`, c => drawRelicIcon(c, ev.id, 44)); }
     else if (ev.type === "syn") toast(`<b>羁绊 · ${ev.name}</b>${ev.desc}`);
     else if (ev.type === "tip") toast(`<b>${ev.title}</b>${ev.text}`);
@@ -65,6 +66,7 @@ function teamGrowth() {
 function nextGoal() {
   let best = null;
   for (const g of SYNERGY) { const [a, b] = g.prog(); if (a > 0 && a < b && (!best || b - a < best.gap)) best = { g, a, b, gap: b - a }; }
+  const tg = traitGoal(); if (tg) return tg;
   return best ? `凑齐「${best.g.name}」${best.a}/${best.b}（${best.g.need}）` : "";
 }
 function updateStats() {
@@ -104,7 +106,7 @@ function updateTeam() {
   if (key !== teamKey) {
     teamKey = key;
     teamEl.innerHTML = S.units.map(u => `<button class="tm${u.hero ? " hero" : ""}" data-unit="${u.id}" style="--c:${u.def.color}">
-      <canvas class="pt" id="tm-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}</b><span>${u.summon ? "召唤物" : "Lv" + clv(u.def.id) + " · " + (u.lv >= 4 ? u.def.branches[u.branch === "A" ? 0 : 1].name : u.lv + " 阶")}</span><i class="hpb" style="width:100%"></i></button>`).join("");
+      <canvas class="pt" id="tm-${u.id}" aria-hidden="true"></canvas><b>${u.def.name}${u.summon ? "" : tagDots(u.def.id)}</b><span>${u.summon ? "召唤物" : "Lv" + clv(u.def.id) + " · " + (u.lv >= 4 ? u.def.branches[u.branch === "A" ? 0 : 1].name : u.lv + " 阶")}</span><i class="hpb" style="width:100%"></i></button>`).join("");
     for (const u of S.units) drawPortrait(u.def, $("tm-" + u.id), u.lv, u.branch);
   }
   for (const u of S.units) {
@@ -112,6 +114,7 @@ function updateTeam() {
     el.classList.toggle("down", u.down > 0);
     el.querySelector(".hpb").style.width = (u.down > 0 ? 100 : u.hp / u.maxHp * 100).toFixed(0) + "%";
   }
+  updateDots();
 }
 let cardKey = "";
 function cardIconTo(cvs, id) {

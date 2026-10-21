@@ -23,5 +23,5 @@ console.log(JSON.stringify(r));
 check(r.offer && r.fly && r.queued, '选牌后有飞牌特效，落地时排了一圈光', { f: r.fly, q: r.queued });
 check(r.pips >= 2 && r.maxed >= 1, '卡牌栏有星级点，满级卡有金边', { p: r.pips, m: r.maxed });
 check(r.growth[1] > r.growth[0] && r.pw.startsWith('×'), '战力倍数随卡牌上涨', r.growth);
-check(/火系/.test(r.goal) && /目标/.test(r.xp), '经验条里有「下一步目标」', { g: r.goal, x: r.xp });
+check(/火系|升到/.test(r.goal) && /目标/.test(r.xp), '经验条里有「下一步目标」', { g: r.goal, x: r.xp });
 noErrors(errs); report('grow'); await b.close(); })();

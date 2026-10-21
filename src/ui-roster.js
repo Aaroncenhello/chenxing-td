@@ -101,7 +101,7 @@ function showHeroPick(stage, opts) {
     ${foes.length ? `<div class="wavebar" style="justify-content:center"><span>本关敌人：</span>${foes.map(k => `<span class="chip${ENEMIES[k].flying ? " elite" : ""}">${seen.includes(k) ? ENEMIES[k].name + (ENEMIES[k].flying ? " · 飞行" : "") : "？？？"}</span>`).join("")}</div>` : ""}
     <div class="heroes">${open.map(D => `<button class="card${D.id === last ? " sel" : ""}" data-hero="${D.id}" style="--c:${D.color}">
       <canvas class="pt" id="hp-${D.id}" aria-hidden="true"></canvas><span class="nm">${D.name}</span>
-      <span class="meta">${D.cls} · ${D.place === "ground" ? "前排拦怪" : D.dmg === "heal" ? "治疗" : D.air ? "能打飞行" : "只打地面"}</span><span class="clv">Lv${lvs[D.id]}${awkOf(charExp(save, D.id)) ? "★" + awkOf(charExp(save, D.id)) : ""}</span></button>`).join("")}</div>
+      <span class="meta">${D.cls} · ${D.place === "ground" ? "前排拦怪" : D.dmg === "heal" ? "治疗" : D.air ? "能打飞行" : "只打地面"}</span><span class="tags">${tagHtml(D.id)}</span><span class="clv">Lv${lvs[D.id]}${awkOf(charExp(save, D.id)) ? "★" + awkOf(charExp(save, D.id)) : ""}</span></button>`).join("")}</div>
     <div class="btns"><button id="btn-menu">返回选关</button></div>`);
   for (const D of open) drawPortrait(D, $("hp-" + D.id));
 }
@@ -180,6 +180,7 @@ function showRoster(id) {
       ${L.lv >= PROG.max ? (() => { const A = awkInfo(exp); return `<div class="rlv awk"><b>觉醒 ${"★".repeat(A.a)}${"☆".repeat(AWK.max - A.a)}</b><span>${A.full ? "已完全觉醒" : `觉醒经验 ${A.into} / ${AWK.need}`}</span></div><div class="meter"><i style="width:${A.full ? 100 : Math.round(A.into / AWK.need * 100)}%;background:linear-gradient(90deg,#ffd860,#ff8ac0)"></i></div>
         <p class="awkp">觉醒加成：攻击、生命 +${Math.round(A.a * AWK.perLv * 100)}%${A.a >= AWK.auraLv ? " · 金色光环" : ""}${A.a >= AWK.spLv ? " · 技力回复 +20%" : ""}</p>`; })() : ""}
       <div class="tags">${tagHtml(id)}</div>
+      ${(() => { const ps = PAIRS.filter(x => x.ids.includes(id)).map(x => { const o = UNITS.find(u => u.id === x.ids.find(i => i !== id)); return `${x.name}（搭档：${o ? o.name : ''}，${x.desc}）`; }); return ps.length ? `<p class="awkp">${ps.join('；')}</p>` : ''; })()}
       <p class="bio">${BIO[id]}</p></div>
     <div class="rright">
       <div class="rstats">${st("生命", D.hp, k)}${st("攻击", D.atk, k)}${st("防御", D.def, 1)}${st("法抗", D.res, 1)}
