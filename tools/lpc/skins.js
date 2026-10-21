@@ -17,64 +17,64 @@ const corset = c => T('vest', 'Corset', c), bodice = c => T('vest', 'Bodice', c)
 const slitDress = c => T('dress', 'Slit dress', c), sashDress = c => T('dress', 'Sash dress', c), kimono = c => T('dress', 'Kimono', c);
 
 module.exports = {
-  knight: { color: 'light', ...H('High ponytail', 'blonde'), weapon: [T('weapon', 'Arming Sword', 'brass'), T('shield', 'Kite', 'kite blue blue')], names: ['誓约骑装', '白羽轻铠'], s: [
+  knight: { color: 'light', ...H('High ponytail', 'blonde'), weapon: [T('weapon', 'Arming Sword', 'brass')], names: ['誓约骑装', '女武神'], s: [
     sk([T('legs', 'Armour', 'steel'), T('shoes', 'Armour', 'steel')], [T('armour', 'Plate', 'steel'), T('gloves', 'Gloves', 'steel')], [T('hat', 'Tiara', 'tiara_gold'), T('cape', 'Solid', 'blue')]),
     sk([boots('white'), hose('white'), plain('white')], [corset('blue'), T('shoulders', 'Pauldrons', 'silver')], [T('hat', 'Tiara', 'tiara_silver'), T('cape', 'Solid', 'blue')])] },
-  sword: { color: 'light', ...H('High ponytail', 'red'), weapon: [T('weapon', 'Saber', 'saber')], names: ['红鬃剑装', '烈焰短装'], s: [
+  sword: { color: 'light', ...H('High ponytail', 'red'), weapon: [T('weapon', 'Saber', 'saber')], names: ['红鬃剑装', '海盗船长'], s: [
     sk([pants('black'), boots('black')], [T('armour', 'Leather', 'brown')], [T('bandana', 'Bandana', 'red')]),
     sk([shorts('black'), boots('black'), hose('black')], [corset('red')], [T('bandana', 'Bandana', 'red'), T('cape', 'Tattered', 'maroon')])] },
-  assassin: { color: 'light', ...H('Bob', 'black'), weapon: [T('weapon', 'Dagger', 'dagger')], names: ['夜行衣', '暗影缚带'], s: [
-    sk([leggings('black'), boots('black')], [long('black')], [T('hat', 'Hood', 'black'), T('facial_mask', 'Plain Mask', 'black')]),
-    sk([shorts('black'), hose('black'), boots('black')], [corset('black'), T('gloves', 'Gloves', 'cloth.black')], [T('hat', 'Hood', 'black'), T('facial_mask', 'Plain Mask', 'black')])] },
+  assassin: { color: 'light', ...H('Bob', 'black'), weapon: [T('weapon', 'Dagger', 'dagger')], names: ['夜行衣', '猫影'], s: [
+    sk([leggings('black'), boots('black')], [long('black')], [T('bandana', 'Bandana', 'black')]),
+    sk([shorts('black'), hose('black'), boots('black')], [corset('black'), T('gloves', 'Gloves', 'cloth.black')], [T('bandana', 'Bandana', 'black')])] },
   lancer: { color: 'light', ...H('Long', 'navy'), weapon: [T('weapon', 'Spear', 'medium')], names: ['军团铠', '蓝裙战装'], s: [
     sk([T('legs', 'Armour', 'steel'), T('shoes', 'Armour', 'steel')], [T('armour', 'Legion', 'steel')], [T('hat', 'Legion', 'steel')]),
     sk([plain('navy'), hose('white'), boots('navy')], [corset('navy'), T('shoulders', 'Pauldrons', 'steel')], [T('hat', 'Legion', 'steel'), T('cape', 'Solid', 'navy')])] },
-  archer: { color: 'light', ...H('Long', 'platinum', T('ears', 'Elven ears', 'light')), weapon: [T('weapon', 'Recurve', 'medium'), T('quiver', 'Quiver', 'quiver')], names: ['林地猎装', '绿叶短装'], s: [
+  archer: { stow: true, color: 'light', ...H('Long', 'platinum', T('ears', 'Elven ears', 'light')), weapon: [T('weapon', 'Recurve', 'medium'), T('quiver', 'Quiver', 'quiver')], names: ['林地猎装', '林间精灵'], s: [
     sk([shorts('brown'), boots('brown')], [sleeveless('forest')], [T('hat', 'Leather Cap', 'brown')]),
     sk([shorts('forest'), hose('green'), boots('brown')], [tank('forest'), T('gloves', 'Gloves', 'cloth.brown')], [T('neck', 'Scarf', 'green')])] },
-  mage: { color: 'light', ...H('Long', 'violet'), weapon: [T('weapon', 'Gnarled staff', 'medium')], names: ['星幕法袍', '紫夜长裙'], s: [
+  mage: { color: 'light', ...H('Long', 'violet'), weapon: [T('weapon', 'Simple staff', 'simple')], names: ['星幕法袍', '红月女巫'], s: [
     sk([pants('black'), boots('black')], [T('clothes', 'Robe', 'blue')], [T('hat', 'Celestial Wizard Hat', 'blue')]),
     sk([hose('black'), boots('black')], [slitDress('purple')], [T('hat', 'Celestial Wizard Hat', 'blue')])] },
-  gunner: { color: 'light', ...H('Pigtails', 'carrot'), weapon: [T('weapon', 'Crossbow', 'crossbow')], names: ['机械师工装', '皮带短装'], s: [
+  gunner: { color: 'light', ...H('Pigtails', 'carrot'), weapon: [T('weapon', 'Crossbow', 'crossbow')], names: ['机械师工装', '牛仔短装'], s: [
     sk([shorts('black'), boots('brown')], [sleeveless('brown')], [T('belt', 'Leather Belt', 'brown')]),
     sk([shorts('brown'), hose('black'), boots('brown')], [corset('orange')], [T('belt', 'Leather Belt', 'brown'), T('gloves', 'Gloves', 'cloth.brown')])] },
-  priest: { color: 'brown', ...H('Long', 'white'), weapon: [T('weapon', 'Simple staff', 'simple')], names: ['祷言白袍', '圣泉长裙'], s: [
-    sk([shoes('white')], [T('clothes', 'Robe', 'white')], [T('hat', 'Hood', 'white')]),
-    sk([shoes('white'), hose('white')], [slitDress('white')], [T('hat', 'Hood', 'white'), T('neck', 'Scarf', 'sky')])] },
-  frost: { color: 'lavender', ...H('Long', 'white', T('ears', 'Elven ears', 'lavender')), weapon: [T('weapon', 'Wand', 'wand')], names: ['霜纱长裙', '冰晶薄纱'], s: [
+  priest: { color: 'brown', ...H('Long', 'white'), weapon: [T('weapon', 'Simple staff', 'simple')], names: ['祷言白袍', '天使'], s: [
+    sk([shoes('white')], [T('clothes', 'Robe', 'white')], [T('hat', 'Hijab', 'white')]),
+    sk([shoes('white'), hose('white')], [slitDress('white')], [T('hat', 'Hijab', 'white'), T('neck', 'Scarf', 'sky')])] },
+  frost: { color: 'lavender', ...H('Long', 'white', T('ears', 'Elven ears', 'lavender')), weapon: [T('weapon', 'Wand', 'wand')], names: ['霜纱长裙', '冰晶仙子'], s: [
     sk([boots('white')], [sashDress('sky')], []),
     sk([boots('white'), hose('white')], [slitDress('sky')], [T('neck', 'Scarf', 'white')])] },
-  alchemist: { color: 'light', ...H('Pigtails', 'pink'), weapon: [T('weapon', 'Wand', 'wand')], names: ['药房围裙', '实验短装'], s: [
+  alchemist: { color: 'light', ...H('Pigtails', 'pink'), weapon: [T('weapon', 'Wand', 'wand')], names: ['药房围裙', '猫尾药师'], s: [
     sk([pants('brown'), boots('brown')], [long('brown'), T('apron', 'Apron full', 'white')], [T('backpack', 'Backpack', 'blue')]),
     sk([shorts('brown'), hose('white'), boots('brown')], [corset('lavender')], [T('apron', 'Apron full', 'white'), T('backpack', 'Backpack', 'blue')])] },
-  bard: { color: 'light', ...H('Bob', 'chestnut'), weapon: [T('weapon', 'Rapier', 'rapier')], names: ['游吟束腰', '舞台短装'], s: [
+  bard: { color: 'light', ...H('Bob', 'chestnut'), weapon: [T('weapon', 'Rapier', 'rapier')], names: ['游吟束腰', '粉帽舞装'], s: [
     sk([pants('white'), boots('brown')], [T('clothes', 'Tunic', 'blue')], [T('hat', 'Tricorne', 'blue')]),
     sk([shorts('blue'), hose('white'), boots('brown')], [tank('blue')], [T('hat', 'Tricorne', 'blue'), T('cape', 'Solid', 'pink')])] },
-  summoner: { color: 'light', ...H('Long', 'chestnut'), weapon: [T('weapon', 'Loop staff', 'medium')], names: ['石纹兜帽袍', '祭礼短袍'], s: [
-    sk([shoes('brown')], [T('clothes', 'Robe', 'brown')], [T('hat', 'Hood', 'brown')]),
-    sk([boots('brown'), hose('black')], [slitDress('brown')], [T('hat', 'Hood', 'brown'), T('neck', 'Scarf', 'orange')])] },
-  mech: { color: 'light', ...H('Bob', 'gold'), weapon: [T('weapon', 'Halberd', 'halberd')], names: ['重装机甲', '合金战装'], s: [
-    sk([T('legs', 'Armour', 'steel'), T('shoes', 'Armour', 'steel')], [T('armour', 'Plate', 'steel'), T('gloves', 'Gloves', 'steel')], [T('hat', 'Barbuta', 'steel'), T('backpack', 'Jetpack', 'steel')]),
+  summoner: { color: 'light', ...H('Long', 'chestnut'), weapon: [T('weapon', 'Cane', 'cane')], names: ['石纹兜帽袍', '兽灵祭装'], s: [
+    sk([shoes('brown')], [T('clothes', 'Robe', 'brown')], [T('hat', 'Hijab', 'brown')]),
+    sk([boots('brown'), hose('black')], [slitDress('brown')], [T('hat', 'Hijab', 'brown'), T('neck', 'Scarf', 'orange')])] },
+  mech: { color: 'light', ...H('Bob', 'gold'), weapon: [T('weapon', 'Halberd', 'halberd')], names: ['重装机甲', '红甲机娘'], s: [
+    sk([T('legs', 'Armour', 'steel'), T('shoes', 'Armour', 'steel')], [T('armour', 'Plate', 'steel'), T('gloves', 'Gloves', 'steel')], [T('hat', 'Norman helm', 'steel'), T('backpack', 'Jetpack', 'steel')]),
     sk([shorts('black'), T('shoes', 'Armour', 'steel')], [corset('gray'), T('gloves', 'Gloves', 'steel')], [T('shoulders', 'Pauldrons', 'steel'), T('hat', 'Barbuta', 'steel'), T('backpack', 'Jetpack', 'steel')])] },
-  star: { color: 'light', ...H('Long', 'ash', T('ears', 'Elven ears', 'light')), weapon: [T('weapon', 'Diamond staff', 'medium')], names: ['月幕法袍', '夜空长裙'], s: [
+  star: { color: 'light', ...H('Long', 'ash', T('ears', 'Elven ears', 'light')), weapon: [T('weapon', 'Diamond staff', 'medium')], names: ['月幕法袍', '星蝶'], s: [
     sk([boots('black')], [T('clothes', 'Robe', 'black')], [T('hat', 'Celestial Wizard Moon Hat', 'blue')]),
     sk([boots('black'), hose('black')], [slitDress('black')], [T('hat', 'Celestial Wizard Moon Hat', 'blue')])] },
-  chrono: { color: 'light', ...H('Bob', 'green', T('ears', 'Elven ears', 'light')), weapon: [T('weapon', 'Loop staff', 'medium')], names: ['沙漏长袍', '时砂薄裙'], s: [
+  chrono: { color: 'light', ...H('Bob', 'green', T('ears', 'Elven ears', 'light')), weapon: [T('weapon', 'Wand', 'wand')], names: ['沙漏长袍', '蜻蜓时砂'], s: [
     sk([boots('brown')], [T('clothes', 'Robe', 'brown')], [T('belt', 'Robe Belt', 'teal')]),
     sk([boots('brown'), hose('white')], [slitDress('green')], [T('belt', 'Robe Belt', 'teal')])] },
   marshal: { color: 'light', ...H('Ponytail', 'blonde'), weapon: [T('weapon', 'Spear', 'medium')], names: ['红缨军铠', '赤裙战装'], s: [
     sk([T('legs', 'Legion skirt', 'red'), T('shoes', 'Armour', 'steel')], [T('armour', 'Legion', 'steel')], [T('hat', 'Legion', 'steel'), T('accessory', 'Legion Plumage', 'red'), T('cape', 'Solid', 'red')]),
     sk([T('legs', 'Legion skirt', 'red'), T('shoes', 'Armour', 'steel'), hose('red')], [corset('red'), T('shoulders', 'Legion', 'steel')], [T('hat', 'Legion', 'steel'), T('accessory', 'Legion Plumage', 'red'), T('cape', 'Solid', 'red')])] },
-  counter: { color: 'brown', ...H('Bob', 'dark brown'), weapon: [T('weapon', 'Arming Sword', 'bronze'), T('shield', 'Round Shield', 'gold')], names: ['青铜轻甲', '蓝青战装'], s: [
+  counter: { color: 'brown', ...H('Bob', 'dark brown'), weapon: [T('weapon', 'Arming Sword', 'bronze')], names: ['青铜轻甲', '蛮族战装'], s: [
     sk([pants('teal'), boots('leather')], [T('armour', 'Leather', 'leather')], []),
     sk([shorts('teal'), hose('black'), boots('leather')], [corset('leather')], [T('gloves', 'Gloves', 'cloth.leather')])] },
-  hunter: { color: 'light', ...H('Long', 'black'), weapon: [T('weapon', 'Recurve', 'medium'), T('quiver', 'Quiver', 'quiver')], names: ['夜猎装', '紫罗短装'], s: [
-    sk([leggings('black'), boots('black')], [long('black')], [T('hat', 'Hood', 'purple')]),
-    sk([shorts('black'), hose('black'), boots('black')], [corset('purple')], [T('hat', 'Hood', 'purple')])] },
-  songstress: { color: 'light', ...H('Long', 'blue'), weapon: [T('weapon', 'Wand', 'wand')], names: ['潮歌和服', '海风短裙'], s: [
+  hunter: { stow: true, color: 'light', ...H('Long', 'black'), weapon: [T('weapon', 'Recurve', 'medium'), T('quiver', 'Quiver', 'quiver')], names: ['夜猎装', '狼尾猎装'], s: [
+    sk([leggings('black'), boots('black')], [long('black')], [T('bandana', 'Bandana', 'purple')]),
+    sk([shorts('black'), hose('black'), boots('black')], [corset('purple')], [T('bandana', 'Bandana', 'purple')])] },
+  songstress: { color: 'light', ...H('Long', 'blue'), weapon: [T('weapon', 'Wand', 'wand')], names: ['潮歌和服', '海风仙子'], s: [
     sk([shoes('white')], [kimono('blue')], []),
     sk([shoes('white'), hose('white')], [slitDress('sky')], [T('neck', 'Scarf', 'blue')])] },
-  breaker: { color: 'light', ...H('Bob', 'white'), weapon: [T('weapon', 'Dagger', 'dagger')], names: ['截音黑衣', '裂音短装'], s: [
+  breaker: { color: 'light', ...H('Bob', 'white'), weapon: [T('weapon', 'Dagger', 'dagger')], names: ['截音黑衣', '堕天'], s: [
     sk([pants('black'), boots('black')], [long('black')], []),
     sk([shorts('black'), hose('black'), boots('black')], [corset('black')], [T('gloves', 'Gloves', 'cloth.black')])] },
 };
@@ -86,9 +86,9 @@ const CURVE = { knight: [0.6, 0.5], sword: [0.6, 0.55], assassin: [0.45, 0.45], 
 // for (const id of Object.keys(CURVE)) module.exports[id].curve = CURVE[id];
 // 第 2 套外观（偏性感）的搭配：抹胸 / 紧身胸衣 + 比基尼裤 / 超短裙 + 过膝袜 + 靴子，再按各自职业配披风、头盔、肩甲、手套
 const BIKINI = {
-  knight: sk([boots('white'), hose('white'), X('legs', 'Plain skirt', 'white', 0.38)], [X('clothes', 'Tanktop', 'white', 0.38), T('shoulders', 'Pauldrons', 'gold')], [T('hat', 'Legion', 'silver'), T('accessory', 'Helmet wings', 'gold'), T('cape', 'Solid', 'blue'), T('gloves', 'Gloves', 'gold')]),
+  knight: sk([boots('white'), hose('white'), X('legs', 'Plain skirt', 'white', 0.38)], [X('clothes', 'Tanktop', 'white', 0.38), T('shoulders', 'Pauldrons', 'gold')], [T('hat', 'Norman helm', 'silver'), T('accessory', 'Helmet wings', 'gold'), T('cape', 'Solid', 'blue'), T('gloves', 'Gloves', 'gold')]),
   sword: sk([boots('black'), hose('black'), X('legs', 'Short Shorts', 'black', 0.44)], [X('clothes', 'Tanktop', 'red', 0.38)], [T('hat', 'Tricorne Captain', 'black'), T('cape', 'Tattered', 'maroon'), T('gloves', 'Gloves', 'cloth.black')]),
-  assassin: sk([boots('black'), hose('black'), X('legs', 'Short Shorts', 'black', 0.44)], [X('vest', 'Corset', 'maroon', 0.5)], [T('hat', 'Hood', 'black'), T('tail', 'Cat Tail', 'black'), T('gloves', 'Gloves', 'cloth.black')]),
+  assassin: sk([boots('black'), hose('black'), X('legs', 'Short Shorts', 'black', 0.44)], [X('vest', 'Corset', 'maroon', 0.5)], [T('bandana', 'Bandana', 'black'), T('tail', 'Cat Tail', 'black'), T('gloves', 'Gloves', 'cloth.black')]),
   lancer: sk([T('shoes', 'Armour', 'steel'), hose('white'), X('legs', 'Plain skirt', 'navy', 0.38)], [X('clothes', 'Tanktop', 'blue', 0.38), T('shoulders', 'Pauldrons', 'steel')], [T('hat', 'Legion', 'steel'), T('cape', 'Solid', 'navy')]),
   archer: sk([boots('brown'), hose('green'), X('legs', 'Short Shorts', 'brown', 0.44)], [X('clothes', 'Tanktop', 'forest', 0.38)], [T('wings', 'Pixie Wings', 'green'), T('gloves', 'Gloves', 'cloth.brown'), T('neck', 'Scarf', 'green')]),
   mage: sk([boots('black'), hose('black'), X('legs', 'Plain skirt', 'red', 0.38)], [X('vest', 'Corset', 'black', 0.5)], [T('hat', 'Wizard Hat Base', 'black'), T('gloves', 'Gloves', 'cloth.red')]),
@@ -98,12 +98,12 @@ const BIKINI = {
   alchemist: sk([boots('brown'), hose('white'), X('legs', 'Short Shorts', 'black', 0.44)], [X('vest', 'Corset', 'red', 0.5)], [T('bandana', 'Bandana', 'pink'), T('tail', 'Cat Tail', 'pink'), T('backpack', 'Backpack', 'blue')]),
   bard: sk([boots('brown'), hose('white'), X('legs', 'Short Shorts', 'blue', 0.44)], [X('clothes', 'Tanktop', 'blue', 0.38)], [T('hat', 'Cavalier', 'pink'), T('cape', 'Solid', 'pink')]),
   summoner: sk([boots('brown'), hose('black'), X('legs', 'Plain skirt', 'black', 0.38)], [X('vest', 'Corset', 'orange', 0.5)], [T('horns', 'Curled Horns', 'brown'), T('tail', 'Wolf Tail', 'dark brown'), T('neck', 'Scarf', 'orange')]),
-  mech: sk([T('shoes', 'Armour', 'steel'), X('legs', 'Short Shorts', 'black', 0.44)], [X('vest', 'Corset', 'red', 0.5), T('gloves', 'Gloves', 'steel')], [T('shoulders', 'Pauldrons', 'steel'), T('hat', 'Xeon helmet', 'steel'), T('backpack', 'Jetpack', 'steel')]),
+  mech: sk([T('shoes', 'Armour', 'steel'), X('legs', 'Short Shorts', 'black', 0.44)], [X('vest', 'Corset', 'red', 0.5), T('gloves', 'Gloves', 'steel')], [T('shoulders', 'Pauldrons', 'steel'), T('hat', 'Pointed helm', 'steel'), T('backpack', 'Jetpack', 'steel')]),
   star: sk([boots('black'), hose('black'), X('legs', 'Slit skirt', 'black', 0.44)], [X('vest', 'Corset', 'black', 0.5)], [T('hat', 'Celestial Wizard Moon Hat', 'blue'), T('wings', 'Lunar Wings', 'navy'), T('gloves', 'Gloves', 'cloth.black')]),
   chrono: sk([boots('brown'), hose('white'), X('legs', 'Plain skirt', 'green', 0.38)], [X('clothes', 'Tanktop', 'green', 0.38)], [T('wings', 'Transparent Dragonfly Wings', 'dragonfly'), T('belt', 'Robe Belt', 'teal'), T('gloves', 'Gloves', 'cloth.white')]),
   marshal: sk([T('shoes', 'Armour', 'steel'), hose('red'), T('legs', 'Legion skirt', 'red')], [X('vest', 'Corset', 'red', 0.5), T('shoulders', 'Legion', 'steel')], [T('hat', 'Legion', 'steel'), T('accessory', 'Legion Plumage', 'red'), T('cape', 'Solid', 'red')]),
   counter: sk([boots('leather'), hose('black'), X('legs', 'Short Shorts', 'teal', 0.44)], [X('vest', 'Corset', 'white', 0.5)], [T('hat', 'Barbarian', 'bronze'), T('gloves', 'Gloves', 'cloth.leather')]),
-  hunter: sk([boots('black'), hose('black'), X('legs', 'Short Shorts', 'black', 0.44)], [X('vest', 'Corset', 'purple', 0.5)], [T('hat', 'Hood', 'purple'), T('tail', 'Fluffy Wolf Tail', 'black'), T('gloves', 'Gloves', 'cloth.black')]),
+  hunter: sk([boots('black'), hose('black'), X('legs', 'Short Shorts', 'black', 0.44)], [X('vest', 'Corset', 'purple', 0.5)], [T('bandana', 'Bandana', 'purple'), T('tail', 'Fluffy Wolf Tail', 'black'), T('gloves', 'Gloves', 'cloth.black')]),
   songstress: sk([shoes('white'), hose('white'), X('legs', 'Slit skirt', 'sky', 0.44)], [X('clothes', 'Tanktop', 'blue', 0.38)], [T('wings', 'Transparent Pixie Wings', 'pixie'), T('neck', 'Scarf', 'blue'), T('gloves', 'Gloves', 'cloth.white')]),
   breaker: sk([boots('black'), hose('black'), X('legs', 'Short Shorts', 'black', 0.44)], [X('vest', 'Corset', 'black', 0.5)], [T('horns', 'Backwards Horns', 'black'), T('wings', 'Bat Wings', 'black'), T('gloves', 'Gloves', 'cloth.black')]),
 };
@@ -117,10 +117,12 @@ module.exports.spec = (id, part) => {
   if (part === 'nude') return base.join('&');
   if (part === 'skin') return [F, 'body=Body_Color_' + H.color, 'head=Human_Female_' + H.color].join('&');
   if (part === 'weapon') return [F, ...H.weapon].join('&');
+  if (part === 'quiver') return [F, ...H.weapon.filter(w => w.startsWith('quiver='))].join('&');   // 弓手 / 猎人：行走和站立时弓收起来（不挡脸和胸），只留背上的箭袋；出手时才拿出弓
+
   const x = /^s1x(\d+)$/.exec(part); if (x) return [F, module.exports.trims(id)[+x[1]].tok].join('&');
   const m = /^s(\d)t(\d)$/.exec(part), s = H.s[+m[1]], tier = +m[2]; let gear = [];
   for (let t = 2; t <= tier; t++) gear = gear.concat(s['t' + t].filter(g => typeof g === 'string'));   // 裁短的图层不在这里渲染
   return base.concat(gear).join('&');
 };
 module.exports.PARTS = ['nude', 'skin', 's0t2', 's0t3', 's0t4', 's1t2', 's1t3', 's1t4', 'weapon'];
-module.exports.partsOf = id => module.exports.PARTS.concat(module.exports.trims(id).map(t => 's1x' + t.i));
+module.exports.partsOf = id => module.exports.PARTS.concat(module.exports[id].stow ? ['quiver'] : []).concat(module.exports.trims(id).map(t => 's1x' + t.i));

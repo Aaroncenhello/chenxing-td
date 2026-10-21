@@ -62,22 +62,9 @@
   "custom": []
  },
  "mage.weapon": {
-  "w": 1536,
-  "h": 4224,
-  "custom": [
-   {
-    "name": "thrust_oversize",
-    "fs": 192,
-    "rows": 4,
-    "cols": 8,
-    "frames": [
-     8,
-     8,
-     8,
-     8
-    ]
-   }
-  ]
+  "w": 832,
+  "h": 3456,
+  "custom": []
  },
  "knight.s0t2": {
   "w": 832,
@@ -564,22 +551,9 @@
   "custom": []
  },
  "summoner.weapon": {
-  "w": 1536,
-  "h": 4224,
-  "custom": [
-   {
-    "name": "thrust_oversize",
-    "fs": 192,
-    "rows": 4,
-    "cols": 8,
-    "frames": [
-     8,
-     8,
-     8,
-     8
-    ]
-   }
-  ]
+  "w": 832,
+  "h": 3456,
+  "custom": []
  },
  "mech.nude": {
   "w": 832,
@@ -735,22 +709,9 @@
   "custom": []
  },
  "chrono.weapon": {
-  "w": 1536,
-  "h": 4224,
-  "custom": [
-   {
-    "name": "thrust_oversize",
-    "fs": 192,
-    "rows": 4,
-    "cols": 8,
-    "frames": [
-     8,
-     8,
-     8,
-     8
-    ]
-   }
-  ]
+  "w": 832,
+  "h": 3456,
+  "custom": []
  },
  "marshal.nude": {
   "w": 832,
@@ -1293,6 +1254,16 @@
   "custom": []
  },
  "breaker.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "archer.quiver": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "hunter.quiver": {
   "w": 832,
   "h": 3456,
   "custom": []

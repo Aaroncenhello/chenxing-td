@@ -13,13 +13,14 @@ const stdOf = n => (n.startsWith('slash') ? 'slash' : n.startsWith('thrust') ? '
     for (const part of SK.partsOf(id)) {
       const key = id + '.' + part; if (!fs.existsSync(path.join(OUT, key + '.png'))) { console.log('缺', key); continue; }
       const src = 'data:image/png;base64,' + fs.readFileSync(path.join(OUT, key + '.png')).toString('base64'), weapon = part === 'weapon';
-      if (/^s1x\d+$/.test(part) || part === 'skin') continue;   // 裁短图层和皮肤遮罩只是打包的原料，不进最终数据
+      if (/^s1x\d+$/.test(part) || part === 'skin' || part === 'quiver') continue;   // 裁短图层和皮肤遮罩只是打包的原料，不进最终数据
       // 第 2 套外观的 2/3/4 阶：把裁短的图层（抹胸、比基尼裤 / 超短裙）叠到「身体 + 衣服」上，只画在露出皮肤的地方（衣服遮住的地方不动）
       let extra = null, mt = /^s1t(\d)$/.exec(part);
       if (mt) { const tr = SK.trims(id).filter(t => t.tier <= +mt[1]); if (tr.length) extra = { skin: 'data:image/png;base64,' + fs.readFileSync(path.join(OUT, id + '.skin.png')).toString('base64'), trims: tr.map(t => ({ src: 'data:image/png;base64,' + fs.readFileSync(path.join(OUT, id + '.s1x' + t.i + '.png')).toString('base64'), keep: t.keep })) }; }
-      const r = await p.evaluate(async ([src, STD, custom, atkName, stdName, weapon, extra, curve, skinSrc]) => {
+      const stowSrc = weapon && SK[id].stow ? 'data:image/png;base64,' + fs.readFileSync(path.join(OUT, id + '.quiver.png')).toString('base64') : null;   // 弓手 / 猎人：行走、站立、受击用只有箭袋的图（弓收起来）
+      const r = await p.evaluate(async ([src, STD, custom, atkName, stdName, weapon, extra, curve, skinSrc, stowSrc]) => {
         const im = new Image(); im.src = src; await im.decode(); const all = {};
-        let base = im;
+        let base = im, base2 = null; if (stowSrc) { base2 = new Image(); base2.src = stowSrc; await base2.decode(); }
         if (extra) {   // 叠裁短图层
           const load = async s => { const i = new Image(); i.src = s; await i.decode(); const c = document.createElement('canvas'); c.width = i.width; c.height = i.height; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(i, 0, 0); return g; };
           const bg = await load(src), sg = await load(extra.skin), tgs = []; for (const t of extra.trims) tgs.push([await load(t.src), t.keep]);
@@ -55,12 +56,12 @@ const stdOf = n => (n.startsWith('slash') ? 'slash' : n.startsWith('thrust') ? '
         }
         for (const [name, s] of Object.entries(STD)) all[name] = { sy: s.row * 64, fw: 64, fh: 64, n: s.n };
         let y = 3456; for (const c of custom) { all[c.name] = { sy: y + 3 * c.fs, fw: c.fs, fh: c.fs, n: c.frames[3] }; y += c.fs * c.rows; }
-        const pick = weapon ? { walk: all.walk_128 || all.walk, hurt: all.hurt, front: all.front, atk: all[atkName] || all[stdName] } : { walk: all.walk, hurt: all.hurt, front: all.front, atk: all[stdName] };
+        const pick = weapon ? { walk: base2 ? all.walk : all.walk_128 || all.walk, hurt: all.hurt, front: all.front, atk: all[atkName] || all[stdName] } : { walk: all.walk, hurt: all.hurt, front: all.front, atk: all[stdName] };
         const rows = Object.entries(pick).map(([name, r]) => ({ name, ...r })), W = Math.max(...rows.map(r => r.fw * r.n)), H = rows.reduce((a, r) => a + r.fh, 0);
         const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'); let dy = 0; const out = {};
-        for (const r of rows) { g.drawImage(base, 0, r.sy, r.fw * r.n, r.fh, 0, dy, r.fw * r.n, r.fh); out[r.name] = { y: dy, fw: r.fw, fh: r.fh, n: r.n, ax: r.fw / 2, ay: r.fh / 2 + 26 }; dy += r.fh; }
+        for (const r of rows) { g.drawImage(base2 && r.name !== 'atk' ? base2 : base, 0, r.sy, r.fw * r.n, r.fh, 0, dy, r.fw * r.n, r.fh); out[r.name] = { y: dy, fw: r.fw, fh: r.fh, n: r.n, ax: r.fw / 2, ay: r.fh / 2 + 26 }; dy += r.fh; }
         return { data: c.toDataURL('image/png'), anims: out };
-      }, [src, STD, (meta[key].custom || []), ATK[id], stdOf(ATK[id]), weapon, extra, SK[id].curve || null, weapon ? null : 'data:image/png;base64,' + fs.readFileSync(path.join(OUT, id + '.skin.png')).toString('base64')]);
+      }, [src, STD, (meta[key].custom || []), ATK[id], stdOf(ATK[id]), weapon, extra, SK[id].curve || null, weapon ? null : 'data:image/png;base64,' + fs.readFileSync(path.join(OUT, id + '.skin.png')).toString('base64'), stowSrc]);
       fs.writeFileSync(path.join(PACK, key + '.png'), Buffer.from(r.data.split(',')[1], 'base64')); packMeta[id].parts[part] = { anims: r.anims };
     }
     const kb = Object.keys(packMeta[id].parts).reduce((a, k) => a + fs.statSync(path.join(PACK, id + '.' + k + '.png')).size, 0) / 1024;
