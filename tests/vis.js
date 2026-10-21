@@ -21,18 +21,12 @@ const path = require("path");
     showSynGuide(); return document.getElementById("ovbox").innerText;
   });
   check(/本局规则/.test(r) && /自选契约/.test(r) && /铁壁/.test(r), "规则页列出契约", r.slice(0, 120));
-  check(/天气/.test(r) && /首领特性/.test(r), "规则页列出天气和首领特性", r.slice(0, 300));
+  check(/首领特性/.test(r), "规则页列出首领特性", r.slice(0, 300));
   await p.screenshot({ path: "vis-rules.png" });
   await p.evaluate(() => { closeOverlay(); });
-  // 天气标签 + 首领条里有特性名
-  const t = await p.evaluate(() => {
-    __td.newRun(0, { hero: "knight", charLv: {}, charAwk: {}, assist: 0 }); const S = __td.S; S.pending = 0; S.offer = null; S.autoWave = false;
-    for (let i = 0; i < 20; i++) { S.wave = 4; S.shop = null; S.event = null; S.offer = null; __td.step(1 / 30); }
-    return { wx: S.wx };
-  });
-  check(t.wx === "rain", "第 4 波森林下雨", t);
-  const hints = await p.evaluate(() => JSON.parse(localStorage.getItem("chenxing-td-hints") || "[]"));
-  check(hints.includes("wx"), "第一次下雨弹过一次性提示", hints);
+  // 12.2：天气已去掉，战斗里不再有 S.wx
+  const t = await p.evaluate(() => { __td.newRun(0, { hero: "knight", charLv: {}, charAwk: {}, assist: 0 }); const S = __td.S; S.pending = 0; S.offer = null; S.autoWave = false; for (let i = 0; i < 20; i++) { S.wave = 4; S.shop = null; S.event = null; S.offer = null; __td.step(1 / 30); } return { wx: S.wx || null, fns: typeof drawWeather + typeof drawTod + typeof wxNow }; });
+  check(!t.wx && t.fns === "undefinedundefinedundefined", "天气已去掉", t);
   // 图鉴总完成度：空存档 0%，敏感档位给称号和星星
   const cp = await p.evaluate(() => {
     const d0 = loadSave(); const a = codexProgress(d0);

@@ -223,7 +223,7 @@ function synGuideHtml(live) {
     return `<div class="cx${x && x.on ? " on" : ""}" style="--c:${g.color}"><div><b style="color:${g.color}">${x && x.on ? "✓ " : ""}${g.name}${x ? `<span class="sp">${x.on ? "已生效" : `${x.a}/${x.b}`}</span>` : ""}</b>
       <p class="need">条件：${g.need}</p><p class="eff">效果：${g.desc}</p>${g.t2 ? `<p class="eff t2${x && x.on2 ? " on" : ""}">${x && x.on2 ? "✓ " : ""}强化 Ⅱ：${g.t2.desc}<br><small>条件：${syn2Need(g)}</small></p>` : ""}<p>${SYN_HOW[g.id] ? SYN_HOW[g.id]() : ""}</p></div></div>`; }).join("")}</div>`;
 }
-// 本局规则：契约、深渊、每日规则、天气、本关首领特性，都在这一页看
+// 本局规则：契约、深渊、每日规则、本关首领特性，都在这一页看
 function rulesHtml() {
   const rows = [], gr = teamGrowth();
   rows.push(["本局成长", `全队总攻击 ×${gr.atk.toFixed(1)}，总生命 ×${gr.hp.toFixed(1)}（相对开局，${gr.n} 名队员）`]);
@@ -231,8 +231,6 @@ function rulesHtml() {
   if (S.abyss) rows.push(["深渊", `${S.abyss} 层：敌人更强，奖励更多`]);
   if (S.daily) { const m = DAILY_MODS.find(x => x.id === S.mod); if (m) rows.push(["每日规则", `${m.name}：${m.desc}`]); }
   if (S.assist) rows.push(["连败辅助", `晨星碑生命 +${Math.round(ASSIST[S.assist - 1].hp * 100)}%`]);
-  const wid = WEATHER_OF[ST.theme];
-  if (wid) rows.push(["天气", `${WEATHER[wid].name}（${WEATHER[wid].tip}）· 每 5 波里有 2 波${S.wx ? "，现在正在下" : ""}`]);
   const ms = [...new Set((ST.boss || []).map(b => b[0]))].filter(t => BOSS_MECH[t]).map(t => `${ENEMIES[t].name}：${BOSS_MECH[t].name}（${BOSS_MECH[t].tip}）`);
   if (ms.length) rows.push(["首领特性", ms.join("；")]);
   return rows.length ? `<div class="tree rulebox"><b>本局规则</b>${rows.map(([k, v]) => `<small><b>${k}</b>　${v}</small>`).join("")}</div>` : "";

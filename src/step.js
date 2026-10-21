@@ -2,11 +2,16 @@
 // ================= 每一步（固定 30 次/秒） =================
 function moveToward(e, tx, ty, dt) {
   const spd = eSpeed(e);
+  // 地面敌人：和目标之间有墙就顺着 FLOW 绕（每 0.25 秒判断一次），不会再卡在角落 / 水池边
+  if (!e.d.flying && !e.under && FLOW) {
+    if ((e.navT || 0) <= S.t) { e.navT = S.t + 0.25; e.navBlocked = lineBlocked(e.x, e.y, tx, ty); }
+    if (e.navBlocked) { const w = flowWaypoint(e.x, e.y); if (w) { tx = w[0]; ty = w[1]; } }
+  }
   let dx = tx - e.x + (e.px || 0), dy = ty - e.y + (e.py || 0);
   const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
   const ox0 = e.x, oy0 = e.y;
   let nx = e.x + dx * spd * dt, ny = e.y + dy * spd * dt;
-  if (!e.d.flying && (e.stuckT || 0) < 3) {
+  if (!e.d.flying && !(e.ghostT > 0)) {
     if (solid(nx, ny)) {
       if (!solid(nx, e.y)) ny = e.y;
       else if (!solid(e.x, ny)) nx = e.x;
@@ -20,7 +25,19 @@ function moveToward(e, tx, ty, dt) {
   e.x = Math.max(0.3, Math.min(COLS - 1.3, nx)); e.y = Math.max(0.3, Math.min(ROWS - 1.3, ny));
   // 卡住超过 3 秒就允许穿过障碍，避免有敌人永远到不了晨星碑
   e.stuckT = Math.hypot(e.x - ox0, e.y - oy0) < spd * dt * 0.35 ? (e.stuckT || 0) + dt : 0;
+  if (e.stuckT >= 3) { e.ghostT = 1.2; e.stuckT = 0; } else if (e.ghostT > 0) e.ghostT -= dt;
   e.walk += dt * spd; faceTo(e, tx);
+}
+// 己方之间也挤开：前排追着敌人跑、站位被推等情况下，两个人靠得太近（< 0.9 格）就互相让开
+function separateUnits(dt) {
+  const us = S.units.filter(u => !u.dead && u.down <= 0);
+  for (let i = 0; i < us.length; i++) for (let j = i + 1; j < us.length; j++) {
+    const a = us[i], b = us[j]; let dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+    if (d >= 0.9) continue;
+    if (d < 0.01) { const an = (a.id * 2.399 + b.id) % 6.283; dx = Math.cos(an); dy = Math.sin(an); d = 1; }
+    const push = (0.9 - d) / 2 * Math.min(1, dt * 10), ux = dx / d, uy = dy / d;
+    for (const [u, k] of [[a, -1], [b, 1]]) { const nx = u.x + ux * push * k, ny = u.y + uy * push * k; if (!solid(nx, ny)) { u.x = nx; u.y = ny; } }
+  }
 }
 // 敌人之间稍微挤开一点，避免完全重叠
 function separate() {
@@ -204,7 +221,7 @@ function step(dt) {
     }
     if (e.burn > 0) {
       e.burn -= dt; e.burnAcc = (e.burnAcc || 0) + dt;
-      if (e.burnAcc >= 0.5) { e.burnAcc -= 0.5; if (!e.under) hurt(e, e.burnDps * 0.5 * (S.wx === "rain" ? 0.7 : S.wx === "heat" ? 1.3 : 1), "poison", false, e.burnSrc || { key: "burn" }); if (e.dead) continue; }
+      if (e.burnAcc >= 0.5) { e.burnAcc -= 0.5; if (!e.under) hurt(e, e.burnDps * 0.5, "poison", false, e.burnSrc || { key: "burn" }); if (e.dead) continue; }
     }
     if (e.mark > 0) e.mark -= dt;
     afxStep(e, dt);
@@ -341,6 +358,7 @@ function step(dt) {
     moveToward(e, CRYSTAL.x, CRYSTAL.y, dt);
   }
 
+  separateUnits(dt);
   // 飞行物
   for (const s of S.shots) {
     const t = s.target;

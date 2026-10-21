@@ -195,7 +195,6 @@ function hurt(e, amt, type, crit, src) {
   if (rl("rl_rot") && (e.burn > 0 || (e.poison && e.poison.t > 0) || corrodeK(e) > 0)) amt *= 1.2;
   const byUnit = src && src.def && type !== "poison";
   if (byUnit) {
-    if (type === "magic" && S.wx === "rain") amt *= 1.08;
     if (src.tf) { if (type === "magic") amt *= 1 + tf(src, "spell"); if (e.hp < e.maxHp * 0.5) amt *= 1 + tf(src, "exec"); }
     if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1) * (cl("lg_hunt") ? 1.3 : 1);
     if (rl("rl_berserk") && !crit) { src.hitN = (src.hitN || 0) + 1; if (src.hitN % 8 === 0) { amt *= 3; crit = true; } }
@@ -327,7 +326,6 @@ function hurtUnit(u, amt, type, from) {
 function heal(u, amt, quiet, src) {
   if (u.dead || u.down > 0) return;
   if (src && src.hero && sg("sg_pr2")) u.blessT = 6;
-  if (S.wx === "heat") amt *= 0.9;
   if (src) amt *= 1 + tf(src, "heal");
   const got = Math.min(amt, u.maxHp - u.hp);
   u.hp += got;
