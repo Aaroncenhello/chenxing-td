@@ -198,11 +198,11 @@ function showRoster(id) {
 function animRoster(now) {
   if (!rosterAnim || !menuOpen) return;
   const { D, cvs } = rosterAnim, t = (now - rosterAnim.t0) / 1000, cyc = t % 2.2, atkT = cyc - 1.2;
-  if (cvs.width !== 240) { cvs.width = 240; cvs.height = 198; }
-  const g = cvs.getContext("2d"); g.clearRect(0, 0, 240, 198);
-  g.fillStyle = "rgba(0,0,0,.3)"; g.beginPath(); g.ellipse(120, 176, 40, 7, 0, 0, 6.3); g.fill();
+  if (cvs.width !== 300) { cvs.width = 300; cvs.height = 300; }
+  const g = cvs.getContext("2d"); g.clearRect(0, 0, 300, 300);
+  g.fillStyle = "rgba(0,0,0,.3)"; g.beginPath(); g.ellipse(150, 272, 62, 10, 0, 0, 6.3); g.fill();
   const eq = SKIN_EQ[D.id]; SKIN_EQ[D.id] = rosterSkin;   // 预览用的外观和阶数（临时切换，画完换回）
-  drawHeroFig(g, D, { t, id: 1, face: 1, atkT: atkT < 0 ? null : atkT, lv: rosterTier }, 120, 174, 2); SKIN_EQ[D.id] = eq;
+  drawHeroFig(g, D, { t, id: 1, face: 1, atkT: atkT < 0 ? null : atkT, lv: rosterTier }, 150, 270, 3.4); SKIN_EQ[D.id] = eq;   // 角色页的预览放得很大（每个素材像素 5 个像素），衣服细节看得清
 }
 
 function expHtml(gains) {

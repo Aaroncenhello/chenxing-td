@@ -92,7 +92,7 @@ function drawUnit(u, now) {
     pixNum(ctx, String(Math.ceil(u.down)), fx, fy - 14, "#e2645a", 2);
     return;
   }
-  shadow(fx, fy, 22);
+  shadow(fx, fy, 30);
   if (u.summon) {
     const ph = u.atkT < 0.13 ? "wind" : u.atkT < 0.3 ? "strike" : "idle", blink = u.life < 3 && (t * 6 | 0) % 2;
     const big = renderHero(D, { phase: ph, bob: ph === "idle" ? Math.floor(now / 500 + u.id) % 2 : 0, flash: u.hitT > 0.05, face: u.face, t });
