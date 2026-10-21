@@ -82,7 +82,8 @@ module.exports = {
 // 衣服和身体一起变形，所以穿什么都贴合。数值按各人身材设定（刺客、破音者偏运动型，牧师、歌者偏丰满）。
 const CURVE = { knight: [0.6, 0.5], sword: [0.6, 0.55], assassin: [0.45, 0.45], lancer: [0.6, 0.5], archer: [0.5, 0.5], mage: [0.7, 0.55], gunner: [0.7, 0.6], priest: [0.8, 0.65], frost: [0.6, 0.5], alchemist: [0.75, 0.6],
   bard: [0.65, 0.55], summoner: [0.6, 0.55], mech: [0.5, 0.5], star: [0.75, 0.6], chrono: [0.65, 0.55], marshal: [0.65, 0.55], counter: [0.55, 0.55], hunter: [0.6, 0.5], songstress: [0.8, 0.65], breaker: [0.45, 0.45] };
-for (const id of Object.keys(CURVE)) module.exports[id].curve = CURVE[id];
+// 整图拉伸会把挥动的手臂也拉成尖角（Jenny 看了说「都拉变形了」），所以先不启用；要做就得只改躯干轮廓，不能整行拉伸
+// for (const id of Object.keys(CURVE)) module.exports[id].curve = CURVE[id];
 // 第 2 套外观（偏性感）的搭配：抹胸 / 紧身胸衣 + 比基尼裤 / 超短裙 + 过膝袜 + 靴子，再按各自职业配披风、头盔、肩甲、手套
 const BIKINI = {
   knight: sk([boots('white'), hose('white'), X('legs', 'Plain skirt', 'navy', 0.38)], [X('clothes', 'Tanktop', 'blue', 0.38), T('shoulders', 'Pauldrons', 'silver')], [T('hat', 'Tiara', 'tiara_silver'), T('cape', 'Solid', 'blue'), T('gloves', 'Gloves', 'silver')]),
