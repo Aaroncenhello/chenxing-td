@@ -59,13 +59,13 @@ function drawSkillAura(u, fx, fy, t) {
 }
 // 头顶一条技能剩余时间的小条（颜色同技能），一眼看出还有多久
 function skillBar(u, fx, fy) {
-  if (!u.skillMax) return; const w = 22, k = Math.max(0, Math.min(1, u.skillT / u.skillMax)), y = fy - 100;
+  if (!u.skillMax) return; const w = 22, k = Math.max(0, Math.min(1, u.skillT / u.skillMax)), y = fy - 78;
   rect(ctx, fx - w / 2 - 1, y - 1, w + 2, 4, "#10141c"); rect(ctx, fx - w / 2, y, Math.round(w * k), 2, u.def.color);
 }
 // 被不退之令加成的队友：头顶两个金色小箭头
 function drawBless(fx, fy, t) {
   const b = Math.floor(t * 4) % 2;
-  for (const dy of [0, 4]) { line(ctx, fx - 4, fy - 92 - dy + b, fx, fy - 96 - dy + b, "#ffe060"); line(ctx, fx + 4, fy - 92 - dy + b, fx, fy - 96 - dy + b, "#ffe060"); }
+  for (const dy of [0, 4]) { line(ctx, fx - 4, fy - 74 - dy + b, fx, fy - 78 - dy + b, "#ffe060"); line(ctx, fx + 4, fy - 74 - dy + b, fx, fy - 78 - dy + b, "#ffe060"); }
 }
 // 被猎杀标记盯上的敌人：红色准星（脚下一圈 + 四个角）
 function drawHuntMark(fx, fy, top, t) {

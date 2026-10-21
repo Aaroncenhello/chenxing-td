@@ -202,7 +202,7 @@ function animRoster(now) {
   const g = cvs.getContext("2d"); g.clearRect(0, 0, 300, 300);
   g.fillStyle = "rgba(0,0,0,.3)"; g.beginPath(); g.ellipse(150, 272, 62, 10, 0, 0, 6.3); g.fill();
   const eq = SKIN_EQ[D.id]; SKIN_EQ[D.id] = rosterSkin;   // 预览用的外观和阶数（临时切换，画完换回）
-  drawHeroFig(g, D, { t, id: 1, face: 1, atkT: atkT < 0 ? null : atkT, lv: rosterTier }, 150, 270, 3.4); SKIN_EQ[D.id] = eq;   // 角色页的预览放得很大（每个素材像素 5 个像素），衣服细节看得清
+  drawHeroFig(g, D, { t, id: 1, face: 1, atkT: atkT < 0 ? null : atkT, lv: rosterTier }, 150, 270, 2.8); SKIN_EQ[D.id] = eq;   // 角色页的预览放得很大（每个素材像素 4 个像素），衣服细节看得清
 }
 
 function expHtml(gains) {

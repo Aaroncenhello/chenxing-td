@@ -17,7 +17,7 @@ const stdOf = n => (n.startsWith('slash') ? 'slash' : n.startsWith('thrust') ? '
       // 第 2 套外观的 2/3/4 阶：把裁短的图层（抹胸、比基尼裤 / 超短裙）叠到「身体 + 衣服」上，只画在露出皮肤的地方（衣服遮住的地方不动）
       let extra = null, mt = /^s1t(\d)$/.exec(part);
       if (mt) { const tr = SK.trims(id).filter(t => t.tier <= +mt[1]); if (tr.length) extra = { skin: 'data:image/png;base64,' + fs.readFileSync(path.join(OUT, id + '.skin.png')).toString('base64'), trims: tr.map(t => ({ src: 'data:image/png;base64,' + fs.readFileSync(path.join(OUT, id + '.s1x' + t.i + '.png')).toString('base64'), keep: t.keep })) }; }
-      const r = await p.evaluate(async ([src, STD, custom, atkName, stdName, weapon, extra]) => {
+      const r = await p.evaluate(async ([src, STD, custom, atkName, stdName, weapon, extra, curve, skinSrc]) => {
         const im = new Image(); im.src = src; await im.decode(); const all = {};
         let base = im;
         if (extra) {   // 叠裁短图层
@@ -37,6 +37,22 @@ const stdOf = n => (n.startsWith('slash') ? 'slash' : n.startsWith('thrust') ? '
           }
           base = bg.canvas;
         }
+        if (curve && skinSrc && !weapon) {   // 胸和臀加大：只处理朝右的侧面动画（行走、受击、出手），正面站姿不动
+          const lo = async s => { const i = new Image(); i.src = s; await i.decode(); const c = document.createElement('canvas'); c.width = i.width; c.height = i.height; const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(i, 0, 0); return g; };
+          const bctx = base === im ? await lo(src) : base.getContext('2d', { willReadFrequently: true }), sg2 = await lo(skinSrc);
+          const [ac, ah] = curve, rows2 = [[11, 9], [20, 6], [{ slash: 15, thrust: 7, shoot: 19, cast: 3 }[stdName], STD[stdName].n]];
+          for (const [row, n] of rows2) for (let f = 0; f < n; f++) {
+            const srcd = bctx.getImageData(f * 64, row * 64, 64, 64), sd = sg2.getImageData(f * 64, row * 64, 64, 64), out = bctx.createImageData(64, 64); let top = 64, bot = -1;
+            for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) if (sd.data[(y * 64 + x) * 4 + 3] > 0) { if (y < top) top = y; if (y > bot) bot = y; }
+            if (bot < 0) continue; const H = bot - top + 1, cyC = top + H * 0.44, cyH = top + H * 0.64, sgm = H * 0.055;   // 身高按「只有身体和脸」的遮罩量，戴帽子也不会错位
+            for (let y = 0; y < 64; y++) {
+              const bc = ac * Math.exp(-(((y - cyC) / sgm) ** 2)), bh = ah * Math.exp(-(((y - cyH) / (sgm * 1.5)) ** 2));   // 胸（朝前，向右）和臀（朝后，向左）各一个高斯形的隆起
+              for (let x = 0; x < 64; x++) { const xs = x > 32 ? Math.round(32 + (x - 32) / (1 + bc)) : Math.round(32 + (x - 32) / (1 + bh)); if (xs < 0 || xs > 63) continue; const si = (y * 64 + xs) * 4, di = (y * 64 + x) * 4; for (let k = 0; k < 4; k++) out.data[di + k] = srcd.data[si + k]; }
+            }
+            bctx.putImageData(out, f * 64, row * 64);
+          }
+          base = bctx.canvas;
+        }
         for (const [name, s] of Object.entries(STD)) all[name] = { sy: s.row * 64, fw: 64, fh: 64, n: s.n };
         let y = 3456; for (const c of custom) { all[c.name] = { sy: y + 3 * c.fs, fw: c.fs, fh: c.fs, n: c.frames[3] }; y += c.fs * c.rows; }
         const pick = weapon ? { walk: all.walk_128 || all.walk, hurt: all.hurt, front: all.front, atk: all[atkName] || all[stdName] } : { walk: all.walk, hurt: all.hurt, front: all.front, atk: all[stdName] };
@@ -44,7 +60,7 @@ const stdOf = n => (n.startsWith('slash') ? 'slash' : n.startsWith('thrust') ? '
         const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'); let dy = 0; const out = {};
         for (const r of rows) { g.drawImage(base, 0, r.sy, r.fw * r.n, r.fh, 0, dy, r.fw * r.n, r.fh); out[r.name] = { y: dy, fw: r.fw, fh: r.fh, n: r.n, ax: r.fw / 2, ay: r.fh / 2 + 26 }; dy += r.fh; }
         return { data: c.toDataURL('image/png'), anims: out };
-      }, [src, STD, (meta[key].custom || []), ATK[id], stdOf(ATK[id]), weapon, extra]);
+      }, [src, STD, (meta[key].custom || []), ATK[id], stdOf(ATK[id]), weapon, extra, SK[id].curve || null, weapon ? null : 'data:image/png;base64,' + fs.readFileSync(path.join(OUT, id + '.skin.png')).toString('base64')]);
       fs.writeFileSync(path.join(PACK, key + '.png'), Buffer.from(r.data.split(',')[1], 'base64')); packMeta[id].parts[part] = { anims: r.anims };
     }
     const kb = Object.keys(packMeta[id].parts).reduce((a, k) => a + fs.statSync(path.join(PACK, id + '.' + k + '.png')).size, 0) / 1024;
