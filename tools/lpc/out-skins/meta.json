@@ -62,22 +62,9 @@
   "custom": []
  },
  "mage.weapon": {
-  "w": 1536,
-  "h": 4224,
-  "custom": [
-   {
-    "name": "thrust_oversize",
-    "fs": 192,
-    "rows": 4,
-    "cols": 8,
-    "frames": [
-     8,
-     8,
-     8,
-     8
-    ]
-   }
-  ]
+  "w": 832,
+  "h": 3456,
+  "custom": []
  },
  "knight.s0t2": {
   "w": 832,
@@ -564,22 +551,9 @@
   "custom": []
  },
  "summoner.weapon": {
-  "w": 1536,
-  "h": 4224,
-  "custom": [
-   {
-    "name": "thrust_oversize",
-    "fs": 192,
-    "rows": 4,
-    "cols": 8,
-    "frames": [
-     8,
-     8,
-     8,
-     8
-    ]
-   }
-  ]
+  "w": 832,
+  "h": 3456,
+  "custom": []
  },
  "mech.nude": {
   "w": 832,
@@ -735,22 +709,9 @@
   "custom": []
  },
  "chrono.weapon": {
-  "w": 1536,
-  "h": 4224,
-  "custom": [
-   {
-    "name": "thrust_oversize",
-    "fs": 192,
-    "rows": 4,
-    "cols": 8,
-    "frames": [
-     8,
-     8,
-     8,
-     8
-    ]
-   }
-  ]
+  "w": 832,
+  "h": 3456,
+  "custom": []
  },
  "marshal.nude": {
   "w": 832,
@@ -998,6 +959,311 @@
   "custom": []
  },
  "breaker.weapon": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "knight.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "knight.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "knight.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "sword.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "sword.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "sword.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "assassin.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "assassin.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "assassin.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "lancer.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "lancer.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "lancer.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "archer.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "archer.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "archer.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mage.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mage.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mage.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "gunner.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "gunner.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "gunner.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "priest.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "priest.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "priest.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "frost.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "frost.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "frost.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "alchemist.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "alchemist.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "alchemist.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "bard.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "bard.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "bard.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "summoner.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "summoner.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "summoner.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mech.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mech.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "mech.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "star.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "star.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "star.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "chrono.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "chrono.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "chrono.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "marshal.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "marshal.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "counter.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "counter.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "counter.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "hunter.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "hunter.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "hunter.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "songstress.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "songstress.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "songstress.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "breaker.skin": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "breaker.s1x0": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "breaker.s1x1": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "archer.quiver": {
+  "w": 832,
+  "h": 3456,
+  "custom": []
+ },
+ "hunter.quiver": {
   "w": 832,
   "h": 3456,
   "custom": []

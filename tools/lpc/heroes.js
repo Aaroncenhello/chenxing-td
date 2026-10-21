@@ -26,7 +26,7 @@ module.exports = {
 
 // 每名角色的出手动画（用哪一段）：std = 标准 64 像素动画（slash/thrust/shoot/spellcast），其余是自定义大尺寸动画（名字见 out/meta.json）
 module.exports.ATK = {
-  knight: "slash_128", sword: "slash_oversize", assassin: "slash", lancer: "thrust", archer: "shoot", mage: "thrust_oversize", gunner: "thrust", priest: "cast", frost: "slash",
-  alchemist: "slash", bard: "slash_oversize", summoner: "thrust_oversize", mech: "thrust_oversize", star: "thrust_oversize", chrono: "thrust_oversize", marshal: "thrust",
+  knight: "slash_128", sword: "slash_oversize", assassin: "slash", lancer: "thrust", archer: "shoot", mage: "cast", gunner: "thrust", priest: "cast", frost: "slash",
+  alchemist: "slash", bard: "slash_oversize", summoner: "cast", mech: "thrust_oversize", star: "thrust_oversize", chrono: "cast", marshal: "thrust",
   counter: "slash_128", hunter: "shoot", songstress: "slash", breaker: "slash",
 };

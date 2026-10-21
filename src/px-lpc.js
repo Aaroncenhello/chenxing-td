@@ -3,7 +3,8 @@
 // 20 名角色的像素精灵表由 tools/lpc/ 用 Universal LPC 生成器合成（数据在 lpc-data.js）。每名角色一张图，里面有几行动画（都是面朝右）：
 //   walk 行走（第 0 帧是站姿）、hurt 受击（最后一帧倒地）、front 正面站姿（头像用）、cast 施法、atk 出手（挥砍 / 刺击 / 射击，按武器而定）
 // 帧尺寸 64（武器大的角色 128 / 192），anims[名].{y,fw,fh,n,ax,ay}，ax/ay 是脚底在帧里的位置。
-const LPC_K = 1.5;   // 战场上的放大倍数（RS=2 时每个素材像素正好占 3 个设备像素，边缘不糊）
+const LPC_K = 1.5;   // 怪物在战场上的放大倍数（RS=2 时每个素材像素正好占 3 个设备像素，边缘不糊）
+const HERO_KS = 1;   // 英雄和怪物一样大（Jenny 说 1.5 倍就够，光放大没用）
 // 角色：每人 nude（裸体）+ 两套外观各 3 个阶段（s0t2…s1t4）+ weapon（武器层，大尺寸武器的出手动画单独一层，叠在身体上面）。
 // 阶数 1 = 裸体，2 / 3 / 4 阶一件件穿上当前外观的衣服；部件图按需加载（头像要 4 阶 + 武器，战场上要全部阶段）。
 const LPC_IMG = {}, LPC_FOE_IMG = {};
@@ -101,7 +102,7 @@ function lpcTmp(w, h) { if (!lpcTmpCv) lpcTmpCv = document.createElement("canvas
 // 统一入口（还没加载好时什么都不画，几十毫秒的事）
 function drawHeroFig(g, D, o, x, y, ks) {
   const sm = g.imageSmoothingEnabled; g.imageSmoothingEnabled = false;
-  const ok = drawLpc(g, D, o, x, y, ks); g.imageSmoothingEnabled = sm; return ok;
+  const ok = drawLpc(g, D, o, x, y, ks == null ? HERO_KS : ks); g.imageSmoothingEnabled = sm; return ok;
 }
 // 静态图（头像、对话半身像、技能特写）：正面站姿放大 4 倍画进 256×256 的缓存画布（最近邻，保持像素块）。
 // o.lv = 穿几阶的衣服（1 = 裸体，不写 = 4 阶全套）
