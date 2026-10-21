@@ -1102,6 +1102,8 @@ for (const s of STAGES) { s.baseWaves = s.waves; s.waves = Math.round(22 + (s.wa
 // 12.0：经验系数。xpNeedOf(lv) = 22 × 1.5^(lv-1) × xpK；xpK 按「这一关的出怪总量」算，让每关的选牌次数大致一样（约 8 次）
 { const B = s => { let t = 0; for (let w = 1; w <= s.waves; w++) t += (2.5 + (w / s.wk) * 1.8) * s.budget; return t; }, B1 = B(STAGES[0]);
   for (const s of STAGES) s.xpK = Math.round(1.68 * B(s) / B1 * 100) / 100; }
+// 12.1 拉长后的难度校准（毕业档模拟，对照旧版胜率）：第 12 关和第五章的敌人生命下调，其余关卡不动
+{ const EASE = { 11: 0.9, 15: 0.85, 16: 0.9, 17: 0.9, 18: 0.9, 19: 0.72 }; for (const i in EASE) STAGES[i].hp = Math.round(STAGES[i].hp * EASE[i] * 1000) / 1000; }
 
 
 // ================= 难度、养成、成就、图鉴 =================
@@ -7805,7 +7807,7 @@ function updateOffer() {
   $("cards3").classList.toggle("n4", S.offer.length > 3);
   $("cards3").classList.toggle("banishing", banishMode);   // 混入诅咒卡时变成 2x2 的 4 选 1
   $("lu-tip").innerHTML = S.offer.length > 3 ? "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> 选卡，<kbd>R</kbd> 重抽，<kbd>X</kbd> 放逐" : "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 选卡，<kbd>R</kbd> 重抽，<kbd>X</kbd> 放逐";
-  const title = S.offerRare ? "稀有货架，选一张" : S.level <= 1 && !S.kills ? "开局翻牌，选一张" : `升到 Lv ${S.level}（等级加成：攻击、生命 +${Math.round(BAL.levelBonus * (S.level - 1) * 100)}%），选一张卡`;
+  const title = S.offerRare ? "稀有货架，选一张" : S.level <= 1 && !S.kills ? "开局翻牌，选一张" : `升到 Lv ${S.level} · 等级加成 +${Math.round(BAL.levelBonus * (S.level - 1) * 100)}%，选一张卡`;
   setText("lu-title", title + (S.pending > 1 ? `（还有 ${S.pending - 1} 次）` : ""));
   $("cards3").innerHTML = S.offer.map((p, i) => {
     const c = cardInfo(p), r = p.rare || 0, R = RARITY[r] || { name: "诅咒", color: CURSE_COLOR };

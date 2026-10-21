@@ -379,4 +379,6 @@ for (const s of STAGES) { s.baseWaves = s.waves; s.waves = Math.round(22 + (s.wa
 // 12.0：经验系数。xpNeedOf(lv) = 22 × 1.5^(lv-1) × xpK；xpK 按「这一关的出怪总量」算，让每关的选牌次数大致一样（约 8 次）
 { const B = s => { let t = 0; for (let w = 1; w <= s.waves; w++) t += (2.5 + (w / s.wk) * 1.8) * s.budget; return t; }, B1 = B(STAGES[0]);
   for (const s of STAGES) s.xpK = Math.round(1.68 * B(s) / B1 * 100) / 100; }
+// 12.1 拉长后的难度校准（毕业档模拟，对照旧版胜率）：第 12 关和第五章的敌人生命下调，其余关卡不动
+{ const EASE = { 11: 0.9, 15: 0.85, 16: 0.9, 17: 0.9, 18: 0.9, 19: 0.72 }; for (const i in EASE) STAGES[i].hp = Math.round(STAGES[i].hp * EASE[i] * 1000) / 1000; }
 
