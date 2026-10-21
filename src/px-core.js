@@ -660,12 +660,6 @@ function drawAmbient(now) {
     });
     addGlow(x, y - 3, 24, TORCH[0], 0.22 + Math.sin(t * 9 + c) * 0.05);
   }
-  // 雷暴天气：远处闪电，纯画面效果，用固定周期而非随机避免闪烁不受控
-  if (theme === "storm") {
-    const lt = t % 6.4;
-    if (lt < 0.08) { ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.fillRect(0, 0, LW, LH); }
-    else if (lt < 0.16) { ctx.fillStyle = "rgba(255,255,255,.18)"; ctx.fillRect(0, 0, LW, LH); }
-  }
 }
 // 屏幕空间的环境粒子（雪、雨、萤火、灰烬……）：永远在「视图」里直立地飘，不跟着地图转
 function drawAmbientParticles(now) {

@@ -19,33 +19,7 @@ const hazSlow = e => {
   for (const h of S.haz) if (h.type === "field" && distTo(e, h.x, h.y) <= h.r) k *= 1 - h.slow;
   return k;
 };
-// ---------- 天气：按主题和波次固定出现（每 5 波里有 2 波），双方都受影响，只做轻微数值 ----------
-const WEATHER = {
-  rain:     { name: "骤雨",   tip: "燃烧伤害 −30%，法术伤害 +8%", color: "#8ab4e8" },
-  blizzard: { name: "暴风雪", tip: "敌人移速 −8%，我方攻击间隔 +5%", color: "#e0f0ff" },
-  heat:     { name: "热浪",   tip: "燃烧伤害 +30%，治疗效果 −10%", color: "#ffb060" },
-  storm:    { name: "雷暴",   tip: "每 8 秒落雷劈一个敌人（造成其 5% 生命），偶尔也会劈到队员", color: "#c8d8ff" },
-};
-const WEATHER_OF = { forest: "rain", grave: "rain", tide: "storm", snow: "blizzard", ice: "blizzard", desert: "heat", lava: "heat", ash: "heat", sky: "storm", storm: "storm" };
-const wxNow = () => (S.wave > 0 && !S.over && WEATHER_OF[ST.theme] && (S.wave + (S.stage | 0)) % 5 >= 3 ? WEATHER_OF[ST.theme] : null);
-function wxStep(dt) {
-  const id = wxNow();
-  if (id !== S.wx) {
-    S.wx = id; S.wxT = 4; S.wxAge = 0;
-    if (id) once("wx", "<b>天气</b>每 5 波会有 2 波出现天气，对双方都有轻微影响。点战场下方的「羁绊」看板可以随时查看本局规则。");
-    if (id) { const W = WEATHER[id]; addFx({ kind: "banner", text: `天气 · ${W.name}（${W.tip}）`, life: 2.6 }); }
-    else if (S.wave > 1) addFx({ kind: "banner", text: "天气转好了", life: 1.6 });
-  }
-  if (id) S.wxAge = (S.wxAge || 0) + dt;
-  if (id === "storm") {
-    S.wxT -= dt; if (S.wxT > 0) return; S.wxT = 8;
-    const t = S.enemies.filter(e => !e.dead && !e.under);
-    if (t.length) { const e = t[Math.floor(roll("fight") * t.length)]; addFx({ kind: "pillar", x: e.x, y: e.y, color: "#c8e0ff", life: 0.5 }); hurt(e, e.maxHp * (isBoss(e) || e.lead ? 0.01 : 0.05), "magic", false, { key: "weather" }); }
-    if (roll("fight") < 0.5) { const us = S.units.filter(alive); if (us.length) { const u = us[Math.floor(roll("fight") * us.length)]; addFx({ kind: "pillar", x: u.x, y: u.y, color: "#c8e0ff", life: 0.5 }); hurtUnit(u, u.maxHp * 0.03, "magic", null); } }
-  }
-}
 function hazStep(dt) {
-  wxStep(dt);
   if (!S.haz || !S.haz.length) return;
   if (S.gate) S.gate.t += dt;
   const pk = powerK() * (S.hazK || 1);

@@ -57,7 +57,7 @@ npm run sim            # 平衡模拟，见下
 | traits.js | **12.1** 角色羁绊：`TAGS`（每名英雄 3 个标签）、`TRAITS`（17 个，阵营 6 / 职业 5 / 特质 6，每档效果 own + team）、`PAIRS`（10 组搭档）、`updateTraits()`（由 `updateSyn` 每 0.5 秒调用，算出 `S.tr/S.trN/S.trPairs/S.trTeam` 和每名队员的 `u.tf`）、`tf(u,k)/tfTeam(k)`（读加成）、`traitStep`（回血 / 自动炮击）、`traitHint/traitBias`（选牌提示 / 招募偏向）、`tagHtml` |
 | story.js | 剧情对话、章节 |
 | arena.js | 核心状态 `S`、`newRun()` 开局、单位属性公式 `uAtk/uMaxHp/uDef/...`、敌人属性 `eAtk/eDef/eSpeed`、牌池 `cardPool/randomCards/pickCard`、波次生成 `genWaves/genWave/startWave`、`callWaveEarly`、站位 `arrange/setSlot`、商店 |
-| haz.js | 地图机关（喷发口、光束、地刺、力场、开合传送门）、**天气** `WEATHER/wxNow/wxStep` |
+| haz.js | 地图机关（喷发口、光束、地刺、力场、开合传送门）。**天气和昼夜遮罩在 12.2 去掉了**（Jenny 嫌暗、闪），别再加回来 |
 | boss.js | 首领入场演出、读条大招 `ULT_DEF`、打断/破防、**首领专属特性 `BOSS_MECH/mechStep`** |
 | event.js | 局内事件（每 5 波三选一） |
 | affix.js | 精英词缀 `AFFIX`、`eRes`、`eInt` |
@@ -113,12 +113,12 @@ npm run sim            # 平衡模拟，见下
   - **远征**：exped.js。6 层，每层普通战 / 精英战二选一或三选一，第 2、4 场后休整（五选一），最后一层首领。战斗用原关卡地图、波数 ×0.6（首领 ×0.75），敌人血量每层 +38%、攻击 +12%（`EXPED.hpStep/atkStep`），精英战再 ×1.3 并必掉遗物。进行中的进度存在单独的 localStorage 键 `chenxing-td-exp`（不进主存档），主存档只记 `exped: { best, clears, runs }`。结算模式 `R.mode === "exped"`。机器人（每层都挑普通战）完成率：四章进度约 17%，满级 + 400★ 约 50%。
   - 远程敌人 8 秒没挨打就不再站桩放风筝（`e.hurtAt`），修了全队近战时打不到虚无术士、整局卡住的问题。
   - `tests/balance.js` 开跑前会删掉上次的 `bal-*.json`，某一格没跑出来会直接报错，不会悄悄读旧数据；sim 在旧构建（没有 `diskCanBuy`）上会退回老的买法。
-- **阶段 7**（玩法/画质扩充，测试：`ct6 c3 bossmech weather` 等）：
+- **阶段 7**（玩法/画质扩充，测试：`ct6 c3 bossmech` 等）：
   - **自选契约** `CONTRACTS`（config-meta.js）：选关页可勾的 6 种加难条件，点数越多通关额外星星越多（`contractStars`，进 `runReward`）；`S.contracts`，用 `ct(id)` 判断。
   - **连败辅助**：存档字段 `lose`（主线每关连续失败次数，`SAVE_VER` 13），2 次起晨星碑生命 +8%、4 次起 +16%（`ASSIST`/`assistOf`，在 `startRun` 里加；**sim 要传 `assist: 0`**，否则同进程里连败会让后面的局变简单）。结算页输了会提示差一点的羁绊。
   - **角色精通**：按该角色的通关胜场（`use[id].win`）3/10/25 局分「熟练/精通/宗师」（`MASTERY`、`masteryOf`），只换外观（角色页称号、战场脚下小菱形 `S.mast`），不加数值，不进存档。
   - **首领专属特性**：boss.js 的 `BOSS_MECH`，每位首领一条（号角召狼、分裂、汲魔回血、护佑光环、饕餮、震地、俯冲、岩肤、冰甲、自动维修、嚎叫、余烬、碑文反噬、落雷、抹除），入场演出里会显示；带「预警」的先在目标脚下画一圈、1 秒后结算。只对 `isBoss(e) || e.lead` 生效。
-  - **天气**：haz.js，`WEATHER_OF[主题]`，每 5 波里有 2 波（`(wave + stage) % 5 >= 3`）；骤雨/暴风雪/热浪/雷暴只带轻微数值（见 `WEATHER[id].tip`），画面在 px-fx.js `drawWeather`；户外关还有昼夜色调 `drawTod`（纯画面）。
+  - （天气 / 昼夜遮罩已在 12.2 删除，包括雷暴闪电。）
   - **图鉴总完成度**（save.js `codexProgress`）：敌人 + 卡牌 + 遗物 + 词缀 + 事件的收集率，25/50/75/100% 给称号和星星（共 +20★，直接按进度算进 `starBank`，不额外存档）。
   - **本局规则页**（`rulesHtml`，点羁绊看板打开）、12.0 更新说明（`showNews`，localStorage `chenxing-td-news`）、一次性提示 `once(key, html)`（`chenxing-td-hints`）。
   - sim 机器人会在首领读条时集火并用陨星术打断（`NOFOCUS=1` 可关）；实测对胜率影响很小（多在噪声内），说明中后期的瓶颈不在打断。
@@ -166,6 +166,11 @@ npm run sim            # 平衡模拟，见下
 - 头像 / 半身像用 `lpcScale2x`（Scale2x 像素平滑放大，px-lpc.js）。注意 px-core.js 里已有同名思路的 `scale2x`，**别重名**。
 - 击败数里程碑（`KILL_MARKS`）在晨星碑上方弹字。
 - **12.1 平衡基准**（`SEED=2026 RUNS=12 node ../balance.js`，每格 12 局，误差约 ±15 个百分点）：新手档 第 1–4 关 100/92/58/58%，二章档 第 5–8 关 75/58/67/0%，三章档 第 9–12 关 17/17/25/0%，四章档 第 13–16 关 8/17/17/0%，毕业档 第 1–11 关 83–100%，第 12 关 44%（`EASE` 下调 10% 敌人生命后），第 13–15 关 83/92/83%，第 16 关 13%，第五章 69/69/25/44%。config.js 末尾的 `EASE` 表是拉长后针对第 12 关和第五章做的敌人生命校准。
+
+## 12.2 要点（站位、寻路、去天气、打击特效）
+- **寻路**（arena.js `buildFlow/FLOW/lineBlocked/flowWaypoint`，step.js `moveToward`）：`loadStage` 时从晨星碑做一遍 BFS；地面敌人和目标之间被墙 / 水挡住（每 0.25 秒判断一次），就顺着 FLOW 一格一格绕。卡住 3 秒会进入 1.2 秒的「穿墙」兜底（`e.ghostT`）。角落的出怪口被墙围着，`flowWaypoint` 会找 2 格内最近的空地。力场关（`haz` 里有 `field`）敌人在力场外等是设计。测试 `tests/nav.js`。
+- **站位不重叠**：`arrange()` 末尾 `spreadSlots()` 把所有人的站位点推开到至少 `UNIT_GAP`(1.15) 格（手动拖过的站位不动）；战斗中 `separateUnits(dt)` 把靠得 < 0.9 格的队员挤开。
+- **打击特效**：`slash` / `thrust` 带 `sx/sy`（攻击者位置）按方向画月牙刀光 / 直线枪光 + 命中火花；远程出手有枪口闪光 `muz`，命中有小星爆 `hit`（都算 cheap 特效，超上限会被丢）；所有技能放出时有共同起手（光环 + 光柱 + 碎光，px-skill.js `skillFx` 开头）。
 
 ## 版本脉络
 7.0 固定阵地 + 自动战斗 + 翻牌 → 8.0 机关地图、稀有度、羁绊、商店、守望之战 → 9.0 专属卡、诅咒卡、首领演出与打断、第四章、天赋树、战报、存档导出、手机优化 → 10.0 局内事件、精英词缀、阵型与拖动站位、图鉴战绩 → 10.1 修无尽空波、牌堆见底、手动开波/叠波、难度上调 → **11.0 天赋星盘、深渊 20 层、遗物、每周挑战、手机横屏沉浸全屏、基础难度再上调** → 阶段 4 爽感：画质档位、打击感、出怪预告、竖屏信息区、翻牌仪式感、羁绊提示、结算动画、图鉴卡牌/遗物页 → 阶段 5：技能卡进化、集火、首领演出、技能特写 → 阶段 6：远征、星盘核心天赋、每日悬赏、角色觉醒 → 阶段 7–11：契约、首领特性、天气、第五章、LPC 角色与怪物、皮肤 → **12.1：每关拉长三幕、经验越升越贵、17 个角色羁绊 + 10 组搭档**。

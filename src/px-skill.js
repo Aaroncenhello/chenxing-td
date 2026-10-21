@@ -78,6 +78,10 @@ function drawHuntMark(fx, fy, top, t) {
 function addFxLater(f, delay) { addFx(f); f.t = -delay; }   // f.t < 0 时 drawFx 先不画，到点再出现
 function skillFx(u, D, R) {
   const id = D.id;
+  // 所有技能放出时的共同起手：脚下一圈扩散的光环 + 一道光柱 + 一把碎光，再接各自的专属效果
+  addFx({ kind: "ring", x: u.x, y: u.y, color: D.color, life: 0.55, r0: 0.3, r1: 1.7, fill: true });
+  addFx({ kind: "pillar", x: u.x, y: u.y, color: D.color, life: 0.45 });
+  burst(u.x, u.y - 0.2, D.color, 14, 2.6, 0.6, 0.06);
   if (id === "frost") addFx({ kind: "skfx", id: "frost", x: u.x, y: u.y, r: R, life: 1.7 });
   else if (id === "mage") {
     let n = 0; for (const e of S.enemies) { if (n >= 7) break; if (!hittable(e) || dist(u, e) > R) continue; n++;

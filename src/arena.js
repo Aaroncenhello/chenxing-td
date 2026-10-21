@@ -10,6 +10,40 @@ const toCrystal = o => Math.hypot(o.x - CRYSTAL.x, o.y - CRYSTAL.y);
 function loadStage(i, gen) {
   ST = gen || STAGES[i]; MAP = ST.map; PORTALS = [];
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (MAP[r][c] === "S") PORTALS.push({ x: c, y: r });
+  buildFlow();
+}
+// 12.2 寻路：从晨星碑往外做一遍 BFS，FLOW[行][列] = 走到碑要几步（-1 = 墙 / 水 / 到不了）。地面敌人和目标之间被墙挡住时，顺着它绕过去，不会再卡在角落里
+let FLOW = null;
+function buildFlow() {
+  FLOW = Array.from({ length: ROWS }, () => new Array(COLS).fill(-1));
+  const c0 = Math.round(CRYSTAL.x), r0 = Math.round(CRYSTAL.y), q = [[c0, r0]]; FLOW[r0][c0] = 0;
+  for (let i = 0; i < q.length; i++) {
+    const [c, r] = q[i];
+    for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nc = c + dc, nr = r + dr;
+      if (nc < 0 || nr < 0 || nc >= COLS || nr >= ROWS || FLOW[nr][nc] >= 0 || "#~H".includes(MAP[nr][nc])) continue;
+      FLOW[nr][nc] = FLOW[r][c] + 1; q.push([nc, nr]);
+    }
+  }
+}
+// 两点之间有没有被墙挡住（每 0.35 格取一个点）
+function lineBlocked(x0, y0, x1, y1) {
+  const d = Math.hypot(x1 - x0, y1 - y0), n = Math.ceil(d / 0.35);
+  for (let i = 1; i < n; i++) if (solid(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n)) return true;
+  return false;
+}
+// 顺着 FLOW 往碑走的下一个格子中心；自己站在墙里（被挤进去了）就先找最近的空地
+function flowWaypoint(x, y) {
+  let c = Math.round(x), r = Math.round(y);
+  if (!(FLOW[r] && FLOW[r][c] >= 0)) {
+    let best = null, bd = 99;
+    for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) { const rr = r + dr, cc = c + dc; if (FLOW[rr] && FLOW[rr][cc] >= 0) { const d = Math.hypot(cc - x, rr - y); if (d < bd) { bd = d; best = [cc, rr]; } } }
+    return best;
+  }
+  if (FLOW[r][c] === 0) return null;
+  let best = null, bv = FLOW[r][c];
+  for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nc = c + dc, nr = r + dr; if (FLOW[nr] && FLOW[nr][nc] >= 0 && FLOW[nr][nc] < bv) { bv = FLOW[nr][nc]; best = [nc, nr]; } }
+  return best;
 }
 function seeded(seed) { let s = (seed >>> 0) || 1; return () => (s = (Math.imul(s ^ (s >>> 15), 2246822507) + 0x9e3779b9 >>> 0), (s >>> 8) / 16777216); }
 // 局内随机数按用途分流：每日/每周挑战每条流都带种子，同一天/同一周大家遇到的出怪、事件、遗物、词缀、战斗判定都从同一串随机数里取；
@@ -177,7 +211,6 @@ function uInterval(u) {
   if (br(u, "summoner", "B") && golemOf(u)) i *= 0.5;
   if (syn("volley") && u.def.place === "high") i *= 0.8;
   if (u.chill && !rl("rl_stoneheart")) i *= 1 + u.chill;
-  if (S.wx === "blizzard") i *= 1.05;
   if (rl("rl_frenzy")) i /= 1 + Math.min(0.4, Math.floor((S.combo || 0) / 10) * 0.04);
   if (u.hero) { if (sg("sg_sw1")) i /= 1 + 0.15 * sg("sg_sw1"); if (sg("sg_ar1")) i /= 1 + 0.1 * sg("sg_ar1"); if (sg("sg_gu1")) i *= Math.max(0.5, 1 - 0.08 * sg("sg_gu1")); }
   i /= 1 + 0.35 * cu("cu_brittle");
@@ -210,7 +243,7 @@ const uSplash = u => ((br(u, "mage", "A") ? 2 : br(u, "frost", "B") ? 1.2 : u.de
 const eAtk = e => e.d.atk * (e.warcry ? 1.25 : 1) * (e.elite ? ELITE.atk : 1) * Math.sqrt(e.hpK) * S.diffK.atk * (e.enraged ? 1.3 : 1) * (e.howlUntil > S.t ? 1.2 : 1);
 const slowAura = e => (toCrystal(e) <= 3.5 ? 1 - Math.min(0.5, 0.12 * cl("slow")) : 1);
 const chillOf = e => 1;
-const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (e.howlUntil > S.t ? 1.12 : 1) * (S.wx === "blizzard" ? 0.92 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ct("swift") ? 1.15 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e) * (1 - tfTeam("slow") * (isBossType(e.type) ? 0.5 : 1));
+const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (e.howlUntil > S.t ? 1.12 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ct("swift") ? 1.15 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e) * (1 - tfTeam("slow") * (isBossType(e.type) ? 0.5 : 1));
 const corrodeK = e => (e.corrode && e.corrode.t > 0 ? e.corrode.k : 0);
 const eDef = e => (e.d.def + (S.mod === "tough" ? 150 : 0)) * (ab(19) ? 1.2 : 1) * (1 - corrodeK(e)) * (1 - 0.15 * cl("pierce")) * (syn("inferno") && e.burn > 0 ? (syn2("inferno") ? 0.7 : 0.8) : 1) * (syn("corrosive") && corrodeK(e) > 0 ? (syn2("corrosive") ? 0.75 : 0.85) : 1);
 const corrodeOf = u => (br(u, "alchemist", "A") ? 0.55 : u.lv >= 3 ? 0.4 : 0.25) + (u.hero ? 0.1 * sg("sg_al1") : 0);
@@ -338,6 +371,24 @@ function arrange() {
   const front = S.units.filter(u => u.def.place === "ground" && !u.summon && !u.slot), back = S.units.filter(u => u.def.place === "high" && !u.slot);
   ringSlots(front, F.front, -Math.PI / 2); ringSlots(back, F.back, Math.PI / 2);
   for (const u of S.units) if (u.slot) placeSlot(u);
+  spreadSlots();
+}
+// 站位不重叠：把所有人的站位点互相推开到至少 UNIT_GAP 格（手动拖过的站位不动，别人让开）。推不动的（墙、边界）就保持原位
+const UNIT_GAP = 1.15;
+function spreadSlots() {
+  const us = S.units.filter(u => !u.dead);
+  for (let it = 0; it < 40; it++) {
+    let moved = false;
+    for (let i = 0; i < us.length; i++) for (let j = i + 1; j < us.length; j++) {
+      const a = us[i], b = us[j]; let dx = b.tx - a.tx, dy = b.ty - a.ty, d = Math.hypot(dx, dy);
+      if (d >= UNIT_GAP) continue;
+      if (d < 0.01) { const an = (a.id * 2.399 + b.id) % 6.283; dx = Math.cos(an); dy = Math.sin(an); d = 1; }
+      const push = (UNIT_GAP - d) / (a.slot || b.slot ? 1 : 2) + 0.01, ux = dx / d, uy = dy / d;
+      const mv = (u, sx, sy) => { if (u.slot) return; const nx = u.tx + sx, ny = u.ty + sy; if (!solid(nx, ny) && nx > 0.6 && nx < COLS - 1.6 && ny > 0.6 && ny < ROWS - 1.6) { u.tx = nx; u.ty = ny; moved = true; } };
+      mv(a, -ux * push, -uy * push); mv(b, ux * push, uy * push);
+    }
+    if (!moved) break;
+  }
 }
 // 玩家手动拖过的角色：按自己的角度和半径站
 function placeSlot(u) {

@@ -2570,6 +2570,40 @@ const toCrystal = o => Math.hypot(o.x - CRYSTAL.x, o.y - CRYSTAL.y);
 function loadStage(i, gen) {
   ST = gen || STAGES[i]; MAP = ST.map; PORTALS = [];
   for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (MAP[r][c] === "S") PORTALS.push({ x: c, y: r });
+  buildFlow();
+}
+// 12.2 寻路：从晨星碑往外做一遍 BFS，FLOW[行][列] = 走到碑要几步（-1 = 墙 / 水 / 到不了）。地面敌人和目标之间被墙挡住时，顺着它绕过去，不会再卡在角落里
+let FLOW = null;
+function buildFlow() {
+  FLOW = Array.from({ length: ROWS }, () => new Array(COLS).fill(-1));
+  const c0 = Math.round(CRYSTAL.x), r0 = Math.round(CRYSTAL.y), q = [[c0, r0]]; FLOW[r0][c0] = 0;
+  for (let i = 0; i < q.length; i++) {
+    const [c, r] = q[i];
+    for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nc = c + dc, nr = r + dr;
+      if (nc < 0 || nr < 0 || nc >= COLS || nr >= ROWS || FLOW[nr][nc] >= 0 || "#~H".includes(MAP[nr][nc])) continue;
+      FLOW[nr][nc] = FLOW[r][c] + 1; q.push([nc, nr]);
+    }
+  }
+}
+// 两点之间有没有被墙挡住（每 0.35 格取一个点）
+function lineBlocked(x0, y0, x1, y1) {
+  const d = Math.hypot(x1 - x0, y1 - y0), n = Math.ceil(d / 0.35);
+  for (let i = 1; i < n; i++) if (solid(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n)) return true;
+  return false;
+}
+// 顺着 FLOW 往碑走的下一个格子中心；自己站在墙里（被挤进去了）就先找最近的空地
+function flowWaypoint(x, y) {
+  let c = Math.round(x), r = Math.round(y);
+  if (!(FLOW[r] && FLOW[r][c] >= 0)) {
+    let best = null, bd = 99;
+    for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) { const rr = r + dr, cc = c + dc; if (FLOW[rr] && FLOW[rr][cc] >= 0) { const d = Math.hypot(cc - x, rr - y); if (d < bd) { bd = d; best = [cc, rr]; } } }
+    return best;
+  }
+  if (FLOW[r][c] === 0) return null;
+  let best = null, bv = FLOW[r][c];
+  for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nc = c + dc, nr = r + dr; if (FLOW[nr] && FLOW[nr][nc] >= 0 && FLOW[nr][nc] < bv) { bv = FLOW[nr][nc]; best = [nc, nr]; } }
+  return best;
 }
 function seeded(seed) { let s = (seed >>> 0) || 1; return () => (s = (Math.imul(s ^ (s >>> 15), 2246822507) + 0x9e3779b9 >>> 0), (s >>> 8) / 16777216); }
 // 局内随机数按用途分流：每日/每周挑战每条流都带种子，同一天/同一周大家遇到的出怪、事件、遗物、词缀、战斗判定都从同一串随机数里取；
@@ -2737,7 +2771,6 @@ function uInterval(u) {
   if (br(u, "summoner", "B") && golemOf(u)) i *= 0.5;
   if (syn("volley") && u.def.place === "high") i *= 0.8;
   if (u.chill && !rl("rl_stoneheart")) i *= 1 + u.chill;
-  if (S.wx === "blizzard") i *= 1.05;
   if (rl("rl_frenzy")) i /= 1 + Math.min(0.4, Math.floor((S.combo || 0) / 10) * 0.04);
   if (u.hero) { if (sg("sg_sw1")) i /= 1 + 0.15 * sg("sg_sw1"); if (sg("sg_ar1")) i /= 1 + 0.1 * sg("sg_ar1"); if (sg("sg_gu1")) i *= Math.max(0.5, 1 - 0.08 * sg("sg_gu1")); }
   i /= 1 + 0.35 * cu("cu_brittle");
@@ -2770,7 +2803,7 @@ const uSplash = u => ((br(u, "mage", "A") ? 2 : br(u, "frost", "B") ? 1.2 : u.de
 const eAtk = e => e.d.atk * (e.warcry ? 1.25 : 1) * (e.elite ? ELITE.atk : 1) * Math.sqrt(e.hpK) * S.diffK.atk * (e.enraged ? 1.3 : 1) * (e.howlUntil > S.t ? 1.2 : 1);
 const slowAura = e => (toCrystal(e) <= 3.5 ? 1 - Math.min(0.5, 0.12 * cl("slow")) : 1);
 const chillOf = e => 1;
-const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (e.howlUntil > S.t ? 1.12 : 1) * (S.wx === "blizzard" ? 0.92 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ct("swift") ? 1.15 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e) * (1 - tfTeam("slow") * (isBossType(e.type) ? 0.5 : 1));
+const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (e.howlUntil > S.t ? 1.12 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ct("swift") ? 1.15 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e) * (1 - tfTeam("slow") * (isBossType(e.type) ? 0.5 : 1));
 const corrodeK = e => (e.corrode && e.corrode.t > 0 ? e.corrode.k : 0);
 const eDef = e => (e.d.def + (S.mod === "tough" ? 150 : 0)) * (ab(19) ? 1.2 : 1) * (1 - corrodeK(e)) * (1 - 0.15 * cl("pierce")) * (syn("inferno") && e.burn > 0 ? (syn2("inferno") ? 0.7 : 0.8) : 1) * (syn("corrosive") && corrodeK(e) > 0 ? (syn2("corrosive") ? 0.75 : 0.85) : 1);
 const corrodeOf = u => (br(u, "alchemist", "A") ? 0.55 : u.lv >= 3 ? 0.4 : 0.25) + (u.hero ? 0.1 * sg("sg_al1") : 0);
@@ -2898,6 +2931,24 @@ function arrange() {
   const front = S.units.filter(u => u.def.place === "ground" && !u.summon && !u.slot), back = S.units.filter(u => u.def.place === "high" && !u.slot);
   ringSlots(front, F.front, -Math.PI / 2); ringSlots(back, F.back, Math.PI / 2);
   for (const u of S.units) if (u.slot) placeSlot(u);
+  spreadSlots();
+}
+// 站位不重叠：把所有人的站位点互相推开到至少 UNIT_GAP 格（手动拖过的站位不动，别人让开）。推不动的（墙、边界）就保持原位
+const UNIT_GAP = 1.15;
+function spreadSlots() {
+  const us = S.units.filter(u => !u.dead);
+  for (let it = 0; it < 40; it++) {
+    let moved = false;
+    for (let i = 0; i < us.length; i++) for (let j = i + 1; j < us.length; j++) {
+      const a = us[i], b = us[j]; let dx = b.tx - a.tx, dy = b.ty - a.ty, d = Math.hypot(dx, dy);
+      if (d >= UNIT_GAP) continue;
+      if (d < 0.01) { const an = (a.id * 2.399 + b.id) % 6.283; dx = Math.cos(an); dy = Math.sin(an); d = 1; }
+      const push = (UNIT_GAP - d) / (a.slot || b.slot ? 1 : 2) + 0.01, ux = dx / d, uy = dy / d;
+      const mv = (u, sx, sy) => { if (u.slot) return; const nx = u.tx + sx, ny = u.ty + sy; if (!solid(nx, ny) && nx > 0.6 && nx < COLS - 1.6 && ny > 0.6 && ny < ROWS - 1.6) { u.tx = nx; u.ty = ny; moved = true; } };
+      mv(a, -ux * push, -uy * push); mv(b, ux * push, uy * push);
+    }
+    if (!moved) break;
+  }
 }
 // 玩家手动拖过的角色：按自己的角度和半径站
 function placeSlot(u) {
@@ -3351,33 +3402,7 @@ const hazSlow = e => {
   for (const h of S.haz) if (h.type === "field" && distTo(e, h.x, h.y) <= h.r) k *= 1 - h.slow;
   return k;
 };
-// ---------- 天气：按主题和波次固定出现（每 5 波里有 2 波），双方都受影响，只做轻微数值 ----------
-const WEATHER = {
-  rain:     { name: "骤雨",   tip: "燃烧伤害 −30%，法术伤害 +8%", color: "#8ab4e8" },
-  blizzard: { name: "暴风雪", tip: "敌人移速 −8%，我方攻击间隔 +5%", color: "#e0f0ff" },
-  heat:     { name: "热浪",   tip: "燃烧伤害 +30%，治疗效果 −10%", color: "#ffb060" },
-  storm:    { name: "雷暴",   tip: "每 8 秒落雷劈一个敌人（造成其 5% 生命），偶尔也会劈到队员", color: "#c8d8ff" },
-};
-const WEATHER_OF = { forest: "rain", grave: "rain", tide: "storm", snow: "blizzard", ice: "blizzard", desert: "heat", lava: "heat", ash: "heat", sky: "storm", storm: "storm" };
-const wxNow = () => (S.wave > 0 && !S.over && WEATHER_OF[ST.theme] && (S.wave + (S.stage | 0)) % 5 >= 3 ? WEATHER_OF[ST.theme] : null);
-function wxStep(dt) {
-  const id = wxNow();
-  if (id !== S.wx) {
-    S.wx = id; S.wxT = 4; S.wxAge = 0;
-    if (id) once("wx", "<b>天气</b>每 5 波会有 2 波出现天气，对双方都有轻微影响。点战场下方的「羁绊」看板可以随时查看本局规则。");
-    if (id) { const W = WEATHER[id]; addFx({ kind: "banner", text: `天气 · ${W.name}（${W.tip}）`, life: 2.6 }); }
-    else if (S.wave > 1) addFx({ kind: "banner", text: "天气转好了", life: 1.6 });
-  }
-  if (id) S.wxAge = (S.wxAge || 0) + dt;
-  if (id === "storm") {
-    S.wxT -= dt; if (S.wxT > 0) return; S.wxT = 8;
-    const t = S.enemies.filter(e => !e.dead && !e.under);
-    if (t.length) { const e = t[Math.floor(roll("fight") * t.length)]; addFx({ kind: "pillar", x: e.x, y: e.y, color: "#c8e0ff", life: 0.5 }); hurt(e, e.maxHp * (isBoss(e) || e.lead ? 0.01 : 0.05), "magic", false, { key: "weather" }); }
-    if (roll("fight") < 0.5) { const us = S.units.filter(alive); if (us.length) { const u = us[Math.floor(roll("fight") * us.length)]; addFx({ kind: "pillar", x: u.x, y: u.y, color: "#c8e0ff", life: 0.5 }); hurtUnit(u, u.maxHp * 0.03, "magic", null); } }
-  }
-}
 function hazStep(dt) {
-  wxStep(dt);
   if (!S.haz || !S.haz.length) return;
   if (S.gate) S.gate.t += dt;
   const pk = powerK() * (S.hazK || 1);
@@ -4098,7 +4123,7 @@ function adaptGfx(dt, target) {
 // 触屏设备自动档最高只到「中」（高档在手机上几乎看不出区别，却更烫）
 const autoMax = () => (TOUCH ? 1 : GFX_LV.length - 1);
 // 特效满了就先丢掉装饰性的（粒子、伤害数字），横幅、演出、环这类关键反馈照常加
-const fxCheap = f => f.kind === "parts" || (f.kind === "text" && !f.big);
+const fxCheap = f => f.kind === "parts" || f.kind === "muz" || f.kind === "hit" || (f.kind === "text" && !f.big);
 function addFx(f) { f.t = 0; if (S.fx.length >= GFX.cap && fxCheap(f)) return; S.fx.push(f); if (f.kind === "boom" && f.r >= 0.9 && GFX.lit) stampDecal(f.x, f.y, f.r, f.color); }
 function burst(x, y, color, n, spd, life, size) {
   const parts = [];
@@ -4251,7 +4276,6 @@ function hurt(e, amt, type, crit, src) {
   if (rl("rl_rot") && (e.burn > 0 || (e.poison && e.poison.t > 0) || corrodeK(e) > 0)) amt *= 1.2;
   const byUnit = src && src.def && type !== "poison";
   if (byUnit) {
-    if (type === "magic" && S.wx === "rain") amt *= 1.08;
     if (src.tf) { if (type === "magic") amt *= 1 + tf(src, "spell"); if (e.hp < e.maxHp * 0.5) amt *= 1 + tf(src, "exec"); }
     if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1) * (cl("lg_hunt") ? 1.3 : 1);
     if (rl("rl_berserk") && !crit) { src.hitN = (src.hitN || 0) + 1; if (src.hitN % 8 === 0) { amt *= 3; crit = true; } }
@@ -4383,7 +4407,6 @@ function hurtUnit(u, amt, type, from) {
 function heal(u, amt, quiet, src) {
   if (u.dead || u.down > 0) return;
   if (src && src.hero && sg("sg_pr2")) u.blessT = 6;
-  if (S.wx === "heat") amt *= 0.9;
   if (src) amt *= 1 + tf(src, "heal");
   const got = Math.min(amt, u.maxHp - u.hp);
   u.hp += got;
@@ -4417,10 +4440,12 @@ function hurtCrystal(amt, e) {
 // ---------- 飞行物 ----------
 const SHOT_SPEED = { archer: 10, gunner: 6, alchemist: 6, bard: 8, summoner: 8, fire: 6, dark: 6 };
 function shoot(src, target, kind, atk) {
+  if (src.def) addFx({ kind: "muz", x: src.x, y: src.y - 0.2, x2: target.x, y2: target.y, color: src.def.color || "#ffe9a0", life: 0.14 });
   S.shots.push({ x: src.x, y: src.y - 0.2, target, kind, atk, src, trail: [], speed: SHOT_SPEED[kind] || 7 });
 }
 function landShot(s) {
   const t = s.target, u = s.src;
+  if (u && u.def) addFx({ kind: "hit", x: t.x, y: t.y - 0.1, color: u.def.color || "#ffe9a0", life: 0.2 });
   if (s.kind === "archer") hurt(t, calc(s.atk * (t.d.flying && hasTal(u, "archer") ? 1.5 : 1) * (t.d.flying && u.hero && sg("sg_ar2") ? 2 : 1), "phys", eDef(t), eRes(t)), "phys", false, u);
   else if (s.kind === "hunter") {
     let m = (t.elite || isBoss(t)) ? 1.2 + (u.hero ? 0.15 * sg("sg_hu1") : 0) : 1;
@@ -4551,7 +4576,7 @@ function strike(u, targets) {
     if (D.id === "lancer" && u.lv >= 3 && !t.dead && roll("fight") < 0.25) knock(t, 0.5);
     if (u.hero && sg("sg_la1") && !t.dead) knock(t, 0.4);
     if (u.hero && sg("sg_me2") && !t.dead) burnEnemy(t, uAtk(u) * 0.35, 4, u);
-    addFx({ kind: D.id === "lancer" ? "thrust" : "slash", x: t.x, y: t.y, color: crit ? "#ffe040" : D.color, face: u.face, life: 0.22, big: crit || h > 0 });
+    addFx({ kind: D.id === "lancer" ? "thrust" : "slash", x: t.x, y: t.y, sx: u.x, sy: u.y, sw: (u.swN = (u.swN || 0) + 1) % 2 ? 1 : -1, color: crit ? "#ffe040" : D.color, face: u.face, life: D.id === "lancer" ? 0.26 : 0.3, big: crit || h > 0 });
     t.stop = crit ? 0.14 : 0.09;
   }
   if (list.length) u.stop = 0.07;
@@ -4949,11 +4974,16 @@ function autoCast(id, lv) {
 // ================= 每一步（固定 30 次/秒） =================
 function moveToward(e, tx, ty, dt) {
   const spd = eSpeed(e);
+  // 地面敌人：和目标之间有墙就顺着 FLOW 绕（每 0.25 秒判断一次），不会再卡在角落 / 水池边
+  if (!e.d.flying && !e.under && FLOW) {
+    if ((e.navT || 0) <= S.t) { e.navT = S.t + 0.25; e.navBlocked = lineBlocked(e.x, e.y, tx, ty); }
+    if (e.navBlocked) { const w = flowWaypoint(e.x, e.y); if (w) { tx = w[0]; ty = w[1]; } }
+  }
   let dx = tx - e.x + (e.px || 0), dy = ty - e.y + (e.py || 0);
   const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
   const ox0 = e.x, oy0 = e.y;
   let nx = e.x + dx * spd * dt, ny = e.y + dy * spd * dt;
-  if (!e.d.flying && (e.stuckT || 0) < 3) {
+  if (!e.d.flying && !(e.ghostT > 0)) {
     if (solid(nx, ny)) {
       if (!solid(nx, e.y)) ny = e.y;
       else if (!solid(e.x, ny)) nx = e.x;
@@ -4967,7 +4997,19 @@ function moveToward(e, tx, ty, dt) {
   e.x = Math.max(0.3, Math.min(COLS - 1.3, nx)); e.y = Math.max(0.3, Math.min(ROWS - 1.3, ny));
   // 卡住超过 3 秒就允许穿过障碍，避免有敌人永远到不了晨星碑
   e.stuckT = Math.hypot(e.x - ox0, e.y - oy0) < spd * dt * 0.35 ? (e.stuckT || 0) + dt : 0;
+  if (e.stuckT >= 3) { e.ghostT = 1.2; e.stuckT = 0; } else if (e.ghostT > 0) e.ghostT -= dt;
   e.walk += dt * spd; faceTo(e, tx);
+}
+// 己方之间也挤开：前排追着敌人跑、站位被推等情况下，两个人靠得太近（< 0.9 格）就互相让开
+function separateUnits(dt) {
+  const us = S.units.filter(u => !u.dead && u.down <= 0);
+  for (let i = 0; i < us.length; i++) for (let j = i + 1; j < us.length; j++) {
+    const a = us[i], b = us[j]; let dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+    if (d >= 0.9) continue;
+    if (d < 0.01) { const an = (a.id * 2.399 + b.id) % 6.283; dx = Math.cos(an); dy = Math.sin(an); d = 1; }
+    const push = (0.9 - d) / 2 * Math.min(1, dt * 10), ux = dx / d, uy = dy / d;
+    for (const [u, k] of [[a, -1], [b, 1]]) { const nx = u.x + ux * push * k, ny = u.y + uy * push * k; if (!solid(nx, ny)) { u.x = nx; u.y = ny; } }
+  }
 }
 // 敌人之间稍微挤开一点，避免完全重叠
 function separate() {
@@ -5151,7 +5193,7 @@ function step(dt) {
     }
     if (e.burn > 0) {
       e.burn -= dt; e.burnAcc = (e.burnAcc || 0) + dt;
-      if (e.burnAcc >= 0.5) { e.burnAcc -= 0.5; if (!e.under) hurt(e, e.burnDps * 0.5 * (S.wx === "rain" ? 0.7 : S.wx === "heat" ? 1.3 : 1), "poison", false, e.burnSrc || { key: "burn" }); if (e.dead) continue; }
+      if (e.burnAcc >= 0.5) { e.burnAcc -= 0.5; if (!e.under) hurt(e, e.burnDps * 0.5, "poison", false, e.burnSrc || { key: "burn" }); if (e.dead) continue; }
     }
     if (e.mark > 0) e.mark -= dt;
     afxStep(e, dt);
@@ -5288,6 +5330,7 @@ function step(dt) {
     moveToward(e, CRYSTAL.x, CRYSTAL.y, dt);
   }
 
+  separateUnits(dt);
   // 飞行物
   for (const s of S.shots) {
     const t = s.target;
@@ -5972,12 +6015,6 @@ function drawAmbient(now) {
       rect(ctx, x - 1, y - (fl ? 5 : 4), 3, fl ? 4 : 3, TORCH[0]); dot(ctx, x, y - (fl ? 4 : 3), TORCH[1]);
     });
     addGlow(x, y - 3, 24, TORCH[0], 0.22 + Math.sin(t * 9 + c) * 0.05);
-  }
-  // 雷暴天气：远处闪电，纯画面效果，用固定周期而非随机避免闪烁不受控
-  if (theme === "storm") {
-    const lt = t % 6.4;
-    if (lt < 0.08) { ctx.fillStyle = "rgba(255,255,255,.5)"; ctx.fillRect(0, 0, LW, LH); }
-    else if (lt < 0.16) { ctx.fillStyle = "rgba(255,255,255,.18)"; ctx.fillRect(0, 0, LW, LH); }
   }
 }
 // 屏幕空间的环境粒子（雪、雨、萤火、灰烬……）：永远在「视图」里直立地飘，不跟着地图转
@@ -6682,18 +6719,34 @@ function drawFx(f, now) {
     if (f.fill) { ctx.globalAlpha = 0.18 * (1 - k); disc(ctx, x, y + 8, r, f.color); ctx.globalAlpha = 1; }
     ring(ctx, x, y + 8, r, r * 0.8, f.color, k > 0.5); ring(ctx, x, y + 8, r - 1, r * 0.8 - 1, f.color, true);
   } else if (f.kind === "slash") {
-    const [x, y] = tpx(f.x, f.y), fc = f.face || 1, fr = Math.min(2, Math.floor(k * 3)), R = f.big ? 18 : 14;
-    const a0 = -110 + fr * 20, a1 = 40 - (fr === 2 ? 30 : 0);
-    for (let a = a0; a <= a1; a += 3) {
-      const r = a * Math.PI / 180;
-      rect(ctx, x + fc * Math.cos(r) * R, y - 4 + Math.sin(r) * R, 2, 2, "#ffffff");
-      if (fr < 2) rect(ctx, x + fc * Math.cos(r) * (R - 2), y - 4 + Math.sin(r) * (R - 2), 2, 2, f.color);
+    // 刀光：一道从攻击者朝向目标的月牙，头部亮、尾部渐隐，命中点有一圈火花；暴击更大、更黄
+    const [x, y] = tpx(f.x, f.y); let ang = (f.face || 1) > 0 ? 0 : Math.PI;
+    if (f.sx != null) { const [ax, ay] = tpx(f.sx, f.sy); if (Math.hypot(x - ax, y - ay) > 1) ang = Math.atan2(y - ay, x - ax); }
+    const big = f.big, R = big ? 32 : 23, sg = f.sw || 1, head = Math.min(1, k * 2.4), cx = x - Math.cos(ang) * R * 0.5, cy = y - 5 - Math.sin(ang) * R * 0.5;
+    for (let i = 0; i <= 14; i++) {
+      const u = i / 14; if (u > head) break;
+      const al = 1 - (head - u) * 1.5 - Math.max(0, k - 0.45) * 1.8; if (al <= 0.05) continue;
+      const a = ang + (u - 0.5) * 2.1 * sg, th = 2 + (u * 3 | 0), px = cx + Math.cos(a) * R, py = cy + Math.sin(a) * R;
+      ctx.globalAlpha = al; rect(ctx, px - th / 2, py - th / 2, th, th, "#ffffff");
+      ctx.globalAlpha = al * 0.8; rect(ctx, cx + Math.cos(a) * (R + 3) - th / 2, cy + Math.sin(a) * (R + 3) - th / 2, th, th, f.color);
     }
-    if (fr === 0) { const s = f.big ? 7 : 5; line(ctx, x - s, y - 4 - s, x + s, y - 4 + s, "#ffffff", 2); line(ctx, x - s, y - 4 + s, x + s, y - 4 - s, "#ffffff", 2); rect(ctx, x - 2, y - 6, 4, 4, "#fff6a0"); }
+    ctx.globalAlpha = 1;
+    if (k < 0.4) { const n = big ? 8 : 6, L = 3 + k * 16; for (let i = 0; i < n; i++) { const a = i * 6.283 / n + ang; line(ctx, x + Math.cos(a) * 3, y - 5 + Math.sin(a) * 3, x + Math.cos(a) * (3 + L), y - 5 + Math.sin(a) * (3 + L), i % 2 ? f.color : "#ffffff", 1); } if (k < 0.15) rect(ctx, x - 2, y - 7, 4, 4, "#fff6a0"); }
   } else if (f.kind === "thrust") {
-    const [x, y] = tpx(f.x, f.y), fc = f.face || 1, len = R0(26 * (1 - k)) + 8;
-    line(ctx, x - fc * len, y - 4, x + fc * 6, y - 4, "#ffffff", 2); line(ctx, x - fc * len, y - 1, x + fc * 2, y - 1, f.color);
-    if (k < 0.4) { rect(ctx, x + fc * 6 - 2, y - 7, 5, 5, "#fff6a0"); dot(ctx, x + fc * 10, y - 5, "#ffffff"); }
+    // 枪刺：一道直线的光从攻击者戳向目标，头部有一个亮点和一圈小涟漪
+    const [x, y] = tpx(f.x, f.y); let ax = x - (f.face || 1) * 26, ay = y;
+    if (f.sx != null) { const [sx, sy] = tpx(f.sx, f.sy); if (Math.hypot(x - sx, y - sy) > 1) { ax = sx; ay = sy; } }
+    const dx = x - ax, dy = y - ay, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, len = Math.min(d, 30) * (1 - k * 0.5) + 6, tip = Math.min(1, k * 4);
+    const hx = x - ux * 4 * (1 - tip), hy = y - 5 - uy * 4 * (1 - tip);
+    ctx.globalAlpha = Math.max(0.2, 1 - k); line(ctx, hx - ux * len, hy - uy * len, hx, hy, "#ffffff", 2); line(ctx, hx - ux * len * 0.8, hy - uy * len * 0.8 + 2, hx, hy + 2, f.color); ctx.globalAlpha = 1;
+    if (k < 0.5) { rect(ctx, hx - 2, hy - 2, 5, 5, "#fff6a0"); ring(ctx, x, y - 2, 4 + k * 14, (4 + k * 14) * 0.7, f.color, true); }
+  } else if (f.kind === "muz") {   // 枪口 / 法杖口的一小团闪光
+    const [x, y] = tpx(f.x, f.y), [x2, y2] = tpx(f.x2, f.y2), d = Math.hypot(x2 - x, y2 - y) || 1, mx = x + (x2 - x) / d * 8, my = y - 4 + (y2 - y) / d * 8, r = (1 - k) * 5 + 1;
+    rect(ctx, mx - r, my - 1, r * 2, 2, f.color); rect(ctx, mx - 1, my - r, 2, r * 2, f.color); rect(ctx, mx - 1, my - 1, 3, 3, "#ffffff");
+  } else if (f.kind === "hit") {   // 弹道命中：小星爆
+    const [x, y] = tpx(f.x, f.y), L = 2 + k * 9;
+    for (let i = 0; i < 6; i++) { const a = i * 1.047 + 0.3; line(ctx, x + Math.cos(a) * 2, y - 4 + Math.sin(a) * 2, x + Math.cos(a) * L, y - 4 + Math.sin(a) * L, i % 2 ? f.color : "#ffffff", 1); }
+    if (k < 0.4) rect(ctx, x - 1, y - 5, 3, 3, "#ffffff");
   } else if (f.kind === "wave") {
     ctx.globalAlpha = Math.max(0, 1 - k);
     const [x, y] = tpx(f.x, f.y), r = 10 + k * f.r * T;
@@ -6953,7 +7006,6 @@ function drawOverlay() {
     }
   }
   drawWaveLabels(s, txt, tk);
-  if (S.wx && !S.over) { const W = WEATHER[S.wx]; tctx.textAlign = "right"; txt(`天气 · ${W.name}`, tx.width - 14 * s, 16 * s * tk, 8 * s * tk, W.color); tctx.textAlign = "center"; }
   if (S.combo >= 3 && S.comboT > 0 && !$("pinfo").offsetHeight) {   // 竖屏信息区有大号连杀，战场里就不重复画
     const tier = S.combo >= 50 ? "#ff6a5a" : S.combo >= 20 ? "#ffb040" : S.combo >= 10 ? "#ffd860" : "#ffffff";
     tctx.textAlign = "left"; txt(`连杀 ×${S.combo}`, 12 * s, 16 * s * tk, (10 + Math.min(6, S.combo / 8)) * s * tk, tier);
@@ -7092,32 +7144,6 @@ function addGlow(x, y, r, color, a) {
 }
 // 暗角 + 每章色调：地图换了才重建，平时就是一次 drawImage
 let vigCv = null, vigFor = null;
-// 天气：雨 / 雪 / 热浪 / 雷暴的画面（纯效果，用固定公式出点，不用随机）
-function drawWeather(t) {
-  const id = S.wx; if (!id) return;
-  // 刚开始时渐入。必须夹在 0–1 之间：globalAlpha 设成负数会被忽略、沿用上一次的值（曾经因此在雷暴天整屏被涂成近黑色，表现为周期性黑屏）
-  const k = Math.max(0, Math.min(1, (S.wxAge || 0) / 1.2 + 0.2));
-  if (id === "rain") { ctx.globalAlpha = 0.1 * k; ctx.fillStyle = "#10284a"; ctx.fillRect(0, 0, PW, PHt); }
-  else if (id === "blizzard") { ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#dce8f8"; ctx.fillRect(0, 0, PW, PHt); }
-  else if (id === "heat") { ctx.globalAlpha = 0.08 * k; ctx.fillStyle = "#ff8a30"; ctx.fillRect(0, 0, PW, PHt); }
-  else if (id === "storm") { ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#0a1226"; ctx.fillRect(0, 0, PW, PHt); }
-  ctx.globalAlpha = 1;
-  if (!GFX.amb) return;
-  const n = GFX.k >= 1 ? 120 : 60;
-  if (id === "rain" || id === "storm") for (let i = 0; i < n; i++) { const s = 0.6 + (i * 37 % 10) / 25, y = (i * 53 % PHt + t * 330 * s) % PHt, x = ((i * 91 % PW) - t * 60 * s + y * 0.18 + PW * 2) % PW; rect(ctx, x, y, 1, 4 + (i % 3), i % 4 ? "rgba(170,200,240,.6)" : "rgba(220,236,255,.85)"); }
-  else if (id === "blizzard") for (let i = 0; i < n; i++) { const s = 0.5 + (i * 29 % 10) / 14, y = (i * 47 % PHt + t * 40 * s) % PHt, x = ((i * 83 % PW) - t * 150 * s + PW * 4) % PW; rect(ctx, x, y, i % 3 ? 1 : 2, 1, "rgba(255,255,255,.75)"); }
-  else if (id === "heat") for (let i = 0; i < 6; i++) { const y = (i * 61 + t * 12) % PHt, x = (i * 113) % PW; ctx.globalAlpha = 0.09; ctx.fillStyle = "#ffe0a0"; ctx.fillRect(x + Math.sin(t * 3 + i) * 6, y, 90, 1); ctx.globalAlpha = 1; }
-}
-// 昼夜：户外关随波数推进，从白天到黄昏再到夜里（纯画面，不影响数值）
-const TOD_THEMES = new Set(["forest", "snow", "desert", "sky", "ash", "storm", "tide"]);
-function drawTod() {
-  if (!TOD_THEMES.has(ST.theme) || S.wave < 1) return;
-  const f = Math.min(1, (S.wave - 1) / Math.max(1, totalWaves() - 1));
-  if (f < 0.4) return;
-  if (f < 0.72) { ctx.globalAlpha = 0.17 * (f - 0.4) / 0.32; ctx.fillStyle = "#ff8a3c"; }
-  else { ctx.globalAlpha = 0.17 + 0.2 * (f - 0.72) / 0.28; ctx.fillStyle = "#0a1038"; }
-  ctx.fillRect(0, 0, PW, PHt); ctx.globalAlpha = 1;
-}
 function drawVignette() {
   const key = mapKey();
   if (vigFor !== key) {
@@ -7215,7 +7241,6 @@ function render(now) {
   for (const s of S.shots) drawShot(s);
   for (const f of S.fx) if (f.kind !== "corpse" && f.kind !== "ucorpse" && f.kind !== "shatter") drawFx(f, now);
   ctx.setTransform(RS, 0, 0, RS, 0, 0);
-  drawWeather(t); drawTod();
   if (GFX.lit) drawVignette();
   if (S.hitFlash > 0 && !OPT.calm) { ctx.fillStyle = `rgba(255,40,40,${(S.hitFlash * 0.5).toFixed(3)})`; ctx.fillRect(0, 0, PW, 6); ctx.fillRect(0, PHt - 6, PW, 6); ctx.fillRect(0, 0, 6, PHt); ctx.fillRect(PW - 6, 0, 6, PHt); }
   if (S.slowmo > 0) { ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fillRect(0, 0, PW, PHt); }
@@ -7306,6 +7331,10 @@ function drawHuntMark(fx, fy, top, t) {
 function addFxLater(f, delay) { addFx(f); f.t = -delay; }   // f.t < 0 时 drawFx 先不画，到点再出现
 function skillFx(u, D, R) {
   const id = D.id;
+  // 所有技能放出时的共同起手：脚下一圈扩散的光环 + 一道光柱 + 一把碎光，再接各自的专属效果
+  addFx({ kind: "ring", x: u.x, y: u.y, color: D.color, life: 0.55, r0: 0.3, r1: 1.7, fill: true });
+  addFx({ kind: "pillar", x: u.x, y: u.y, color: D.color, life: 0.45 });
+  burst(u.x, u.y - 0.2, D.color, 14, 2.6, 0.6, 0.06);
   if (id === "frost") addFx({ kind: "skfx", id: "frost", x: u.x, y: u.y, r: R, life: 1.7 });
   else if (id === "mage") {
     let n = 0; for (const e of S.enemies) { if (n >= 7) break; if (!hittable(e) || dist(u, e) > R) continue; n++;
@@ -7928,7 +7957,7 @@ function synGuideHtml(live) {
     return `<div class="cx${x && x.on ? " on" : ""}" style="--c:${g.color}"><div><b style="color:${g.color}">${x && x.on ? "✓ " : ""}${g.name}${x ? `<span class="sp">${x.on ? "已生效" : `${x.a}/${x.b}`}</span>` : ""}</b>
       <p class="need">条件：${g.need}</p><p class="eff">效果：${g.desc}</p>${g.t2 ? `<p class="eff t2${x && x.on2 ? " on" : ""}">${x && x.on2 ? "✓ " : ""}强化 Ⅱ：${g.t2.desc}<br><small>条件：${syn2Need(g)}</small></p>` : ""}<p>${SYN_HOW[g.id] ? SYN_HOW[g.id]() : ""}</p></div></div>`; }).join("")}</div>`;
 }
-// 本局规则：契约、深渊、每日规则、天气、本关首领特性，都在这一页看
+// 本局规则：契约、深渊、每日规则、本关首领特性，都在这一页看
 function rulesHtml() {
   const rows = [], gr = teamGrowth();
   rows.push(["本局成长", `全队总攻击 ×${gr.atk.toFixed(1)}，总生命 ×${gr.hp.toFixed(1)}（相对开局，${gr.n} 名队员）`]);
@@ -7936,8 +7965,6 @@ function rulesHtml() {
   if (S.abyss) rows.push(["深渊", `${S.abyss} 层：敌人更强，奖励更多`]);
   if (S.daily) { const m = DAILY_MODS.find(x => x.id === S.mod); if (m) rows.push(["每日规则", `${m.name}：${m.desc}`]); }
   if (S.assist) rows.push(["连败辅助", `晨星碑生命 +${Math.round(ASSIST[S.assist - 1].hp * 100)}%`]);
-  const wid = WEATHER_OF[ST.theme];
-  if (wid) rows.push(["天气", `${WEATHER[wid].name}（${WEATHER[wid].tip}）· 每 5 波里有 2 波${S.wx ? "，现在正在下" : ""}`]);
   const ms = [...new Set((ST.boss || []).map(b => b[0]))].filter(t => BOSS_MECH[t]).map(t => `${ENEMIES[t].name}：${BOSS_MECH[t].name}（${BOSS_MECH[t].tip}）`);
   if (ms.length) rows.push(["首领特性", ms.join("；")]);
   return rows.length ? `<div class="tree rulebox"><b>本局规则</b>${rows.map(([k, v]) => `<small><b>${k}</b>　${v}</small>`).join("")}</div>` : "";

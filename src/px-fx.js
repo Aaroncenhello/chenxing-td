@@ -236,18 +236,34 @@ function drawFx(f, now) {
     if (f.fill) { ctx.globalAlpha = 0.18 * (1 - k); disc(ctx, x, y + 8, r, f.color); ctx.globalAlpha = 1; }
     ring(ctx, x, y + 8, r, r * 0.8, f.color, k > 0.5); ring(ctx, x, y + 8, r - 1, r * 0.8 - 1, f.color, true);
   } else if (f.kind === "slash") {
-    const [x, y] = tpx(f.x, f.y), fc = f.face || 1, fr = Math.min(2, Math.floor(k * 3)), R = f.big ? 18 : 14;
-    const a0 = -110 + fr * 20, a1 = 40 - (fr === 2 ? 30 : 0);
-    for (let a = a0; a <= a1; a += 3) {
-      const r = a * Math.PI / 180;
-      rect(ctx, x + fc * Math.cos(r) * R, y - 4 + Math.sin(r) * R, 2, 2, "#ffffff");
-      if (fr < 2) rect(ctx, x + fc * Math.cos(r) * (R - 2), y - 4 + Math.sin(r) * (R - 2), 2, 2, f.color);
+    // 刀光：一道从攻击者朝向目标的月牙，头部亮、尾部渐隐，命中点有一圈火花；暴击更大、更黄
+    const [x, y] = tpx(f.x, f.y); let ang = (f.face || 1) > 0 ? 0 : Math.PI;
+    if (f.sx != null) { const [ax, ay] = tpx(f.sx, f.sy); if (Math.hypot(x - ax, y - ay) > 1) ang = Math.atan2(y - ay, x - ax); }
+    const big = f.big, R = big ? 32 : 23, sg = f.sw || 1, head = Math.min(1, k * 2.4), cx = x - Math.cos(ang) * R * 0.5, cy = y - 5 - Math.sin(ang) * R * 0.5;
+    for (let i = 0; i <= 14; i++) {
+      const u = i / 14; if (u > head) break;
+      const al = 1 - (head - u) * 1.5 - Math.max(0, k - 0.45) * 1.8; if (al <= 0.05) continue;
+      const a = ang + (u - 0.5) * 2.1 * sg, th = 2 + (u * 3 | 0), px = cx + Math.cos(a) * R, py = cy + Math.sin(a) * R;
+      ctx.globalAlpha = al; rect(ctx, px - th / 2, py - th / 2, th, th, "#ffffff");
+      ctx.globalAlpha = al * 0.8; rect(ctx, cx + Math.cos(a) * (R + 3) - th / 2, cy + Math.sin(a) * (R + 3) - th / 2, th, th, f.color);
     }
-    if (fr === 0) { const s = f.big ? 7 : 5; line(ctx, x - s, y - 4 - s, x + s, y - 4 + s, "#ffffff", 2); line(ctx, x - s, y - 4 + s, x + s, y - 4 - s, "#ffffff", 2); rect(ctx, x - 2, y - 6, 4, 4, "#fff6a0"); }
+    ctx.globalAlpha = 1;
+    if (k < 0.4) { const n = big ? 8 : 6, L = 3 + k * 16; for (let i = 0; i < n; i++) { const a = i * 6.283 / n + ang; line(ctx, x + Math.cos(a) * 3, y - 5 + Math.sin(a) * 3, x + Math.cos(a) * (3 + L), y - 5 + Math.sin(a) * (3 + L), i % 2 ? f.color : "#ffffff", 1); } if (k < 0.15) rect(ctx, x - 2, y - 7, 4, 4, "#fff6a0"); }
   } else if (f.kind === "thrust") {
-    const [x, y] = tpx(f.x, f.y), fc = f.face || 1, len = R0(26 * (1 - k)) + 8;
-    line(ctx, x - fc * len, y - 4, x + fc * 6, y - 4, "#ffffff", 2); line(ctx, x - fc * len, y - 1, x + fc * 2, y - 1, f.color);
-    if (k < 0.4) { rect(ctx, x + fc * 6 - 2, y - 7, 5, 5, "#fff6a0"); dot(ctx, x + fc * 10, y - 5, "#ffffff"); }
+    // 枪刺：一道直线的光从攻击者戳向目标，头部有一个亮点和一圈小涟漪
+    const [x, y] = tpx(f.x, f.y); let ax = x - (f.face || 1) * 26, ay = y;
+    if (f.sx != null) { const [sx, sy] = tpx(f.sx, f.sy); if (Math.hypot(x - sx, y - sy) > 1) { ax = sx; ay = sy; } }
+    const dx = x - ax, dy = y - ay, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, len = Math.min(d, 30) * (1 - k * 0.5) + 6, tip = Math.min(1, k * 4);
+    const hx = x - ux * 4 * (1 - tip), hy = y - 5 - uy * 4 * (1 - tip);
+    ctx.globalAlpha = Math.max(0.2, 1 - k); line(ctx, hx - ux * len, hy - uy * len, hx, hy, "#ffffff", 2); line(ctx, hx - ux * len * 0.8, hy - uy * len * 0.8 + 2, hx, hy + 2, f.color); ctx.globalAlpha = 1;
+    if (k < 0.5) { rect(ctx, hx - 2, hy - 2, 5, 5, "#fff6a0"); ring(ctx, x, y - 2, 4 + k * 14, (4 + k * 14) * 0.7, f.color, true); }
+  } else if (f.kind === "muz") {   // 枪口 / 法杖口的一小团闪光
+    const [x, y] = tpx(f.x, f.y), [x2, y2] = tpx(f.x2, f.y2), d = Math.hypot(x2 - x, y2 - y) || 1, mx = x + (x2 - x) / d * 8, my = y - 4 + (y2 - y) / d * 8, r = (1 - k) * 5 + 1;
+    rect(ctx, mx - r, my - 1, r * 2, 2, f.color); rect(ctx, mx - 1, my - r, 2, r * 2, f.color); rect(ctx, mx - 1, my - 1, 3, 3, "#ffffff");
+  } else if (f.kind === "hit") {   // 弹道命中：小星爆
+    const [x, y] = tpx(f.x, f.y), L = 2 + k * 9;
+    for (let i = 0; i < 6; i++) { const a = i * 1.047 + 0.3; line(ctx, x + Math.cos(a) * 2, y - 4 + Math.sin(a) * 2, x + Math.cos(a) * L, y - 4 + Math.sin(a) * L, i % 2 ? f.color : "#ffffff", 1); }
+    if (k < 0.4) rect(ctx, x - 1, y - 5, 3, 3, "#ffffff");
   } else if (f.kind === "wave") {
     ctx.globalAlpha = Math.max(0, 1 - k);
     const [x, y] = tpx(f.x, f.y), r = 10 + k * f.r * T;
@@ -507,7 +523,6 @@ function drawOverlay() {
     }
   }
   drawWaveLabels(s, txt, tk);
-  if (S.wx && !S.over) { const W = WEATHER[S.wx]; tctx.textAlign = "right"; txt(`天气 · ${W.name}`, tx.width - 14 * s, 16 * s * tk, 8 * s * tk, W.color); tctx.textAlign = "center"; }
   if (S.combo >= 3 && S.comboT > 0 && !$("pinfo").offsetHeight) {   // 竖屏信息区有大号连杀，战场里就不重复画
     const tier = S.combo >= 50 ? "#ff6a5a" : S.combo >= 20 ? "#ffb040" : S.combo >= 10 ? "#ffd860" : "#ffffff";
     tctx.textAlign = "left"; txt(`连杀 ×${S.combo}`, 12 * s, 16 * s * tk, (10 + Math.min(6, S.combo / 8)) * s * tk, tier);
@@ -646,32 +661,6 @@ function addGlow(x, y, r, color, a) {
 }
 // 暗角 + 每章色调：地图换了才重建，平时就是一次 drawImage
 let vigCv = null, vigFor = null;
-// 天气：雨 / 雪 / 热浪 / 雷暴的画面（纯效果，用固定公式出点，不用随机）
-function drawWeather(t) {
-  const id = S.wx; if (!id) return;
-  // 刚开始时渐入。必须夹在 0–1 之间：globalAlpha 设成负数会被忽略、沿用上一次的值（曾经因此在雷暴天整屏被涂成近黑色，表现为周期性黑屏）
-  const k = Math.max(0, Math.min(1, (S.wxAge || 0) / 1.2 + 0.2));
-  if (id === "rain") { ctx.globalAlpha = 0.1 * k; ctx.fillStyle = "#10284a"; ctx.fillRect(0, 0, PW, PHt); }
-  else if (id === "blizzard") { ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#dce8f8"; ctx.fillRect(0, 0, PW, PHt); }
-  else if (id === "heat") { ctx.globalAlpha = 0.08 * k; ctx.fillStyle = "#ff8a30"; ctx.fillRect(0, 0, PW, PHt); }
-  else if (id === "storm") { ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#0a1226"; ctx.fillRect(0, 0, PW, PHt); }
-  ctx.globalAlpha = 1;
-  if (!GFX.amb) return;
-  const n = GFX.k >= 1 ? 120 : 60;
-  if (id === "rain" || id === "storm") for (let i = 0; i < n; i++) { const s = 0.6 + (i * 37 % 10) / 25, y = (i * 53 % PHt + t * 330 * s) % PHt, x = ((i * 91 % PW) - t * 60 * s + y * 0.18 + PW * 2) % PW; rect(ctx, x, y, 1, 4 + (i % 3), i % 4 ? "rgba(170,200,240,.6)" : "rgba(220,236,255,.85)"); }
-  else if (id === "blizzard") for (let i = 0; i < n; i++) { const s = 0.5 + (i * 29 % 10) / 14, y = (i * 47 % PHt + t * 40 * s) % PHt, x = ((i * 83 % PW) - t * 150 * s + PW * 4) % PW; rect(ctx, x, y, i % 3 ? 1 : 2, 1, "rgba(255,255,255,.75)"); }
-  else if (id === "heat") for (let i = 0; i < 6; i++) { const y = (i * 61 + t * 12) % PHt, x = (i * 113) % PW; ctx.globalAlpha = 0.09; ctx.fillStyle = "#ffe0a0"; ctx.fillRect(x + Math.sin(t * 3 + i) * 6, y, 90, 1); ctx.globalAlpha = 1; }
-}
-// 昼夜：户外关随波数推进，从白天到黄昏再到夜里（纯画面，不影响数值）
-const TOD_THEMES = new Set(["forest", "snow", "desert", "sky", "ash", "storm", "tide"]);
-function drawTod() {
-  if (!TOD_THEMES.has(ST.theme) || S.wave < 1) return;
-  const f = Math.min(1, (S.wave - 1) / Math.max(1, totalWaves() - 1));
-  if (f < 0.4) return;
-  if (f < 0.72) { ctx.globalAlpha = 0.17 * (f - 0.4) / 0.32; ctx.fillStyle = "#ff8a3c"; }
-  else { ctx.globalAlpha = 0.17 + 0.2 * (f - 0.72) / 0.28; ctx.fillStyle = "#0a1038"; }
-  ctx.fillRect(0, 0, PW, PHt); ctx.globalAlpha = 1;
-}
 function drawVignette() {
   const key = mapKey();
   if (vigFor !== key) {
@@ -769,7 +758,6 @@ function render(now) {
   for (const s of S.shots) drawShot(s);
   for (const f of S.fx) if (f.kind !== "corpse" && f.kind !== "ucorpse" && f.kind !== "shatter") drawFx(f, now);
   ctx.setTransform(RS, 0, 0, RS, 0, 0);
-  drawWeather(t); drawTod();
   if (GFX.lit) drawVignette();
   if (S.hitFlash > 0 && !OPT.calm) { ctx.fillStyle = `rgba(255,40,40,${(S.hitFlash * 0.5).toFixed(3)})`; ctx.fillRect(0, 0, PW, 6); ctx.fillRect(0, PHt - 6, PW, 6); ctx.fillRect(0, 0, 6, PHt); ctx.fillRect(PW - 6, 0, 6, PHt); }
   if (S.slowmo > 0) { ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fillRect(0, 0, PW, PHt); }
