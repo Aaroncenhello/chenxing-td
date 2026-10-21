@@ -31,11 +31,12 @@ const wxNow = () => (S.wave > 0 && !S.over && WEATHER_OF[ST.theme] && (S.wave + 
 function wxStep(dt) {
   const id = wxNow();
   if (id !== S.wx) {
-    S.wx = id; S.wxT = 4;
+    S.wx = id; S.wxT = 4; S.wxAge = 0;
     if (id) once("wx", "<b>天气</b>每 5 波会有 2 波出现天气，对双方都有轻微影响。点战场下方的「羁绊」看板可以随时查看本局规则。");
     if (id) { const W = WEATHER[id]; addFx({ kind: "banner", text: `天气 · ${W.name}（${W.tip}）`, life: 2.6 }); }
     else if (S.wave > 1) addFx({ kind: "banner", text: "天气转好了", life: 1.6 });
   }
+  if (id) S.wxAge = (S.wxAge || 0) + dt;
   if (id === "storm") {
     S.wxT -= dt; if (S.wxT > 0) return; S.wxT = 8;
     const t = S.enemies.filter(e => !e.dead && !e.under);
