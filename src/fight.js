@@ -42,7 +42,7 @@ function adaptGfx(dt, target) {
 // 触屏设备自动档最高只到「中」（高档在手机上几乎看不出区别，却更烫）
 const autoMax = () => (TOUCH ? 1 : GFX_LV.length - 1);
 // 特效满了就先丢掉装饰性的（粒子、伤害数字），横幅、演出、环这类关键反馈照常加
-const fxCheap = f => f.kind === "parts" || (f.kind === "text" && !f.big);
+const fxCheap = f => f.kind === "parts" || f.kind === "muz" || f.kind === "hit" || (f.kind === "text" && !f.big);
 function addFx(f) { f.t = 0; if (S.fx.length >= GFX.cap && fxCheap(f)) return; S.fx.push(f); if (f.kind === "boom" && f.r >= 0.9 && GFX.lit) stampDecal(f.x, f.y, f.r, f.color); }
 function burst(x, y, color, n, spd, life, size) {
   const parts = [];
@@ -359,10 +359,12 @@ function hurtCrystal(amt, e) {
 // ---------- 飞行物 ----------
 const SHOT_SPEED = { archer: 10, gunner: 6, alchemist: 6, bard: 8, summoner: 8, fire: 6, dark: 6 };
 function shoot(src, target, kind, atk) {
+  if (src.def) addFx({ kind: "muz", x: src.x, y: src.y - 0.2, x2: target.x, y2: target.y, color: src.def.color || "#ffe9a0", life: 0.14 });
   S.shots.push({ x: src.x, y: src.y - 0.2, target, kind, atk, src, trail: [], speed: SHOT_SPEED[kind] || 7 });
 }
 function landShot(s) {
   const t = s.target, u = s.src;
+  if (u && u.def) addFx({ kind: "hit", x: t.x, y: t.y - 0.1, color: u.def.color || "#ffe9a0", life: 0.2 });
   if (s.kind === "archer") hurt(t, calc(s.atk * (t.d.flying && hasTal(u, "archer") ? 1.5 : 1) * (t.d.flying && u.hero && sg("sg_ar2") ? 2 : 1), "phys", eDef(t), eRes(t)), "phys", false, u);
   else if (s.kind === "hunter") {
     let m = (t.elite || isBoss(t)) ? 1.2 + (u.hero ? 0.15 * sg("sg_hu1") : 0) : 1;
@@ -493,7 +495,7 @@ function strike(u, targets) {
     if (D.id === "lancer" && u.lv >= 3 && !t.dead && roll("fight") < 0.25) knock(t, 0.5);
     if (u.hero && sg("sg_la1") && !t.dead) knock(t, 0.4);
     if (u.hero && sg("sg_me2") && !t.dead) burnEnemy(t, uAtk(u) * 0.35, 4, u);
-    addFx({ kind: D.id === "lancer" ? "thrust" : "slash", x: t.x, y: t.y, color: crit ? "#ffe040" : D.color, face: u.face, life: 0.22, big: crit || h > 0 });
+    addFx({ kind: D.id === "lancer" ? "thrust" : "slash", x: t.x, y: t.y, sx: u.x, sy: u.y, sw: (u.swN = (u.swN || 0) + 1) % 2 ? 1 : -1, color: crit ? "#ffe040" : D.color, face: u.face, life: D.id === "lancer" ? 0.26 : 0.3, big: crit || h > 0 });
     t.stop = crit ? 0.14 : 0.09;
   }
   if (list.length) u.stop = 0.07;
