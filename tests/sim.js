@@ -113,7 +113,7 @@ const NOFOCUS = !!process.env.NOFOCUS;   // 关掉「首领读条时集火 + 陨
           T.step(1 / 30);
           guard++;
         }
-        res.push({ st, hero, breaks: S.breaks||0, ults: S.ultsFired||0, win: S.over === 'win', dust: S.dust, syn: Object.keys(S.syn||{}).length, chest: S.chest, stars: S.stars || 0, lv: S.level, wave: S.wave, waves: S.genWaves.length,
+        res.push({ st, hero, breaks: S.breaks||0, ults: S.ultsFired||0, win: S.over === 'win', dust: S.dust, syn: Object.keys(S.syn||{}).length, chest: S.chest, stars: S.stars || 0, lv: S.level, xpt: Math.round(S.xpTotal || 0), wave: S.wave, waves: S.genWaves.length,
           crystal: Math.round(S.crystal.hp / S.crystal.maxHp * 100), kills: S.kills, sec: Math.round(guard / 30),
           units: S.units.filter(u => !u.summon).length, picks: picks.length, pickIds: picks });
       }
@@ -131,7 +131,7 @@ const NOFOCUS = !!process.env.NOFOCUS;   // 关掉「首领读条时集火 + 陨
     const rs = byStage[st];
     const w = rs.filter(r => r.win).length;
     const avg = k => (rs.reduce((a, r) => a + r[k], 0) / rs.length).toFixed(1);
-    console.log(`L${+st + 1} 胜 ${w}/${rs.length} ★${avg('stars')} 晶${avg('crystal')}% Lv${avg('lv')} 波${avg('wave')}/${rs[0].waves} 杀${avg('kills')} 队${avg('units')} 卡${avg('picks')} 断${avg('breaks')}/${avg('ults')} 尘${avg('dust')} 绊${avg('syn')} ${avg('sec')}s  ` +
+    console.log(`L${+st + 1} 胜 ${w}/${rs.length} ★${avg('stars')} 晶${avg('crystal')}% Lv${avg('lv')} 波${avg('wave')}/${rs[0].waves} 杀${avg('kills')} 队${avg('units')} 卡${avg('picks')} 经验${avg('xpt')} 断${avg('breaks')}/${avg('ults')} 尘${avg('dust')} 绊${avg('syn')} ${avg('sec')}s  ` +
       rs.map(r => `${r.hero}:${r.win ? '★' + r.stars : '×w' + r.wave}`).join(' '));
   }
   await b.close();

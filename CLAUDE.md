@@ -1,6 +1,6 @@
 # 晨星守望（Morning Star Watch）— 给 Claude Code 的项目说明
 
-像素风「固定阵地 + 自动战斗 + 升级翻牌」的塔防 Roguelite，最终产物是**一个单文件网页** `dist/chenxing.html`（纯 HTML + Canvas + JS，无框架、无打包工具、无外部依赖，只从 Google Fonts 拉字体）。当前版本 **11.0**。
+像素风「固定阵地 + 自动战斗 + 升级翻牌」的塔防 Roguelite，最终产物是**一个单文件网页** `dist/chenxing.html`（纯 HTML + Canvas + JS，无框架、无打包工具、无外部依赖，只从 Google Fonts 拉字体）。当前版本 **12.1**。
 
 ## 和用户协作的约定（重要）
 - 用户叫 Jenny，**用中文交流**，游戏里所有文字也必须是中文。
@@ -41,7 +41,7 @@ npm run sim            # 平衡模拟，见下
 每章最后一关（第 4/8/12/16 关，首领战）都是本章最难的；第 12 关输掉时平均只打到全程 27–38%。
 
 **拼接顺序（build.sh 里固定，改顺序可能出错）：**
-`head.html config.js config-meta.js skins.js cards.js meta.js relic.js sig.js story.js arena.js haz.js boss.js event.js affix.js fight.js step.js px-core.js px-hero.js lpc-data.js lpc-foe-data.js lpc-credits.js px-lpc.js px-foe.js px-fx.js px-skill.js save.js ui-bar.js ui-panels.js ui-roster.js ui-menu.js settle.js exped.js main.js`
+`head.html config.js config-meta.js skins.js cards.js meta.js relic.js sig.js traits.js story.js arena.js haz.js boss.js event.js affix.js fight.js step.js px-core.js px-hero.js lpc-data.js lpc-foe-data.js lpc-credits.js px-lpc.js px-foe.js px-fx.js px-skill.js save.js ui-bar.js ui-panels.js ui-roster.js ui-menu.js settle.js exped.js main.js`
 `head.html` 里是 CSS 和整个页面的 HTML 结构，最后以 `<script>` 开头；`main.js` 结尾是 `</script>`。
 
 ## 各文件负责什么
@@ -54,6 +54,7 @@ npm run sim            # 平衡模拟，见下
 | meta.js | **11.0** 天赋星盘 `DISK`/`dk()`、深渊层数 `ABYSS`/`ab()`/`abyssK()`、每周挑战 `WEEK_RULES`/`weekInfo()`/`wk()` |
 | relic.js | **11.0** 遗物 `RELICS`/`rl()`、掉落 `relicDrop`、每帧效果 `relicStep`、图标 |
 | sig.js | 英雄专属卡 `SIG`（本局英雄才会出现） |
+| traits.js | **12.1** 角色羁绊：`TAGS`（每名英雄 3 个标签）、`TRAITS`（17 个，阵营 6 / 职业 5 / 特质 6，每档效果 own + team）、`PAIRS`（10 组搭档）、`updateTraits()`（由 `updateSyn` 每 0.5 秒调用，算出 `S.tr/S.trN/S.trPairs/S.trTeam` 和每名队员的 `u.tf`）、`tf(u,k)/tfTeam(k)`（读加成）、`traitStep`（回血 / 自动炮击）、`traitHint/traitBias`（选牌提示 / 招募偏向）、`tagHtml` |
 | story.js | 剧情对话、章节 |
 | arena.js | 核心状态 `S`、`newRun()` 开局、单位属性公式 `uAtk/uMaxHp/uDef/...`、敌人属性 `eAtk/eDef/eSpeed`、牌池 `cardPool/randomCards/pickCard`、波次生成 `genWaves/genWave/startWave`、`callWaveEarly`、站位 `arrange/setSlot`、商店 |
 | haz.js | 地图机关（喷发口、光束、地刺、力场、开合传送门）、**天气** `WEATHER/wxNow/wxStep` |
@@ -76,7 +77,7 @@ npm run sim            # 平衡模拟，见下
 - **固定步长**：`step(dt)` 是全部游戏逻辑，`frame()` 只负责按 30Hz 调它并渲染。测试直接调 `__td.step(1/30)`。
 - **暂停条件**：`S.offer`（翻牌）/`S.shop`/`S.event`/`S.cine`（首领演出）任一存在时，`step` 不推进战斗。
 - **敌人强度**：`spawnAt` 里 `hp = d.hp × stageHp() × S.waveHp × S.diffK.hp × …`。`S.diffK` = 难度 × 深渊 × 每周规则，在 `newRun` 里合成。
-- **经验曲线**：`xpNeedOf(lv) = (12 + 4lv + 0.25lv²)`（深渊 11 层起 ×1.15）。这是控制「一局翻几次牌」的主旋钮。
+- **经验曲线**（12.1）：`xpNeedOf(lv) = 22 × BAL.xpR^(lv-1) × S.xpK`（`BAL.xpR = 1.5`，深渊 11 层起 ×1.15；无尽 / 守望用 1.15、系数 1）。`STAGES[i].xpK` 在 config.js 末尾按「这一关出怪总量」算，让每关选牌次数差不多（约 9–12 次，含开局、箱子、事件）。**平衡旋钮集中在 arena.js 的 `BAL`**（`levelBonus` 每级全队攻击 / 生命 +20%、`act` 三幕加成 `[1, 1.12, 1.3]`），sim 用 `PATCH='BAL.levelBonus=0.2'` 就能试。
 - **随机数**：影响对局的随机一律用 `roll("用途")`（arena.js 里的 `RNG_KEYS`：card/ev/relic/afx/spawn/fight/shop），波次生成用 `S.rng`。每日/每周挑战时它们都带种子，同样的操作打两次结果完全一样（`tests/seeded.js` 会检查）；**只有纯画面效果**（粒子、飘字、抖屏、走路动画）才直接用 `Math.random`。新加随机逻辑时别直接写 `Math.random()`。
 - **结算**：`settleRun()`（settle.js）把一局的存档结算一次做完，同一局重复调用返回同一个结果；`checkOver` 先结算、再播通关剧情、再出结算页，所以剧情中途关页面也不丢奖励。主线成就和关卡通关剧情只在主线关卡发/播（守望之战、每周、每日、无尽都不算）；「通关某关」的成就配在 `STAGES[i].clearAchv` 里。每周记录按周累积在 `save.week[key]` 里，每周首通各算 5★。
 - **牌池**：`cardPool()`；牌快抽空时自动补进 `fl_*` 补充卡（可无限叠加）。
@@ -158,8 +159,16 @@ npm run sim            # 平衡模拟，见下
 - 无头测试里如果只调 `step()`，结算不会自动执行（`checkOver` 在 `frame()` 里）；要么设好 `S.over` 后直接调 `__td.settle()`，要么等浏览器跑几帧（结算页也会出来）。
 - 翻牌面板开着时，场地拖动和 HUD 按钮都会被挡住，这是故意的。
 
+## 12.1 要点（阶段 12：节奏 + 角色羁绊）
+- **每关拉长到 21–28 波**：config.js 末尾 `s.waves = round(22 + (baseWaves − 12) × 0.6)`，`s.wk = waves / baseWaves`；出怪强度（预算、敌人池解锁、`S.waveHp`）按「原来的波数 = w / wk」算，所以只是拉长。远征用 `baseWaves`（`exped.js`），无尽 / 守望不分幕、不缩放（`K = 1`）。商店每 6 波（`SHOP.everyWaves`）、事件每 7 波（`EVENT_EVERY`）。
+- **三幕**（`actOf(w)`、`S.act`）：前 34% 起步、到 68% 成型、之后最后一段；进入新幕时 `startWave` 弹横幅 + `actFlash`（全屏金闪 + 晨星碑光圈）；`levelK()` = `(1 + levelBonus × (Lv−1)) × act 加成`，乘进 `uAtk/uMaxHp`（召唤物不算）。升级时 `refreshMaxHp()` 刷新生命上限。结算页曲线多一条橙色「战力」线（`S.log[].p`）。
+- **角色羁绊**见 traits.js：效果键、上限 `TRAIT_CAP`、各处接入点（`uAtk/uMaxHp/uDef/uInterval/uRange/hurt/hurtUnit/hurtCrystal/heal/pickTargets/useSkill/eSpeed/reviveT/killEnemy 星尘/startWave 重抽/step.js 技力`）。**新加效果键要同时加进 `TRAIT_CAP` 和对应的公式**。看板 `traitChips()`（横屏全屏只放前 4 个）、指南页 `traitGuideHtml(live)`、选牌提示（伙伴卡显示「近卫 2→3 ▲」）、角色页 / 属性卡标签。成就 `trait4 / trait5 / pair3`，每日悬赏 `trait`。测试 `tests/traits.js`。
+- 头像 / 半身像用 `lpcScale2x`（Scale2x 像素平滑放大，px-lpc.js）。注意 px-core.js 里已有同名思路的 `scale2x`，**别重名**。
+- 击败数里程碑（`KILL_MARKS`）在晨星碑上方弹字。
+- **12.1 平衡基准**（`SEED=2026 RUNS=12 node ../balance.js`，每格 12 局，误差约 ±15 个百分点）：新手档 第 1–4 关 100/92/58/58%，二章档 第 5–8 关 75/58/67/0%，三章档 第 9–12 关 17/17/25/0%，四章档 第 13–16 关 8/17/17/0%，毕业档 第 1–11 关 83–100%，第 12 关 44%（`EASE` 下调 10% 敌人生命后），第 13–15 关 83/92/83%，第 16 关 13%，第五章 69/69/25/44%。config.js 末尾的 `EASE` 表是拉长后针对第 12 关和第五章做的敌人生命校准。
+
 ## 版本脉络
-7.0 固定阵地 + 自动战斗 + 翻牌 → 8.0 机关地图、稀有度、羁绊、商店、守望之战 → 9.0 专属卡、诅咒卡、首领演出与打断、第四章、天赋树、战报、存档导出、手机优化 → 10.0 局内事件、精英词缀、阵型与拖动站位、图鉴战绩 → 10.1 修无尽空波、牌堆见底、手动开波/叠波、难度上调 → **11.0 天赋星盘、深渊 20 层、遗物、每周挑战、手机横屏沉浸全屏、基础难度再上调** → 阶段 4 爽感：画质档位、打击感、出怪预告、竖屏信息区、翻牌仪式感、羁绊提示、结算动画、图鉴卡牌/遗物页 → 阶段 5：技能卡进化、集火、首领演出、技能特写 → 阶段 6：远征、星盘核心天赋、每日悬赏、角色觉醒。
+7.0 固定阵地 + 自动战斗 + 翻牌 → 8.0 机关地图、稀有度、羁绊、商店、守望之战 → 9.0 专属卡、诅咒卡、首领演出与打断、第四章、天赋树、战报、存档导出、手机优化 → 10.0 局内事件、精英词缀、阵型与拖动站位、图鉴战绩 → 10.1 修无尽空波、牌堆见底、手动开波/叠波、难度上调 → **11.0 天赋星盘、深渊 20 层、遗物、每周挑战、手机横屏沉浸全屏、基础难度再上调** → 阶段 4 爽感：画质档位、打击感、出怪预告、竖屏信息区、翻牌仪式感、羁绊提示、结算动画、图鉴卡牌/遗物页 → 阶段 5：技能卡进化、集火、首领演出、技能特写 → 阶段 6：远征、星盘核心天赋、每日悬赏、角色觉醒 → 阶段 7–11：契约、首领特性、天气、第五章、LPC 角色与怪物、皮肤 → **12.1：每关拉长三幕、经验越升越贵、17 个角色羁绊 + 10 组搭档**。
 
 ## 发布
 产物就是 `dist/chenxing.html`，浏览器直接打开即可。

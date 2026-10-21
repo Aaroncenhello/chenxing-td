@@ -153,6 +153,10 @@ button.primary{background:var(--gold);color:#1a1408;font-weight:700}
 .hud-syn{display:none}
 .codex.syng .cx{border-left:4px solid var(--c)} .codex.syng .cx.on{background:color-mix(in srgb,var(--c) 14%,var(--panel))}
 .codex.syng .sp{margin-left:8px;font-size:11px;color:var(--muted);font-weight:400} .codex.syng .cx.on .sp{color:#6fcf8e}
+.tags{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0}.tg{font-size:11px;padding:1px 6px;border-left:3px solid var(--c);background:color-mix(in srgb,var(--c) 18%,var(--panel));color:#fff}
+.axh{margin:14px 0 6px;font-size:14px;color:#ffd860;font-weight:700}
+.codex.syng .mem{margin:2px 0 4px;color:var(--muted)} .codex.syng .mem span{margin-right:8px} .codex.syng .mem span.in{color:#6fcf8e}
+.codex.syng .eff.cur{color:#fff;font-weight:700}
 .codex.syng .need{color:var(--text)} .codex.syng .eff{color:#ffd860}
 /* 商店 */
 .shopbox{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(8,10,16,.82);padding:10px}
@@ -599,7 +603,7 @@ body.imm .hud-syn{max-height:44%}
 
 <div class="app">
   <header class="bar">
-    <div class="brand"><span class="title">晨星守望</span><span class="eng">MORNING STAR 12.0</span><span class="lvname" id="s-level"></span></div>
+    <div class="brand"><span class="title">晨星守望</span><span class="eng">MORNING STAR 12.1</span><span class="lvname" id="s-level"></span></div>
     <div class="stats">
       <div class="stat hp">晨星碑 <b id="s-hp">1000</b></div>
       <div class="stat lv">等级 <b id="s-lv">1</b></div>
@@ -1093,6 +1097,14 @@ const PERKS = [
   { id: "merchant", name: "商路畅通", desc: "开局多 30 星尘，商店价格 −20%", cost: 3 },
   { id: "lucky", name: "时来运转", desc: "翻到稀有、传说卡的几率提高", cost: 4 },
 ];
+// 12.0：普通关卡拉长到 21–28 波（原来 10–22 波）；baseWaves 是原来的波数，wk = 新 / 旧，出怪强度按原来的进度算（所以只是拉长、更平缓）
+for (const s of STAGES) { s.baseWaves = s.waves; s.waves = Math.round(22 + (s.waves - 12) * 0.6); s.wk = s.waves / s.baseWaves; }
+// 12.0：经验系数。xpNeedOf(lv) = 22 × 1.5^(lv-1) × xpK；xpK 按「这一关的出怪总量」算，让每关的选牌次数大致一样（约 8 次）
+{ const B = s => { let t = 0; for (let w = 1; w <= s.waves; w++) t += (2.5 + (w / s.wk) * 1.8) * s.budget; return t; }, B1 = B(STAGES[0]);
+  for (const s of STAGES) s.xpK = Math.round(1.68 * B(s) / B1 * 100) / 100; }
+// 12.1 拉长后的难度校准（毕业档模拟，对照旧版胜率）：第 12 关和第五章的敌人生命下调，其余关卡不动
+{ const EASE = { 11: 0.9, 15: 0.85, 16: 0.9, 17: 0.9, 18: 0.9, 19: 0.72 }; for (const i in EASE) STAGES[i].hp = Math.round(STAGES[i].hp * EASE[i] * 1000) / 1000; }
+
 
 // ================= 难度、养成、成就、图鉴 =================
 const DIFFS = [
@@ -1233,6 +1245,9 @@ const ACHV = [
   { id: "devourer", name: "星海终焉", desc: "通关第 12 关，击败星界吞噬者" },
   { id: "legend", name: "传说降临", desc: "一局内翻到 3 张传说卡" },
   { id: "synergy", name: "羁绊大师", desc: "一局内同时激活 4 个羁绊" },
+  { id: "trait4", name: "满编阵营", desc: "一局内凑出一个 4 人档的角色羁绊" },
+  { id: "trait5", name: "多线并进", desc: "一局内同时有 5 个角色羁绊生效" },
+  { id: "pair3", name: "搭档成双", desc: "一局内同时有 3 对搭档生效" },
   { id: "treasure", name: "开箱能手", desc: "累计打爆 10 只宝箱怪" },
   { id: "vigil", name: "长夜守望", desc: "在守望之战里撑过 20 波" },
   { id: "shop", name: "有钱能使", desc: "一局内在商店买满 5 次" },
@@ -1294,7 +1309,7 @@ const ENEMY_DESC = {
 // 守望之战：超长局，随机地图，25 波，中途多个首领与补给
 const VIGIL = { waves: 25, unlockAt: 3, bossAt: [8, 16, 25], supplyAt: [6, 12, 18, 23], hpStep: 0.27, budget: 1.32, crystalHp: 2400 };
 // 星尘：击杀掉落，波间商店用
-const SHOP = { everyWaves: 4, dustPerKill: 1, dustElite: 4, dustBoss: 25, start: 20,
+const SHOP = { everyWaves: 6, dustPerKill: 1, dustElite: 4, dustBoss: 25, start: 20,
   items: [
     { id: "card", name: "翻一张牌", desc: "立刻从三张卡里选一张", cost: 45 },
     { id: "rare", name: "稀有货架", desc: "只出稀有及以上的卡", cost: 80 },
@@ -1931,6 +1946,173 @@ function drawCurseIcon(cvs, id, size) {
   }
 }
 
+// ================= 角色羁绊（阵营 / 职业 / 特质 + 搭档） =================
+// 每名英雄带 3 个标签：1 个阵营、1 个职业、1 个特质。队里（还活着、不含召唤物）同标签的人数达到 2 / 3 / 4 时，依次激活更强的效果。
+// 每档效果分两部分：own = 只给带这个标签的队员，team = 给全队。再加 10 对「搭档」：两人同时在场就生效。
+// 和 config-meta.js 里 13 个靠技能卡凑的羁绊（SYNERGY，界面上叫「技能羁绊」）并存，互不影响。
+// 效果键：atk hp def（倍率加成）aspd（攻速）range（射程加值）crit critDmg（暴击率 / 暴击伤害加值）spell（法术伤害）sp（技力回复）
+//        heal（治疗量）dr（受到伤害减免）crystalDr（晨星碑减伤）regen（每秒回血，占最大生命的比例）exec（打生命 <50% 的敌人加成）
+//        extra（远程多打几个目标）dust（星尘获取）reroll（每 5 波多一次重抽）slow（敌人减速）revive（倒下后复活时间缩短）
+//        blast（每 8 秒一次自动炮击，值 = 倍数）castSp（放技能后全队技力加值）
+const TAGS = {
+  knight: ["近卫", "守卫", "光辉"], sword: ["游侠团", "先锋", "兵器"], assassin: ["林地", "先锋", "暗影"], lancer: ["近卫", "先锋", "兵器"],
+  archer: ["林地", "射手", "自然"], mage: ["学院", "法师", "奥术"], gunner: ["工坊", "射手", "兵器"], priest: ["游侠团", "支援", "光辉"],
+  frost: ["潮汐", "法师", "元素"], alchemist: ["学院", "法师", "元素"], bard: ["学院", "支援", "光辉"], summoner: ["学院", "支援", "自然"],
+  mech: ["工坊", "守卫", "元素"], star: ["游侠团", "法师", "奥术"], chrono: ["工坊", "支援", "奥术"], marshal: ["近卫", "守卫", "光辉"],
+  counter: ["近卫", "守卫", "兵器"], hunter: ["林地", "射手", "暗影"], songstress: ["潮汐", "支援", "自然"], breaker: ["潮汐", "先锋", "暗影"],
+};
+const trT = (n, own, team, desc) => ({ n, own: own || {}, team: team || {}, desc });
+const TRAITS = [
+  // —— 阵营 ——
+  { id: "近卫", axis: "阵营", color: "#8fb3e0", tiers: [
+    trT(2, { def: 0.12 }, null, "近卫成员防御 +12%"),
+    trT(3, { def: 0.2 }, { dr: 0.04 }, "近卫成员防御 +20%，全队受到的伤害 −4%"),
+    trT(4, { def: 0.32 }, { dr: 0.08, crystalDr: 0.1 }, "近卫成员防御 +32%，全队受到的伤害 −8%，晨星碑受到的伤害 −10%")] },
+  { id: "学院", axis: "阵营", color: "#b18ae8", tiers: [
+    trT(2, { sp: 0.15 }, null, "学院成员技力回复 +15%"),
+    trT(3, { sp: 0.25, spell: 0.08 }, null, "学院成员技力回复 +25%，法术伤害 +8%"),
+    trT(4, { sp: 0.4 }, { spell: 0.12 }, "学院成员技力回复 +40%，全队法术伤害 +12%")] },
+  { id: "林地", axis: "阵营", color: "#6fcf8e", tiers: [
+    trT(2, { crit: 0.06 }, null, "林地成员暴击率 +6%"),
+    trT(3, { crit: 0.12, critDmg: 0.3 }, null, "林地成员暴击率 +12%，暴击伤害 +30%")] },
+  { id: "工坊", axis: "阵营", color: "#e0a050", tiers: [
+    trT(2, { aspd: 0.1 }, null, "工坊成员攻击速度 +10%"),
+    trT(3, { aspd: 0.18 }, { blast: 2.5 }, "工坊成员攻击速度 +18%，每 8 秒一次自动炮击，打最近的 4 个敌人")] },
+  { id: "潮汐", axis: "阵营", color: "#5ab8e8", tiers: [
+    trT(2, null, { regen: 0.004 }, "全队每秒回复 0.4% 最大生命"),
+    trT(3, null, { regen: 0.008, slow: 0.12 }, "全队每秒回复 0.8% 最大生命，敌人移动速度 −12%")] },
+  { id: "游侠团", axis: "阵营", color: "#e8c860", tiers: [
+    trT(2, null, { dust: 0.15 }, "星尘获取 +15%"),
+    trT(3, null, { dust: 0.3, reroll: 1 }, "星尘获取 +30%，每 5 波多一次重抽")] },
+  // —— 职业 ——
+  { id: "守卫", axis: "职业", color: "#a0b8d8", tiers: [
+    trT(2, { hp: 0.18 }, null, "守卫成员生命 +18%"),
+    trT(3, { hp: 0.3 }, null, "守卫成员生命 +30%"),
+    trT(4, { hp: 0.45, dr: 0.08 }, null, "守卫成员生命 +45%，受到的伤害 −8%")] },
+  { id: "先锋", axis: "职业", color: "#e0676a", tiers: [
+    trT(2, { atk: 0.12 }, null, "先锋成员攻击 +12%"),
+    trT(3, { atk: 0.2 }, null, "先锋成员攻击 +20%"),
+    trT(4, { atk: 0.32, aspd: 0.08 }, null, "先锋成员攻击 +32%，攻击速度 +8%")] },
+  { id: "射手", axis: "职业", color: "#8fe0a0", tiers: [
+    trT(2, { range: 0.4 }, null, "射手成员射程 +0.4"),
+    trT(3, { range: 0.7, extra: 1 }, null, "射手成员射程 +0.7，同时多打 1 个目标")] },
+  { id: "法师", axis: "职业", color: "#a08ae8", tiers: [
+    trT(2, { spell: 0.12 }, null, "法师成员法术伤害 +12%"),
+    trT(3, { spell: 0.22 }, null, "法师成员法术伤害 +22%"),
+    trT(4, { spell: 0.38 }, null, "法师成员法术伤害 +38%")] },
+  { id: "支援", axis: "职业", color: "#7ee89c", tiers: [
+    trT(2, { heal: 0.25 }, { sp: 0.08 }, "支援成员治疗量 +25%，全队技力回复 +8%"),
+    trT(3, { heal: 0.4 }, { sp: 0.08, dr: 0.05 }, "支援成员治疗量 +40%，全队受到的伤害 −5%"),
+    trT(4, { heal: 0.6 }, { sp: 0.08, dr: 0.08, revive: 0.3 }, "支援成员治疗量 +60%，全队受到的伤害 −8%，复活时间 −30%")] },
+  // —— 特质 ——
+  { id: "光辉", axis: "特质", color: "#ffe9a0", tiers: [
+    trT(2, null, { regen: 0.003, heal: 0.1 }, "全队每秒回复 0.3% 最大生命，治疗量 +10%"),
+    trT(3, null, { dr: 0.06 }, "全队受到的伤害 −6%"),
+    trT(4, null, { atk: 0.1 }, "全队攻击 +10%")] },
+  { id: "暗影", axis: "特质", color: "#9c8ac0", tiers: [
+    trT(2, { exec: 0.15 }, null, "暗影成员对生命低于一半的敌人伤害 +15%"),
+    trT(3, { exec: 0.28, crit: 0.06 }, null, "暗影成员对生命低于一半的敌人伤害 +28%，暴击率 +6%")] },
+  { id: "元素", axis: "特质", color: "#ff9a5a", tiers: [
+    trT(2, { atk: 0.08 }, null, "元素成员攻击 +8%"),
+    trT(3, { atk: 0.2 }, { slow: 0.06, spell: 0.08 }, "元素成员攻击 +20%，敌人移动速度 −6%，全队法术伤害 +8%")] },
+  { id: "奥术", axis: "特质", color: "#c8a0ff", tiers: [
+    trT(2, { sp: 0.1 }, null, "奥术成员技力回复 +10%"),
+    trT(3, { sp: 0.25, range: 0.3 }, { castSp: 4 }, "奥术成员技力回复 +25%，射程 +0.3，每次放技能全队技力 +4")] },
+  { id: "兵器", axis: "特质", color: "#d0d0d8", tiers: [
+    trT(2, { critDmg: 0.25 }, null, "兵器成员暴击伤害 +25%"),
+    trT(3, { atk: 0.1, critDmg: 0.4 }, null, "兵器成员攻击 +10%，暴击伤害 +40%"),
+    trT(4, { atk: 0.2, critDmg: 0.4 }, { crit: 0.05 }, "兵器成员攻击 +20%，全队暴击率 +5%")] },
+  { id: "自然", axis: "特质", color: "#90d070", tiers: [
+    trT(2, null, { regen: 0.003 }, "全队每秒回复 0.3% 最大生命"),
+    trT(3, { aspd: 0.12, range: 0.3 }, { regen: 0.003 }, "自然成员攻击速度 +12%，射程 +0.3，全队每秒回复 0.3% 最大生命")] },
+];
+// 搭档：两人同时在场就生效，给这两个人
+const PAIRS = [
+  { id: "p_kn_pr", name: "圣护", ids: ["knight", "priest"], own: { dr: 0.06 }, desc: "两人受到的伤害 −6%" },
+  { id: "p_ma_fr", name: "冰火交辉", ids: ["mage", "frost"], own: { spell: 0.1 }, desc: "两人法术伤害 +10%" },
+  { id: "p_as_hu", name: "夜行", ids: ["assassin", "hunter"], own: { crit: 0.08 }, desc: "两人暴击率 +8%" },
+  { id: "p_la_mr", name: "军阵", ids: ["lancer", "marshal"], own: { atk: 0.1 }, desc: "两人攻击 +10%" },
+  { id: "p_gu_me", name: "机械师", ids: ["gunner", "mech"], own: { aspd: 0.1 }, desc: "两人攻击速度 +10%" },
+  { id: "p_ar_bd", name: "林间小调", ids: ["archer", "bard"], own: { aspd: 0.1 }, desc: "两人攻击速度 +10%" },
+  { id: "p_ch_st", name: "星时", ids: ["chrono", "star"], own: { sp: 0.15 }, desc: "两人技力回复 +15%" },
+  { id: "p_so_br", name: "潮音", ids: ["songstress", "breaker"], own: { atk: 0.1 }, desc: "两人攻击 +10%" },
+  { id: "p_al_su", name: "炼成", ids: ["alchemist", "summoner"], own: { atk: 0.1 }, desc: "两人攻击 +10%" },
+  { id: "p_sw_co", name: "双刃", ids: ["sword", "counter"], own: { hp: 0.1, atk: 0.06 }, desc: "两人生命 +10%、攻击 +6%" },
+];
+const TRAIT_BY = Object.fromEntries(TRAITS.map(t => [t.id, t]));
+const TRAIT_CAP = { atk: 0.6, hp: 0.8, def: 0.7, aspd: 0.45, range: 1.2, crit: 0.3, critDmg: 0.9, spell: 0.7, sp: 0.8, heal: 0.9, dr: 0.28, crystalDr: 0.2, regen: 0.012, exec: 0.5, extra: 1, dust: 0.5, reroll: 1, slow: 0.2, revive: 0.4, blast: 2.5, castSp: 6 };
+const tagsOf = id => TAGS[id] || [];
+// 当前人数 / 档位（S.trN / S.tr 由 updateSyn 每 0.5 秒刷新）
+const trTier = id => (S && S.tr && S.tr[id]) || 0;
+// 某名队员当前的羁绊加成：u.tf（updateSyn 里算好）
+const tf = (u, k) => (u && u.tf && u.tf[k]) || 0;
+const tfTeam = k => (S && S.trTeam && S.trTeam[k]) || 0;
+function mergeFx(into, fx) { for (const k in fx) into[k] = (into[k] || 0) + fx[k]; }
+// 重新算：每个羁绊的人数和档位，每名队员的加成
+function updateTraits() {
+  const alive = S.units.filter(u => !u.dead && !u.summon), N = {}, tier = {};
+  for (const u of alive) for (const tg of tagsOf(u.def.id)) N[tg] = (N[tg] || 0) + 1;
+  for (const t of TRAITS) { let k = 0; t.tiers.forEach((x, i) => { if ((N[t.id] || 0) >= x.n) k = i + 1; }); tier[t.id] = k; }
+  const pairs = {}; for (const p of PAIRS) if (p.ids.every(id => alive.some(u => u.def.id === id))) pairs[p.id] = 1;
+  const team = {};
+  for (const t of TRAITS) if (tier[t.id]) mergeFx(team, t.tiers[tier[t.id] - 1].team);
+  for (const u of S.units) {
+    const f = {}; mergeFx(f, team);
+    if (!u.summon) {
+      const tg = tagsOf(u.def.id);
+      for (const t of TRAITS) if (tier[t.id] && tg.includes(t.id)) mergeFx(f, t.tiers[tier[t.id] - 1].own);
+      for (const p of PAIRS) if (pairs[p.id] && p.ids.includes(u.def.id)) mergeFx(f, p.own);
+    }
+    for (const k in f) if (TRAIT_CAP[k] != null) f[k] = Math.min(TRAIT_CAP[k], f[k]);
+    const was = u.tf ? u.tf.hp || 0 : 0; u.tf = f;
+    if ((f.hp || 0) !== was && u.maxHp > 1) { const fr = u.hp / u.maxHp; u.maxHp = uMaxHp(u); u.hp = Math.max(1, Math.round(u.maxHp * Math.min(1, fr))); }
+  }
+  for (const k in team) if (TRAIT_CAP[k] != null) team[k] = Math.min(TRAIT_CAP[k], team[k]);
+  S.trN = N; S.tr = tier; S.trPairs = pairs; S.trTeam = team;
+  const nT = TRAITS.filter(t => tier[t.id]).length, nP = Object.keys(pairs).length;
+  S.trActive = nT + nP; S.trBest = Math.max(S.trBest || 0, nT); S.pairBest = Math.max(S.pairBest || 0, nP);
+  if (S.events) {
+    const ach = (id, ok) => { if (ok && !(S.trAchv || (S.trAchv = {}))[id]) { S.trAchv[id] = 1; S.events.push({ type: "achv", id }); } };
+    ach("trait4", TRAITS.some(t => tier[t.id] && t.tiers[tier[t.id] - 1].n >= 4)); ach("trait5", nT >= 5); ach("pair3", nP >= 3);
+  }
+}
+const KILL_MARKS = [50, 100, 200, 300, 500, 800];
+// 每帧：回血、自动炮击
+function traitStep(dt) {
+  for (const u of S.units) { const r = tf(u, "regen"); if (r > 0 && !u.dead && u.down <= 0 && u.hp < u.maxHp) u.hp = Math.min(u.maxHp, u.hp + u.maxHp * r * dt); }
+  const bk = tfTeam("blast");
+  if (bk > 0) {
+    S.blastT = (S.blastT == null ? 8 : S.blastT) - dt;
+    if (S.blastT <= 0) {
+      S.blastT = 8;
+      const src = S.units.filter(u => !u.dead && u.down <= 0 && !u.summon && tagsOf(u.def.id).includes("工坊")).sort((a, b) => uAtk(b) - uAtk(a))[0];
+      const foes = S.enemies.filter(e => hittable(e) && e.revealed).sort((a, b) => toCrystal(a) - toCrystal(b)).slice(0, 4);
+      if (src && foes.length) for (const e of foes) {
+        hurt(e, calc(uAtk(src) * bk, "phys", eDef(e), eRes(e)), "phys", false, src);
+        addFx({ kind: "ring", x: e.x, y: e.y, color: "#e0a050", life: 0.4, r0: 0.2, r1: 1.0 });
+      }
+    }
+  }
+}
+// 招募偏向：已经有的羁绊标签越多、能让羁绊升一档的伙伴越容易出现（最多 ×2.2，不会锁死）
+function traitBias(id) {
+  let b = 1; for (const h of traitHint(id)) { if (h.from >= 1) b += 0.3; if (h.up) b += 0.4; }
+  return Math.min(2.2, b);
+}
+// 角色的标签：<span> 一串，颜色跟羁绊走（角色页、属性卡里用）
+function tagHtml(id) { return tagsOf(id).map(tg => `<span class="tg" style="--c:${(TRAIT_BY[tg] || {}).color || "#888"}">${tg}</span>`).join(""); }
+// 选牌提示用：假装多一名这个角色，看哪些羁绊会前进。返回 [{name, color, from, to, up}]（只列这个角色带的标签）
+function traitHint(id) {
+  const alive = S.units.filter(u => !u.dead && !u.summon), out = [];
+  for (const tg of tagsOf(id)) {
+    const t = TRAIT_BY[tg]; if (!t) continue;
+    const n0 = alive.filter(u => tagsOf(u.def.id).includes(tg)).length, n1 = n0 + 1;
+    const up = t.tiers.some(x => x.n === n1);
+    out.push({ id: tg, name: tg, color: t.color, from: n0, to: n1, up, next: (t.tiers.find(x => x.n > n1) || {}).n || 0 });
+  }
+  return out;
+}
+
 // ================= 5.0 剧情 =================
 // 每关：pre 开打前，on[敌人] 这种敌人第一次出场时，post 通关后。["!join", id] = 角色入队
 const CHAPTERS = [{ name: "第一章 · 晨星之誓", from: 0 }, { name: "第二章 · 深渊之门", from: 4 }, { name: "第三章 · 星海尽头", from: 8 }, { name: "第四章 · 无名之光", from: 12 }, { name: "第五章 · 无声之海", from: 16 }];
@@ -2419,6 +2601,7 @@ const syn = id => !!(S.syn && S.syn[id]);
 const ct = id => !!(S && S.contracts && S.contracts.includes(id));   // 自选契约
 const syn2 = id => !!(S.syn2 && S.syn2[id]);   // 羁绊第二档
 function updateSyn() {
+  updateTraits();
   const o = {}; let n = 0;
   for (const g of SYNERGY) { try { if (g.on()) { o[g.id] = 1; n++; } } catch (e) {} }
   const was = S.syn || {}, was2 = S.syn2 || {}, o2 = {};
@@ -2471,6 +2654,8 @@ function uMaxHp(u) {
   h *= Math.max(0.2, 1 - 0.3 * cu("cu_frenzy"));
   if (syn("scholar")) h *= 1.15;
   if (cl("lg_bond")) h *= 1 + 0.08 * S.allies;
+  h *= 1 + tf(u, "hp");
+  if (!u.summon) h *= levelK();
   return Math.round(h);
 }
 const br = (u, id, b) => u.def.id === id && u.branch === b;
@@ -2526,6 +2711,8 @@ function uAtk(u) {
   if (syn("legendary")) a *= 1.2;
   if (syn("arcane") && u.def.dmg === "magic") a *= 1.25;
   if (hasTal(u, "mech") && u.hp < u.maxHp * 0.5) a *= 1;
+  a *= 1 + tf(u, "atk");
+  if (!u.summon) a *= levelK();
   return a;
 }
 function uDef(u) {
@@ -2539,6 +2726,7 @@ function uDef(u) {
   d *= Math.max(0.2, 1 - 0.3 * cu("cu_haste"));
   if (syn("wall")) d *= 1.35;
   if (u.hero && sg("sg_me1")) d *= 1 + 0.2 * sg("sg_me1");
+  d *= 1 + tf(u, "def");
   return d;
 }
 const uRes = u => u.def.res + 8 * cl("armor") + 10 * cl("res") + (syn("wardguard") ? (syn2("wardguard") ? 20 : 10) : 0);
@@ -2560,7 +2748,7 @@ function uInterval(u) {
   i /= S.buff.aspd || 1;
   if (br(u, "chrono", "A")) i *= 0.8;
   i /= 1 + chronoAura(u);
-  return i / (1 + bardAura(u)) / (1 + 0.09 * cl("aspd")) / (1 + 0.02 * dk("aspd")) / (rl("rl_boots") ? 1.15 : 1) / (syn("arcane") && u.def.dmg === "magic" ? 1 : 1);
+  return i / (1 + tf(u, "aspd")) / (1 + bardAura(u)) / (1 + 0.09 * cl("aspd")) / (1 + 0.02 * dk("aspd")) / (rl("rl_boots") ? 1.15 : 1) / (syn("arcane") && u.def.dmg === "magic" ? 1 : 1);
 }
 function uRange(u) {
   let r = u.def.range + (u.def.place === "ground" ? 0.25 : 0.5) * cl("range");
@@ -2572,6 +2760,7 @@ function uRange(u) {
   if (sg("sg_bd1") && u.def.id === "bard") r += 0.4 * sg("sg_bd1");
   if (tal(u, "t_range")) r += 0.5;
   if (syn("volley") && u.def.place === "high") r += 0.4;
+  r += tf(u, "range");
   return r;
 }
 const uTaunt = u => (u.def.taunt || 0) + (u.def.place === "ground" ? 0.1 * cl("range") : 0);
@@ -2581,12 +2770,12 @@ const uSplash = u => ((br(u, "mage", "A") ? 2 : br(u, "frost", "B") ? 1.2 : u.de
 const eAtk = e => e.d.atk * (e.warcry ? 1.25 : 1) * (e.elite ? ELITE.atk : 1) * Math.sqrt(e.hpK) * S.diffK.atk * (e.enraged ? 1.3 : 1) * (e.howlUntil > S.t ? 1.2 : 1);
 const slowAura = e => (toCrystal(e) <= 3.5 ? 1 - Math.min(0.5, 0.12 * cl("slow")) : 1);
 const chillOf = e => 1;
-const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (e.howlUntil > S.t ? 1.12 : 1) * (S.wx === "blizzard" ? 0.92 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ct("swift") ? 1.15 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e);
+const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (e.howlUntil > S.t ? 1.12 : 1) * (S.wx === "blizzard" ? 0.92 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ct("swift") ? 1.15 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e) * (1 - tfTeam("slow") * (isBossType(e.type) ? 0.5 : 1));
 const corrodeK = e => (e.corrode && e.corrode.t > 0 ? e.corrode.k : 0);
 const eDef = e => (e.d.def + (S.mod === "tough" ? 150 : 0)) * (ab(19) ? 1.2 : 1) * (1 - corrodeK(e)) * (1 - 0.15 * cl("pierce")) * (syn("inferno") && e.burn > 0 ? (syn2("inferno") ? 0.7 : 0.8) : 1) * (syn("corrosive") && corrodeK(e) > 0 ? (syn2("corrosive") ? 0.75 : 0.85) : 1);
 const corrodeOf = u => (br(u, "alchemist", "A") ? 0.55 : u.lv >= 3 ? 0.4 : 0.25) + (u.hero ? 0.1 * sg("sg_al1") : 0);
 const maxAllies = () => RULES.maxAllies + 2 * cl("lg_army") - (ct("fewer") ? 1 : 0);
-const reviveT = () => cl("lg_phoenix") ? 3 : RULES.revive * (1 - 0.06 * dk("rally")) * (1 - 0.25 * cl("revive")) * (ab(15) ? 1.5 : 1);
+const reviveT = () => cl("lg_phoenix") ? 3 : RULES.revive * (1 - tfTeam("revive")) * (1 - 0.06 * dk("rally")) * (1 - 0.25 * cl("revive")) * (ab(15) ? 1.5 : 1);
 // 关卡强度在前 6 波内逐渐拉满，避免后期关卡一开局就压死人
 const stageHp = () => 1 + (ST.hp - 1) * Math.min(1, (S.wave || 1) / 6);
 // 技能威力跟着关卡强度走，但增长比敌人血量慢一点：长局里要靠角色本身的输出
@@ -2667,6 +2856,7 @@ function newRun(stage, opts) {
   initHaz(ST.haz);
   genWaves();
   S.crystal.maxHp = Math.round(ST.crystalHp * (1 + 0.06 * dk("walls")) * (S.mod === "rich" ? 0.5 : 1) * (ab(10) ? 0.8 : 1) * (1 + (opts.assist ? ASSIST[opts.assist - 1].hp : 0)));
+  S.xpK = opts.endless || opts.vigil ? 1 : (ST.xpK || 1) * (opts.exped ? Math.min(1, opts.exped.waves / STAGES[stage].waves) : 1);
   S.xpNeed = xpNeedOf(1);
   S.crystal.hp = S.crystal.maxHp;
   addUnit(heroDef, true);
@@ -2676,7 +2866,14 @@ function newRun(stage, opts) {
   if (wk("cursed")) for (let i = 0; i < 2; i++) { const cp = cursePool(); if (cp.length) pickCard(cp[Math.floor(roll("card") * cp.length)].id, true); }
   S.pending = Math.max(0, 1 + dk("prep") - (ab(5) ? 1 : 0));   // 开局先翻一张牌（深渊 5 层起少一张）
 }
-const xpNeedOf = lv => Math.round((12 + 4 * lv + 0.25 * lv * lv) * (S && S.abyss >= 11 ? 1.15 : 1));   // 10.1：升级明显变慢，翻牌次数大约少三分之一
+// 12.0：越升越贵（每级比上一级多 50%），再乘按关卡波数算的系数 S.xpK（newRun 里定），目标是一局 7–9 次选牌
+// 12.0：队伍等级加成，每升一级全队攻击、生命各 +LEVEL_BONUS（升级次数变少了，每次升级的分量更重）
+const BAL = { xpR: 1.5, levelBonus: 0.2, act: [1, 1.12, 1.3] };   // 平衡旋钮（sim 可以用 PATCH 改）
+// 三幕：前 1/3 起步，中 1/3 成型，后 1/3 最后一段；进入第二、三幕时全队攻击和生命再 +12% / +30%（无尽和守望不分幕）
+const ACTS = [{ name: "起步", tip: () => "敌人较弱，先把队伍凑起来" }, { name: "成型", tip: () => `全队攻击、生命 +${Math.round((BAL.act[1] - 1) * 100)}%，敌人开始变强` }, { name: "最后一段", tip: () => `全队攻击、生命 +${Math.round((BAL.act[2] - 1) * 100)}%，最后一波有首领` }];
+const actOf = w => { const t = ST.waves; return w <= Math.round(t * 0.34) ? 0 : w <= Math.round(t * 0.68) ? 1 : 2; };
+const levelK = () => (1 + BAL.levelBonus * Math.max(0, (S && S.level || 1) - 1)) * (S && S.act ? BAL.act[S.act] : 1);
+const xpNeedOf = lv => Math.round(22 * Math.pow(S && (S.endless || S.vigil) ? 1.15 : BAL.xpR, lv - 1) * (S && S.xpK || 1) * (S && S.abyss >= 11 ? 1.15 : 1));
 const totalWaves = () => (S.endless ? Infinity : ST.waves);
 
 // ---------- 角色 ----------
@@ -2758,11 +2955,12 @@ function reviveUnit(u) {
 }
 
 // ---------- 经验和翻牌 ----------
+function refreshMaxHp() { for (const u of S.units) { if (u.summon || !(u.maxHp > 1)) continue; const f = u.hp / u.maxHp; u.maxHp = uMaxHp(u); if (!u.dead && u.down <= 0) u.hp = Math.max(1, Math.round(u.maxHp * Math.min(1, f))); } }
 function gainXp(n) {
   if (S.over) return;
   const k = (1 + 0.2 * cl("xp") + 0.6 * cu("cu_whisper")) * (1 + 0.04 * dk("bounty")) * (rl("rl_ring") ? 1.25 : 1) * (wk("rush") ? 1.3 : 1) * (S.mod === "rich" ? 1.5 : 1) * (cl("lg_greed") ? 2 : 1);
-  S.xp += n * k;
-  while (S.xp >= S.xpNeed) { S.xp -= S.xpNeed; S.level++; if (rl("rl_glasses")) S.rerolls++; S.xpNeed = xpNeedOf(S.level); S.pending++; if (S.level === 20) S.events.push({ type: "achv", id: "lv20" }); }
+  S.xp += n * k; S.xpTotal = (S.xpTotal || 0) + n * k;
+  while (S.xp >= S.xpNeed) { S.xp -= S.xpNeed; S.level++; if (rl("rl_glasses")) S.rerolls++; S.xpNeed = xpNeedOf(S.level); refreshMaxHp(); S.pending++; if (S.level === 20) S.events.push({ type: "achv", id: "lv20" }); }
 }
 const rareW = r => RARE_W(S.level).map((v, i) => v * (i ? 1 + 0.08 * dk("lucky") : 1))[r] || 1;
 function cardPool(minRare) {
@@ -2784,7 +2982,7 @@ function cardPool(minRare) {
   if (S.mod !== "solo") for (const D of UNITS) {
     if (!S.charOpen.includes(D.id)) continue;
     const u = S.units.find(x => x.def === D);
-    if (!u) { if (S.allies < maxAllies() && !(minRare > 1)) out.push({ id: "ally_" + D.id, w: 9 * rareW(1) / 100, def: D, join: true, rare: 1 }); continue; }
+    if (!u) { if (S.allies < maxAllies() && !(minRare > 1)) out.push({ id: "ally_" + D.id, w: 9 * rareW(1) / 100 * traitBias(D.id), def: D, join: true, rare: 1 }); continue; }
     if (u.lv < 3) { if (!minRare) out.push({ id: "ally_" + D.id, w: 7, def: D, unit: u, rare: 0 }); }
     else if (u.lv === 3) { out.push({ id: "br_" + D.id + "_A", w: 5 * rareW(2) / 100, def: D, unit: u, branch: "A", rare: 2 }); out.push({ id: "br_" + D.id + "_B", w: 5 * rareW(2) / 100, def: D, unit: u, branch: "B", rare: 2 }); }
   }
@@ -2952,7 +3150,7 @@ function genWaves() {
 function genWave(w, total) {
   const R = S.rng;
   {
-    const out = [], last = !S.endless && w === total, wE = S.waveScale ? Math.max(1, Math.round(w * S.waveScale)) : w;   // 远征波数缩短：按原关卡的进度出怪
+    const out = [], last = !S.endless && w === total, K = S.endless || S.vigil ? 1 : ST.wk || 1, wE = S.waveScale ? Math.max(1, Math.round(w * S.waveScale / K)) : Math.max(1, w / K);   // 出怪强度按「原来的波数」算（波数 ×waveK 只是拉长）；远征波数缩短：按原关卡的进度出怪
     const pool = ST.pool.filter(p => wE >= p[2]);
     let budget = (2.5 + wE * 1.8) * ST.budget * (S.endless ? 1 + w * 0.05 : 1) * (S.vigil ? 1 + w * 0.075 : 1) * (wk("giants") ? 0.7 : 1) * (wk("swarm") ? 1.6 : 1);
     // 特殊波次：潮汐（数量多）/ 精英（少而强）
@@ -3002,15 +3200,17 @@ function startWave(append) {
   if (S.slowWaves > 0) S.slowWaves--;
   if (S.weakWaves > 0) S.weakWaves--;
   if (rl("rl_beads")) for (const u of S.units) { if (u.down > 0) reviveUnit(u); heal(u, u.maxHp * 0.25, true, null); }
-  S.log.push({ w: S.wave, hp: S.crystal.maxHp ? S.crystal.hp / S.crystal.maxHp : 1, kills: S.kills, lv: S.level, units: S.units.filter(u => !u.summon).length });
-  S.waveHp = S.vigil ? Math.pow(1 + VIGIL.hpStep, S.wave - 1) : 1 + 0.095 * (S.wave - 1) + (S.endless ? 0.004 * (S.wave - 1) ** 2 : 0);
+  S.log.push({ p: teamGrowth().k, w: S.wave, hp: S.crystal.maxHp ? S.crystal.hp / S.crystal.maxHp : 1, kills: S.kills, lv: S.level, units: S.units.filter(u => !u.summon).length });
+  S.waveHp = S.vigil ? Math.pow(1 + VIGIL.hpStep, S.wave - 1) : 1 + 0.095 * (S.wave - 1) / (S.endless || S.vigil ? 1 : ST.wk || 1) + (S.endless ? 0.004 * (S.wave - 1) ** 2 : 0);
   // 每波结束前的收尾：碑体强化回血、守望之战补给、商店
   if (cl("lg_aegis") && S.wave > 1) { S.crystal.hp = Math.min(S.crystal.maxHp, S.crystal.hp + S.crystal.maxHp * 0.08 * cl("lg_aegis")); addFx({ kind: "pillar", x: CRYSTAL.x, y: CRYSTAL.y, color: "#62b4ff", life: 0.8 }); }
+  if (tfTeam("reroll") && S.wave > 1 && (S.wave - 1) % 5 === 0) { S.rerolls += tfTeam("reroll"); addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.2, text: "游侠团 · 重抽 +" + tfTeam("reroll"), color: "#e8c860", life: 1.2 }); }
   if (dk("ks_eco") && S.wave > 1 && (S.wave - 1) % 5 === 0) { S.pending++; S.dust += 30; addFx({ kind: "banner", text: "点金 · 多翻一张牌 · 星尘 +30", life: 1.8 }); }
   if (S.vigil && VIGIL.supplyAt.includes(S.wave)) { S.pending++; addFx({ kind: "banner", text: "补给到了 · 多翻一张牌", life: 1.8 }); }
   const isBossW = q.some(x => ENEMIES[x.type] && (isBossType(x.type) || x.elite));
   const tagTxt = wv.tag === "tide" ? " · 潮汐" : wv.tag === "elite" ? " · 精英波" : "";
   const head = S.endless ? `无尽 · 第 ${S.wave} 波` : S.vigil ? `守望 · 第 ${S.wave}/${ST.waves} 波` : `第 ${S.wave}/${ST.waves} 波`;
+  if (!S.endless && !S.vigil && !S.exped) { const a = actOf(S.wave); if (a !== (S.act || 0) || S.wave === 1) { S.act = a; refreshMaxHp(); if (S.wave > 1 && typeof actFlash === "function") actFlash(a); addFx({ kind: "banner", text: `第${["一", "二", "三"][a]}幕 · ${ACTS[a].name}　${ACTS[a].tip()}`, life: 2.6 }); } }
   addFx({ kind: "banner", text: head + (S.wave === ST.waves && !S.endless ? " · 最终波" : tagTxt || (isBossW ? " · 强敌" : "")), life: 1.8, danger: isBossW });
 }
 // 立即出击：场上还有怪、甚至还在出怪时也能叫下一波（叠波），越冒险星尘奖励越多
@@ -3551,7 +3751,7 @@ function drawCastAura(e, fx, fy, t) {
 
 // ================= 10.0：局内事件（每隔几波来一次三选一） =================
 // 和商店错开：商店每 4 波，事件每 5 波
-const EVENT_EVERY = 5;
+const EVENT_EVERY = 7;
 const EVENTS = [
   { id: "altar", name: "废弃的祭坛", text: "石台上刻着三行字，风一吹只亮起其中一行。",
     opts: [
@@ -3945,6 +4145,7 @@ function addNum(x, y, v, color, big, key, maxHp) {
 // ---------- 伤害 ----------
 function killEnemy(e, src) {
   e.dead = true; S.kills++;
+  if (KILL_MARKS.includes(S.kills)) addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.6, text: "击败 " + S.kills, color: "#ffd860", life: 1.4, big: true });
   S.foeKill[e.type] = (S.foeKill[e.type] || 0) + 1;
   if (e.elite || isBoss(e)) { S.eliteKills = (S.eliteKills || 0) + 1; if (cl("lg_hunt")) { S.huntT = 12; addFx({ kind: "text", x: e.x, y: e.y - 1, text: "猎杀连击 · 攻击 +8%", color: "#ffd860", life: 1.1, big: true }); } }
   if (e === S.focus) S.focusKills = (S.focusKills || 0) + 1;
@@ -3958,7 +4159,7 @@ function killEnemy(e, src) {
   if (rl("rl_fang") && src && src.def && !src.dead && src.down <= 0) heal(src, src.maxHp * 0.08, true, src);
   if (S.riftDust > 0 && e.elite) { const g = Math.round(S.riftDust / 4); S.dust += g; S.riftDust -= g; addFx({ kind: "text", x: e.x, y: e.y - 0.8, text: "+" + g + " 星尘", color: "#ffd860", life: 1.1, big: true }); }
   // 星尘
-  let dust = Math.round((isBoss(e) ? SHOP.dustBoss : e.elite ? SHOP.dustElite : SHOP.dustPerKill * Math.max(1, Math.round(e.d.reward * 0.7))) * (cl("lg_greed") ? 2 : 1) * (1 + 0.15 * cl("loot")) * (cu("cu_greed") ? 2 : 1) * (rl("rl_compass") ? 1.35 : 1) * (wk("poor") ? 0.5 : 1));
+  let dust = Math.round((1 + tfTeam("dust")) * (isBoss(e) ? SHOP.dustBoss : e.elite ? SHOP.dustElite : SHOP.dustPerKill * Math.max(1, Math.round(e.d.reward * 0.7))) * (cl("lg_greed") ? 2 : 1) * (1 + 0.15 * cl("loot")) * (cu("cu_greed") ? 2 : 1) * (rl("rl_compass") ? 1.35 : 1) * (wk("poor") ? 0.5 : 1));
   if (ct("drought")) dust = Math.floor(dust * 0.6 + roll("shop"));   // 随机进位：平均正好 −40%，不会被四舍五入吃掉
   if (!e.summoned) { S.dust += dust; if (dust >= 4) addFx({ kind: "text", x: e.x + 0.2, y: e.y - 0.5, text: "+" + dust + " 星尘", color: "#ffd860", life: 1 }); }
   // 宝箱怪：额外翻一次牌
@@ -4050,9 +4251,10 @@ function hurt(e, amt, type, crit, src) {
   const byUnit = src && src.def && type !== "poison";
   if (byUnit) {
     if (type === "magic" && S.wx === "rain") amt *= 1.08;
+    if (src.tf) { if (type === "magic") amt *= 1 + tf(src, "spell"); if (e.hp < e.maxHp * 0.5) amt *= 1 + tf(src, "exec"); }
     if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1) * (cl("lg_hunt") ? 1.3 : 1);
     if (rl("rl_berserk") && !crit) { src.hitN = (src.hitN || 0) + 1; if (src.hitN % 8 === 0) { amt *= 3; crit = true; } }
-    if ((cl("crit") || cu("cu_moon") || dk("crit")) && !crit && roll("fight") < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon")) { amt *= 2 + 0.15 * cl("critdmg"); crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
+    if ((cl("crit") || cu("cu_moon") || dk("crit") || tf(src, "crit")) && !crit && roll("fight") < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon") + tf(src, "crit")) { amt *= 2 + 0.15 * cl("critdmg") + tf(src, "critDmg"); crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
     if (src.hero && sg("sg_as2") && !isBoss(e) && e.hp <= e.maxHp * 0.25 && e.hp > 0) { amt = e.hp + e.shield + 1; addFx({ kind: "text", x: e.x, y: e.y - 0.6, text: "处决", color: "#4fc0b0", life: 0.9, big: true }); }
     if (cl("freeze") && !e.d.unstoppable && roll("fight") < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
     if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? (syn2("bloodlust") ? 3 : 2) : 1), true, src);
@@ -4154,6 +4356,7 @@ function hurtUnit(u, amt, type, from) {
   if (rl("rl_mirror")) amt *= 0.85;
   if (tal(u, "t_last") && u.hp < u.maxHp * 0.35) amt *= 0.75;
   amt *= 1 - marshalGuard(u);
+  amt *= 1 - tf(u, "dr");
   if (sg("sg_ma1")) amt *= Math.max(0.5, 1 - 0.08 * sg("sg_ma1"));
   amt *= 1 + 0.2 * cu("cu_blood");
   if (type === "magic" && hasTal(u, "lancer")) amt *= 0.6;
@@ -4180,6 +4383,7 @@ function heal(u, amt, quiet, src) {
   if (u.dead || u.down > 0) return;
   if (src && src.hero && sg("sg_pr2")) u.blessT = 6;
   if (S.wx === "heat") amt *= 0.9;
+  if (src) amt *= 1 + tf(src, "heal");
   const got = Math.min(amt, u.maxHp - u.hp);
   u.hp += got;
   if (src) addStat(src, "heal", got);
@@ -4188,6 +4392,7 @@ function heal(u, amt, quiet, src) {
 function hurtCrystal(amt, e) {
   if (S.over) return;
   if (S.shieldT > 0) amt *= 0.3;
+  amt *= 1 - tfTeam("crystalDr");
   if (syn("wall")) amt *= 0.85;
   if (cl("lg_ward")) amt *= 0.8;
   if (ab(20)) amt *= 1.3;
@@ -4310,7 +4515,7 @@ function pickTargets(u) {
   if (D.id === "hunter") return pool.sort((a, b) => first(a, b) || (isBoss(b) || b.elite) - (isBoss(a) || a.elite) || b.hp - a.hp).slice(0, 1);
   if (br(u, "archer", "B")) return pool.sort((a, b) => first(a, b) || b.hp - a.hp).slice(0, 1);
   pool.sort((a, b) => first(a, b) || toCrystal(a) - toCrystal(b));
-  return pool.slice(0, (D.id === "archer" ? (br(u, "archer", "A") ? 4 : u.lv >= 3 ? 2 : 1) : 1) + (u.hero ? sg("sg_ar1") : 0));
+  return pool.slice(0, (D.id === "archer" ? (br(u, "archer", "A") ? 4 : u.lv >= 3 ? 2 : 1) : 1) + (u.hero ? sg("sg_ar1") : 0) + tf(u, "extra"));
 }
 function strike(u, targets) {
   const D = u.def, R = uRange(u);
@@ -4402,6 +4607,7 @@ function useSkill(u) {
   const D = u.def, R = uRange(u);
   if (D.id === "summoner" && !summonGolem(u)) return;
   u.sp = 0; u.castT = CAST_POSE;
+  if (tfTeam("castSp")) for (const a of S.units) if (a !== u && !a.summon && alive(a) && a.skillT <= 0) a.sp = Math.min(a.def.sp, a.sp + tfTeam("castSp"));
   if (D.skill.dur) { u.skillT = (D.skill.dur + (br(u, "sword", "B") ? 6 : 0) + (br(u, "bard", "A") ? 6 : 0)) * (tal(u, "t_focus") ? 1.3 : 1); u.skillMax = u.skillT; }
   const ground = () => S.enemies.filter(e => hittable(e) && !e.d.flying && dist(u, e) <= R);
   if (D.id === "knight") heal(u, u.maxHp * 0.3, false, u);
@@ -4782,6 +4988,7 @@ function step(dt) {
   S.t += dt;
   S.synT = (S.synT || 0) - dt;
   if (S.synT <= 0) { S.synT = 0.5; updateSyn(); }
+  traitStep(dt);
   for (const k in S.spells) S.spells[k] = Math.max(0, S.spells[k] - dt);
   S.hitFlash = Math.max(0, S.hitFlash - dt);
   if (S.shieldT > 0) S.shieldT -= dt;
@@ -4907,7 +5114,7 @@ function step(dt) {
       if (u.skillT > 0) {
         u.skillT = Math.max(0, u.skillT - dt);
         if (u.skillT === 0 && hasTal(u, "bard")) for (const a of S.units) if (a !== u && !a.summon && alive(a) && dist(u, a) <= uRange(u) && a.skillT <= 0) { a.sp = Math.min(a.def.sp, a.sp + 8); addFx({ kind: "text", x: a.x, y: a.y - 0.5, text: "技力 +8", color: "#f07aa8", life: 0.9 }); }
-      } else u.sp = Math.min(u.def.sp, u.sp + dt * (rl("rl_hourglass") ? 1.3 : 1) * (bardSp(u) ? 1.3 : 1) * (1 + 0.3 * cl("sp")) * (tal(u, "t_sp") ? 1.3 : 1) * (S.buff.sp || 1) * (S.resoT > 0 ? 2 : 1) * (1 + awkSp(u)));
+      } else u.sp = Math.min(u.def.sp, u.sp + dt * (rl("rl_hourglass") ? 1.3 : 1) * (bardSp(u) ? 1.3 : 1) * (1 + 0.3 * cl("sp")) * (1 + tf(u, "sp")) * (tal(u, "t_sp") ? 1.3 : 1) * (S.buff.sp || 1) * (S.resoT > 0 ? 2 : 1) * (1 + awkSp(u)));
       if (u.auto && u.skillT <= 0 && u.sp >= u.def.sp && autoWant(u)) useSkill(u);
     }
     u.atkCd -= dt;
@@ -5973,9 +6180,20 @@ function drawHeroFig(g, D, o, x, y, ks) {
   const sm = g.imageSmoothingEnabled; g.imageSmoothingEnabled = false;
   const ok = drawLpc(g, D, o, x, y, ks == null ? HERO_KS : ks); g.imageSmoothingEnabled = sm; return ok;
 }
+// Scale2x 像素平滑放大（边缘更顺、不是方块）：输入 ImageData，输出宽高各 ×2 的 ImageData
+function lpcScale2x(src) {
+  const w = src.width, h = src.height, S32 = new Uint32Array(src.data.buffer), out = new ImageData(w * 2, h * 2), D32 = new Uint32Array(out.data.buffer), W2 = w * 2;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const P = S32[y * w + x], A = y > 0 ? S32[(y - 1) * w + x] : P, B = x < w - 1 ? S32[y * w + x + 1] : P, C = x > 0 ? S32[y * w + x - 1] : P, D = y < h - 1 ? S32[(y + 1) * w + x] : P;
+    let e0 = P, e1 = P, e2 = P, e3 = P;
+    if (C !== B && A !== D) { if (A === C) e0 = A; if (A === B) e1 = B; if (D === C) e2 = C; if (D === B) e3 = D; }
+    const o = y * 2 * W2 + x * 2; D32[o] = e0; D32[o + 1] = e1; D32[o + W2] = e2; D32[o + W2 + 1] = e3;
+  }
+  return out;
+}
 // 静态图（头像、对话半身像、技能特写）：正面站姿放大 4 倍画进 256×256 的缓存画布（最近邻，保持像素块）。
 // o.lv = 穿几阶的衣服（1 = 裸体，不写 = 4 阶全套）
-const HERO_PIC = new Map(), HERO_PIC_POOL = [];
+const HERO_PIC = new Map(), HERO_PIC_POOL = []; let HP_TMP = null;
 function heroPic(D, o) {
   o = o || {};
   const tier = o.lv >= 1 ? Math.min(4, o.lv) : 4, key = [D.id, tier, skinEq(D.id), o.face || 1].join("|");
@@ -5985,9 +6203,13 @@ function heroPic(D, o) {
   c = HERO_PIC_POOL.pop() || document.createElement("canvas"); c.width = 256; c.height = 256;   // 赋宽高顺便清空
   if (!L) return c;   // 还没加载好：给一张空的，不缓存，加载完会整体重画
   const g = c.getContext("2d"), fr = L.BA.front, wf = L.w && L.WA.front; g.imageSmoothingEnabled = false;
+  // 先按原始像素合成 64×64，再用 Scale2x 放大两遍到 256（比直接放大 4 倍的方块更顺）
+  const t = lpcTmp(64, 64), tg = t.getContext("2d"); tg.clearRect(0, 0, 64, 64);
+  tg.drawImage(L.b, 0, fr.y, 64, 64, 0, 0, 64, 64);
+  if (wf) tg.drawImage(L.w, 0, wf.y, wf.fw, wf.fh, fr.ax - wf.ax, fr.ay - wf.ay, wf.fw, wf.fh);
+  let id = tg.getImageData(0, 0, 64, 64); id = lpcScale2x(lpcScale2x(id));
   if (o.face === -1) { g.translate(256, 0); g.scale(-1, 1); }
-  g.drawImage(L.b, 0, fr.y, 64, 64, 0, 0, 256, 256);
-  if (wf) g.drawImage(L.w, 0, wf.y, wf.fw, wf.fh, (fr.ax - wf.ax) * 4, (fr.ay - wf.ay) * 4, wf.fw * 4, wf.fh * 4);
+  const t2 = HP_TMP || (HP_TMP = document.createElement("canvas")); t2.width = t2.height = 256; t2.getContext("2d").putImageData(id, 0, 0); g.drawImage(t2, 0, 0);
   HERO_PIC.set(key, c); return c;
 }
 // 出手阶段（只用来判断「在出手」）
@@ -7372,7 +7594,7 @@ function updateStats() {
   setText("s-hp", Math.ceil(S.crystal.hp));
   setText("s-lv", S.level);
   setText("s-pw", "×" + teamGrowth().k.toFixed(1));
-  setText("s-wave", S.endless ? `${S.wave}/∞` : `${S.wave}/${ST.waves}`);
+  setText("s-wave", S.endless ? `${S.wave}/∞` : `${S.wave}/${ST.waves}${S.act != null && !S.vigil && !S.exped && S.wave > 0 ? " · " + ["一", "二", "三"][S.act] + "幕" : ""}`);
   setText("s-kills", S.kills);
   setText("s-dust", S.dust);
   const waiting = S.wave < totalWaves() && !S.spawnQueue.length;
@@ -7508,7 +7730,8 @@ function renderInfo() {
   }
   const D = u.def, bIdx = u.branch ? (u.branch === "A" ? 0 : 1) : -1;
   const head = `<h3><canvas class="ipt" id="i-pt" aria-hidden="true"></canvas><span>${D.name} <small>${D.cls}${u.hero ? " · 本局英雄" : u.summon ? " · 召唤物" : ""}</small></span>${u.summon ? "" : `<span class="lvtag">Lv${clv(D.id)} · ${u.lv >= 4 ? D.branches[bIdx].name : u.lv + " 阶"}</span>`}</h3>`;
-  const stats = `<div class="row"><span>${D.dmg === "heal" ? "治疗" : "攻击"} ${R0(uAtk(u))}</span><span>防御 ${R0(uDef(u))}</span><span>攻速 ${(1 / uInterval(u)).toFixed(2)}/秒</span><span>范围 ${uRange(u).toFixed(1)}</span>${D.place === "ground" ? `<span>拦截 ${uBlock(u)}</span>` : ""}</div>`;
+  const tagRow = u.summon ? "" : `<div class="tags">${tagHtml(D.id)}</div>`;
+  const stats = tagRow + `<div class="row"><span>${D.dmg === "heal" ? "治疗" : "攻击"} ${R0(uAtk(u))}</span><span>防御 ${R0(uDef(u))}</span><span>攻速 ${(1 / uInterval(u)).toFixed(2)}/秒</span><span>范围 ${uRange(u).toFixed(1)}</span>${D.place === "ground" ? `<span>拦截 ${uBlock(u)}</span>` : ""}</div>`;
   if (u.summon) {
     infoEl.innerHTML = head + `<div class="row"><span>生命</span><span id="i-hp"></span></div><div class="meter"><i id="i-hpbar" style="background:var(--ok)"></i></div>
       <div class="row"><span>剩余时间</span><span id="i-life"></span></div><div class="meter"><i id="i-lifebar" style="background:#b8845a"></i></div>` + stats +
@@ -7584,13 +7807,14 @@ function updateOffer() {
   $("cards3").classList.toggle("n4", S.offer.length > 3);
   $("cards3").classList.toggle("banishing", banishMode);   // 混入诅咒卡时变成 2x2 的 4 选 1
   $("lu-tip").innerHTML = S.offer.length > 3 ? "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> 选卡，<kbd>R</kbd> 重抽，<kbd>X</kbd> 放逐" : "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 选卡，<kbd>R</kbd> 重抽，<kbd>X</kbd> 放逐";
-  const title = S.offerRare ? "稀有货架，选一张" : S.level <= 1 && !S.kills ? "开局翻牌，选一张" : `升到 Lv ${S.level}，选一张卡`;
+  const title = S.offerRare ? "稀有货架，选一张" : S.level <= 1 && !S.kills ? "开局翻牌，选一张" : `升到 Lv ${S.level} · 等级加成 +${Math.round(BAL.levelBonus * (S.level - 1) * 100)}%，选一张卡`;
   setText("lu-title", title + (S.pending > 1 ? `（还有 ${S.pending - 1} 次）` : ""));
   $("cards3").innerHTML = S.offer.map((p, i) => {
     const c = cardInfo(p), r = p.rare || 0, R = RARITY[r] || { name: "诅咒", color: CURSE_COLOR };
     const tag = p.card && p.card.evo ? `<span class="rt" style="background:#ffd860">进化</span>` : r ? `<span class="rt" style="background:${R.color}">${R.name}</span>` : "";
     const body = c.curse ? `<span>${p.curse.good}<em class="bad">代价：${p.curse.bad}</em></span>` : `<span>${c.desc}</span>`;
-    const h = synHint(p), hint = h ? `<em class="sh${h.done ? " done" : ""}" style="--g:${h.g.color}">${h.done ? "凑齐羁绊 · " + h.g.name : `羁绊 ${h.g.name} ${h.a}/${h.b}`}</em>` : "";
+    const th = p.join ? traitHint(p.def.id).filter(x => x.from >= 1 || x.up) : [], thHtml = th.length ? `<em class="sh th">${th.map(x => `<span style="color:${x.color}">${x.name} ${x.from}→${x.to}${x.up ? " ▲" : ""}</span>`).join("　")}</em>` : "";
+    const h = synHint(p), hint = thHtml + (h ? `<em class="sh${h.done ? " done" : ""}" style="--g:${h.g.color}">${h.done ? "凑齐羁绊 · " + h.g.name : `羁绊 ${h.g.name} ${h.a}/${h.b}`}</em>` : "");
     return `<button class="pcard r${r}${c.sig ? " sig" : ""}" data-pick="${p.id}" style="--c:${c.color}"><span class="key">${i + 1}</span>${tag}<canvas id="lu-${i}" aria-hidden="true"></canvas>
       <div><small>${KIND_NAME[c.kind] || "诅咒"}</small><b>${c.name}</b>${body}${hint}</div></button>`;
   }).join("");
@@ -7659,19 +7883,42 @@ $("btn-shopgo").addEventListener("click", () => { closeShop(); $("shopbox").data
 function synState() {
   return SYNERGY.map(g => { let a = 0, b = 1; try { [a, b] = g.prog(); } catch (e) {} return { g, a: Math.min(a, b), b, on: !!(S.syn && S.syn[g.id]), on2: !!(S.syn2 && S.syn2[g.id]) }; });
 }
-function synChips() {
+// 角色羁绊（阵营 / 职业 / 特质）：生效的在前，再是已经有 2 人以上、还差一点的；然后是搭档
+function traitState() {
+  const N = (S && S.trN) || {}, K = (S && S.tr) || {};
+  return TRAITS.map(t => { const n = N[t.id] || 0, k = K[t.id] || 0, nx = (t.tiers[k] || {}).n || 0; return { t, n, k, nx }; });
+}
+function traitChips(max) {
+  const list = traitState().filter(x => x.k > 0 || x.n >= 2).sort((a, b) => (b.k > 0) - (a.k > 0) || b.k - a.k || b.n - a.n);
+  const pairs = PAIRS.filter(p => S && S.trPairs && S.trPairs[p.id]).map(p => `<span class="sc on pair" style="--c:#e8c860" title="搭档 · ${p.desc}">${p.name.slice(0, 2)}<u>${p.name.slice(2)}</u></span>`).join("");
+  return list.map(x => `<span class="sc${x.k ? " on" : ""}" style="--c:${x.t.color}" title="${x.t.axis} · ${x.t.id}：${x.k ? x.t.tiers[x.k - 1].desc : "再来 " + (x.nx - x.n) + " 人：" + x.t.tiers[0].desc}">${x.t.id.slice(0, 2)}<u>${x.t.id.slice(2)}</u><i>${x.n}${x.nx ? "/" + x.nx : "✓"}</i></span>`).slice(0, max || 99).join("") + (max ? "" : pairs);
+}
+function synChips(max) {
   const list = synState().filter(x => x.on || x.a > 0).sort((x, y) => (y.on - x.on) || (x.b - x.a) - (y.b - y.a));
-  return list.map(x => `<span class="sc${x.on ? " on" : ""}" style="--c:${x.g.color}" title="${x.g.need}：${x.g.desc}">${x.on ? "✓" : ""}${x.g.name.slice(0, 2)}<u>${x.g.name.slice(2)}</u>${x.on2 ? "Ⅱ" : ""}${x.on ? "" : `<i>${x.a}/${x.b}</i>`}</span>`).join("")
+  if (max) return traitChips(max) || `<span class="sc none">还没有羁绊</span>`;
+  return (traitChips() + list.map(x => `<span class="sc${x.on ? " on" : ""}" style="--c:${x.g.color}" title="${x.g.need}：${x.g.desc}">${x.on ? "✓" : ""}${x.g.name.slice(0, 2)}<u>${x.g.name.slice(2)}</u>${x.on2 ? "Ⅱ" : ""}${x.on ? "" : `<i>${x.a}/${x.b}</i>`}</span>`).join(""))
     || `<span class="sc none">还没有羁绊</span>`;
 }
 let synKey = "";
 function updateSynBar() {
   if (!S) return;
-  const st = synState(), key = st.map(x => x.a + (x.on ? "!" : "") + (x.on2 ? "2" : "")).join(",");
+  const st = synState(), key = st.map(x => x.a + (x.on ? "!" : "") + (x.on2 ? "2" : "")).join(",") + "|" + traitState().map(x => x.n + ":" + x.k).join(",") + "|" + Object.keys(S.trPairs || {}).join(",");
   if (synKey === key) return;
   synKey = key;
-  const html = `<b class="sch">羁绊<button class="sc help" data-synhelp aria-label="羁绊说明">?</button></b>${synChips()}`;
-  for (const id of ["syns", "pi-syn", "h-syn"]) { const el = $(id); if (el) el.innerHTML = html; }
+  const head = `<b class="sch">羁绊<button class="sc help" data-synhelp aria-label="羁绊说明">?</button></b>`, html = head + synChips();
+  for (const id of ["syns", "pi-syn"]) { const el = $(id); if (el) el.innerHTML = html; }
+  const hs = $("h-syn"); if (hs) hs.innerHTML = head + synChips(4);   // 横屏全屏左边的空间小：只放最靠前的 4 个，点一下看全部
+}
+function traitGuideHtml(live) {
+  const LS = live ? S : null, N = (LS && LS.trN) || {}, K = (LS && LS.tr) || {}, here = LS ? LS.units.filter(u => !u.dead && !u.summon).map(u => u.def.id) : [];
+  const mem = ids => ids.map(id => `<span class="${here.includes(id) ? "in" : ""}">${(UNITS.find(u => u.id === id) || {}).name}</span>`).join("");
+  const sect = ax => `<h3 class="axh">${ax}羁绊</h3><div class="codex syng">${TRAITS.filter(t => t.axis === ax).map(t => { const n = N[t.id] || 0, k = K[t.id] || 0;
+    return `<div class="cx${k ? " on" : ""}" style="--c:${t.color}"><div><b style="color:${t.color}">${k ? "✓ " : ""}${t.id}${LS ? `<span class="sp">${n} 人</span>` : ""}</b>
+      <p class="mem">${mem(UNITS.filter(u => tagsOf(u.id).includes(t.id)).map(u => u.id))}</p>
+      ${t.tiers.map((x, i) => `<p class="eff${k === i + 1 ? " cur" : ""}">${k === i + 1 ? "✓ " : ""}${x.n} 人：${x.desc}</p>`).join("")}</div></div>`; }).join("")}</div>`;
+  const pairs = `<h3 class="axh">搭档</h3><div class="codex syng">${PAIRS.map(p => { const on = LS && LS.trPairs && LS.trPairs[p.id];
+    return `<div class="cx${on ? " on" : ""}" style="--c:#e8c860"><div><b style="color:#e8c860">${on ? "✓ " : ""}${p.name}</b><p class="mem">${mem(p.ids)}</p><p class="eff${on ? " cur" : ""}">两人同时在场：${p.desc}</p></div></div>`; }).join("")}</div>`;
+  return sect("阵营") + sect("职业") + sect("特质") + pairs + `<h3 class="axh">技能羁绊</h3>`;
 }
 function synGuideHtml(live) {
   const st = live ? synState() : null;
@@ -7695,10 +7942,18 @@ function rulesHtml() {
 }
 function showSynGuide() {
   if (!S || S.over || S.offer || S.shop || S.event || S.cine) return;
-  openOverlay(`<h2>本局规则与羁绊</h2>${rulesHtml()}<p>羁绊凑齐条件后自动生效，一直持续到条件不满足为止（例如前排倒下）。数字是这局现在的进度。</p>
-    ${synGuideHtml(true)}<div class="btns"><button class="primary" id="btn-synback">返回战斗</button></div>`);
+  openOverlay(`<h2>本局规则与羁绊</h2>${rulesHtml()}<p>每名英雄带阵营、职业、特质三个标签，队里同标签的人越多，效果越强。技能羁绊靠拿齐技能卡。条件不满足（例如有人倒下）时效果会暂时消失，数字是这局现在的进度。</p>
+    ${traitGuideHtml(true)}${synGuideHtml(true)}<div class="btns"><button class="primary" id="btn-synback">返回战斗</button></div>`);
 }
 document.addEventListener("click", ev => { if (ev.target.closest("[data-synhelp], .syns, #pi-syn, #h-syn")) showSynGuide(); });
+// 进入新一幕：全屏金色闪一下，晨星碑周围一圈光
+function actFlash(a) {
+  const el = $("cele"); if (!el) return;
+  el.style.background = "radial-gradient(circle at 50% 50%, rgba(255,216,96,.5), transparent 75%)";
+  el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
+  addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#ffd860", life: 0.8, r0: 0.3, r1: 4.2, fill: true });
+  burst(CRYSTAL.x, CRYSTAL.y, "#ffe38a", 30, 4, 0.9, 0.08);
+}
 // 选中一张卡的庆祝：全屏闪一下对应颜色；传说卡在晨星碑周围再炸一圈金光
 const CELE_COL = { 0: "rgba(255,248,220,.5)", 1: "rgba(98,180,255,.55)", 2: "rgba(255,200,80,.75)", 3: "rgba(224,40,80,.6)" };
 function celebratePick(p) {
@@ -7887,7 +8142,7 @@ function unitCardHtml(u) {
   const D = u.def;
   return `<div class="uc-h" style="--c:${D.color}"><b>${D.name}</b><span>${D.cls} · ${DMG_NAME[D.dmg] || ""}${u.hero ? " · 英雄" : ""}</span>${u.summon ? "" : `<em>Lv${clv(D.id)}${awk(D.id) ? " · 觉醒" + awk(D.id) : ""}</em>`}<em class="rk">${unitRank(u)}</em></div>
     <div class="uc-s">${unitStats(u).map(([k, v]) => `<span>${k} <b>${v}</b></span>`).join("")}</div>
-    ${u.summon ? "" : `<div class="uc-k">技能 · ${D.skill.name}：${D.skill.desc}</div>`}`;
+    ${u.summon ? "" : `<div class="uc-k">技能 · ${D.skill.name}：${D.skill.desc}</div><div class="tags">${tagHtml(D.id)}</div>`}`;
 }
 // 选中的队员（没选就看英雄）：竖屏写在信息区里，横屏全屏在战场左上角弹一张小卡；每 0.25 秒刷新一次
 function updateUnitCards(now) {
@@ -8169,6 +8424,7 @@ function showRoster(id) {
       <div class="rlv"><b>Lv ${L.lv}</b><span>${L.lv >= PROG.max ? "已满级" : `经验 ${L.into} / ${L.need}`}</span></div><div class="meter"><i style="width:${pct}%;background:var(--gold)"></i></div>
       ${L.lv >= PROG.max ? (() => { const A = awkInfo(exp); return `<div class="rlv awk"><b>觉醒 ${"★".repeat(A.a)}${"☆".repeat(AWK.max - A.a)}</b><span>${A.full ? "已完全觉醒" : `觉醒经验 ${A.into} / ${AWK.need}`}</span></div><div class="meter"><i style="width:${A.full ? 100 : Math.round(A.into / AWK.need * 100)}%;background:linear-gradient(90deg,#ffd860,#ff8ac0)"></i></div>
         <p class="awkp">觉醒加成：攻击、生命 +${Math.round(A.a * AWK.perLv * 100)}%${A.a >= AWK.auraLv ? " · 金色光环" : ""}${A.a >= AWK.spLv ? " · 技力回复 +20%" : ""}</p>`; })() : ""}
+      <div class="tags">${tagHtml(id)}</div>
       <p class="bio">${BIO[id]}</p></div>
     <div class="rright">
       <div class="rstats">${st("生命", D.hp, k)}${st("攻击", D.atk, k)}${st("防御", D.def, 1)}${st("法抗", D.res, 1)}
@@ -8286,7 +8542,7 @@ function closeOverlay() { $("overlay").hidden = true; menuOpen = false; rosterAn
 const CH_COL = ["#6cb85e", "#e0c070", "#8fe0f0", "#ff8a5a", "#9ab0ff"];   // 每章的主题色：选关页的章节按钮、关卡卡片边框
 const chapterOf = i => CHAPTERS.reduce((k, c, j) => (i >= c.from ? j : k), 0);
 // 12.0 更新说明：每个版本只弹一次（单独的 localStorage 键）
-const NEWS_VER = "12.0";
+const NEWS_VER = "12.1";
 // 素材署名：角色像素精灵用的是 Liberated Pixel Cup 社区的素材（CC-BY-SA / GPL / OGA-BY 等），许可证要求署名
 function showCredits() {
   const C = LPC_CREDITS, esc = t => String(t).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
@@ -8311,12 +8567,11 @@ function showNews() {
   if (seen === NEWS_VER || !loadSave().tutorial) return false;
   try { localStorage.setItem("chenxing-td-news", NEWS_VER); } catch (e) { }
   openOverlay(`<h2>更新说明</h2><div class="tree">
-    <small>首领各有一个专属机制，血条旁会写出来。</small>
-    <small>每 5 波有 2 波天气，户外关会从白天走到夜里。</small>
-    <small>选关页可以勾选额外难度（契约），通关多拿星星。</small>
-    <small>同一关连败后，晨星碑生命会增加。</small>
-    <small>翻牌时可以放逐不想要的牌；第二法术槽可以换。</small>
-    <small>新增羁绊第二档、20 个事件、新敌人和商店物品。</small></div>
+    <small>每关拉长到 21–28 波，分三幕；升级所需经验越升越多，选牌次数少了，每次升级的加成更大。</small>
+    <small>每名英雄有阵营、职业、特质三个标签，同标签的人越多羁绊越强；另有 10 组搭档。</small>
+    <small>选牌时伙伴卡会提示能让哪些羁绊升一档，已有的阵营更容易遇到同伴。</small>
+    <small>商店每 6 波一次，事件每 7 波一次。</small>
+    <small>第 2 套外观换成每人一个主题，装备不再挡脸和胸。</small></div>
     <p>战斗中点「羁绊」看板，可以查看本局规则。</p>
     <div class="btns"><button class="primary" id="btn-newsok">知道了</button></div>`);
   return true;
@@ -8435,7 +8690,7 @@ function showCodex(tab) {
       <h3>英雄专属卡 ${has(SIG)}/${SIG.length}</h3><div class="codex sm">${SIG.map(c => cardCx(c, "sig")).join("")}</div>
       <h3>诅咒卡 ${has(CURSES)}/${CURSES.length}</h3><div class="codex sm">${CURSES.map(c => cardCx(c, "curse")).join("")}</div>`;
   } else if (codexTab === "syn") {
-    body = `<p>羁绊凑齐条件后自动生效，不用手动开启。战斗中下方的「羁绊」看板会显示已经凑齐的和正在凑的，点它能随时看这一页（带当前进度）。选牌时卡面也会提示「拿了这张羁绊进度 +1」。</p>${synGuideHtml(false)}`;
+    body = `<p>每名英雄带阵营、职业、特质三个标签，同标签的人越多效果越强，另有 10 组搭档。技能羁绊靠拿齐技能卡。战斗中下方的「羁绊」看板会显示已经凑齐的和正在凑的，点它能随时看这一页（带当前进度）。选牌时伙伴卡会提示能让哪些羁绊升一档。</p>${traitGuideHtml(false)}${synGuideHtml(false)}`;
   } else if (codexTab === "relic") {
     body = `<p>击败精英和首领有机会掉落遗物，每局最多带 ${RELIC_MAX} 件。见过的遗物会记在这里，集齐有成就。</p>
       <div class="codex sm">${RELICS.map(r => { const on = save.relicSeen.includes(r.id);
@@ -8670,11 +8925,12 @@ function battleReport() {
       ${chip("传说卡", legends.length + " 张", legends.length ? "#ffb040" : "")}
       ${chip("诅咒", Object.keys(S.curses || {}).length + " 张", Object.keys(S.curses || {}).length ? CURSE_COLOR : "")}
       ${chip("羁绊峰值", (S.bestSyn || 0) + " 个")}
+      ${chip("角色羁绊", (S.trBest || 0) + " 个 · 搭档 " + (S.pairBest || 0))}
       ${chip("星尘", S.dust)}
     </div>
     ${mvp ? `<div class="mvp"><canvas id="rep-mvp" aria-hidden="true"></canvas><div><b>MVP · ${mvp.def.name}</b>
       <span>造成伤害 ${R0((S.stats[mvp.def.id] || {}).dmg || 0)}${(S.stats[mvp.def.id] || {}).heal > 0 ? ` · 治疗 ${R0(S.stats[mvp.def.id].heal)}` : ""} · 击杀 ${(S.stats[mvp.def.id] || {}).kills || 0}</span></div></div>` : ""}
-    ${(S.log || []).length > 1 ? `<div class="curvebox"><b>晨星碑血量 / 等级曲线</b><canvas id="rep-curve" aria-hidden="true"></canvas></div>` : ""}
+    ${(S.log || []).length > 1 ? `<div class="curvebox"><b>晨星碑血量（蓝）· 战力（橙）· 等级（金柱）</b><canvas id="rep-curve" aria-hidden="true"></canvas></div>` : ""}
   </div>`;
 }
 function drawReport() {
@@ -8685,7 +8941,7 @@ function drawReport() {
   const w = cv.clientWidth || 420, h = 78;
   cv.width = R0(w * dpr); cv.height = R0(h * dpr);
   const g = cv.getContext("2d"); g.scale(dpr, dpr);
-  const log = S.log.concat([{ w: S.wave, hp: Math.max(0, S.crystal.hp / S.crystal.maxHp), kills: S.kills, lv: S.level }]);
+  const log = S.log.concat([{ p: teamGrowth().k, w: S.wave, hp: Math.max(0, S.crystal.hp / S.crystal.maxHp), kills: S.kills, lv: S.level }]);
   const n = log.length, maxLv = Math.max(2, ...log.map(p => p.lv));
   g.fillStyle = "#0e1018"; g.fillRect(0, 0, w, h);
   g.strokeStyle = "rgba(255,255,255,.07)"; g.lineWidth = 1;
@@ -8700,8 +8956,13 @@ function drawReport() {
   g.stroke();
   g.fillStyle = "#62b4ff";
   log.forEach((p, i) => { const y = 4 + (1 - p.hp) * (h - 10); g.fillRect(px(i) - 1.5, y - 1.5, 3, 3); });
+  // 战力（橙线）：每一波开始时全队相对开局的总战力
+  const maxP = Math.max(1.5, ...log.map(p => p.p || 1));
+  g.strokeStyle = "#ff9a3a"; g.lineWidth = 2; g.beginPath();
+  log.forEach((p, i) => { const y = h - 6 - ((p.p || 1) - 1) / (maxP - 1) * (h - 14); i ? g.lineTo(px(i), y) : g.moveTo(px(i), y); });
+  g.stroke();
   g.fillStyle = "#7a8396"; g.font = "10px sans-serif"; g.textAlign = "left";
-  g.fillText("第 1 波", 4, h - 3); g.textAlign = "right"; g.fillText("第 " + log[n - 1].w + " 波 · Lv" + log[n - 1].lv, w - 4, h - 3);
+  g.fillText("第 1 波", 4, h - 3); g.textAlign = "right"; g.fillText("第 " + log[n - 1].w + " 波 · Lv" + log[n - 1].lv + " · 战力 ×" + (log[n - 1].p || 1).toFixed(1), w - 4, h - 3);
 }
 let shownOver = null;
 // 一局结束：先把存档结算做完（settleRun，数据都在这一步写好，中途关页面也不会丢），再播通关剧情、出结算页
@@ -8846,6 +9107,7 @@ const BOUNTY_TYPES = [
   { id: "noreroll", make: () => ({ key: "noreroll", text: "一次都不重抽，通关任意关卡", ok: R => R.win && !S.rerollsUsed && R.mode !== "endless" }) },
   { id: "nospell", make: () => ({ key: "nospell", text: "不放陨星术和圣愈之光，通关任意关卡", ok: R => R.win && !S.usedSpell && R.mode !== "endless" }) },
   { id: "hard", make: () => ({ key: "hard", text: "在困难或噩梦难度通关任意主线关卡", ok: R => mainWin(R) && S.diff >= 1 }), need: 4 },
+  { id: "trait", make: () => ({ key: "trait3", text: "一局里同时有 3 个角色羁绊生效（阵营、职业、特质）", ok: () => (S.trBest || 0) >= 3 }) },
   { id: "legend", make: () => ({ key: "legend2", text: "一局里拿到 2 张传说卡", ok: () => S.legends >= 2 }) },
   { id: "evo", make: () => ({ key: "evo", text: "一局里拿到一张进化卡（技能卡升满级后出现）", ok: () => Object.keys(S.cards).some(id => id.startsWith("ev_")) }), need: 4 },
   { id: "lv", make: r => { const n = [14, 16][Math.floor(r() * 2)]; return { key: "lv" + n, text: `一局里升到 ${n} 级`, ok: () => S.level >= n }; } },
@@ -8991,7 +9253,7 @@ function expRestore(sn, flips) {
 function expBattle(node) {
   const st = expLoad(); if (!st) return;
   const f = st.floor, elite = node.type === "elite";
-  startRun(node.stage, { hero: st.hero, exped: { node: node.type, floor: f, waves: Math.max(5, Math.ceil(STAGES[node.stage].waves * (node.type === "boss" ? 0.75 : EXPED.waveK))),
+  startRun(node.stage, { hero: st.hero, exped: { node: node.type, floor: f, waves: Math.max(5, Math.ceil((STAGES[node.stage].baseWaves || STAGES[node.stage].waves) * (node.type === "boss" ? 0.75 : EXPED.waveK))),
     hpK: (1 + EXPED.hpStep * f) * (elite ? EXPED.eliteHp : 1), atkK: 1 + EXPED.atkStep * f, elite: elite ? EXPED.eliteExtra : 0, snap: st.snap, flips: st.flips } });
 }
 // 结算（settleRun 里调用）：赢了记快照、发星星、前进一层；输了远征结束

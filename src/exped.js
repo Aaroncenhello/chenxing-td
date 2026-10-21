@@ -59,7 +59,7 @@ function expRestore(sn, flips) {
 function expBattle(node) {
   const st = expLoad(); if (!st) return;
   const f = st.floor, elite = node.type === "elite";
-  startRun(node.stage, { hero: st.hero, exped: { node: node.type, floor: f, waves: Math.max(5, Math.ceil(STAGES[node.stage].waves * (node.type === "boss" ? 0.75 : EXPED.waveK))),
+  startRun(node.stage, { hero: st.hero, exped: { node: node.type, floor: f, waves: Math.max(5, Math.ceil((STAGES[node.stage].baseWaves || STAGES[node.stage].waves) * (node.type === "boss" ? 0.75 : EXPED.waveK))),
     hpK: (1 + EXPED.hpStep * f) * (elite ? EXPED.eliteHp : 1), atkK: 1 + EXPED.atkStep * f, elite: elite ? EXPED.eliteExtra : 0, snap: st.snap, flips: st.flips } });
 }
 // 结算（settleRun 里调用）：赢了记快照、发星星、前进一层；输了远征结束

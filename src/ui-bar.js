@@ -72,7 +72,7 @@ function updateStats() {
   setText("s-hp", Math.ceil(S.crystal.hp));
   setText("s-lv", S.level);
   setText("s-pw", "×" + teamGrowth().k.toFixed(1));
-  setText("s-wave", S.endless ? `${S.wave}/∞` : `${S.wave}/${ST.waves}`);
+  setText("s-wave", S.endless ? `${S.wave}/∞` : `${S.wave}/${ST.waves}${S.act != null && !S.vigil && !S.exped && S.wave > 0 ? " · " + ["一", "二", "三"][S.act] + "幕" : ""}`);
   setText("s-kills", S.kills);
   setText("s-dust", S.dust);
   const waiting = S.wave < totalWaves() && !S.spawnQueue.length;

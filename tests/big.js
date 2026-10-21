@@ -5,7 +5,7 @@ const path = require('path'); const GAME = 'file://' + path.resolve(__dirname, '
 const prep = async (w, h) => {
   const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
   await p.goto(GAME); await p.evaluate(() => localStorage.setItem('chenxing-td-v2', JSON.stringify({ tutorial: true, ver: 13, stars: new Array(19).fill(3), story: [...Array(20).keys()].map(i => 'pre' + i) }))); await p.reload(); await p.waitForTimeout(400);
-  await p.evaluate(() => { localStorage.setItem('chenxing-td-news', '12.0'); closeOverlay(); startRun(0, { hero: 'mage', charOpen: UNITS.map(u => u.id) }); const S = __td.S; S.pending = 0; S.offer = null; S.cine = null; S.autoWave = false; for (const id of ['knight', 'archer', 'priest']) pickCard('ally_' + id); for (let i = 0; i < 10; i++) __td.step(1 / 30); });
+  await p.evaluate(() => { localStorage.setItem('chenxing-td-news', '12.1'); closeOverlay(); startRun(0, { hero: 'mage', charOpen: UNITS.map(u => u.id) }); const S = __td.S; S.pending = 0; S.offer = null; S.cine = null; S.autoWave = false; for (const id of ['knight', 'archer', 'priest']) pickCard('ally_' + id); for (let i = 0; i < 10; i++) __td.step(1 / 30); });
   await p.waitForTimeout(300); return p;
 };
 // 把游戏里的格子坐标换算成屏幕坐标（页面里用同一个 tpx，再按画布缩放）

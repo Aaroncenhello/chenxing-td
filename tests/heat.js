@@ -4,7 +4,7 @@ const path = require('path'); const GAME = 'file://' + path.resolve(__dirname, '
 (async () => { const b = await chromium.launch(); const errs = [];
 const ctx = await b.newContext({ viewport: { width: 390, height: 750 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(e.message));
 await p.goto(GAME); await p.evaluate(() => localStorage.setItem('chenxing-td-v2', JSON.stringify({ tutorial: true, ver: 13, stars: new Array(19).fill(3) }))); await p.reload(); await p.waitForTimeout(400);
-await p.evaluate(() => { localStorage.setItem('chenxing-td-news', '12.0'); closeOverlay(); startRun(2, { hero: 'mage', charOpen: UNITS.map(u => u.id) }); const S = __td.S; S.pending = 0; S.offer = null; S.cine = null; S.autoWave = true; for (const id of ['knight', 'archer', 'priest']) pickCard('ally_' + id); });
+await p.evaluate(() => { localStorage.setItem('chenxing-td-news', '12.1'); closeOverlay(); startRun(2, { hero: 'mage', charOpen: UNITS.map(u => u.id) }); const S = __td.S; S.pending = 0; S.offer = null; S.cine = null; S.autoWave = true; for (const id of ['knight', 'archer', 'priest']) pickCard('ally_' + id); });
 check(await p.evaluate(() => OPT.eco === true), '触屏设备默认开省电（30 帧）');
 // 数一秒钟里 render 被调用了几次
 const rate = async (ms = 2000) => p.evaluate(async ms => { let n = 0; const o = window.render; window.render = function (t) { n++; return o(t); }; await new Promise(r => setTimeout(r, ms)); window.render = o; return n / ms * 1000; }, ms);

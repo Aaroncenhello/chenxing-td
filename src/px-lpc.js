@@ -104,9 +104,20 @@ function drawHeroFig(g, D, o, x, y, ks) {
   const sm = g.imageSmoothingEnabled; g.imageSmoothingEnabled = false;
   const ok = drawLpc(g, D, o, x, y, ks == null ? HERO_KS : ks); g.imageSmoothingEnabled = sm; return ok;
 }
+// Scale2x 像素平滑放大（边缘更顺、不是方块）：输入 ImageData，输出宽高各 ×2 的 ImageData
+function lpcScale2x(src) {
+  const w = src.width, h = src.height, S32 = new Uint32Array(src.data.buffer), out = new ImageData(w * 2, h * 2), D32 = new Uint32Array(out.data.buffer), W2 = w * 2;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const P = S32[y * w + x], A = y > 0 ? S32[(y - 1) * w + x] : P, B = x < w - 1 ? S32[y * w + x + 1] : P, C = x > 0 ? S32[y * w + x - 1] : P, D = y < h - 1 ? S32[(y + 1) * w + x] : P;
+    let e0 = P, e1 = P, e2 = P, e3 = P;
+    if (C !== B && A !== D) { if (A === C) e0 = A; if (A === B) e1 = B; if (D === C) e2 = C; if (D === B) e3 = D; }
+    const o = y * 2 * W2 + x * 2; D32[o] = e0; D32[o + 1] = e1; D32[o + W2] = e2; D32[o + W2 + 1] = e3;
+  }
+  return out;
+}
 // 静态图（头像、对话半身像、技能特写）：正面站姿放大 4 倍画进 256×256 的缓存画布（最近邻，保持像素块）。
 // o.lv = 穿几阶的衣服（1 = 裸体，不写 = 4 阶全套）
-const HERO_PIC = new Map(), HERO_PIC_POOL = [];
+const HERO_PIC = new Map(), HERO_PIC_POOL = []; let HP_TMP = null;
 function heroPic(D, o) {
   o = o || {};
   const tier = o.lv >= 1 ? Math.min(4, o.lv) : 4, key = [D.id, tier, skinEq(D.id), o.face || 1].join("|");
@@ -116,9 +127,13 @@ function heroPic(D, o) {
   c = HERO_PIC_POOL.pop() || document.createElement("canvas"); c.width = 256; c.height = 256;   // 赋宽高顺便清空
   if (!L) return c;   // 还没加载好：给一张空的，不缓存，加载完会整体重画
   const g = c.getContext("2d"), fr = L.BA.front, wf = L.w && L.WA.front; g.imageSmoothingEnabled = false;
+  // 先按原始像素合成 64×64，再用 Scale2x 放大两遍到 256（比直接放大 4 倍的方块更顺）
+  const t = lpcTmp(64, 64), tg = t.getContext("2d"); tg.clearRect(0, 0, 64, 64);
+  tg.drawImage(L.b, 0, fr.y, 64, 64, 0, 0, 64, 64);
+  if (wf) tg.drawImage(L.w, 0, wf.y, wf.fw, wf.fh, fr.ax - wf.ax, fr.ay - wf.ay, wf.fw, wf.fh);
+  let id = tg.getImageData(0, 0, 64, 64); id = lpcScale2x(lpcScale2x(id));
   if (o.face === -1) { g.translate(256, 0); g.scale(-1, 1); }
-  g.drawImage(L.b, 0, fr.y, 64, 64, 0, 0, 256, 256);
-  if (wf) g.drawImage(L.w, 0, wf.y, wf.fw, wf.fh, (fr.ax - wf.ax) * 4, (fr.ay - wf.ay) * 4, wf.fw * 4, wf.fh * 4);
+  const t2 = HP_TMP || (HP_TMP = document.createElement("canvas")); t2.width = t2.height = 256; t2.getContext("2d").putImageData(id, 0, 0); g.drawImage(t2, 0, 0);
   HERO_PIC.set(key, c); return c;
 }
 // 出手阶段（只用来判断「在出手」）

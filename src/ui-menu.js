@@ -81,7 +81,7 @@ function closeOverlay() { $("overlay").hidden = true; menuOpen = false; rosterAn
 const CH_COL = ["#6cb85e", "#e0c070", "#8fe0f0", "#ff8a5a", "#9ab0ff"];   // 每章的主题色：选关页的章节按钮、关卡卡片边框
 const chapterOf = i => CHAPTERS.reduce((k, c, j) => (i >= c.from ? j : k), 0);
 // 12.0 更新说明：每个版本只弹一次（单独的 localStorage 键）
-const NEWS_VER = "12.0";
+const NEWS_VER = "12.1";
 // 素材署名：角色像素精灵用的是 Liberated Pixel Cup 社区的素材（CC-BY-SA / GPL / OGA-BY 等），许可证要求署名
 function showCredits() {
   const C = LPC_CREDITS, esc = t => String(t).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
@@ -106,12 +106,11 @@ function showNews() {
   if (seen === NEWS_VER || !loadSave().tutorial) return false;
   try { localStorage.setItem("chenxing-td-news", NEWS_VER); } catch (e) { }
   openOverlay(`<h2>更新说明</h2><div class="tree">
-    <small>首领各有一个专属机制，血条旁会写出来。</small>
-    <small>每 5 波有 2 波天气，户外关会从白天走到夜里。</small>
-    <small>选关页可以勾选额外难度（契约），通关多拿星星。</small>
-    <small>同一关连败后，晨星碑生命会增加。</small>
-    <small>翻牌时可以放逐不想要的牌；第二法术槽可以换。</small>
-    <small>新增羁绊第二档、20 个事件、新敌人和商店物品。</small></div>
+    <small>每关拉长到 21–28 波，分三幕；升级所需经验越升越多，选牌次数少了，每次升级的加成更大。</small>
+    <small>每名英雄有阵营、职业、特质三个标签，同标签的人越多羁绊越强；另有 10 组搭档。</small>
+    <small>选牌时伙伴卡会提示能让哪些羁绊升一档，已有的阵营更容易遇到同伴。</small>
+    <small>商店每 6 波一次，事件每 7 波一次。</small>
+    <small>第 2 套外观换成每人一个主题，装备不再挡脸和胸。</small></div>
     <p>战斗中点「羁绊」看板，可以查看本局规则。</p>
     <div class="btns"><button class="primary" id="btn-newsok">知道了</button></div>`);
   return true;
@@ -230,7 +229,7 @@ function showCodex(tab) {
       <h3>英雄专属卡 ${has(SIG)}/${SIG.length}</h3><div class="codex sm">${SIG.map(c => cardCx(c, "sig")).join("")}</div>
       <h3>诅咒卡 ${has(CURSES)}/${CURSES.length}</h3><div class="codex sm">${CURSES.map(c => cardCx(c, "curse")).join("")}</div>`;
   } else if (codexTab === "syn") {
-    body = `<p>羁绊凑齐条件后自动生效，不用手动开启。战斗中下方的「羁绊」看板会显示已经凑齐的和正在凑的，点它能随时看这一页（带当前进度）。选牌时卡面也会提示「拿了这张羁绊进度 +1」。</p>${synGuideHtml(false)}`;
+    body = `<p>每名英雄带阵营、职业、特质三个标签，同标签的人越多效果越强，另有 10 组搭档。技能羁绊靠拿齐技能卡。战斗中下方的「羁绊」看板会显示已经凑齐的和正在凑的，点它能随时看这一页（带当前进度）。选牌时伙伴卡会提示能让哪些羁绊升一档。</p>${traitGuideHtml(false)}${synGuideHtml(false)}`;
   } else if (codexTab === "relic") {
     body = `<p>击败精英和首领有机会掉落遗物，每局最多带 ${RELIC_MAX} 件。见过的遗物会记在这里，集齐有成就。</p>
       <div class="codex sm">${RELICS.map(r => { const on = save.relicSeen.includes(r.id);
@@ -465,11 +464,12 @@ function battleReport() {
       ${chip("传说卡", legends.length + " 张", legends.length ? "#ffb040" : "")}
       ${chip("诅咒", Object.keys(S.curses || {}).length + " 张", Object.keys(S.curses || {}).length ? CURSE_COLOR : "")}
       ${chip("羁绊峰值", (S.bestSyn || 0) + " 个")}
+      ${chip("角色羁绊", (S.trBest || 0) + " 个 · 搭档 " + (S.pairBest || 0))}
       ${chip("星尘", S.dust)}
     </div>
     ${mvp ? `<div class="mvp"><canvas id="rep-mvp" aria-hidden="true"></canvas><div><b>MVP · ${mvp.def.name}</b>
       <span>造成伤害 ${R0((S.stats[mvp.def.id] || {}).dmg || 0)}${(S.stats[mvp.def.id] || {}).heal > 0 ? ` · 治疗 ${R0(S.stats[mvp.def.id].heal)}` : ""} · 击杀 ${(S.stats[mvp.def.id] || {}).kills || 0}</span></div></div>` : ""}
-    ${(S.log || []).length > 1 ? `<div class="curvebox"><b>晨星碑血量 / 等级曲线</b><canvas id="rep-curve" aria-hidden="true"></canvas></div>` : ""}
+    ${(S.log || []).length > 1 ? `<div class="curvebox"><b>晨星碑血量（蓝）· 战力（橙）· 等级（金柱）</b><canvas id="rep-curve" aria-hidden="true"></canvas></div>` : ""}
   </div>`;
 }
 function drawReport() {
@@ -480,7 +480,7 @@ function drawReport() {
   const w = cv.clientWidth || 420, h = 78;
   cv.width = R0(w * dpr); cv.height = R0(h * dpr);
   const g = cv.getContext("2d"); g.scale(dpr, dpr);
-  const log = S.log.concat([{ w: S.wave, hp: Math.max(0, S.crystal.hp / S.crystal.maxHp), kills: S.kills, lv: S.level }]);
+  const log = S.log.concat([{ p: teamGrowth().k, w: S.wave, hp: Math.max(0, S.crystal.hp / S.crystal.maxHp), kills: S.kills, lv: S.level }]);
   const n = log.length, maxLv = Math.max(2, ...log.map(p => p.lv));
   g.fillStyle = "#0e1018"; g.fillRect(0, 0, w, h);
   g.strokeStyle = "rgba(255,255,255,.07)"; g.lineWidth = 1;
@@ -495,8 +495,13 @@ function drawReport() {
   g.stroke();
   g.fillStyle = "#62b4ff";
   log.forEach((p, i) => { const y = 4 + (1 - p.hp) * (h - 10); g.fillRect(px(i) - 1.5, y - 1.5, 3, 3); });
+  // 战力（橙线）：每一波开始时全队相对开局的总战力
+  const maxP = Math.max(1.5, ...log.map(p => p.p || 1));
+  g.strokeStyle = "#ff9a3a"; g.lineWidth = 2; g.beginPath();
+  log.forEach((p, i) => { const y = h - 6 - ((p.p || 1) - 1) / (maxP - 1) * (h - 14); i ? g.lineTo(px(i), y) : g.moveTo(px(i), y); });
+  g.stroke();
   g.fillStyle = "#7a8396"; g.font = "10px sans-serif"; g.textAlign = "left";
-  g.fillText("第 1 波", 4, h - 3); g.textAlign = "right"; g.fillText("第 " + log[n - 1].w + " 波 · Lv" + log[n - 1].lv, w - 4, h - 3);
+  g.fillText("第 1 波", 4, h - 3); g.textAlign = "right"; g.fillText("第 " + log[n - 1].w + " 波 · Lv" + log[n - 1].lv + " · 战力 ×" + (log[n - 1].p || 1).toFixed(1), w - 4, h - 3);
 }
 let shownOver = null;
 // 一局结束：先把存档结算做完（settleRun，数据都在这一步写好，中途关页面也不会丢），再播通关剧情、出结算页

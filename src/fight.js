@@ -90,6 +90,7 @@ function addNum(x, y, v, color, big, key, maxHp) {
 // ---------- 伤害 ----------
 function killEnemy(e, src) {
   e.dead = true; S.kills++;
+  if (KILL_MARKS.includes(S.kills)) addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.6, text: "击败 " + S.kills, color: "#ffd860", life: 1.4, big: true });
   S.foeKill[e.type] = (S.foeKill[e.type] || 0) + 1;
   if (e.elite || isBoss(e)) { S.eliteKills = (S.eliteKills || 0) + 1; if (cl("lg_hunt")) { S.huntT = 12; addFx({ kind: "text", x: e.x, y: e.y - 1, text: "猎杀连击 · 攻击 +8%", color: "#ffd860", life: 1.1, big: true }); } }
   if (e === S.focus) S.focusKills = (S.focusKills || 0) + 1;
@@ -103,7 +104,7 @@ function killEnemy(e, src) {
   if (rl("rl_fang") && src && src.def && !src.dead && src.down <= 0) heal(src, src.maxHp * 0.08, true, src);
   if (S.riftDust > 0 && e.elite) { const g = Math.round(S.riftDust / 4); S.dust += g; S.riftDust -= g; addFx({ kind: "text", x: e.x, y: e.y - 0.8, text: "+" + g + " 星尘", color: "#ffd860", life: 1.1, big: true }); }
   // 星尘
-  let dust = Math.round((isBoss(e) ? SHOP.dustBoss : e.elite ? SHOP.dustElite : SHOP.dustPerKill * Math.max(1, Math.round(e.d.reward * 0.7))) * (cl("lg_greed") ? 2 : 1) * (1 + 0.15 * cl("loot")) * (cu("cu_greed") ? 2 : 1) * (rl("rl_compass") ? 1.35 : 1) * (wk("poor") ? 0.5 : 1));
+  let dust = Math.round((1 + tfTeam("dust")) * (isBoss(e) ? SHOP.dustBoss : e.elite ? SHOP.dustElite : SHOP.dustPerKill * Math.max(1, Math.round(e.d.reward * 0.7))) * (cl("lg_greed") ? 2 : 1) * (1 + 0.15 * cl("loot")) * (cu("cu_greed") ? 2 : 1) * (rl("rl_compass") ? 1.35 : 1) * (wk("poor") ? 0.5 : 1));
   if (ct("drought")) dust = Math.floor(dust * 0.6 + roll("shop"));   // 随机进位：平均正好 −40%，不会被四舍五入吃掉
   if (!e.summoned) { S.dust += dust; if (dust >= 4) addFx({ kind: "text", x: e.x + 0.2, y: e.y - 0.5, text: "+" + dust + " 星尘", color: "#ffd860", life: 1 }); }
   // 宝箱怪：额外翻一次牌
@@ -195,9 +196,10 @@ function hurt(e, amt, type, crit, src) {
   const byUnit = src && src.def && type !== "poison";
   if (byUnit) {
     if (type === "magic" && S.wx === "rain") amt *= 1.08;
+    if (src.tf) { if (type === "magic") amt *= 1 + tf(src, "spell"); if (e.hp < e.maxHp * 0.5) amt *= 1 + tf(src, "exec"); }
     if (e.elite || isBoss(e)) amt *= (1 + 0.25 * cl("hunter") + 0.05 * dk("boss")) * (rl("rl_badge") ? 1.3 : 1) * (cl("lg_hunt") ? 1.3 : 1);
     if (rl("rl_berserk") && !crit) { src.hitN = (src.hitN || 0) + 1; if (src.hitN % 8 === 0) { amt *= 3; crit = true; } }
-    if ((cl("crit") || cu("cu_moon") || dk("crit")) && !crit && roll("fight") < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon")) { amt *= 2 + 0.15 * cl("critdmg"); crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
+    if ((cl("crit") || cu("cu_moon") || dk("crit") || tf(src, "crit")) && !crit && roll("fight") < 0.08 * cl("crit") + 0.02 * dk("crit") + 0.25 * cu("cu_moon") + tf(src, "crit")) { amt *= 2 + 0.15 * cl("critdmg") + tf(src, "critDmg"); crit = true; if (cu("cu_moon")) hurtUnit(src, src.maxHp * 0.01, "poison"); }
     if (src.hero && sg("sg_as2") && !isBoss(e) && e.hp <= e.maxHp * 0.25 && e.hp > 0) { amt = e.hp + e.shield + 1; addFx({ kind: "text", x: e.x, y: e.y - 0.6, text: "处决", color: "#4fc0b0", life: 0.9, big: true }); }
     if (cl("freeze") && !e.d.unstoppable && roll("fight") < 0.06 * cl("freeze")) e.freezeT = Math.max(e.freezeT, 0.8 * (syn("frostbite") ? 1.5 : 1));
     if (cl("vamp") && !src.dead && src.down <= 0) heal(src, Math.min(amt, e.hp + e.shield) * 0.06 * cl("vamp") * (syn("bloodlust") ? (syn2("bloodlust") ? 3 : 2) : 1), true, src);
@@ -299,6 +301,7 @@ function hurtUnit(u, amt, type, from) {
   if (rl("rl_mirror")) amt *= 0.85;
   if (tal(u, "t_last") && u.hp < u.maxHp * 0.35) amt *= 0.75;
   amt *= 1 - marshalGuard(u);
+  amt *= 1 - tf(u, "dr");
   if (sg("sg_ma1")) amt *= Math.max(0.5, 1 - 0.08 * sg("sg_ma1"));
   amt *= 1 + 0.2 * cu("cu_blood");
   if (type === "magic" && hasTal(u, "lancer")) amt *= 0.6;
@@ -325,6 +328,7 @@ function heal(u, amt, quiet, src) {
   if (u.dead || u.down > 0) return;
   if (src && src.hero && sg("sg_pr2")) u.blessT = 6;
   if (S.wx === "heat") amt *= 0.9;
+  if (src) amt *= 1 + tf(src, "heal");
   const got = Math.min(amt, u.maxHp - u.hp);
   u.hp += got;
   if (src) addStat(src, "heal", got);
@@ -333,6 +337,7 @@ function heal(u, amt, quiet, src) {
 function hurtCrystal(amt, e) {
   if (S.over) return;
   if (S.shieldT > 0) amt *= 0.3;
+  amt *= 1 - tfTeam("crystalDr");
   if (syn("wall")) amt *= 0.85;
   if (cl("lg_ward")) amt *= 0.8;
   if (ab(20)) amt *= 1.3;
@@ -455,7 +460,7 @@ function pickTargets(u) {
   if (D.id === "hunter") return pool.sort((a, b) => first(a, b) || (isBoss(b) || b.elite) - (isBoss(a) || a.elite) || b.hp - a.hp).slice(0, 1);
   if (br(u, "archer", "B")) return pool.sort((a, b) => first(a, b) || b.hp - a.hp).slice(0, 1);
   pool.sort((a, b) => first(a, b) || toCrystal(a) - toCrystal(b));
-  return pool.slice(0, (D.id === "archer" ? (br(u, "archer", "A") ? 4 : u.lv >= 3 ? 2 : 1) : 1) + (u.hero ? sg("sg_ar1") : 0));
+  return pool.slice(0, (D.id === "archer" ? (br(u, "archer", "A") ? 4 : u.lv >= 3 ? 2 : 1) : 1) + (u.hero ? sg("sg_ar1") : 0) + tf(u, "extra"));
 }
 function strike(u, targets) {
   const D = u.def, R = uRange(u);
@@ -547,6 +552,7 @@ function useSkill(u) {
   const D = u.def, R = uRange(u);
   if (D.id === "summoner" && !summonGolem(u)) return;
   u.sp = 0; u.castT = CAST_POSE;
+  if (tfTeam("castSp")) for (const a of S.units) if (a !== u && !a.summon && alive(a) && a.skillT <= 0) a.sp = Math.min(a.def.sp, a.sp + tfTeam("castSp"));
   if (D.skill.dur) { u.skillT = (D.skill.dur + (br(u, "sword", "B") ? 6 : 0) + (br(u, "bard", "A") ? 6 : 0)) * (tal(u, "t_focus") ? 1.3 : 1); u.skillMax = u.skillT; }
   const ground = () => S.enemies.filter(e => hittable(e) && !e.d.flying && dist(u, e) <= R);
   if (D.id === "knight") heal(u, u.maxHp * 0.3, false, u);

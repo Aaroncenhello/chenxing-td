@@ -39,8 +39,8 @@ const { check, noErrors, report } = require('./lib');
   });
   console.log(JSON.stringify(o, null, 1));
   check(o.bad.length === 0, '每个事件的每个选项都能正常执行', o.bad.slice(0, 8));
-  // 抽到的事件可用选项不足 2 个时会跳过（设计如此），所以看第 5 波的事件有没有被处理
-  check(o.wave <= 5 || o.eventWave >= 5, '打过第 5 波后会处理事件', o);
+  // 抽到的事件可用选项不足 2 个时会跳过（设计如此），所以看第 7 波的事件有没有被处理（12.0：每 7 波一次）
+  check(o.wave <= 7 || o.eventWave >= 7, '打过第 7 波后会处理事件', o);
   check(o.seen.every(x => +x.split(':')[0] >= 5), '事件不会在第 5 波之前出现', o.seen);
   noErrors(errs);
   report('events');
