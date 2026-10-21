@@ -40,6 +40,18 @@ const r = await p.evaluate(() => {
   synKey = ''; updateSynBar(); out.chips = (document.getElementById('pi-syn').innerHTML.match(/class="sc/g) || []).length;
   out.guideHtml = traitGuideHtml(true).includes('近卫') && traitGuideHtml(false).includes('搭档');
   out.tagHtml = tagHtml('knight').includes('近卫');
+  // —— 12.2 羁绊可见性 ——
+  startRun(1, { hero: 'mage', charOpen: UNITS.map(u => u.id), assist: 0 }); const S2 = __td.S; S2.offer = null; S2.pending = 0; S2.cine = null; updateSyn();
+  const hn = traitHint('frost'); out.hintFields = hn.length === 3 && hn.every(h => 'tier1' in h && 'desc' in h && 'nextDesc' in h) && hn.some(h => h.up && h.desc);   // 学院法师带奥术/法师：诺艾尔(法师)加入 → 法师 1→2 ▲
+  out.pairHint = pairHint('frost').length === 1 && pairHint('frost')[0].p.id === 'p_ma_fr' && pairHint('knight').length === 0;
+  out.score = joinScore('frost') >= 3 && joinScore('frost') > joinScore('breaker');
+  S2.events.length = 0; addUnit(UNITS.find(u => u.id === 'frost'), false); updateSyn(); out.announce = S2.events.filter(e => e.type === 'trait').map(e => e.name).join(',');
+  S2.events.length = 0; updateSyn(); out.noRepeat = S2.events.filter(e => e.type === 'trait').length === 0;
+  out.goal = traitGoal(); handleEvents(); out.dots = tagDots('mage').split('<i ').length - 1;
+  piTeamKey = ''; teamKey = ''; updateTeam(); out.dotsInTeam = document.querySelectorAll('#team .dots i').length >= 3;
+  synKey = ''; updateSynBar(); const chip = document.querySelector('#pi-syn [data-pop], #syns [data-pop]'); out.popChip = !!chip;
+  if (chip) { showPop(chip.dataset.pop); out.pop = !document.getElementById('trpop').hidden && document.getElementById('trpop').textContent.length > 20; hidePop(); out.popHidden = document.getElementById('trpop').hidden; }
+  showPop('p:p_ma_fr'); out.popPair = /冰火交辉/.test(document.getElementById('trpop').textContent); hidePop();
   return out;
 });
 check(r.tags, '20 名英雄各带 3 个标签，标签都在羁绊表里');
@@ -55,6 +67,10 @@ check(r.capOk, '加成有上限');
 check(r.hint && r.bias, '选牌提示 + 招募偏向', r);
 check(r.noNaN, '跑 15 秒，数值没有 NaN');
 check(r.chips >= 4 && r.guideHtml && r.tagHtml, '看板有羁绊芯片，指南页和角色标签能生成', r.chips);
+check(r.hintFields && r.pairHint && r.score, '选牌提示带加成说明、搭档提示、推荐分', r);
+check(/法师|学院|奥术/.test(r.announce) && r.noRepeat, '羁绊升档时弹一次提示，不重复', r);
+check(r.dots === 3 && r.dotsInTeam, '队员栏头像带 3 个标签彩点', r);
+check(r.popChip && r.pop && r.popHidden && r.popPair, '点芯片弹出羁绊小卡，能收起；搭档小卡能弹出', r);
 // 经验曲线、三幕、波数拉长
 const r2 = await p.evaluate(() => {
   const out = {}; startRun(0, { hero: 'knight', charOpen: UNITS.map(u => u.id), assist: 0 }); const S = __td.S; S.offer = null; S.pending = 0; S.cine = null;

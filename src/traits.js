@@ -122,6 +122,7 @@ function updateTraits() {
   }
   for (const k in team) if (TRAIT_CAP[k] != null) team[k] = Math.min(TRAIT_CAP[k], team[k]);
   S.trN = N; S.tr = tier; S.trPairs = pairs; S.trTeam = team;
+  if (S.events) announceTraits(tier, pairs);
   const nT = TRAITS.filter(t => tier[t.id]).length, nP = Object.keys(pairs).length;
   S.trActive = nT + nP; S.trBest = Math.max(S.trBest || 0, nT); S.pairBest = Math.max(S.pairBest || 0, nP);
   if (S.events) {
@@ -159,9 +160,44 @@ function traitHint(id) {
   const alive = S.units.filter(u => !u.dead && !u.summon), out = [];
   for (const tg of tagsOf(id)) {
     const t = TRAIT_BY[tg]; if (!t) continue;
-    const n0 = alive.filter(u => tagsOf(u.def.id).includes(tg)).length, n1 = n0 + 1;
-    const up = t.tiers.some(x => x.n === n1);
-    out.push({ id: tg, name: tg, color: t.color, from: n0, to: n1, up, next: (t.tiers.find(x => x.n > n1) || {}).n || 0 });
+    const n0 = alive.filter(u => tagsOf(u.def.id).includes(tg)).length, n1 = n0 + 1, tier = (S.tr && S.tr[tg]) || 0;
+    let tier1 = 0; t.tiers.forEach((x, i) => { if (n1 >= x.n) tier1 = i + 1; });
+    const nx = t.tiers[tier1];   // 加入后的下一档
+    out.push({ id: tg, name: tg, color: t.color, from: n0, to: n1, up: tier1 > tier, tier, tier1, desc: tier1 > 0 ? t.tiers[tier1 - 1].desc : "", nextN: nx ? nx.n : 0, nextDesc: nx ? nx.desc : "" });
   }
   return out;
+}
+// 这名英雄加入后，会让哪些搭档生效（搭档的另一个人已经在队里、搭档还没生效）
+function pairHint(id) {
+  const alive = S.units.filter(u => !u.dead && !u.summon).map(u => u.def.id), out = [];
+  for (const p of PAIRS) { if (!p.ids.includes(id) || (S.trPairs && S.trPairs[p.id])) continue; const other = p.ids.find(x => x !== id); if (alive.includes(other)) out.push({ p, other, name: (UNITS.find(u => u.id === other) || {}).name }); }
+  return out;
+}
+// 选牌「推荐」用的分：升档越多、越高档分越高；搭档生效 +3；队里已有的标签 +1
+function joinScore(id) {
+  let s = 0; for (const h of traitHint(id)) s += h.up ? 3 + h.tier1 : h.from >= 1 ? 1 : 0;
+  return s + pairHint(id).length * 3;
+}
+// 角色的 3 个标签小彩点（队员栏用），生效的亮、没生效的暗；updateDots 每 0.1 秒刷新亮暗
+function tagDots(id) { return `<span class="dots">${tagsOf(id).map(tg => `<i data-tg="${tg}" style="--c:${(TRAIT_BY[tg] || {}).color || "#888"}"></i>`).join("")}</span>`; }
+function updateDots() { document.querySelectorAll(".dots i[data-tg]").forEach(el => el.classList.toggle("on", trTier(el.dataset.tg) > 0)); }
+// 经验条里的目标：再招 1 名某个标签的成员就能升一档（只算这局还没上场、已解锁的角色）
+function traitGoal() {
+  const here = S.units.filter(u => !u.summon).map(u => u.def.id), open = (S.charOpen || []).filter(id => !here.includes(id)); let best = null;
+  for (const t of TRAITS) {
+    const n = (S.trN && S.trN[t.id]) || 0, k = (S.tr && S.tr[t.id]) || 0, nx = t.tiers[k]; if (!nx || n < 1 || nx.n - n !== 1) continue;
+    const cand = open.filter(id => tagsOf(id).includes(t.id)); if (!cand.length) continue;
+    const sc = nx.n + (k ? 1 : 0); if (!best || sc > best.sc) best = { sc, text: `再来 1 名${t.id}成员（${cand.slice(0, 3).map(id => (UNITS.find(u => u.id === id) || {}).name).join("、")}），${t.id}升到 ${nx.n} 人档` };
+  }
+  return best ? best.text : "";
+}
+// 羁绊档位提升时提示一次（只在比这局之前达到过的最高档更高时）
+function announceTraits(tier, pairs) {
+  S.trSeen = S.trSeen || {};
+  for (const t of TRAITS) { const k = tier[t.id] || 0; if (k > (S.trSeen[t.id] || 0)) { S.trSeen[t.id] = k; const x = t.tiers[k - 1];
+    addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.4, text: `${t.id} ${x.n} 人档`, color: t.color, life: 1.6, big: true });
+    S.events.push({ type: "trait", name: t.id, n: x.n, desc: x.desc, color: t.color }); } }
+  for (const p of PAIRS) if (pairs[p.id] && !S.trSeen["p:" + p.id]) { S.trSeen["p:" + p.id] = 1;
+    addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.4, text: `搭档 · ${p.name}`, color: "#e8c860", life: 1.6, big: true });
+    S.events.push({ type: "trait", name: "搭档 · " + p.name, n: 0, desc: p.desc, color: "#e8c860" }); }
 }
