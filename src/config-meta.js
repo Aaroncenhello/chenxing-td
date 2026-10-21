@@ -138,6 +138,9 @@ const ACHV = [
   { id: "devourer", name: "星海终焉", desc: "通关第 12 关，击败星界吞噬者" },
   { id: "legend", name: "传说降临", desc: "一局内翻到 3 张传说卡" },
   { id: "synergy", name: "羁绊大师", desc: "一局内同时激活 4 个羁绊" },
+  { id: "trait4", name: "满编阵营", desc: "一局内凑出一个 4 人档的角色羁绊" },
+  { id: "trait5", name: "多线并进", desc: "一局内同时有 5 个角色羁绊生效" },
+  { id: "pair3", name: "搭档成双", desc: "一局内同时有 3 对搭档生效" },
   { id: "treasure", name: "开箱能手", desc: "累计打爆 10 只宝箱怪" },
   { id: "vigil", name: "长夜守望", desc: "在守望之战里撑过 20 波" },
   { id: "shop", name: "有钱能使", desc: "一局内在商店买满 5 次" },
@@ -199,7 +202,7 @@ const ENEMY_DESC = {
 // 守望之战：超长局，随机地图，25 波，中途多个首领与补给
 const VIGIL = { waves: 25, unlockAt: 3, bossAt: [8, 16, 25], supplyAt: [6, 12, 18, 23], hpStep: 0.27, budget: 1.32, crystalHp: 2400 };
 // 星尘：击杀掉落，波间商店用
-const SHOP = { everyWaves: 4, dustPerKill: 1, dustElite: 4, dustBoss: 25, start: 20,
+const SHOP = { everyWaves: 6, dustPerKill: 1, dustElite: 4, dustBoss: 25, start: 20,
   items: [
     { id: "card", name: "翻一张牌", desc: "立刻从三张卡里选一张", cost: 45 },
     { id: "rare", name: "稀有货架", desc: "只出稀有及以上的卡", cost: 80 },

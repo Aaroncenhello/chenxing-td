@@ -374,3 +374,9 @@ const PERKS = [
   { id: "merchant", name: "商路畅通", desc: "开局多 30 星尘，商店价格 −20%", cost: 3 },
   { id: "lucky", name: "时来运转", desc: "翻到稀有、传说卡的几率提高", cost: 4 },
 ];
+// 12.0：普通关卡拉长到 21–28 波（原来 10–22 波）；baseWaves 是原来的波数，wk = 新 / 旧，出怪强度按原来的进度算（所以只是拉长、更平缓）
+for (const s of STAGES) { s.baseWaves = s.waves; s.waves = Math.round(22 + (s.waves - 12) * 0.6); s.wk = s.waves / s.baseWaves; }
+// 12.0：经验系数。xpNeedOf(lv) = 22 × 1.5^(lv-1) × xpK；xpK 按「这一关的出怪总量」算，让每关的选牌次数大致一样（约 8 次）
+{ const B = s => { let t = 0; for (let w = 1; w <= s.waves; w++) t += (2.5 + (w / s.wk) * 1.8) * s.budget; return t; }, B1 = B(STAGES[0]);
+  for (const s of STAGES) s.xpK = Math.round(1.68 * B(s) / B1 * 100) / 100; }
+

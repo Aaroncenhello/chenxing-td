@@ -71,7 +71,7 @@ const GFXcap = () => 800;   // 高画质上限 700，加上横幅等关键特效
       T.step(1 / 30); const again = S.fx.filter(f => f.kind === 'banner' && !/天气/.test(f.text)).length;
       const ports = [...info.ports.keys()].every(i => PORTALS[i]);
       return { kind: info.kind, banner, again, ports }; };
-    out.tide = probe(11, 4); out.boss = probe(3, 11);
+    out.tide = probe(11, 4); out.boss = probe(3, STAGES[3].waves - 1);
     for (let i = 0; i < 8 && (!out.plain || out.plain.kind); i++) out.plain = probe(0, 1);   // 第 1 波偶尔随机成精英波，多试几次
     return out;
   });

@@ -68,6 +68,7 @@ const BOUNTY_TYPES = [
   { id: "noreroll", make: () => ({ key: "noreroll", text: "一次都不重抽，通关任意关卡", ok: R => R.win && !S.rerollsUsed && R.mode !== "endless" }) },
   { id: "nospell", make: () => ({ key: "nospell", text: "不放陨星术和圣愈之光，通关任意关卡", ok: R => R.win && !S.usedSpell && R.mode !== "endless" }) },
   { id: "hard", make: () => ({ key: "hard", text: "在困难或噩梦难度通关任意主线关卡", ok: R => mainWin(R) && S.diff >= 1 }), need: 4 },
+  { id: "trait", make: () => ({ key: "trait3", text: "一局里同时有 3 个角色羁绊生效（阵营、职业、特质）", ok: () => (S.trBest || 0) >= 3 }) },
   { id: "legend", make: () => ({ key: "legend2", text: "一局里拿到 2 张传说卡", ok: () => S.legends >= 2 }) },
   { id: "evo", make: () => ({ key: "evo", text: "一局里拿到一张进化卡（技能卡升满级后出现）", ok: () => Object.keys(S.cards).some(id => id.startsWith("ev_")) }), need: 4 },
   { id: "lv", make: r => { const n = [14, 16][Math.floor(r() * 2)]; return { key: "lv" + n, text: `一局里升到 ${n} 级`, ok: () => S.level >= n }; } },

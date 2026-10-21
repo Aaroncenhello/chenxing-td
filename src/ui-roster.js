@@ -179,6 +179,7 @@ function showRoster(id) {
       <div class="rlv"><b>Lv ${L.lv}</b><span>${L.lv >= PROG.max ? "已满级" : `经验 ${L.into} / ${L.need}`}</span></div><div class="meter"><i style="width:${pct}%;background:var(--gold)"></i></div>
       ${L.lv >= PROG.max ? (() => { const A = awkInfo(exp); return `<div class="rlv awk"><b>觉醒 ${"★".repeat(A.a)}${"☆".repeat(AWK.max - A.a)}</b><span>${A.full ? "已完全觉醒" : `觉醒经验 ${A.into} / ${AWK.need}`}</span></div><div class="meter"><i style="width:${A.full ? 100 : Math.round(A.into / AWK.need * 100)}%;background:linear-gradient(90deg,#ffd860,#ff8ac0)"></i></div>
         <p class="awkp">觉醒加成：攻击、生命 +${Math.round(A.a * AWK.perLv * 100)}%${A.a >= AWK.auraLv ? " · 金色光环" : ""}${A.a >= AWK.spLv ? " · 技力回复 +20%" : ""}</p>`; })() : ""}
+      <div class="tags">${tagHtml(id)}</div>
       <p class="bio">${BIO[id]}</p></div>
     <div class="rright">
       <div class="rstats">${st("生命", D.hp, k)}${st("攻击", D.atk, k)}${st("防御", D.def, 1)}${st("法抗", D.res, 1)}

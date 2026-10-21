@@ -27,7 +27,8 @@ function renderInfo() {
   }
   const D = u.def, bIdx = u.branch ? (u.branch === "A" ? 0 : 1) : -1;
   const head = `<h3><canvas class="ipt" id="i-pt" aria-hidden="true"></canvas><span>${D.name} <small>${D.cls}${u.hero ? " · 本局英雄" : u.summon ? " · 召唤物" : ""}</small></span>${u.summon ? "" : `<span class="lvtag">Lv${clv(D.id)} · ${u.lv >= 4 ? D.branches[bIdx].name : u.lv + " 阶"}</span>`}</h3>`;
-  const stats = `<div class="row"><span>${D.dmg === "heal" ? "治疗" : "攻击"} ${R0(uAtk(u))}</span><span>防御 ${R0(uDef(u))}</span><span>攻速 ${(1 / uInterval(u)).toFixed(2)}/秒</span><span>范围 ${uRange(u).toFixed(1)}</span>${D.place === "ground" ? `<span>拦截 ${uBlock(u)}</span>` : ""}</div>`;
+  const tagRow = u.summon ? "" : `<div class="tags">${tagHtml(D.id)}</div>`;
+  const stats = tagRow + `<div class="row"><span>${D.dmg === "heal" ? "治疗" : "攻击"} ${R0(uAtk(u))}</span><span>防御 ${R0(uDef(u))}</span><span>攻速 ${(1 / uInterval(u)).toFixed(2)}/秒</span><span>范围 ${uRange(u).toFixed(1)}</span>${D.place === "ground" ? `<span>拦截 ${uBlock(u)}</span>` : ""}</div>`;
   if (u.summon) {
     infoEl.innerHTML = head + `<div class="row"><span>生命</span><span id="i-hp"></span></div><div class="meter"><i id="i-hpbar" style="background:var(--ok)"></i></div>
       <div class="row"><span>剩余时间</span><span id="i-life"></span></div><div class="meter"><i id="i-lifebar" style="background:#b8845a"></i></div>` + stats +
@@ -103,13 +104,14 @@ function updateOffer() {
   $("cards3").classList.toggle("n4", S.offer.length > 3);
   $("cards3").classList.toggle("banishing", banishMode);   // 混入诅咒卡时变成 2x2 的 4 选 1
   $("lu-tip").innerHTML = S.offer.length > 3 ? "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> 选卡，<kbd>R</kbd> 重抽，<kbd>X</kbd> 放逐" : "按 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> 选卡，<kbd>R</kbd> 重抽，<kbd>X</kbd> 放逐";
-  const title = S.offerRare ? "稀有货架，选一张" : S.level <= 1 && !S.kills ? "开局翻牌，选一张" : `升到 Lv ${S.level}，选一张卡`;
+  const title = S.offerRare ? "稀有货架，选一张" : S.level <= 1 && !S.kills ? "开局翻牌，选一张" : `升到 Lv ${S.level}（等级加成：攻击、生命 +${Math.round(BAL.levelBonus * (S.level - 1) * 100)}%），选一张卡`;
   setText("lu-title", title + (S.pending > 1 ? `（还有 ${S.pending - 1} 次）` : ""));
   $("cards3").innerHTML = S.offer.map((p, i) => {
     const c = cardInfo(p), r = p.rare || 0, R = RARITY[r] || { name: "诅咒", color: CURSE_COLOR };
     const tag = p.card && p.card.evo ? `<span class="rt" style="background:#ffd860">进化</span>` : r ? `<span class="rt" style="background:${R.color}">${R.name}</span>` : "";
     const body = c.curse ? `<span>${p.curse.good}<em class="bad">代价：${p.curse.bad}</em></span>` : `<span>${c.desc}</span>`;
-    const h = synHint(p), hint = h ? `<em class="sh${h.done ? " done" : ""}" style="--g:${h.g.color}">${h.done ? "凑齐羁绊 · " + h.g.name : `羁绊 ${h.g.name} ${h.a}/${h.b}`}</em>` : "";
+    const th = p.join ? traitHint(p.def.id).filter(x => x.from >= 1 || x.up) : [], thHtml = th.length ? `<em class="sh th">${th.map(x => `<span style="color:${x.color}">${x.name} ${x.from}→${x.to}${x.up ? " ▲" : ""}</span>`).join("　")}</em>` : "";
+    const h = synHint(p), hint = thHtml + (h ? `<em class="sh${h.done ? " done" : ""}" style="--g:${h.g.color}">${h.done ? "凑齐羁绊 · " + h.g.name : `羁绊 ${h.g.name} ${h.a}/${h.b}`}</em>` : "");
     return `<button class="pcard r${r}${c.sig ? " sig" : ""}" data-pick="${p.id}" style="--c:${c.color}"><span class="key">${i + 1}</span>${tag}<canvas id="lu-${i}" aria-hidden="true"></canvas>
       <div><small>${KIND_NAME[c.kind] || "诅咒"}</small><b>${c.name}</b>${body}${hint}</div></button>`;
   }).join("");
@@ -178,19 +180,42 @@ $("btn-shopgo").addEventListener("click", () => { closeShop(); $("shopbox").data
 function synState() {
   return SYNERGY.map(g => { let a = 0, b = 1; try { [a, b] = g.prog(); } catch (e) {} return { g, a: Math.min(a, b), b, on: !!(S.syn && S.syn[g.id]), on2: !!(S.syn2 && S.syn2[g.id]) }; });
 }
-function synChips() {
+// 角色羁绊（阵营 / 职业 / 特质）：生效的在前，再是已经有 2 人以上、还差一点的；然后是搭档
+function traitState() {
+  const N = (S && S.trN) || {}, K = (S && S.tr) || {};
+  return TRAITS.map(t => { const n = N[t.id] || 0, k = K[t.id] || 0, nx = (t.tiers[k] || {}).n || 0; return { t, n, k, nx }; });
+}
+function traitChips(max) {
+  const list = traitState().filter(x => x.k > 0 || x.n >= 2).sort((a, b) => (b.k > 0) - (a.k > 0) || b.k - a.k || b.n - a.n);
+  const pairs = PAIRS.filter(p => S && S.trPairs && S.trPairs[p.id]).map(p => `<span class="sc on pair" style="--c:#e8c860" title="搭档 · ${p.desc}">${p.name.slice(0, 2)}<u>${p.name.slice(2)}</u></span>`).join("");
+  return list.map(x => `<span class="sc${x.k ? " on" : ""}" style="--c:${x.t.color}" title="${x.t.axis} · ${x.t.id}：${x.k ? x.t.tiers[x.k - 1].desc : "再来 " + (x.nx - x.n) + " 人：" + x.t.tiers[0].desc}">${x.t.id.slice(0, 2)}<u>${x.t.id.slice(2)}</u><i>${x.n}${x.nx ? "/" + x.nx : "✓"}</i></span>`).slice(0, max || 99).join("") + (max ? "" : pairs);
+}
+function synChips(max) {
   const list = synState().filter(x => x.on || x.a > 0).sort((x, y) => (y.on - x.on) || (x.b - x.a) - (y.b - y.a));
-  return list.map(x => `<span class="sc${x.on ? " on" : ""}" style="--c:${x.g.color}" title="${x.g.need}：${x.g.desc}">${x.on ? "✓" : ""}${x.g.name.slice(0, 2)}<u>${x.g.name.slice(2)}</u>${x.on2 ? "Ⅱ" : ""}${x.on ? "" : `<i>${x.a}/${x.b}</i>`}</span>`).join("")
+  if (max) return traitChips(max) || `<span class="sc none">还没有羁绊</span>`;
+  return (traitChips() + list.map(x => `<span class="sc${x.on ? " on" : ""}" style="--c:${x.g.color}" title="${x.g.need}：${x.g.desc}">${x.on ? "✓" : ""}${x.g.name.slice(0, 2)}<u>${x.g.name.slice(2)}</u>${x.on2 ? "Ⅱ" : ""}${x.on ? "" : `<i>${x.a}/${x.b}</i>`}</span>`).join(""))
     || `<span class="sc none">还没有羁绊</span>`;
 }
 let synKey = "";
 function updateSynBar() {
   if (!S) return;
-  const st = synState(), key = st.map(x => x.a + (x.on ? "!" : "") + (x.on2 ? "2" : "")).join(",");
+  const st = synState(), key = st.map(x => x.a + (x.on ? "!" : "") + (x.on2 ? "2" : "")).join(",") + "|" + traitState().map(x => x.n + ":" + x.k).join(",") + "|" + Object.keys(S.trPairs || {}).join(",");
   if (synKey === key) return;
   synKey = key;
-  const html = `<b class="sch">羁绊<button class="sc help" data-synhelp aria-label="羁绊说明">?</button></b>${synChips()}`;
-  for (const id of ["syns", "pi-syn", "h-syn"]) { const el = $(id); if (el) el.innerHTML = html; }
+  const head = `<b class="sch">羁绊<button class="sc help" data-synhelp aria-label="羁绊说明">?</button></b>`, html = head + synChips();
+  for (const id of ["syns", "pi-syn"]) { const el = $(id); if (el) el.innerHTML = html; }
+  const hs = $("h-syn"); if (hs) hs.innerHTML = head + synChips(4);   // 横屏全屏左边的空间小：只放最靠前的 4 个，点一下看全部
+}
+function traitGuideHtml(live) {
+  const LS = live ? S : null, N = (LS && LS.trN) || {}, K = (LS && LS.tr) || {}, here = LS ? LS.units.filter(u => !u.dead && !u.summon).map(u => u.def.id) : [];
+  const mem = ids => ids.map(id => `<span class="${here.includes(id) ? "in" : ""}">${(UNITS.find(u => u.id === id) || {}).name}</span>`).join("");
+  const sect = ax => `<h3 class="axh">${ax}羁绊</h3><div class="codex syng">${TRAITS.filter(t => t.axis === ax).map(t => { const n = N[t.id] || 0, k = K[t.id] || 0;
+    return `<div class="cx${k ? " on" : ""}" style="--c:${t.color}"><div><b style="color:${t.color}">${k ? "✓ " : ""}${t.id}${LS ? `<span class="sp">${n} 人</span>` : ""}</b>
+      <p class="mem">${mem(UNITS.filter(u => tagsOf(u.id).includes(t.id)).map(u => u.id))}</p>
+      ${t.tiers.map((x, i) => `<p class="eff${k === i + 1 ? " cur" : ""}">${k === i + 1 ? "✓ " : ""}${x.n} 人：${x.desc}</p>`).join("")}</div></div>`; }).join("")}</div>`;
+  const pairs = `<h3 class="axh">搭档</h3><div class="codex syng">${PAIRS.map(p => { const on = LS && LS.trPairs && LS.trPairs[p.id];
+    return `<div class="cx${on ? " on" : ""}" style="--c:#e8c860"><div><b style="color:#e8c860">${on ? "✓ " : ""}${p.name}</b><p class="mem">${mem(p.ids)}</p><p class="eff${on ? " cur" : ""}">两人同时在场：${p.desc}</p></div></div>`; }).join("")}</div>`;
+  return sect("阵营") + sect("职业") + sect("特质") + pairs + `<h3 class="axh">技能羁绊</h3>`;
 }
 function synGuideHtml(live) {
   const st = live ? synState() : null;
@@ -214,10 +239,18 @@ function rulesHtml() {
 }
 function showSynGuide() {
   if (!S || S.over || S.offer || S.shop || S.event || S.cine) return;
-  openOverlay(`<h2>本局规则与羁绊</h2>${rulesHtml()}<p>羁绊凑齐条件后自动生效，一直持续到条件不满足为止（例如前排倒下）。数字是这局现在的进度。</p>
-    ${synGuideHtml(true)}<div class="btns"><button class="primary" id="btn-synback">返回战斗</button></div>`);
+  openOverlay(`<h2>本局规则与羁绊</h2>${rulesHtml()}<p>每名英雄带阵营、职业、特质三个标签，队里同标签的人越多，效果越强。技能羁绊靠拿齐技能卡。条件不满足（例如有人倒下）时效果会暂时消失，数字是这局现在的进度。</p>
+    ${traitGuideHtml(true)}${synGuideHtml(true)}<div class="btns"><button class="primary" id="btn-synback">返回战斗</button></div>`);
 }
 document.addEventListener("click", ev => { if (ev.target.closest("[data-synhelp], .syns, #pi-syn, #h-syn")) showSynGuide(); });
+// 进入新一幕：全屏金色闪一下，晨星碑周围一圈光
+function actFlash(a) {
+  const el = $("cele"); if (!el) return;
+  el.style.background = "radial-gradient(circle at 50% 50%, rgba(255,216,96,.5), transparent 75%)";
+  el.classList.remove("go"); void el.offsetWidth; el.classList.add("go");
+  addFx({ kind: "ring", x: CRYSTAL.x, y: CRYSTAL.y, color: "#ffd860", life: 0.8, r0: 0.3, r1: 4.2, fill: true });
+  burst(CRYSTAL.x, CRYSTAL.y, "#ffe38a", 30, 4, 0.9, 0.08);
+}
 // 选中一张卡的庆祝：全屏闪一下对应颜色；传说卡在晨星碑周围再炸一圈金光
 const CELE_COL = { 0: "rgba(255,248,220,.5)", 1: "rgba(98,180,255,.55)", 2: "rgba(255,200,80,.75)", 3: "rgba(224,40,80,.6)" };
 function celebratePick(p) {
@@ -406,7 +439,7 @@ function unitCardHtml(u) {
   const D = u.def;
   return `<div class="uc-h" style="--c:${D.color}"><b>${D.name}</b><span>${D.cls} · ${DMG_NAME[D.dmg] || ""}${u.hero ? " · 英雄" : ""}</span>${u.summon ? "" : `<em>Lv${clv(D.id)}${awk(D.id) ? " · 觉醒" + awk(D.id) : ""}</em>`}<em class="rk">${unitRank(u)}</em></div>
     <div class="uc-s">${unitStats(u).map(([k, v]) => `<span>${k} <b>${v}</b></span>`).join("")}</div>
-    ${u.summon ? "" : `<div class="uc-k">技能 · ${D.skill.name}：${D.skill.desc}</div>`}`;
+    ${u.summon ? "" : `<div class="uc-k">技能 · ${D.skill.name}：${D.skill.desc}</div><div class="tags">${tagHtml(D.id)}</div>`}`;
 }
 // 选中的队员（没选就看英雄）：竖屏写在信息区里，横屏全屏在战场左上角弹一张小卡；每 0.25 秒刷新一次
 function updateUnitCards(now) {

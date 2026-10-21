@@ -5,7 +5,7 @@ const path = require('path'); const GAME = 'file://' + path.resolve(__dirname, '
 await p.goto(GAME); await p.evaluate(() => localStorage.setItem('chenxing-td-v2', JSON.stringify({ tutorial: true, ver: 14, stars: [], bonusStars: 70 }))); await p.reload();
 await p.waitForFunction(() => typeof lpcReady !== 'undefined' && lpcReady, null, { timeout: 15000 }).catch(() => {});
 const r = await p.evaluate(async () => {
-  const out = {}; localStorage.setItem('chenxing-td-news', '12.0');
+  const out = {}; localStorage.setItem('chenxing-td-news', '12.1');
   out.defaults = UNITS.every(u => skinOwned(loadSave(), u.id, 0)) && UNITS.every(u => !skinOwned(loadSave(), u.id, 1));
   out.rules = UNITS.every(u => SKIN_DEF[u.id] && SKIN_DEF[u.id].names.length === 2 && (skinRule(u.id).stars || skinRule(u.id).win || skinRule(u.id).awk));
   // 星星兑换（剑士 20★）：先把现有星星花光再试

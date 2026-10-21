@@ -4,7 +4,7 @@ const { chromium } = require('playwright'); const { check, noErrors, report } = 
 await p.goto('file://' + require('path').resolve(__dirname, '../dist/chenxing.html'));
 await p.evaluate(() => localStorage.setItem('chenxing-td-v2', JSON.stringify({ tutorial: true, ver: 13, story: ['pre0'] }))); await p.reload(); await p.waitForTimeout(400);
 const r = await p.evaluate(async () => {
-  const out = {}; localStorage.setItem('chenxing-td-news', '12.0'); closeOverlay();
+  const out = {}; localStorage.setItem('chenxing-td-news', '12.1'); closeOverlay();
   __td.newRun(0, { hero: 'knight', charLv: {}, charAwk: {}, assist: 0 }); const S = __td.S; S.pending = 0; S.offer = null; S.cine = null;
   // 1) 翻牌 → 选一张伙伴卡 → 有飞牌特效和落地圈
   S.pending = 1; __td.openOffer(0, true); const offer = S.offer; out.offer = !!offer;

@@ -42,6 +42,7 @@ function step(dt) {
   S.t += dt;
   S.synT = (S.synT || 0) - dt;
   if (S.synT <= 0) { S.synT = 0.5; updateSyn(); }
+  traitStep(dt);
   for (const k in S.spells) S.spells[k] = Math.max(0, S.spells[k] - dt);
   S.hitFlash = Math.max(0, S.hitFlash - dt);
   if (S.shieldT > 0) S.shieldT -= dt;
@@ -167,7 +168,7 @@ function step(dt) {
       if (u.skillT > 0) {
         u.skillT = Math.max(0, u.skillT - dt);
         if (u.skillT === 0 && hasTal(u, "bard")) for (const a of S.units) if (a !== u && !a.summon && alive(a) && dist(u, a) <= uRange(u) && a.skillT <= 0) { a.sp = Math.min(a.def.sp, a.sp + 8); addFx({ kind: "text", x: a.x, y: a.y - 0.5, text: "技力 +8", color: "#f07aa8", life: 0.9 }); }
-      } else u.sp = Math.min(u.def.sp, u.sp + dt * (rl("rl_hourglass") ? 1.3 : 1) * (bardSp(u) ? 1.3 : 1) * (1 + 0.3 * cl("sp")) * (tal(u, "t_sp") ? 1.3 : 1) * (S.buff.sp || 1) * (S.resoT > 0 ? 2 : 1) * (1 + awkSp(u)));
+      } else u.sp = Math.min(u.def.sp, u.sp + dt * (rl("rl_hourglass") ? 1.3 : 1) * (bardSp(u) ? 1.3 : 1) * (1 + 0.3 * cl("sp")) * (1 + tf(u, "sp")) * (tal(u, "t_sp") ? 1.3 : 1) * (S.buff.sp || 1) * (S.resoT > 0 ? 2 : 1) * (1 + awkSp(u)));
       if (u.auto && u.skillT <= 0 && u.sp >= u.def.sp && autoWant(u)) useSkill(u);
     }
     u.atkCd -= dt;

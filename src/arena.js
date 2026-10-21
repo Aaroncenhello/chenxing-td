@@ -41,6 +41,7 @@ const syn = id => !!(S.syn && S.syn[id]);
 const ct = id => !!(S && S.contracts && S.contracts.includes(id));   // 自选契约
 const syn2 = id => !!(S.syn2 && S.syn2[id]);   // 羁绊第二档
 function updateSyn() {
+  updateTraits();
   const o = {}; let n = 0;
   for (const g of SYNERGY) { try { if (g.on()) { o[g.id] = 1; n++; } } catch (e) {} }
   const was = S.syn || {}, was2 = S.syn2 || {}, o2 = {};
@@ -93,6 +94,8 @@ function uMaxHp(u) {
   h *= Math.max(0.2, 1 - 0.3 * cu("cu_frenzy"));
   if (syn("scholar")) h *= 1.15;
   if (cl("lg_bond")) h *= 1 + 0.08 * S.allies;
+  h *= 1 + tf(u, "hp");
+  if (!u.summon) h *= levelK();
   return Math.round(h);
 }
 const br = (u, id, b) => u.def.id === id && u.branch === b;
@@ -148,6 +151,8 @@ function uAtk(u) {
   if (syn("legendary")) a *= 1.2;
   if (syn("arcane") && u.def.dmg === "magic") a *= 1.25;
   if (hasTal(u, "mech") && u.hp < u.maxHp * 0.5) a *= 1;
+  a *= 1 + tf(u, "atk");
+  if (!u.summon) a *= levelK();
   return a;
 }
 function uDef(u) {
@@ -161,6 +166,7 @@ function uDef(u) {
   d *= Math.max(0.2, 1 - 0.3 * cu("cu_haste"));
   if (syn("wall")) d *= 1.35;
   if (u.hero && sg("sg_me1")) d *= 1 + 0.2 * sg("sg_me1");
+  d *= 1 + tf(u, "def");
   return d;
 }
 const uRes = u => u.def.res + 8 * cl("armor") + 10 * cl("res") + (syn("wardguard") ? (syn2("wardguard") ? 20 : 10) : 0);
@@ -182,7 +188,7 @@ function uInterval(u) {
   i /= S.buff.aspd || 1;
   if (br(u, "chrono", "A")) i *= 0.8;
   i /= 1 + chronoAura(u);
-  return i / (1 + bardAura(u)) / (1 + 0.09 * cl("aspd")) / (1 + 0.02 * dk("aspd")) / (rl("rl_boots") ? 1.15 : 1) / (syn("arcane") && u.def.dmg === "magic" ? 1 : 1);
+  return i / (1 + tf(u, "aspd")) / (1 + bardAura(u)) / (1 + 0.09 * cl("aspd")) / (1 + 0.02 * dk("aspd")) / (rl("rl_boots") ? 1.15 : 1) / (syn("arcane") && u.def.dmg === "magic" ? 1 : 1);
 }
 function uRange(u) {
   let r = u.def.range + (u.def.place === "ground" ? 0.25 : 0.5) * cl("range");
@@ -194,6 +200,7 @@ function uRange(u) {
   if (sg("sg_bd1") && u.def.id === "bard") r += 0.4 * sg("sg_bd1");
   if (tal(u, "t_range")) r += 0.5;
   if (syn("volley") && u.def.place === "high") r += 0.4;
+  r += tf(u, "range");
   return r;
 }
 const uTaunt = u => (u.def.taunt || 0) + (u.def.place === "ground" ? 0.1 * cl("range") : 0);
@@ -203,12 +210,12 @@ const uSplash = u => ((br(u, "mage", "A") ? 2 : br(u, "frost", "B") ? 1.2 : u.de
 const eAtk = e => e.d.atk * (e.warcry ? 1.25 : 1) * (e.elite ? ELITE.atk : 1) * Math.sqrt(e.hpK) * S.diffK.atk * (e.enraged ? 1.3 : 1) * (e.howlUntil > S.t ? 1.2 : 1);
 const slowAura = e => (toCrystal(e) <= 3.5 ? 1 - Math.min(0.5, 0.12 * cl("slow")) : 1);
 const chillOf = e => 1;
-const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (e.howlUntil > S.t ? 1.12 : 1) * (S.wx === "blizzard" ? 0.92 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ct("swift") ? 1.15 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e);
+const eSpeed = e => e.d.speed * (hasAfx(e, 'swift') ? 1.35 : 1) * (e.warcry ? 1.15 : 1) * (S.slowWaves > 0 ? (S.eventSlowK || 0.78) : 1) * (1 + 0.18 * cu("cu_whisper")) * (e.slowT > 0 && !hasAfx(e, 'swift') ? (e.slowK || 0.6) : 1) * (e.enraged ? 1.5 : 1) * (e.howlUntil > S.t ? 1.12 : 1) * (S.wx === "blizzard" ? 0.92 : 1) * (S.mod === "fast" ? 1.3 : 1) * (ct("swift") ? 1.15 : 1) * (ab(6) ? 1.1 : 1) * (wk("rush") ? 1.3 : 1) * (e.under ? e.d.burrow.speed : 1) * slowAura(e) * hazSlow(e) * (1 - tfTeam("slow") * (isBossType(e.type) ? 0.5 : 1));
 const corrodeK = e => (e.corrode && e.corrode.t > 0 ? e.corrode.k : 0);
 const eDef = e => (e.d.def + (S.mod === "tough" ? 150 : 0)) * (ab(19) ? 1.2 : 1) * (1 - corrodeK(e)) * (1 - 0.15 * cl("pierce")) * (syn("inferno") && e.burn > 0 ? (syn2("inferno") ? 0.7 : 0.8) : 1) * (syn("corrosive") && corrodeK(e) > 0 ? (syn2("corrosive") ? 0.75 : 0.85) : 1);
 const corrodeOf = u => (br(u, "alchemist", "A") ? 0.55 : u.lv >= 3 ? 0.4 : 0.25) + (u.hero ? 0.1 * sg("sg_al1") : 0);
 const maxAllies = () => RULES.maxAllies + 2 * cl("lg_army") - (ct("fewer") ? 1 : 0);
-const reviveT = () => cl("lg_phoenix") ? 3 : RULES.revive * (1 - 0.06 * dk("rally")) * (1 - 0.25 * cl("revive")) * (ab(15) ? 1.5 : 1);
+const reviveT = () => cl("lg_phoenix") ? 3 : RULES.revive * (1 - tfTeam("revive")) * (1 - 0.06 * dk("rally")) * (1 - 0.25 * cl("revive")) * (ab(15) ? 1.5 : 1);
 // 关卡强度在前 6 波内逐渐拉满，避免后期关卡一开局就压死人
 const stageHp = () => 1 + (ST.hp - 1) * Math.min(1, (S.wave || 1) / 6);
 // 技能威力跟着关卡强度走，但增长比敌人血量慢一点：长局里要靠角色本身的输出
@@ -289,6 +296,7 @@ function newRun(stage, opts) {
   initHaz(ST.haz);
   genWaves();
   S.crystal.maxHp = Math.round(ST.crystalHp * (1 + 0.06 * dk("walls")) * (S.mod === "rich" ? 0.5 : 1) * (ab(10) ? 0.8 : 1) * (1 + (opts.assist ? ASSIST[opts.assist - 1].hp : 0)));
+  S.xpK = opts.endless || opts.vigil ? 1 : (ST.xpK || 1) * (opts.exped ? Math.min(1, opts.exped.waves / STAGES[stage].waves) : 1);
   S.xpNeed = xpNeedOf(1);
   S.crystal.hp = S.crystal.maxHp;
   addUnit(heroDef, true);
@@ -298,7 +306,14 @@ function newRun(stage, opts) {
   if (wk("cursed")) for (let i = 0; i < 2; i++) { const cp = cursePool(); if (cp.length) pickCard(cp[Math.floor(roll("card") * cp.length)].id, true); }
   S.pending = Math.max(0, 1 + dk("prep") - (ab(5) ? 1 : 0));   // 开局先翻一张牌（深渊 5 层起少一张）
 }
-const xpNeedOf = lv => Math.round((12 + 4 * lv + 0.25 * lv * lv) * (S && S.abyss >= 11 ? 1.15 : 1));   // 10.1：升级明显变慢，翻牌次数大约少三分之一
+// 12.0：越升越贵（每级比上一级多 50%），再乘按关卡波数算的系数 S.xpK（newRun 里定），目标是一局 7–9 次选牌
+// 12.0：队伍等级加成，每升一级全队攻击、生命各 +LEVEL_BONUS（升级次数变少了，每次升级的分量更重）
+const BAL = { xpR: 1.5, levelBonus: 0.2, act: [1, 1.12, 1.3] };   // 平衡旋钮（sim 可以用 PATCH 改）
+// 三幕：前 1/3 起步，中 1/3 成型，后 1/3 最后一段；进入第二、三幕时全队攻击和生命再 +12% / +30%（无尽和守望不分幕）
+const ACTS = [{ name: "起步", tip: () => "敌人较弱，先把队伍凑起来" }, { name: "成型", tip: () => `全队攻击、生命 +${Math.round((BAL.act[1] - 1) * 100)}%，敌人开始变强` }, { name: "最后一段", tip: () => `全队攻击、生命 +${Math.round((BAL.act[2] - 1) * 100)}%，最后一波有首领` }];
+const actOf = w => { const t = ST.waves; return w <= Math.round(t * 0.34) ? 0 : w <= Math.round(t * 0.68) ? 1 : 2; };
+const levelK = () => (1 + BAL.levelBonus * Math.max(0, (S && S.level || 1) - 1)) * (S && S.act ? BAL.act[S.act] : 1);
+const xpNeedOf = lv => Math.round(22 * Math.pow(S && (S.endless || S.vigil) ? 1.15 : BAL.xpR, lv - 1) * (S && S.xpK || 1) * (S && S.abyss >= 11 ? 1.15 : 1));
 const totalWaves = () => (S.endless ? Infinity : ST.waves);
 
 // ---------- 角色 ----------
@@ -380,11 +395,12 @@ function reviveUnit(u) {
 }
 
 // ---------- 经验和翻牌 ----------
+function refreshMaxHp() { for (const u of S.units) { if (u.summon || !(u.maxHp > 1)) continue; const f = u.hp / u.maxHp; u.maxHp = uMaxHp(u); if (!u.dead && u.down <= 0) u.hp = Math.max(1, Math.round(u.maxHp * Math.min(1, f))); } }
 function gainXp(n) {
   if (S.over) return;
   const k = (1 + 0.2 * cl("xp") + 0.6 * cu("cu_whisper")) * (1 + 0.04 * dk("bounty")) * (rl("rl_ring") ? 1.25 : 1) * (wk("rush") ? 1.3 : 1) * (S.mod === "rich" ? 1.5 : 1) * (cl("lg_greed") ? 2 : 1);
-  S.xp += n * k;
-  while (S.xp >= S.xpNeed) { S.xp -= S.xpNeed; S.level++; if (rl("rl_glasses")) S.rerolls++; S.xpNeed = xpNeedOf(S.level); S.pending++; if (S.level === 20) S.events.push({ type: "achv", id: "lv20" }); }
+  S.xp += n * k; S.xpTotal = (S.xpTotal || 0) + n * k;
+  while (S.xp >= S.xpNeed) { S.xp -= S.xpNeed; S.level++; if (rl("rl_glasses")) S.rerolls++; S.xpNeed = xpNeedOf(S.level); refreshMaxHp(); S.pending++; if (S.level === 20) S.events.push({ type: "achv", id: "lv20" }); }
 }
 const rareW = r => RARE_W(S.level).map((v, i) => v * (i ? 1 + 0.08 * dk("lucky") : 1))[r] || 1;
 function cardPool(minRare) {
@@ -406,7 +422,7 @@ function cardPool(minRare) {
   if (S.mod !== "solo") for (const D of UNITS) {
     if (!S.charOpen.includes(D.id)) continue;
     const u = S.units.find(x => x.def === D);
-    if (!u) { if (S.allies < maxAllies() && !(minRare > 1)) out.push({ id: "ally_" + D.id, w: 9 * rareW(1) / 100, def: D, join: true, rare: 1 }); continue; }
+    if (!u) { if (S.allies < maxAllies() && !(minRare > 1)) out.push({ id: "ally_" + D.id, w: 9 * rareW(1) / 100 * traitBias(D.id), def: D, join: true, rare: 1 }); continue; }
     if (u.lv < 3) { if (!minRare) out.push({ id: "ally_" + D.id, w: 7, def: D, unit: u, rare: 0 }); }
     else if (u.lv === 3) { out.push({ id: "br_" + D.id + "_A", w: 5 * rareW(2) / 100, def: D, unit: u, branch: "A", rare: 2 }); out.push({ id: "br_" + D.id + "_B", w: 5 * rareW(2) / 100, def: D, unit: u, branch: "B", rare: 2 }); }
   }
@@ -574,7 +590,7 @@ function genWaves() {
 function genWave(w, total) {
   const R = S.rng;
   {
-    const out = [], last = !S.endless && w === total, wE = S.waveScale ? Math.max(1, Math.round(w * S.waveScale)) : w;   // 远征波数缩短：按原关卡的进度出怪
+    const out = [], last = !S.endless && w === total, K = S.endless || S.vigil ? 1 : ST.wk || 1, wE = S.waveScale ? Math.max(1, Math.round(w * S.waveScale / K)) : Math.max(1, w / K);   // 出怪强度按「原来的波数」算（波数 ×waveK 只是拉长）；远征波数缩短：按原关卡的进度出怪
     const pool = ST.pool.filter(p => wE >= p[2]);
     let budget = (2.5 + wE * 1.8) * ST.budget * (S.endless ? 1 + w * 0.05 : 1) * (S.vigil ? 1 + w * 0.075 : 1) * (wk("giants") ? 0.7 : 1) * (wk("swarm") ? 1.6 : 1);
     // 特殊波次：潮汐（数量多）/ 精英（少而强）
@@ -624,15 +640,17 @@ function startWave(append) {
   if (S.slowWaves > 0) S.slowWaves--;
   if (S.weakWaves > 0) S.weakWaves--;
   if (rl("rl_beads")) for (const u of S.units) { if (u.down > 0) reviveUnit(u); heal(u, u.maxHp * 0.25, true, null); }
-  S.log.push({ w: S.wave, hp: S.crystal.maxHp ? S.crystal.hp / S.crystal.maxHp : 1, kills: S.kills, lv: S.level, units: S.units.filter(u => !u.summon).length });
-  S.waveHp = S.vigil ? Math.pow(1 + VIGIL.hpStep, S.wave - 1) : 1 + 0.095 * (S.wave - 1) + (S.endless ? 0.004 * (S.wave - 1) ** 2 : 0);
+  S.log.push({ p: teamGrowth().k, w: S.wave, hp: S.crystal.maxHp ? S.crystal.hp / S.crystal.maxHp : 1, kills: S.kills, lv: S.level, units: S.units.filter(u => !u.summon).length });
+  S.waveHp = S.vigil ? Math.pow(1 + VIGIL.hpStep, S.wave - 1) : 1 + 0.095 * (S.wave - 1) / (S.endless || S.vigil ? 1 : ST.wk || 1) + (S.endless ? 0.004 * (S.wave - 1) ** 2 : 0);
   // 每波结束前的收尾：碑体强化回血、守望之战补给、商店
   if (cl("lg_aegis") && S.wave > 1) { S.crystal.hp = Math.min(S.crystal.maxHp, S.crystal.hp + S.crystal.maxHp * 0.08 * cl("lg_aegis")); addFx({ kind: "pillar", x: CRYSTAL.x, y: CRYSTAL.y, color: "#62b4ff", life: 0.8 }); }
+  if (tfTeam("reroll") && S.wave > 1 && (S.wave - 1) % 5 === 0) { S.rerolls += tfTeam("reroll"); addFx({ kind: "text", x: CRYSTAL.x, y: CRYSTAL.y - 1.2, text: "游侠团 · 重抽 +" + tfTeam("reroll"), color: "#e8c860", life: 1.2 }); }
   if (dk("ks_eco") && S.wave > 1 && (S.wave - 1) % 5 === 0) { S.pending++; S.dust += 30; addFx({ kind: "banner", text: "点金 · 多翻一张牌 · 星尘 +30", life: 1.8 }); }
   if (S.vigil && VIGIL.supplyAt.includes(S.wave)) { S.pending++; addFx({ kind: "banner", text: "补给到了 · 多翻一张牌", life: 1.8 }); }
   const isBossW = q.some(x => ENEMIES[x.type] && (isBossType(x.type) || x.elite));
   const tagTxt = wv.tag === "tide" ? " · 潮汐" : wv.tag === "elite" ? " · 精英波" : "";
   const head = S.endless ? `无尽 · 第 ${S.wave} 波` : S.vigil ? `守望 · 第 ${S.wave}/${ST.waves} 波` : `第 ${S.wave}/${ST.waves} 波`;
+  if (!S.endless && !S.vigil && !S.exped) { const a = actOf(S.wave); if (a !== (S.act || 0) || S.wave === 1) { S.act = a; refreshMaxHp(); if (S.wave > 1 && typeof actFlash === "function") actFlash(a); addFx({ kind: "banner", text: `第${["一", "二", "三"][a]}幕 · ${ACTS[a].name}　${ACTS[a].tip()}`, life: 2.6 }); } }
   addFx({ kind: "banner", text: head + (S.wave === ST.waves && !S.endless ? " · 最终波" : tagTxt || (isBossW ? " · 强敌" : "")), life: 1.8, danger: isBossW });
 }
 // 立即出击：场上还有怪、甚至还在出怪时也能叫下一波（叠波），越冒险星尘奖励越多
