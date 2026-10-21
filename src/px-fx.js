@@ -649,7 +649,8 @@ let vigCv = null, vigFor = null;
 // 天气：雨 / 雪 / 热浪 / 雷暴的画面（纯效果，用固定公式出点，不用随机）
 function drawWeather(t) {
   const id = S.wx; if (!id) return;
-  const k = Math.min(1, (4 - Math.max(0, S.wxT || 0)) / 1.2 + 0.2);   // 刚开始时渐入
+  // 刚开始时渐入。必须夹在 0–1 之间：globalAlpha 设成负数会被忽略、沿用上一次的值（曾经因此在雷暴天整屏被涂成近黑色，表现为周期性黑屏）
+  const k = Math.max(0, Math.min(1, (S.wxAge || 0) / 1.2 + 0.2));
   if (id === "rain") { ctx.globalAlpha = 0.1 * k; ctx.fillStyle = "#10284a"; ctx.fillRect(0, 0, PW, PHt); }
   else if (id === "blizzard") { ctx.globalAlpha = 0.14 * k; ctx.fillStyle = "#dce8f8"; ctx.fillRect(0, 0, PW, PHt); }
   else if (id === "heat") { ctx.globalAlpha = 0.08 * k; ctx.fillStyle = "#ff8a30"; ctx.fillRect(0, 0, PW, PHt); }

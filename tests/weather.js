@@ -30,6 +30,18 @@ const path = require("path");
   check(r.wx3 === "rain" && r.wx4 === "rain", "第 3、4 波森林下雨", r);
   check(Math.abs(r.slow - 0.92) < 0.01, "暴风雪敌人移速 ×0.92", r);
   check(r.storm === "storm" && r.struck, "雷暴 12 秒内劈中敌人", r);
+  // 回归：天气遮罩的透明度必须一直很淡（曾经雷暴天 wxT 变成 8 之后算出负数，globalAlpha 被忽略、整屏涂成近黑色 = 周期性黑屏）
+  const al = await p.evaluate(() => {
+    __td.newRun(5, { hero: "knight", charLv: {}, charAwk: {}, assist: 0 }); const S = __td.S; const amb = GFX.amb; GFX.amb = false;
+    const seen = [], orig = ctx.fillRect; ctx.fillRect = function (...a) { seen.push(ctx.globalAlpha); return orig.apply(this, a); };
+    for (const id of ["rain", "blizzard", "heat", "storm"]) for (const wxT of [0, 2, 4, 6, 8]) for (const age of [0, 0.5, 2, 30]) { S.wx = id; S.wxT = wxT; S.wxAge = age; ctx.globalAlpha = 1; drawWeather(1); }
+    ctx.fillRect = orig; GFX.amb = amb; ctx.globalAlpha = 1;
+    // 真实走一遍雷暴 20 秒，每帧只看天气层
+    S.wave = 4; S.autoWave = false; let worst = 0; for (let i = 0; i < 30 * 20; i++) { S.crystal.hp = S.crystal.maxHp; S.wave = 4; __td.step(1 / 30); if (S.wx === "storm") { const k = Math.max(0, Math.min(1, (S.wxAge || 0) / 1.2 + 0.2)); worst = Math.max(worst, 0.14 * k); } }
+    return { max: Math.max(...seen), n: seen.length, worst, age: S.wxAge };
+  });
+  check(al.n >= 16 && al.max <= 0.2, "天气遮罩透明度一直 ≤ 0.2（不会整屏变黑）", al);
+  check(al.worst <= 0.14 && al.age > 5, "雷暴 20 秒内遮罩透明度正常，渐入计时在走", al);
   // 截图：森林傍晚下雨 / 夜里（先把新手引导和剧情标成看过）
   await p.evaluate(() => localStorage.setItem("chenxing-td-v2", JSON.stringify({ tutorial: true, ver: 13, story: ["pre0"] })));
   await p.reload(); await p.waitForTimeout(400);
